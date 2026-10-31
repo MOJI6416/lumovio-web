@@ -1,0 +1,45 @@
+name: Something doesn't work
+description: A page, a button or a screen of Lumovio behaves wrongly.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: The address or screen, then each step.
+      placeholder: |
+        1. Open lumovio.app/library
+        2. …
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - The site on a computer
+        - The site on a phone or tablet
+        - The TV interface in a TV's browser
+        - The Android TV app
+        - A local build with the mock API
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and system
+      placeholder: Chrome 140 on Windows 11 · Safari on iOS 26 · Google TV, Android 11
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Screenshots or anything else
+      description: Never paste a server address with a password or a key in it.

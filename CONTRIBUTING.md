@@ -1,11 +1,13 @@
 # Contributing to Lumovio
 
 Thanks for helping! Bug reports, translations, accessibility fixes and player-compatibility
-reports are especially valuable.
+reports are especially valuable. Everyone here follows the [code of conduct](.github/CODE_OF_CONDUCT.md);
+a security problem is reported privately ([SECURITY](.github/SECURITY.md)), never in an issue.
 
 ## Before you start
 
-- For anything larger than a small fix, open an issue first so we can agree on the approach.
+- For anything larger than a small fix, open an issue first so we can agree on the approach. The
+  issue forms ask for what helps: the device, the server, the file's codecs.
 - Develop against the mock API (`pnpm mock`, see the README). Never commit real credentials,
   tokens or server addresses; `.env*` files other than `.env.example` are ignored on purpose.
 - Lumovio does not host, index or link to content itself. People play their *own* copies from

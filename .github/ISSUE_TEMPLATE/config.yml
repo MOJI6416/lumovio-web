@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Help with an account or with playback on lumovio.app
+    url: https://lumovio.app/support
+    about: Lumovio's support answers there, in your language.
+  - name: A security vulnerability
+    url: https://github.com/MOJI6416/lumovio-web/security/advisories/new
+    about: Report it privately, never in a public issue.
+  - name: A rights holder's notice
+    url: https://lumovio.app/legal/copyright
+    about: Notices about a title's page go through the site.

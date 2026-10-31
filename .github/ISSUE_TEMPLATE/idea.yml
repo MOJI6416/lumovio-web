@@ -1,0 +1,20 @@
+name: An idea
+description: Something Lumovio could do or do better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you'd like to do
+      description: The situation and what gets in the way now.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+  - type: textarea
+    id: elsewhere
+    attributes:
+      label: Seen elsewhere
+      description: An app or a service that does it well, if any.

@@ -1,0 +1,40 @@
+name: A translation fix
+description: Wrong, clumsy or missing text in one of Lumovio's languages.
+labels: [translation]
+body:
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - English
+        - Українська
+        - Русский
+        - Deutsch
+        - Español
+        - Français
+        - Português (Brasil)
+        - Italiano
+        - Polski
+        - Türkçe
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The page or screen, or the key in `apps/web/messages/<locale>.json` if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: The text now
+    validations:
+      required: true
+  - type: textarea
+    id: better
+    attributes:
+      label: Better
+    validations:
+      required: true
