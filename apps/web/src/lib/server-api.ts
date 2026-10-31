@@ -17,7 +17,7 @@ export async function serverApi<T>(path: string, init: RequestInit = {}): Promis
   const cookieHeader = c.toString();
   if (cookieHeader) fwd.set("cookie", cookieHeader);
   if (locale) fwd.set("x-lumovio-locale", locale);
-  for (const k of ["cf-ipcountry", "cf-connecting-ip", "x-forwarded-for", "user-agent"]) {
+  for (const k of ["cf-ipcountry", "cf-connecting-ip", "x-forwarded-for", "user-agent", "x-lumovio-asn"]) {
     const v = h.get(k);
     if (v) fwd.set(k, v);
   }
