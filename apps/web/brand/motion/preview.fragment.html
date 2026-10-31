@@ -1,0 +1,191 @@
+<div id="lumovio-light-motion" data-review-theme="dark" data-reduced="false" data-paused="false">
+  <style>
+    #lumovio-light-motion {
+      --lm-bg: #0b0c10; --lm-panel: #14161b; --lm-control: #1c1f26; --lm-hover: #262a33;
+      --lm-text: #f5f6f8; --lm-muted: #b4b9c4; --lm-dim: #868c98; --lm-line: #ffffff14;
+      --lm-focus: #dcfa63; --lm-stage: #0b0c10;
+      font: 400 .9375rem/1.5 Manrope, "Segoe UI", sans-serif;
+      color: var(--lm-text); background: var(--lm-bg); border-radius: .75rem;
+      width: 100%; max-width: 90rem; margin-inline: auto; overflow: hidden; color-scheme: dark;
+    }
+    #lumovio-light-motion[data-review-theme="light"] {
+      --lm-bg: #f6f7f9; --lm-panel: #fff; --lm-control: #eef0f3; --lm-hover: #e1e4ea;
+      --lm-text: #0b0c10; --lm-muted: #4a505c; --lm-dim: #656b77; --lm-line: #0a0c1017;
+      --lm-focus: #5c7800; color-scheme: light;
+    }
+    #lumovio-light-motion * { box-sizing: border-box; }
+    #lumovio-light-motion [hidden] { display: none !important; }
+    #lumovio-light-motion header { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; padding: 1.5rem 2rem; }
+    #lumovio-light-motion h1 { font-size: 1.125rem; font-weight: 700; line-height: 1.35; margin: 0; }
+    #lumovio-light-motion .lm-header-name { display: flex; align-items: baseline; gap: .75rem; }
+    #lumovio-light-motion .lm-edition { color: var(--lm-dim); font-size: .8125rem; }
+    #lumovio-light-motion .lm-options { display: flex; gap: .5rem; align-items: center; }
+    #lumovio-light-motion .lm-options button { min-width: 2.75rem; }
+    #lumovio-light-motion button { font: inherit; font-weight: 600; min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-radius: .5rem; cursor: pointer; color: var(--lm-text); background: var(--lm-control); }
+    #lumovio-light-motion button:hover { background: var(--lm-hover); }
+    #lumovio-light-motion button:disabled { opacity: .6; cursor: default; }
+    #lumovio-light-motion button:focus-visible { outline: 2px solid var(--lm-focus); outline-offset: 4px; }
+    #lumovio-light-motion button[aria-pressed="true"] { background: var(--lm-text); color: var(--lm-bg); }
+    #lumovio-light-motion .lm-language { min-width: 2.75rem; padding-inline: .75rem; }
+    #lumovio-light-motion nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; padding: 0 2rem 1.5rem; }
+    #lumovio-light-motion .lm-tab { display: flex; text-align: start; flex-direction: column; justify-content: center; gap: .25rem; min-height: 4rem; background: transparent; border-radius: .5rem; }
+    #lumovio-light-motion .lm-tab small { font-size: .75rem; font-weight: 400; opacity: .8; }
+    #lumovio-light-motion .lm-tab[aria-pressed="false"] small { color: var(--lm-dim); opacity: 1; }
+    #lumovio-light-motion .lm-stage { position: relative; display: grid; place-items: center; height: clamp(18rem, 46vw, 34rem); overflow: hidden; background: var(--lm-stage); }
+    #lumovio-light-motion .lm-stage.is-utility { background: var(--lm-panel); }
+    #lumovio-light-motion .lm-corner { position: absolute; inset-block-start: 1.5rem; inset-inline-start: 2rem; font-size: .75rem; color: #868c98; }
+    #lumovio-light-motion .lm-stage.is-utility .lm-corner { color: var(--lm-dim); }
+    #lumovio-light-motion .lm-art-slot { display: grid; place-items: center; width: 100%; min-height: 12rem; }
+    #lumovio-light-motion .lm-art-slot > .lm-splash { width: min(92%, 48rem); height: auto; }
+    #lumovio-light-motion .lm-art-slot > .lm-compact { width: 12rem; height: 12rem; }
+    #lumovio-light-motion .lm-art-slot > .lm-loader, #lumovio-light-motion .lm-art-slot > .lm-saved { width: 4rem; height: 4rem; }
+    #lumovio-light-motion .lm-art-slot > .lm-action, #lumovio-light-motion .lm-art-slot > .lm-offline { width: 4rem; height: 4rem; }
+    #lumovio-light-motion .lm-art-slot > .lm-device-preview { width: auto; height: 20rem; max-width: 80%; }
+    #lumovio-light-motion .lm-caption { position: absolute; inset-block-end: 2rem; inset-inline: 1rem; text-align: center; color: var(--lm-muted); }
+    #lumovio-light-motion .lm-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem 2rem; background: var(--lm-panel); }
+    #lumovio-light-motion .lm-playback { display: flex; flex-wrap: wrap; gap: .5rem; }
+    #lumovio-light-motion .lm-primary { color: var(--lm-bg); background: var(--lm-text); }
+    #lumovio-light-motion .lm-primary:hover { opacity: .9; background: var(--lm-text); }
+    #lumovio-light-motion .lm-motion-toggle { display: inline-flex; align-items: center; gap: .5rem; font-size: .8125rem; font-weight: 400; background: transparent; }
+    #lumovio-light-motion .lm-motion-toggle::before { content: ""; width: .75rem; height: .75rem; border-radius: 50%; background: var(--lm-dim); }
+    #lumovio-light-motion .lm-motion-toggle[aria-pressed="true"]::before { background: var(--lm-bg); }
+    #lumovio-light-motion .lm-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    @media (max-width: 639px) {
+      #lumovio-light-motion header { padding: 1rem; }
+      #lumovio-light-motion .lm-header-name { flex-direction: column; gap: .25rem; }
+      #lumovio-light-motion nav { padding: 0 1rem 1rem; grid-template-columns: repeat(3, 1fr); }
+      #lumovio-light-motion .lm-tab { min-height: 4rem; padding-inline: .75rem; }
+      #lumovio-light-motion .lm-stage { height: 20rem; }
+      #lumovio-light-motion .lm-art-slot > .lm-device-preview { height: 14rem; }
+      #lumovio-light-motion .lm-corner { inset-inline-start: 1rem; inset-block-start: 1rem; }
+      #lumovio-light-motion .lm-footer { align-items: start; flex-direction: column; padding: 1rem; gap: .75rem; }
+    }
+    @media (min-width: 1800px) {
+      #lumovio-light-motion { font-size: 1.375rem; }
+      #lumovio-light-motion h1 { font-size: 1.5rem; }
+      #lumovio-light-motion .lm-edition, #lumovio-light-motion .lm-motion-toggle, #lumovio-light-motion .lm-tab small, #lumovio-light-motion .lm-corner { font-size: 1.25rem; }
+      #lumovio-light-motion button { min-height: 4rem; min-width: 4rem; }
+      #lumovio-light-motion .lm-options button { min-width: 4rem; }
+      #lumovio-light-motion .lm-tab { min-height: 5rem; }
+    }
+  </style>
+  <header>
+    <div class="lm-header-name"><h1>Lumovio</h1><span class="lm-edition" data-copy="collection">Движение Light</span></div>
+    <div class="lm-options"><button type="button" data-action="theme" aria-label="Светлая тема">☼</button><button type="button" class="lm-language" data-action="language" aria-label="English">EN</button></div>
+  </header>
+  <nav aria-label="Анимации" data-label="navigation">
+    <button type="button" class="lm-tab" data-motion="intro" aria-pressed="true"><span data-copy="intro">Заставка</span><small data-copy="introTime">2,4 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="compact" aria-pressed="false"><span data-copy="compact">Только знак</span><small data-copy="compactTime">0,9 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="loader" aria-pressed="false"><span data-copy="loader">Загрузка</span><small data-copy="loaderTime">1,6 с · цикл</small></button>
+    <button type="button" class="lm-tab" data-motion="saved" aria-pressed="false"><span data-copy="saved">Сохранение</span><small data-copy="savedTime">0,32 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="favourite" aria-pressed="false"><span data-copy="favourite">Избранное</span><small data-copy="favouriteTime">0,28 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="like" aria-pressed="false"><span data-copy="like">Нравится</span><small data-copy="likeTime">0,24 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="rating" aria-pressed="false"><span data-copy="rating">Оценка</span><small data-copy="ratingTime">0,32 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="offline" aria-pressed="false"><span data-copy="offline">Нет связи</span><small data-copy="offlineTime">0,32 с · один раз</small></button>
+    <button type="button" class="lm-tab" data-motion="android" aria-pressed="false"><span>Android TV</span><small data-copy="androidTime">0,9 с · макет</small></button>
+    <button type="button" class="lm-tab" data-motion="iphone" aria-pressed="false"><span>iPhone</span><small data-copy="pngTime">PNG · макет</small></button>
+    <button type="button" class="lm-tab" data-motion="ipad" aria-pressed="false"><span>iPad</span><small data-copy="pngTime">PNG · макет</small></button>
+  </nav>
+  <div class="lm-stage">
+    <span class="lm-corner" data-copy="stageLabel">Первый запуск</span>
+    <div class="lm-art-slot" aria-hidden="true"></div>
+    <span class="lm-caption" hidden></span>
+  </div>
+  <div class="lm-footer">
+    <div class="lm-playback"><button type="button" class="lm-primary" data-action="replay" data-copy="replay">Смотреть ещё раз</button><button type="button" data-action="pause" data-copy="pause">Пауза</button></div>
+    <button type="button" class="lm-motion-toggle" data-action="reduce" aria-pressed="false" data-copy="reduce">Меньше движения</button>
+  </div>
+  <span class="lm-sr" role="status" aria-live="polite" data-announcement></span>
+  <!-- MOTION_TEMPLATES -->
+  <script>
+    (() => {
+      const root = document.getElementById("lumovio-light-motion");
+      const slot = root.querySelector(".lm-art-slot");
+      const stage = root.querySelector(".lm-stage");
+      const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const words = {
+        ru: { collection: "Движение Light", navigation: "Анимации", intro: "Заставка", compact: "Только знак", loader: "Загрузка", saved: "Сохранение", introTime: "2,4 с · один раз", compactTime: "0,9 с · один раз", loaderTime: "1,6 с · цикл", savedTime: "0,32 с · один раз", replay: "Смотреть ещё раз", pause: "Пауза", resume: "Продолжить", reduce: "Меньше движения", light: "Светлая тема", dark: "Тёмная тема", stageLabel: "Первый запуск", compactLabel: "Короткий запуск", loaderLabel: "Ожидание", savedLabel: "Подтверждение", loading: "Загрузка…", done: "Сохранено", static: "Движение отключено", finished: "Анимация завершена", playing: "Анимация запущена" },
+        en: { collection: "Light motion", navigation: "Animations", intro: "Intro", compact: "Symbol only", loader: "Loading", saved: "Saved", introTime: "2.4 s · once", compactTime: "0.9 s · once", loaderTime: "1.6 s · loop", savedTime: "0.32 s · once", replay: "Replay", pause: "Pause", resume: "Resume", reduce: "Reduced motion", light: "Light theme", dark: "Dark theme", stageLabel: "First launch", compactLabel: "Quick launch", loaderLabel: "Waiting", savedLabel: "Confirmation", loading: "Loading…", done: "Saved", static: "Motion is off", finished: "Animation complete", playing: "Animation started" }
+      };
+      const initial = window.openai?.widgetState?.privateContent;
+      Object.assign(words.ru, { favourite: "Избранное", like: "Нравится", rating: "Оценка", offline: "Нет связи", favouriteTime: "0,28 с · один раз", likeTime: "0,24 с · один раз", ratingTime: "0,32 с · один раз", offlineTime: "0,32 с · один раз", androidTime: "0,9 с · макет", pngTime: "PNG · макет", actionLabel: "После подтверждения", offlineLabel: "Офлайн-страница", androidLabel: "До HTML · макет Android TV", appleLabel: "Старт с домашнего экрана · макет", favouriteDone: "В избранном", likeDone: "Нравится", ratingDone: "Оценка сохранена", offlineDone: "Нет подключения" });
+      Object.assign(words.en, { favourite: "Favourites", like: "Like", rating: "Rating", offline: "Offline", favouriteTime: "0.28 s · once", likeTime: "0.24 s · once", ratingTime: "0.32 s · once", offlineTime: "0.32 s · once", androidTime: "0.9 s · preview", pngTime: "PNG · preview", actionLabel: "After confirmation", offlineLabel: "Offline page", androidLabel: "Before HTML · Android TV preview", appleLabel: "Home screen launch · preview", favouriteDone: "In favourites", likeDone: "Liked", ratingDone: "Rating saved", offlineDone: "You're offline" });
+      const state = { asset: "intro", theme: "dark", language: "ru", reduced: false, paused: false, finished: false };
+      function restore(value) {
+        if (!value || typeof value !== "object") return;
+        if (["intro", "compact", "loader", "saved", "favourite", "like", "rating", "offline", "android", "iphone", "ipad"].includes(value.asset)) state.asset = value.asset;
+        if (["light", "dark"].includes(value.theme)) state.theme = value.theme;
+        if (["ru", "en"].includes(value.language)) state.language = value.language;
+        if (typeof value.reduced === "boolean") state.reduced = value.reduced;
+      }
+      restore(initial);
+      function persist() {
+        const promise = window.openai?.setWidgetState?.({ modelContent: { motion: state.asset, theme: state.theme, reducedMotion: state.reduced }, privateContent: { asset: state.asset, theme: state.theme, language: state.language, reduced: state.reduced } });
+        promise?.catch(() => {});
+      }
+      function render(restart = false) {
+        if (restart) state.finished = false;
+        const w = words[state.language];
+        root.lang = state.language;
+        root.dataset.reviewTheme = state.theme;
+        root.dataset.reduced = String(state.reduced || media.matches);
+        root.dataset.paused = String(state.paused);
+        root.querySelectorAll("[data-copy]").forEach(el => { el.textContent = w[el.dataset.copy]; });
+        root.querySelectorAll("[data-label]").forEach(el => { el.setAttribute("aria-label", w[el.dataset.label]); });
+        root.querySelectorAll("[data-motion]").forEach(el => { el.setAttribute("aria-pressed", String(el.dataset.motion === state.asset)); });
+        const themeButton = root.querySelector('[data-action="theme"]');
+        themeButton.setAttribute("aria-label", w[state.theme === "dark" ? "light" : "dark"]);
+        themeButton.textContent = state.theme === "dark" ? "☼" : "☾";
+        const languageButton = root.querySelector('[data-action="language"]');
+        languageButton.textContent = state.language === "ru" ? "EN" : "RU";
+        languageButton.setAttribute("aria-label", state.language === "ru" ? "English" : "Русский");
+        root.querySelector('[data-action="pause"]').textContent = w[state.paused ? "resume" : "pause"];
+        const isPicture = ["iphone", "ipad"].includes(state.asset);
+        root.querySelector('[data-action="replay"]').disabled = isPicture;
+        if (isPicture) root.querySelector('[data-action="replay"]').textContent = state.language === "ru" ? "Статичный PNG" : "Static PNG";
+        root.querySelector('[data-action="pause"]').hidden = isPicture;
+        root.querySelector('[data-action="pause"]').disabled = state.finished || state.reduced || media.matches || ["iphone", "ipad"].includes(state.asset);
+        root.querySelector('[data-action="reduce"]').setAttribute("aria-pressed", String(state.reduced || media.matches));
+        root.querySelector('[data-action="reduce"]').disabled = media.matches;
+        root.querySelector(".lm-corner").textContent = w[{ intro: "stageLabel", compact: "compactLabel", loader: "loaderLabel", saved: "savedLabel", favourite: "actionLabel", like: "actionLabel", rating: "actionLabel", offline: "offlineLabel", android: "androidLabel", iphone: "appleLabel", ipad: "appleLabel" }[state.asset]];
+        const utility = ["loader", "saved", "favourite", "like", "rating", "offline"].includes(state.asset);
+        stage.classList.toggle("is-utility", utility);
+        if (restart || !slot.firstElementChild) {
+          const template = root.querySelector(`template[data-asset="${state.asset}"]`);
+          slot.replaceChildren(template.content.cloneNode(true));
+        }
+        slot.firstElementChild.dataset.theme = utility ? state.theme : "dark";
+        const caption = root.querySelector(".lm-caption");
+        caption.hidden = !utility;
+        caption.textContent = w[{ loader: "loading", saved: "done", favourite: "favouriteDone", like: "likeDone", rating: "ratingDone", offline: "offlineDone" }[state.asset]] || "";
+        root.querySelector("[data-announcement]").textContent = isPicture || state.reduced || media.matches ? w.static : state.paused ? w.pause : w.playing;
+      }
+      root.addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button || !root.contains(button)) return;
+        let restart = false;
+        if (button.dataset.motion) { state.asset = button.dataset.motion; state.paused = false; restart = true; }
+        if (button.dataset.action === "theme") state.theme = state.theme === "dark" ? "light" : "dark";
+        if (button.dataset.action === "language") state.language = state.language === "ru" ? "en" : "ru";
+        if (button.dataset.action === "replay") { state.paused = false; restart = true; }
+        if (button.dataset.action === "pause") state.paused = !state.paused;
+        if (button.dataset.action === "reduce") state.reduced = !state.reduced;
+        render(restart);
+        persist();
+      });
+      slot.addEventListener("animationend", event => {
+        if (["lm-mark-home", "lm-compact-screen", "lm-check-draw", "lm-action-settle", "lm-beam-off"].includes(event.animationName)) {
+          state.finished = true;
+          root.querySelector('[data-action="pause"]').disabled = true;
+          root.querySelector("[data-announcement]").textContent = words[state.language].finished;
+        }
+      });
+      window.addEventListener("openai:set_globals", event => {
+        restore(event.detail?.globals?.widgetState?.privateContent);
+        render(true);
+      });
+      media.addEventListener("change", () => render());
+      render(true);
+    })();
+  </script>
+</div>

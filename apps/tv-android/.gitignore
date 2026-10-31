@@ -1,0 +1,11 @@
+local.properties
+.gradle/
+build/
+app/build/
+.idea/
+*.iml
+.kotlin/
+
+# The release key and its password (release.local.md): the owner keeps them, CI has them as secrets.
+*.jks
+*.keystore

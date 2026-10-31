@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The site's ink until the page paints: no white flash, no title bar (TV document §4.1). -->
+    <style name="Lumovio" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/lumovio_launch_background</item>
+        <item name="android:colorBackground">@color/ink</item>
+    </style>
+    <color name="ink">#0B0C10</color>
+    <color name="text">#F5F6F8</color>
+    <color name="text2">#B4B9C4</color>
+    <color name="lime">#DCFA63</color>
+</resources>

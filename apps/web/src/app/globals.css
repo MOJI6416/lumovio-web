@@ -1,0 +1,667 @@
+@import "tailwindcss";
+/* 6.3.1 Light motion: the kit's own classes and keyframes (one source with the exported SVGs); the site's colours below. */
+@import "../../brand/motion/motion.css" layer(components);
+
+/* 7.19 The site opened from a home screen (a phone's web app): no browser buttons around it. */
+@custom-variant standalone (@media (display-mode: standalone));
+
+/* ───────────── Lumovio design tokens ─────────────
+ * docs/design/design-system.md, sections 3–6 and 10.3. Components use role names only (bg-surface-1,
+ * text-text-2, z-dialog, rounded-sm …); hex and rgb() stay in this file.
+ *
+ * Dark is the default (:root, [data-theme="dark"]); light is a full equal ([data-theme="light"]); .stage gives
+ * art, heroes and the player the dark values in both themes (3.5). The selectors match any element, so one part
+ * of a page (the /dev/ui showcase) can show the other theme.
+ *
+ * Every role has its design value: lime is the one interface accent (selection, progress, focus, switches, tabs,
+ * links), radii are roles. The old names (--border, --text-muted, --violet, --warm, --glow, --btn-* …) were removed in
+ * Ф9 (3.7); only the roles below exist. */
+
+:root,
+[data-theme="dark"],
+.stage {
+  color-scheme: dark;
+  /* 3.2 Neutral roles */
+  --bg: #0b0c10;
+  --surface-1: #14161b;
+  --surface-2: #1c1f26;
+  --surface-3: #262a33;
+  --line: rgb(255 255 255 / 0.08);
+  --line-2: rgb(255 255 255 / 0.16);
+  --text-1: #f5f6f8;
+  --text-2: #b4b9c4;
+  --text-3: #868c98;
+  --scrim: rgb(0 0 0 / 0.72);
+  /* 3.3 Accent — lime */
+  --brand-mark: #dcfa63;
+  --accent: #dcfa63;
+  --accent-hover: #e7ff85;
+  --accent-press: #c6e24f;
+  --accent-soft: rgb(220 250 99 / 0.12);
+  --selected-bg: #dcfa63;
+  --selected-fg: #0b0c10;
+  --progress: #dcfa63;
+  --focus: #dcfa63;
+  --tab-indicator: #dcfa63;
+  --switch-on: #dcfa63;
+  --switch-knob-on: #0b0c10;
+  --link: #dcfa63;
+  --link-decoration: none; /* 7.3: action links are underlined only where --link is black (light, not on a stage) */
+  --on-accent: #0b0c10;
+  /* 3.4 Statuses */
+  --success: #34d399;
+  --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
+  --warning: #fbbf24;
+  --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
+  --danger: #f87171;
+  --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
+  /* 7.20 Chart series, in this order (blue, orange, aqua, violet; checked for colour blindness on --surface-1) */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #9085e9;
+  /* 6.2 Depth: floating layers only */
+  --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  /* 3.2 Neutral roles */
+  --bg: #f6f7f9;
+  --surface-1: #ffffff;
+  --surface-2: #eef0f3;
+  --surface-3: #e1e4ea;
+  --line: rgb(10 12 16 / 0.09);
+  --line-2: rgb(10 12 16 / 0.18);
+  --text-1: #0b0c10;
+  --text-2: #4a505c;
+  --text-3: #656b77;
+  --scrim: rgb(10 12 16 / 0.45);
+  /* 3.3 Accent — on light, lime is a highlight on black, never text on white */
+  --brand-mark: #0b0c10;
+  --accent: #dcfa63;
+  --accent-hover: #e7ff85;
+  --accent-press: #c6e24f;
+  --accent-soft: rgb(220 250 99 / 0.35);
+  --selected-bg: #0b0c10;
+  --selected-fg: #dcfa63;
+  --progress: #6f8f00;
+  --focus: #5c7800;
+  --tab-indicator: #0b0c10;
+  --switch-on: #0b0c10;
+  --switch-knob-on: #dcfa63;
+  --link: #0b0c10;
+  --link-decoration: underline;
+  --on-accent: #0b0c10;
+  /* 3.4 Statuses */
+  --success: #0f9d6a;
+  --success-soft: color-mix(in srgb, var(--success) 10%, transparent);
+  --warning: #b97200;
+  --warning-soft: color-mix(in srgb, var(--warning) 10%, transparent);
+  --danger: #d6264b;
+  --danger-soft: color-mix(in srgb, var(--danger) 10%, transparent);
+  /* 7.20 Chart series (aqua under 3:1 on white: charts always carry a legend and their table) */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #6250d6;
+  /* 6.2 */
+  --shadow-float: 0 16px 40px -12px rgb(10 12 16 / 0.25);
+}
+
+/* References between roles, re-resolved on every themed element (a variable keeps the value it had where it was
+ * declared, so these can't live on :root alone). */
+:root,
+[data-theme],
+.stage {
+  --info: var(--text-2);
+  --info-soft: var(--surface-2);
+}
+
+/* Text on a stage inside the light theme takes the stage's colour, not the page's. */
+.stage {
+  color: var(--text-1);
+}
+
+/* Theme-independent tokens. Sizes are rem, so the TV root size scales them (10.3). */
+:root {
+  /* 3.5 Stage: always dark; text over art only on a scrim */
+  --bg-stage: #0b0c10;
+  --scrim-start: linear-gradient(90deg, rgb(11 12 16 / 0.92) 0%, rgb(11 12 16 / 0.55) 45%, transparent 75%);
+  --scrim-bottom: linear-gradient(0deg, var(--bg-stage) 0%, transparent 40%);
+  /* 4.2 Type scale: phone (< 640) here, larger screens below */
+  --type-display: 2.25rem;
+  --type-h1: 1.75rem;
+  --type-h2: 1.25rem;
+  --type-h3: 1.125rem;
+  --type-title: 0.9375rem;
+  --type-body-l: 1rem;
+  --type-body: 0.9375rem;
+  --type-body-s: 0.8125rem;
+  --type-caption: 0.75rem;
+  --measure: 72ch;
+  /* 7.19 The header's height: 64 px under the status bar of a home-screen app (iOS standalone, viewport-fit=cover);
+   * in a browser the inset is 0. Whatever sits under the header or sticks below it uses this. */
+  --header-h: calc(4rem + env(safe-area-inset-top, 0px));
+  /* 5.3 Page gutter (.page-x) */
+  --gutter: 1rem;
+  /* 6.1 (xs, sm: @theme below; md, lg: Ф1) */
+  --radius-full: 9999px;
+  /* 6.3 Motion */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --dur-scene: 600ms;
+  /* 6.3.1 A loading state shows only after this: a quicker page comes without a flash. */
+  --loader-delay: 300ms;
+  /* 6.6 Focus */
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --focus-halo: 0 0 0 5px rgb(0 0 0 / 0.45);
+  /* 10.3 TV: the whole interface scales with the root size — 1.25vw, 24 px on a 1920 window (the showcase's zoom) */
+  --tv-scale: 1.5;
+  /* 3.6, 7.17 Avatar palette — only for profile avatars (ui/Avatar.tsx). Twelve hues around the wheel, each a light to
+   * deep tint of itself, so neighbours stay apart at 32 px (PRF-20: the closest pair is ΔE2000 ≈ 16, was 5). Each name
+   * keeps the hue nearest to its old gradient (aurora, the default, is still the sky blue). */
+  --avatar-ember: linear-gradient(135deg, #f25a4a, #b3221c);
+  --avatar-comet: linear-gradient(135deg, #ffa040, #d45a00);
+  --avatar-nova: linear-gradient(135deg, #f5c842, #bf8700);
+  --avatar-moss: linear-gradient(135deg, #b3d63e, #5a8c12);
+  --avatar-prism: linear-gradient(135deg, #3ddc97, #0a8a5a);
+  --avatar-tide: linear-gradient(135deg, #2bc9c4, #08777f);
+  --avatar-aurora: linear-gradient(135deg, #5fd4ff, #0b86c4);
+  --avatar-lumen: linear-gradient(135deg, #6f93ff, #2f4fd6);
+  --avatar-orbit: linear-gradient(135deg, #6b5cf0, #2f22a0);
+  --avatar-dusk: linear-gradient(135deg, #c7a2ff, #8a55ea);
+  --avatar-bloom: linear-gradient(135deg, #e866d6, #9a1488);
+  --avatar-coral: linear-gradient(135deg, #ff86b0, #d6337a);
+}
+
+@media (width >= 40rem) {
+  :root {
+    --type-display: 3.5rem;
+    --type-h1: 2.5rem;
+    --type-h2: 1.5rem;
+    --type-body-l: 1.0625rem;
+  }
+}
+@media (width >= 48rem) {
+  :root {
+    --gutter: 2rem;
+  }
+}
+@media (width >= 64rem) {
+  :root {
+    --gutter: 3rem;
+  }
+}
+@media (width >= 96rem) {
+  :root {
+    --gutter: 4rem;
+  }
+}
+
+/* 10.3 TV: 5 % safe area, a thicker focus ring. After the media queries so it wins over them. */
+[data-tv="1"] {
+  --gutter: 5vw;
+  --focus-width: 0.1875rem;
+  --focus-offset: 0.1875rem;
+  /* The TV shell's menu: its width folded and open (tvui/shell/NavRail); content starts --tv-pad after it. */
+  --tv-rail: 5.5rem;
+  --tv-rail-open: 19rem;
+  --tv-pad: 2.5rem;
+  /* The spotlight above a screen's shelves (tvui/media/Spotlight): the shelves start this far from the top. */
+  --tv-spot-h: 23rem;
+  /* A title's first screen (tvui/title/TitleScreen): its name, facts and actions end near the bottom of the window. */
+  --tv-title-h: 38rem;
+}
+
+@theme inline {
+  /* Roles → Tailwind: bg-surface-1, text-text-2, border-line-2, bg-selected-bg … */
+  --color-bg: var(--bg);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-scrim: var(--scrim);
+  --color-stage: var(--bg-stage);
+  --color-brand-mark: var(--brand-mark);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-press: var(--accent-press);
+  --color-accent-soft: var(--accent-soft);
+  --color-selected-bg: var(--selected-bg);
+  --color-selected-fg: var(--selected-fg);
+  --color-progress: var(--progress);
+  --color-focus: var(--focus);
+  --color-tab-indicator: var(--tab-indicator);
+  --color-switch-on: var(--switch-on);
+  --color-switch-knob-on: var(--switch-knob-on);
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-on-accent: var(--on-accent);
+
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Hiragino Sans", "Noto Sans CJK SC", "Malgun Gothic", sans-serif;
+
+  /* 4.2 Type scale: text-display, text-h1 … text-caption (size, line height, weight, tracking) */
+  --text-display: var(--type-display);
+  --text-display--line-height: 1.05;
+  --text-display--font-weight: 800;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: var(--type-h1);
+  --text-h1--line-height: 1.1;
+  --text-h1--font-weight: 800;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: var(--type-h2);
+  --text-h2--line-height: 1.25;
+  --text-h2--font-weight: 700;
+  --text-h3: var(--type-h3);
+  --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 700;
+  --text-title: var(--type-title);
+  --text-title--line-height: 1.35;
+  --text-title--font-weight: 600;
+  --text-body-l: var(--type-body-l);
+  --text-body-l--line-height: 1.55;
+  --text-body-l--font-weight: 400;
+  --text-body: var(--type-body);
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 400;
+  --text-body-s: var(--type-body-s);
+  --text-body-s--line-height: 1.4;
+  --text-body-s--font-weight: 500;
+  --text-caption: var(--type-caption);
+  --text-caption--line-height: 1.35;
+  --text-caption--font-weight: 600;
+  --container-measure: var(--measure);
+
+  /* 6.2, 6.3: shadow-float, duration-fast … duration-scene */
+  --shadow-float: var(--shadow-float);
+  --transition-duration-fast: var(--dur-fast);
+  --transition-duration-base: var(--dur-base);
+  --transition-duration-slow: var(--dur-slow);
+  --transition-duration-scene: var(--dur-scene);
+}
+
+/* Theme-independent tokens that are Tailwind keys themselves (always emitted as variables). */
+@theme static {
+  /* 6.1 Radius roles: rounded-xs (labels), rounded-sm (buttons, fields, posters), rounded-md (panels, menus, toasts),
+   * rounded-lg (dialogs, sheets), rounded-full. These replace Tailwind's own md (6 px) and lg (8 px) since Ф1. */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  /* 6.1 A profile avatar's squircle (rounded-avatar): part of its identity, not a size step. */
+  --radius-avatar: 28%;
+  /* 5.5 Layers: z-sticky … z-toast */
+  --z-index-sticky: 20;
+  --z-index-header: 50;
+  --z-index-popover: 60;
+  --z-index-player: 70;
+  --z-index-scrim: 80;
+  --z-index-dialog: 81;
+  --z-index-toast: 100;
+  /* 6.3 Curves: ease-fast … ease-scene (pair with duration-*) */
+  --ease-fast: cubic-bezier(0.2, 0, 0, 1);
+  --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-slow: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-scene: ease-in-out;
+  /* 5.3 Containers: max-w-media — a media page, the header and the footer, centred past 1920; max-w-tool — a tool
+   * page's content (settings, import, calendar, stats, legal) from the page's left edge. */
+  --container-media: 120rem;
+  --container-tool: 75rem;
+}
+
+/* 5.3 One page gutter for header, pages and footer. */
+@utility page-x {
+  padding-inline: var(--gutter);
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--text-1);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100dvh;
+    background: var(--bg);
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 40%, transparent);
+  }
+  /* One consistent, highly visible focus ring for keyboard and TV remotes; it follows the element's own radius (6.6). */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+    outline-offset: var(--focus-offset);
+  }
+  /* Over art (a stage) the ring also gets a dark halo, so it reads on a light frame (6.6). A control that draws its
+   * ring on a child adds the halo there (components/ui/styles.ts). */
+  .stage :focus-visible {
+    box-shadow: var(--focus-halo);
+  }
+  /* 7.8 A menu's items show where the pointer or the arrows are with their highlight (--surface-3), with no ring — the
+   * ring of a desktop menu read as the TV mode's (owner, 2026-10-25). On a TV the ring stays (10.3). Nor the stage's
+   * dark halo: a menu opened over art is still a solid panel, and the halo drew a thick black frame round the row. */
+  [role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]):focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  :root[data-tv="1"] [role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]):focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  /* While the page scrolls (shell/Header sets data-scrolling until it stops), what passes under a still mouse pointer
+   * takes no hover: a card's rise and ring and a shelf's arrows started one after another and re-rendered every frame,
+   * halving the frame rate on a slow computer (docs/qa/2026-10-29/perf-after.md). An invisible layer under the header
+   * takes the pointer meanwhile — turning pointer-events off on the page instead repainted all of it at each switch.
+   * Touch screens and the TV have no such hover. */
+  @media (hover: hover) {
+    :root[data-scrolling]:not([data-tv="1"]) body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-index-sticky);
+    }
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  /* 8.11 In right-to-left languages the direction icons point the reading way: back and forward, a row's arrows,
+   * a menu's "opens more", sign in and out, undo. Media controls (play, rewind) and the external-link arrow keep their
+   * shape. Lucide names every icon in its class; one rule here instead of a flip on each icon. */
+  [dir="rtl"]
+    :is(
+      .lucide-arrow-left,
+      .lucide-arrow-right,
+      .lucide-chevron-left,
+      .lucide-chevron-right,
+      .lucide-chevrons-left,
+      .lucide-chevrons-right,
+      .lucide-log-in,
+      .lucide-log-out,
+      .lucide-undo-2,
+      .lucide-redo-2
+    ) {
+    scale: -1 1;
+  }
+}
+
+@layer components {
+  /* 6.3.1 Light motion (components/ui/BrandMotion) in the site's roles: the mark lime on dark and on a stage, ink on
+   * light; the word the text colour; the tick --success. */
+  .lm-art {
+    --lm-mark: var(--brand-mark);
+    --lm-type: var(--text-1);
+    --lm-success: var(--success);
+    --lm-muted: var(--text-2);
+  }
+  /* An action's mark over an icon that was already drawn (a button's): the outline stays, the fill and settle play. */
+  .lm-action[data-drawn] .lm-action-outline {
+    animation: none;
+  }
+  /* A loading state (shell/RouteLoading) comes in after --loader-delay. */
+  .loader-appear {
+    animation: fade-in var(--dur-base) var(--ease-base) var(--loader-delay) both;
+  }
+  /* The intro's stage comes in slower and gently: a page that arrives just then barely dims the window (light theme). */
+  .boot.loader-appear {
+    animation-duration: var(--dur-slow);
+    animation-timing-function: ease-in;
+  }
+  /* The TV's first screen continues the app's still launch mark (RouteLoading `tv`): the loop starts at its brightest
+   * point (43 %), so the mark doesn't dim the moment the page takes over. */
+  .boot-tv :is(.lm-projector, .lm-screen, .lm-beam) {
+    animation-delay: calc(var(--lm-loader-duration) * -0.43);
+  }
+  /* The first page's intro starts as it comes in; a page that takes longer than the intro leaves the logo's mark
+   * breathing as the loader does, joined at the loop's brightest point (43 %) so the change doesn't show. */
+  .boot .lm-splash :is(.lm-mark-move, .lm-word-reveal, .lm-light) {
+    animation-delay: var(--loader-delay);
+  }
+  .boot .lm-splash .lm-projector {
+    animation:
+      lm-source-breathe var(--lm-loader-duration) ease-in-out calc(var(--loader-delay) + var(--lm-intro-duration) - var(--lm-loader-duration) * 0.43) infinite,
+      lm-projector-on var(--lm-intro-duration) var(--lm-ease) var(--loader-delay) backwards;
+  }
+  .boot .lm-splash .lm-screen {
+    animation:
+      lm-screen-breathe var(--lm-loader-duration) ease-in-out calc(var(--loader-delay) + var(--lm-intro-duration) - var(--lm-loader-duration) * 0.43) infinite,
+      lm-screen-open var(--lm-intro-duration) var(--lm-ease) var(--loader-delay) backwards;
+  }
+  /* 7.11 A tint of the text colour, so it shows on the page and on any surface, in both themes and on a stage. */
+  .skeleton {
+    --skeleton: color-mix(in srgb, var(--text-1) 6%, transparent);
+    --skeleton-shine: color-mix(in srgb, var(--text-1) 10%, transparent);
+    background: linear-gradient(100deg, var(--skeleton) 30%, var(--skeleton-shine) 50%, var(--skeleton) 70%);
+    background-size: 300% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+  /* 7.13 A shelf off the screen isn't drawn until it comes near (performance-handoff §3, P2): a long home page or
+   * landing paints and composites only what is on screen, so scrolling keeps its frame rate on a slow phone, and the
+   * posters of far shelves wait until they are approached. Until it is first drawn it holds the height of a shelf of its
+   * cards (heading, cards of media/card-sizes.ts, a one-line name and metadata; measured at 390, 768, 1280 and 1536 px),
+   * so the page's height — and where Back returns — stays; then its own. The clip margin keeps a focus ring at its edge.
+   * The TV mode draws every shelf: its remote navigation measures the cards on each press (10.3; the TV shell decides). */
+  .shelf {
+    --shelf-h: 18.4rem;
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto var(--shelf-h);
+    overflow-clip-margin: 0.75rem;
+  }
+  .shelf[data-shelf="landscape"] {
+    --shelf-h: 16.35rem;
+  }
+  .shelf[data-shelf="top10"] {
+    --shelf-h: 17.7rem;
+  }
+  .shelf[data-shelf="person"] {
+    --shelf-h: 12.6rem;
+  }
+  @media (width >= 48rem) {
+    .shelf {
+      --shelf-h: 20.9rem;
+    }
+    .shelf[data-shelf="landscape"] {
+      --shelf-h: 17.25rem;
+    }
+    .shelf[data-shelf="top10"] {
+      --shelf-h: 19.5rem;
+    }
+    .shelf[data-shelf="person"] {
+      --shelf-h: 14.15rem;
+    }
+  }
+  @media (width >= 80rem) {
+    .shelf {
+      --shelf-h: 23.15rem;
+    }
+    .shelf[data-shelf="landscape"] {
+      --shelf-h: 16.85rem;
+    }
+    .shelf[data-shelf="top10"] {
+      --shelf-h: 21.8rem;
+    }
+    .shelf[data-shelf="person"] {
+      --shelf-h: 15.15rem;
+    }
+  }
+  @media (width >= 96rem) {
+    .shelf {
+      --shelf-h: 24.65rem;
+    }
+    .shelf[data-shelf="landscape"] {
+      --shelf-h: 17.95rem;
+    }
+    .shelf[data-shelf="top10"] {
+      --shelf-h: 22.75rem;
+    }
+    .shelf[data-shelf="person"] {
+      --shelf-h: 15.65rem;
+    }
+  }
+  :root[data-tv="1"] .shelf {
+    content-visibility: visible;
+  }
+  .scroll-row {
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s var(--ease-base) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A new backdrop of the TV's spotlight (tvui/media/Spotlight): opacity only, nothing to lay out again. */
+.animate-fade-in {
+  animation: fade-in var(--dur-slow) var(--ease-base) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * The TV shell (app/[locale]/tvui; design-system 10.3, TV document §4). The root size follows the window's width —
+ * 24 px on a 1920 window, 16 on 1280, 12 on a 960 window of a TV with devicePixelRatio 2 — so every TV shows the same
+ * composition; every size is in rem. The page itself never scrolls: zones slide (components/tvui/nav/engine.ts).
+ */
+:root[data-tv="1"] {
+  font-size: 1.25vw;
+}
+:root[data-tv="1"] body {
+  overflow: hidden;
+}
+:root[data-tv="1"] :focus-visible {
+  outline-width: var(--focus-width);
+}
+/*
+ * A shelf's track slides sideways and a page's content up and down, with transforms that retarget: a held arrow glides,
+ * nothing queues. Not inherited, so a shelf inside a page doesn't move with the page twice.
+ */
+@property --tv-shift-x {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tv-shift-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+[data-zone-track] {
+  transform: translate3d(calc(var(--tv-shift-x, 0px) * -1), 0, 0);
+  transition: transform 240ms var(--ease-base);
+}
+[data-tv-content] {
+  transform: translate3d(0, calc(var(--tv-shift-y, 0px) * -1), 0);
+  transition: transform 240ms var(--ease-base);
+}
+[data-instant] {
+  transition: none;
+}
+/*
+ * The TV's focus (10.3): the lime ring and a visible change of the item itself. Focus, not focus-visible: on a TV the
+ * focus is the selection, whether it came from the arrows, the pointer of LG's remote or the start of a screen.
+ */
+.tv-focus {
+  outline: 0 solid transparent;
+  transition:
+    transform var(--dur-fast) var(--ease-fast),
+    background-color var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.tv-focus:focus {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
+  box-shadow: var(--focus-halo);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tv-focus:focus {
+    transform: scale(1.06);
+  }
+  /* A row as wide as a panel grows less: a few pixels say it, more would push past the panel's edge. */
+  .tv-focus[data-look="row"]:focus {
+    transform: scale(1.015);
+  }
+}
+
+/*
+ * Text subtitles the browser draws (11.1, PLR-14): the stage's white with a dark edge on the picture, no box behind,
+ * the site's font; the player fills the window, so their size follows its height — larger on a TV (10.3). ASS and PGS
+ * keep their own look (libass, pictures).
+ */
+[data-player] video::cue {
+  color: var(--text-1);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 4.4vh;
+  line-height: 1.25;
+  text-shadow:
+    0 0 2px var(--bg-stage),
+    0 0 4px var(--bg-stage),
+    0 1px 3px var(--bg-stage);
+}
+:root[data-tv="1"] [data-player] video::cue {
+  font-size: 5.4vh;
+}

@@ -1,0 +1,270 @@
+{
+  "margin": 0.03,
+  "routes": {
+    "/[locale]": {
+      "jsGzip": 234359,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/android-tv": {
+      "jsGzip": 184635,
+      "cssGzip": 20670,
+      "jsChunks": 12
+    },
+    "/[locale]/anime": {
+      "jsGzip": 227224,
+      "cssGzip": 20624,
+      "jsChunks": 17
+    },
+    "/[locale]/auth/forgot": {
+      "jsGzip": 199722,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/auth/reset": {
+      "jsGzip": 199722,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/auth/sign-in": {
+      "jsGzip": 199722,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/auth/sign-up": {
+      "jsGzip": 199722,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/auth/two-factor": {
+      "jsGzip": 199722,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/browse/[kind]": {
+      "jsGzip": 227224,
+      "cssGzip": 20624,
+      "jsChunks": 17
+    },
+    "/[locale]/calendar": {
+      "jsGzip": 195638,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/dev/player-check": {
+      "jsGzip": 203427,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/dev/ui": {
+      "jsGzip": 251570,
+      "cssGzip": 20624,
+      "jsChunks": 19
+    },
+    "/[locale]/import": {
+      "jsGzip": 196196,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/invite/[token]": {
+      "jsGzip": 188186,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/legal/[doc]": {
+      "jsGzip": 188999,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/library": {
+      "jsGzip": 200309,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/link": {
+      "jsGzip": 189560,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/lists/[id]": {
+      "jsGzip": 212474,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/open": {
+      "jsGzip": 184635,
+      "cssGzip": 20624,
+      "jsChunks": 12
+    },
+    "/[locale]/person/[slug]": {
+      "jsGzip": 201000,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/profiles": {
+      "jsGzip": 186464,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/remote": {
+      "jsGzip": 194688,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/search": {
+      "jsGzip": 211279,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/settings": {
+      "jsGzip": 205770,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/account": {
+      "jsGzip": 207686,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/connections": {
+      "jsGzip": 199737,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/connections/[id]/torrents": {
+      "jsGzip": 225415,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/settings/devices": {
+      "jsGzip": 211134,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/notifications": {
+      "jsGzip": 209458,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/settings/privacy": {
+      "jsGzip": 212212,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/profile": {
+      "jsGzip": 205770,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/recommendations": {
+      "jsGzip": 214614,
+      "cssGzip": 20624,
+      "jsChunks": 17
+    },
+    "/[locale]/settings/security": {
+      "jsGzip": 207962,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/settings/services": {
+      "jsGzip": 202478,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/stats": {
+      "jsGzip": 203732,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/support": {
+      "jsGzip": 201582,
+      "cssGzip": 22194,
+      "jsChunks": 14
+    },
+    "/[locale]/support/[id]": {
+      "jsGzip": 202182,
+      "cssGzip": 22194,
+      "jsChunks": 14
+    },
+    "/[locale]/title/[kind]/[slug]": {
+      "jsGzip": 218881,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/tvui": {
+      "jsGzip": 202591,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/[...rest]": {
+      "jsGzip": 187240,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/tvui/anime": {
+      "jsGzip": 206179,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/browse/[kind]": {
+      "jsGzip": 206179,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/library": {
+      "jsGzip": 196161,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/tvui/lists/[id]": {
+      "jsGzip": 195625,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/person/[slug]": {
+      "jsGzip": 191827,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/tvui/profiles": {
+      "jsGzip": 201897,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/tvui/search": {
+      "jsGzip": 197089,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/settings": {
+      "jsGzip": 203828,
+      "cssGzip": 20624,
+      "jsChunks": 15
+    },
+    "/[locale]/tvui/title/[kind]/[slug]": {
+      "jsGzip": 212888,
+      "cssGzip": 20624,
+      "jsChunks": 16
+    },
+    "/[locale]/tvui/tv": {
+      "jsGzip": 187318,
+      "cssGzip": 20624,
+      "jsChunks": 13
+    },
+    "/[locale]/tvui/watch/[kind]/[id]": {
+      "jsGzip": 505153,
+      "cssGzip": 20624,
+      "jsChunks": 21
+    },
+    "/[locale]/u/[handle]": {
+      "jsGzip": 198194,
+      "cssGzip": 20624,
+      "jsChunks": 14
+    },
+    "/[locale]/watch/[kind]/[id]": {
+      "jsGzip": 496326,
+      "cssGzip": 20624,
+      "jsChunks": 20
+    }
+  }
+}

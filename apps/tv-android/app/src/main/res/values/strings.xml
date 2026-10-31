@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Lumovio</string>
+    <string name="exit_title">Leave Lumovio?</string>
+    <string name="exit_yes">Leave</string>
+    <string name="exit_no">Stay</string>
+    <string name="offline_title">No connection to Lumovio</string>
+    <string name="offline_text">Check that the TV is connected to the internet, then try again.</string>
+    <string name="retry">Retry</string>
+    <string name="update_title">A new version of Lumovio</string>
+    <string name="update_text">Version %1$s is ready. Install it now?</string>
+    <string name="update_now">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading the update…</string>
+    <string name="update_failed">The update couldn\'t be installed. Try again later.</string>
+</resources>

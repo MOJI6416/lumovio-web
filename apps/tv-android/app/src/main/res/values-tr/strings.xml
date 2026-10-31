@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="exit_title">Lumovio’dan çıkılsın mı?</string>
+    <string name="exit_yes">Çık</string>
+    <string name="exit_no">Kal</string>
+    <string name="offline_title">Lumovio’ya bağlantı yok</string>
+    <string name="offline_text">TV’nin internete bağlı olduğunu kontrol edip tekrar deneyin.</string>
+    <string name="retry">Tekrar dene</string>
+    <string name="update_title">Lumovio’nun yeni sürümü</string>
+    <string name="update_text">%1$s sürümü hazır. Şimdi yüklensin mi?</string>
+    <string name="update_now">Güncelle</string>
+    <string name="update_later">Sonra</string>
+    <string name="update_downloading">Güncelleme indiriliyor…</string>
+    <string name="update_failed">Güncelleme yüklenemedi. Daha sonra tekrar deneyin.</string>
+</resources>

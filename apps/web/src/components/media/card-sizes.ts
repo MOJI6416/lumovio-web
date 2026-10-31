@@ -1,0 +1,39 @@
+/*
+ * Card widths (design-system 5.4), one table for shelves and grids: a card of one type has the same width in a shelf
+ * and in a grid at the same screen width — a grid picks how many columns fit instead of stretching the cards. On a
+ * phone a grid has three columns (≈ the shelf's 112 px at 375–390 px), so the gutter and the 8 px gaps fit.
+ * Sizes are rem, so the TV mode scales them with the rest of the interface (10.3).
+ *
+ * | Card               | Phone | md  | xl  | 2xl |
+ * | Poster 2:3         | 112   | 144 | 168 | 184 |
+ * | Landscape 16:9     | 240   | 280 | 304 | 336 |
+ * | Top 10             | 168   | 208 | 248 | 264 |
+ * | Person 1:1 (circle)| 96    | 112 | 128 | 136 |
+ */
+
+export type CardShape = "poster" | "landscape" | "top10" | "person";
+
+/** The columns of a horizontal shelf (`grid-flow-col`): one fixed width per card. */
+export const SHELF_COLS: Record<CardShape, string> = {
+  poster: "auto-cols-[7rem] md:auto-cols-[9rem] xl:auto-cols-[10.5rem] 2xl:auto-cols-[11.5rem]",
+  landscape: "auto-cols-[15rem] md:auto-cols-[17.5rem] xl:auto-cols-[19rem] 2xl:auto-cols-[21rem]",
+  top10: "auto-cols-[10.5rem] md:auto-cols-[13rem] xl:auto-cols-[15.5rem] 2xl:auto-cols-[16.5rem]",
+  person: "auto-cols-[6rem] md:auto-cols-[7rem] xl:auto-cols-[8rem] 2xl:auto-cols-[8.5rem]",
+};
+
+/** Gaps between cards (5.1): 8 phone · 12 tablet · 16 desktop. */
+export const CARD_GAP_X = "gap-x-2 md:gap-x-3 xl:gap-x-4";
+
+/** The columns of a grid: as many cards of the shelf's width as fit (three on a phone). */
+export const GRID_COLS: Record<"poster" | "person", string> = {
+  poster: "grid-cols-3 md:grid-cols-[repeat(auto-fill,9rem)] xl:grid-cols-[repeat(auto-fill,10.5rem)] 2xl:grid-cols-[repeat(auto-fill,11.5rem)]",
+  person: "grid-cols-3 md:grid-cols-[repeat(auto-fill,7rem)] xl:grid-cols-[repeat(auto-fill,8rem)] 2xl:grid-cols-[repeat(auto-fill,8.5rem)]",
+};
+
+/**
+ * `sizes` of card images at these widths, so a card never downloads more than it shows. A phone's card is a third of
+ * the width inside the gutters and the two gaps (a 390 px phone: 114 px; its shelf's card is 112) — "33vw" took a 3×
+ * phone's posters a size up (w500 for a 114 px card).
+ */
+export const POSTER_SIZES = "(min-width: 1536px) 184px, (min-width: 1280px) 168px, (min-width: 768px) 144px, calc((100vw - 3rem) / 3)";
+export const LANDSCAPE_SIZES = "(min-width: 1536px) 336px, (min-width: 1280px) 304px, (min-width: 768px) 280px, 240px";

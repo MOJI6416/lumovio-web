@@ -1,0 +1,22 @@
+{
+  "name": "lumovio-web",
+  "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @lumovio/web dev",
+    "mock": "pnpm --filter @lumovio/web mock",
+    "build": "pnpm --filter @lumovio/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.2",
+    "playwright-core": "1.64.1",
+    "typescript": "~6.0.3"
+  }
+}

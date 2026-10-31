@@ -1,0 +1,34 @@
+{
+  "sources": [
+    "https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html",
+    "https://developer.apple.com/design/human-interface-guidelines/layout",
+    "https://support.apple.com/en-ie/125090",
+    "https://www.apple.com/iphone-air/specs/",
+    "https://www.apple.com/ipad-pro/specs/"
+  ],
+  "devices": [
+    { "width": 320, "height": 568, "scale": 2, "family": "iPhone SE (1st generation)" },
+    { "width": 375, "height": 667, "scale": 2, "family": "iPhone 6–8 / SE (2nd–3rd generation)" },
+    { "width": 414, "height": 736, "scale": 3, "family": "iPhone 6–8 Plus" },
+    { "width": 375, "height": 812, "scale": 3, "family": "iPhone X / XS / 11 Pro" },
+    { "width": 414, "height": 896, "scale": 2, "family": "iPhone XR / 11" },
+    { "width": 414, "height": 896, "scale": 3, "family": "iPhone XS Max / 11 Pro Max" },
+    { "width": 360, "height": 780, "scale": 3, "family": "iPhone 12–13 mini" },
+    { "width": 390, "height": 844, "scale": 3, "family": "iPhone 12–14 / 16e" },
+    { "width": 428, "height": 926, "scale": 3, "family": "iPhone 12–13 Pro Max / 14 Plus" },
+    { "width": 393, "height": 852, "scale": 3, "family": "iPhone 14–15 Pro / 15–16" },
+    { "width": 430, "height": 932, "scale": 3, "family": "iPhone 14–15 Pro Max / 15–16 Plus" },
+    { "width": 402, "height": 874, "scale": 3, "family": "iPhone 16–17 Pro / 17" },
+    { "width": 440, "height": 956, "scale": 3, "family": "iPhone 16–17 Pro Max" },
+    { "width": 420, "height": 912, "scale": 3, "family": "iPhone Air" },
+    { "width": 768, "height": 1024, "scale": 2, "family": "iPad 9.7 / mini Retina" },
+    { "width": 810, "height": 1080, "scale": 2, "family": "iPad 10.2" },
+    { "width": 820, "height": 1180, "scale": 2, "family": "iPad 10.9–11 / Air 10.9–11" },
+    { "width": 834, "height": 1112, "scale": 2, "family": "iPad Pro 10.5 / Air 10.5" },
+    { "width": 834, "height": 1194, "scale": 2, "family": "iPad Pro 11 (1st–4th generation)" },
+    { "width": 834, "height": 1210, "scale": 2, "family": "iPad Pro 11 (M4–M5)" },
+    { "width": 1024, "height": 1366, "scale": 2, "family": "iPad Pro 12.9 / Air 13" },
+    { "width": 1032, "height": 1376, "scale": 2, "family": "iPad Pro 13 (M4–M5)" },
+    { "width": 744, "height": 1133, "scale": 2, "family": "iPad mini 8.3" }
+  ]
+}

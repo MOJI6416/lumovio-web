@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="exit_title">Выйти из Lumovio?</string>
+    <string name="exit_yes">Выйти</string>
+    <string name="exit_no">Остаться</string>
+    <string name="offline_title">Нет связи с Lumovio</string>
+    <string name="offline_text">Проверьте, что телевизор подключён к интернету, и повторите попытку.</string>
+    <string name="retry">Повторить</string>
+    <string name="update_title">Новая версия Lumovio</string>
+    <string name="update_text">Готова версия %1$s. Установить сейчас?</string>
+    <string name="update_now">Обновить</string>
+    <string name="update_later">Позже</string>
+    <string name="update_downloading">Загружаем обновление…</string>
+    <string name="update_failed">Не удалось установить обновление. Попробуйте позже.</string>
+</resources>

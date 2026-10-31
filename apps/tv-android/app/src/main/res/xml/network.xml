@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A Jellyfin, Plex or TorrServer at home is often plain http: the page reaches it (MainActivity: mixed content). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

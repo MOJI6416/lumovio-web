@@ -1,0 +1,52 @@
+name: TV app release
+# Lumovio builds the Android TV app (apps/tv-android) and signs it with its release key, then publishes it on lumovio.app.
+# The app's manifest, apps/web/public/downloads/lumovio-tv.json, arrives here with the source; a version it names that
+# has no release yet becomes one: the very APK lumovio.app serves, checked against the manifest's SHA-256, tagged on the
+# commit whose apps/tv-android it was built from.
+on:
+  push:
+    branches: [main]
+    paths: ["apps/web/public/downloads/lumovio-tv.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tv-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release the version lumovio.app serves
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          manifest=apps/web/public/downloads/lumovio-tv.json
+          name=$(jq -r .versionName "$manifest")
+          path=$(jq -r .apk "$manifest")
+          sha=$(jq -r .sha256 "$manifest")
+          android=$(jq -r .minAndroid "$manifest")
+          tag="tv-v$name"
+          if gh release view "$tag" > /dev/null 2>&1; then echo "$tag is released already"; exit 0; fi
+          file=$(basename "$path")
+          # lumovio.app deploys a few minutes after the source arrives here: wait up to half an hour for this version.
+          for attempt in $(seq 1 60); do
+            if curl -fsSL -o "$file" "https://lumovio.app/$path" && echo "$sha  $file" | sha256sum -c --status; then break; fi
+            rm -f "$file"
+            sleep 30
+          done
+          if [ ! -f "$file" ]; then echo "::error::lumovio.app doesn't serve $path with the manifest's SHA-256"; exit 1; fi
+          echo "$sha  $file" > "$file.sha256"
+          cat > notes.md <<EOF
+          Lumovio for Android TV and Google TV, version $name — Android $android and newer.
+
+          **Install:** type \`lumovio.app/apk\` into the TV's Downloader app, or open [lumovio.app/android-tv](https://lumovio.app/android-tv) for the steps. An installed app offers every new version itself.
+
+          The APK is the one lumovio.app serves, signed with Lumovio's release key. SHA-256: \`$sha\`. Its source is \`apps/tv-android\` at this tag.
+          EOF
+          gh release create "$tag" "$file" "$file.sha256" --target "$GITHUB_SHA" --title "Lumovio for Android TV $name" --notes-file notes.md

@@ -1,0 +1,18 @@
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+playwright-report/
+test-results/
+/tmp/
+*.local.md
+
+# Private keys (e.g. Apple Sign in .p8) must never be committed
+*.p8
+*.pem
+*.key

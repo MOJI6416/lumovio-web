@@ -1,0 +1,25 @@
+packages:
+  - apps/web
+  - packages/contracts
+minimumReleaseAgeExclude:
+  - '@biomejs/biome@2.6.2'
+  - '@biomejs/cli-android-arm64@2.6.2'
+  - '@biomejs/cli-android-x64@2.6.2'
+  - '@biomejs/cli-darwin-arm64@2.6.2'
+  - '@biomejs/cli-darwin-x64@2.6.2'
+  - '@biomejs/cli-linux-arm64-musl@2.6.2'
+  - '@biomejs/cli-linux-arm64@2.6.2'
+  - '@biomejs/cli-linux-x64-musl@2.6.2'
+  - '@biomejs/cli-linux-x64@2.6.2'
+  - '@biomejs/cli-win32-arm64@2.6.2'
+  - '@biomejs/cli-win32-x64@2.6.2'
+
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  sharp: true
+  "@biomejs/biome": true
+  "@parcel/watcher": true
+  "@swc/core": true
+  # jassub's local-fonts ponyfill: its postinstall only refreshes a Google Fonts list it already ships.
+  lfa-ponyfill: false
