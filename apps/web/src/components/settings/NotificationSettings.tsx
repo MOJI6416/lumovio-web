@@ -6,8 +6,11 @@ import { type FormEvent, useId, useState } from "react";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useSession } from "@/components/providers/Providers";
 import { Field } from "@/components/ui/Field";
+import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Input } from "@/components/ui/Input";
+import { Link } from "@/components/ui/Link";
 import { SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Switch } from "@/components/ui/Switch";
@@ -22,12 +25,16 @@ const DISCORD_WEBHOOK = /^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/a
 /**
  * Settings → Notifications (S22, audit SET-10): one section. The e-mail switch applies at once with "Saved"; Discord
  * gets the same digest through a channel's webhook pasted here (no bot, no account link): the address is checked
- * with Discord before it is kept, then a test message and "Disconnect" with "Undo".
+ * with Discord before it is kept, then a test message and "Disconnect" with "Undo". When mail to the address bounced or
+ * was marked as spam, the switch is off and a warning under it says why (switching it on again clears it).
  */
 export function NotificationSettings() {
   const t = useTranslations("settings");
   const ids = useId();
+  const { me } = useSession();
   const { query, set, state } = usePrefs();
+  // Mail to this address bounced or was marked as spam, so the API switched it off (account/mail-events.ts).
+  const stopped = query.data?.emailBounce && !query.data.emailNotifications ? query.data.emailBounce : null;
 
   if (query.isError && !query.data) {
     return (
@@ -51,6 +58,22 @@ export function NotificationSettings() {
           <Skeleton shape="full" className="h-6 w-11" />
         )}
       </SettingsRow>
+      {stopped && (
+        <InlineAlert
+          tone="warning"
+          className="mb-4"
+          title={t("emailStoppedTitle")}
+          action={
+            stopped.reason === "bounced" ? (
+              <Link variant="action" href="/settings/account">
+                {t("account")}
+              </Link>
+            ) : undefined
+          }
+        >
+          {t(stopped.reason === "bounced" ? "emailBouncedText" : "emailComplainedText", { email: me?.user.email ?? "" })}
+        </InlineAlert>
+      )}
       <DiscordSetting prefs={query.data} />
     </SettingsSection>
   );

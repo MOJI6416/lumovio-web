@@ -1666,7 +1666,10 @@
     "discordTestSent": "Wysłano – sprawdź kanał.",
     "discordDisconnected": "Rozłączono Discord",
     "discordInvalid": "To nie jest adres URL webhooka Discorda.",
-    "discordUnknown": "Discord nie ma takiego webhooka – skopiuj go ponownie."
+    "discordUnknown": "Discord nie ma takiego webhooka – skopiuj go ponownie.",
+    "emailStoppedTitle": "Przestaliśmy wysyłać te wiadomości",
+    "emailBouncedText": "Wiadomości na {email} wróciły niedostarczone. Sprawdź adres w sekcji Konto, a potem włącz je ponownie.",
+    "emailComplainedText": "Wiadomość na {email} oznaczono jako spam. Włącz je ponownie, jeśli chcesz je dostawać."
   },
   "tv": {
     "linkConfirm": "Zalogować to konto na telewizorze kodem {code}? Zatwierdź tylko wtedy, gdy telewizor pokazuje ten kod.",

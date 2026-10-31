@@ -1666,7 +1666,10 @@
     "discordTestSent": "Enviado — confira o canal.",
     "discordDisconnected": "Discord desconectado",
     "discordInvalid": "Esta não é uma URL de webhook do Discord.",
-    "discordUnknown": "O Discord não tem este webhook — copie-o de novo."
+    "discordUnknown": "O Discord não tem este webhook — copie-o de novo.",
+    "emailStoppedTitle": "Paramos de enviar estes e-mails",
+    "emailBouncedText": "Os e-mails para {email} voltaram sem ser entregues. Confira o endereço em Conta e ative-os de novo.",
+    "emailComplainedText": "Um e-mail para {email} foi marcado como spam. Ative-os de novo se quiser recebê-los."
   },
   "tv": {
     "linkConfirm": "Conectar esta conta na TV com o código {code}? Aprove só se a sua TV mostrar este código.",

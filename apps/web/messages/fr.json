@@ -1666,7 +1666,10 @@
     "discordTestSent": "Envoyé – regardez dans le salon.",
     "discordDisconnected": "Discord déconnecté",
     "discordInvalid": "Ce n’est pas une URL de webhook Discord.",
-    "discordUnknown": "Ce webhook n’existe pas dans Discord – copiez-le à nouveau."
+    "discordUnknown": "Ce webhook n’existe pas dans Discord – copiez-le à nouveau.",
+    "emailStoppedTitle": "Nous avons arrêté ces e-mails",
+    "emailBouncedText": "Les e-mails envoyés à {email} sont revenus non distribués. Vérifiez l’adresse dans « Compte », puis réactivez-les.",
+    "emailComplainedText": "Un e-mail envoyé à {email} a été signalé comme spam. Réactivez-les si vous souhaitez les recevoir."
   },
   "tv": {
     "linkConfirm": "Connecter ce compte sur la TV avec le code {code} ? N’acceptez que si votre TV affiche ce code.",

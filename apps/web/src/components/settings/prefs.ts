@@ -13,6 +13,8 @@ export type Prefs = {
   emailNotifications: boolean;
   discordNotifications: boolean;
   discord?: { name: string } | null;
+  /** Mail to the account's address bounced for good or was marked as spam: the API switched mail off. */
+  emailBounce?: { reason: "bounced" | "complained"; at: string } | null;
 };
 
 /**
@@ -28,7 +30,8 @@ export function usePrefs() {
       () => api("/api/preferences", { method: "PUT", json: patch }),
       () => {
         const before = qc.getQueryData<Prefs>(["prefs"]);
-        qc.setQueryData<Prefs>(["prefs"], (d) => d && { ...d, ...patch });
+        // Switching mail on again clears the bounce mark (the API does the same).
+        qc.setQueryData<Prefs>(["prefs"], (d) => d && { ...d, ...patch, ...(patch.emailNotifications ? { emailBounce: null } : {}) });
         return () => qc.setQueryData(["prefs"], before);
       },
     );

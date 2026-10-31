@@ -1666,7 +1666,10 @@
     "discordTestSent": "Gönderildi – kanala bakın.",
     "discordDisconnected": "Discord bağlantısı kesildi",
     "discordInvalid": "Bu bir Discord webhook URL’si değil.",
-    "discordUnknown": "Discord’da bu webhook yok – yeniden kopyalayın."
+    "discordUnknown": "Discord’da bu webhook yok – yeniden kopyalayın.",
+    "emailStoppedTitle": "Bu e-postaları göndermeyi durdurduk",
+    "emailBouncedText": "{email} adresine giden e-postalar teslim edilemeden geri döndü. Hesap bölümünde adresi kontrol edin, sonra yeniden açın.",
+    "emailComplainedText": "{email} adresine giden bir e-posta spam olarak işaretlendi. Almak istiyorsanız yeniden açın."
   },
   "tv": {
     "linkConfirm": "Bu hesapla TV’de {code} koduyla oturum açılsın mı? Yalnızca TV’niz bu kodu gösteriyorsa onaylayın.",
