@@ -1530,7 +1530,7 @@
     "sectionLanguageKids": "Dil",
     "exportSection": "Verileri dışa aktar",
     "passwordSection": "Şifre",
-    "discordHint": "Yeni bölüm mesajlarını orada almak için Discord’u bağlayın.",
+    "discordHint": "Discord sunucunuzdaki bir kanalda yeni bölüm mesajları.",
     "prefsLoadError": "Bildirim ayarları yüklenemedi",
     "emailNotificationsHint": "Takip ettiğiniz dizilerin yeni bölümleri hakkında e-posta.",
     "dangerZone": "Tehlikeli bölge",
@@ -1658,7 +1658,16 @@
     "openRemote": "Kumandayı aç",
     "tvAppLabel": "Android TV uygulaması",
     "tvAppHint": "Android TV ve Google TV yüklü televizyonlar ve TV kutuları için",
-    "tvAppOpen": "İndir"
+    "tvAppOpen": "İndir",
+    "discordWebhook": "Kanal webhook URL’si",
+    "discordWebhookHint": "Discord’da sunucu ayarlarını açın → Entegrasyonlar → Webhook’lar, kanal için bir webhook oluşturun ve URL’sini kopyalayın.",
+    "discordOn": "Bağlandı",
+    "discordWebhookName": "“{name}” webhook’u",
+    "discordTest": "Test mesajı gönder",
+    "discordTestSent": "Gönderildi – kanala bakın.",
+    "discordDisconnected": "Discord bağlantısı kesildi",
+    "discordInvalid": "Bu bir Discord webhook URL’si değil.",
+    "discordUnknown": "Discord’da bu webhook yok – yeniden kopyalayın."
   },
   "tv": {
     "linkConfirm": "Bu hesapla TV’de {code} koduyla oturum açılsın mı? Yalnızca TV’niz bu kodu gösteriyorsa onaylayın.",

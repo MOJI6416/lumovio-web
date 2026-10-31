@@ -4,8 +4,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useSettingsSave } from "@/lib/use-action";
 
-/** The account's preferences (/api/preferences). */
-export type Prefs = { aiHistoryOptIn: boolean; emailNotifications: boolean; discordNotifications: boolean };
+/**
+ * The account's preferences (/api/preferences). `discord` is the connected channel's webhook by its name in Discord
+ * (its address never comes back).
+ */
+export type Prefs = {
+  aiHistoryOptIn: boolean;
+  emailNotifications: boolean;
+  discordNotifications: boolean;
+  discord?: { name: string } | null;
+};
 
 /**
  * The preferences and a setter that applies at once (8.8): the switch moves, "Saved" shows by the section's title,

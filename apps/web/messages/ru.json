@@ -1530,7 +1530,7 @@
     "sectionLanguageKids": "Язык",
     "exportSection": "Экспорт данных",
     "passwordSection": "Пароль",
-    "discordHint": "Привяжите Discord, чтобы получать сообщения о новых сериях там.",
+    "discordHint": "Сообщения о новых сериях в канале вашего сервера Discord.",
     "prefsLoadError": "Не удалось загрузить настройки уведомлений",
     "emailNotificationsHint": "Письмо о новых сериях сериалов, за которыми вы следите.",
     "dangerZone": "Опасная зона",
@@ -1658,7 +1658,16 @@
     "openRemote": "Открыть пульт",
     "tvAppLabel": "Приложение для Android TV",
     "tvAppHint": "Для телевизоров и приставок на Android TV и Google TV",
-    "tvAppOpen": "Скачать"
+    "tvAppOpen": "Скачать",
+    "discordWebhook": "Адрес вебхука канала",
+    "discordWebhookHint": "В Discord откройте настройки сервера → «Интеграция» → «Вебхуки», создайте вебхук для канала и скопируйте его адрес.",
+    "discordOn": "Подключено",
+    "discordWebhookName": "Вебхук «{name}»",
+    "discordTest": "Отправить тестовое сообщение",
+    "discordTestSent": "Отправлено — проверьте канал.",
+    "discordDisconnected": "Discord отключён",
+    "discordInvalid": "Это не адрес вебхука Discord.",
+    "discordUnknown": "В Discord нет такого вебхука — скопируйте его заново."
   },
   "tv": {
     "linkConfirm": "Войти в аккаунт на телевизоре с кодом {code}? Подтверждайте, только если этот код показывает ваш телевизор.",

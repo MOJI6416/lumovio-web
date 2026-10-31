@@ -22,6 +22,7 @@ let preferences = {
   discordNotifications: false,
   discordActivity: false,
   aiHistoryOptIn: false,
+  discord: null,
 };
 
 function newProfile(name, isKids) {
@@ -651,6 +652,30 @@ on("GET", "/api/preferences", async ({ c }) => {
 on("PUT", "/api/preferences", async ({ c, body }) => {
   needUser(c);
   preferences = { ...preferences, ...body };
+  return { ok: true };
+});
+// Discord through a channel's webhook: the mock checks only the address's shape and never posts.
+let discordUndo = null;
+on("PUT", "/api/preferences/discord", async ({ c, body }) => {
+  needUser(c);
+  if (!/^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d{15,22}\/[\w-]{20,}$/.test(String(body?.url ?? "")))
+    fail(400, "bad_request", "Not a Discord webhook address");
+  preferences = { ...preferences, discord: { name: "Lumovio" }, discordNotifications: true };
+  return { name: "Lumovio" };
+});
+on("DELETE", "/api/preferences/discord", async ({ c }) => {
+  needUser(c);
+  discordUndo = preferences.discord;
+  preferences = { ...preferences, discord: null, discordNotifications: false };
+  return { undoKey: discordUndo ? "mock" : null };
+});
+on("POST", "/api/preferences/discord/restore", async ({ c }) => {
+  needUser(c);
+  preferences = { ...preferences, discord: discordUndo, discordNotifications: Boolean(discordUndo) };
+  return discordUndo ?? { name: "Lumovio" };
+});
+on("POST", "/api/preferences/discord/test", async ({ c }) => {
+  needUser(c);
   return { ok: true };
 });
 

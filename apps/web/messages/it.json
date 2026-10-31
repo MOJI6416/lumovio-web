@@ -1530,7 +1530,7 @@
     "sectionLanguageKids": "Lingua",
     "exportSection": "Esporta dati",
     "passwordSection": "Password",
-    "discordHint": "Collega Discord per ricevere lì i messaggi sui nuovi episodi.",
+    "discordHint": "Messaggi sui nuovi episodi in un canale del tuo server Discord.",
     "prefsLoadError": "Impossibile caricare le impostazioni delle notifiche",
     "emailNotificationsHint": "Un’email sui nuovi episodi delle serie che segui.",
     "dangerZone": "Zona pericolosa",
@@ -1658,7 +1658,16 @@
     "openRemote": "Apri il telecomando",
     "tvAppLabel": "App per Android TV",
     "tvAppHint": "Per TV e box con Android TV e Google TV",
-    "tvAppOpen": "Scarica"
+    "tvAppOpen": "Scarica",
+    "discordWebhook": "URL del webhook del canale",
+    "discordWebhookHint": "In Discord apri le impostazioni del server → Integrazioni → Webhook, crea un webhook per il canale e copiane l’URL.",
+    "discordOn": "Collegato",
+    "discordWebhookName": "Webhook «{name}»",
+    "discordTest": "Invia un messaggio di prova",
+    "discordTestSent": "Inviato – controlla il canale.",
+    "discordDisconnected": "Discord disconnesso",
+    "discordInvalid": "Questo non è un URL di webhook di Discord.",
+    "discordUnknown": "Questo webhook non esiste in Discord – copialo di nuovo."
   },
   "tv": {
     "linkConfirm": "Accedere con questo account sulla TV con il codice {code}? Approva solo se la tua TV mostra questo codice.",

@@ -10,7 +10,7 @@ import { Providers } from "@/components/providers/Providers";
 import { ThemeSync } from "@/components/shell/Preferences";
 import { ThemeScript } from "@/components/shell/ThemeScript";
 import { localeInfo } from "@/i18n/locales";
-import { OG_IMAGE } from "@/lib/brand";
+import { BRAND_LIME, OG_IMAGE } from "@/lib/brand";
 import { APPLE_STARTUP_IMAGES } from "@/lib/brand-startup.gen";
 import { ogLocale, SITE_URL } from "@/lib/seo";
 import { routing } from "@/i18n/routing";
@@ -49,14 +49,19 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-/** The browser chrome follows the chosen theme, not the OS (X-28): the --bg of that theme (globals.css). */
+/**
+ * The browser chrome follows the chosen theme, not the OS (X-28): the --bg of that theme (globals.css). Discord draws
+ * a shared link's stripe in the same colour — its crawler gets the logo's lime instead of the near-black page.
+ */
 export async function generateViewport(): Promise<Viewport> {
-  const pref = (await cookies()).get("lumovio_theme")?.value;
+  const [c, h] = await Promise.all([cookies(), headers()]);
+  const pref = c.get("lumovio_theme")?.value;
   const dark = "#0b0c10"; // ui-lint-ignore hex-color: theme-color meta = --bg (dark)
   const light = "#f6f7f9"; // ui-lint-ignore hex-color: theme-color meta = --bg (light)
   return {
-    themeColor:
-      pref === "light"
+    themeColor: /Discordbot/i.test(h.get("user-agent") ?? "")
+      ? BRAND_LIME
+      : pref === "light"
         ? light
         : pref === "system"
           ? [
