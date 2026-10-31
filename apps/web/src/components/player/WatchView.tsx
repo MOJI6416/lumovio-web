@@ -169,7 +169,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
-  const serverTried = useRef(new Set<string>());
   const sessionId = useRef(randomId());
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
@@ -346,7 +345,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    * first next time — only once it has been prepared, so a replacement that fails changes nothing.
    */
   const prepare = useCallback(
-    async (start: Candidate, opts: { auto: boolean; audioIndex?: number; added?: string | null; touch?: boolean; fromScreen?: boolean; rebuild?: boolean; server?: boolean }) => {
+    async (start: Candidate, opts: { auto: boolean; audioIndex?: number; added?: string | null; touch?: boolean; fromScreen?: boolean; rebuild?: boolean }) => {
       const my = ++attempt.current;
       const live = () => attempt.current === my;
       let c = start;
@@ -415,7 +414,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             audioIndex: opts.audioIndex,
             voice: c.provider === "torrserver" ? wishedVoice.current : null,
             rebuild: opts.rebuild,
-            server: opts.server,
           });
         }
         if (!live()) return;
@@ -866,15 +864,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
           setActive(null);
           void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index, rebuild: true });
-          return;
-        }
-        // The picture itself didn't decode (code 3): once, the stream preparation service makes H.264 of it (when the
-        // owner turned it on; else this becomes the other-app screen with the reason) — no loop.
-        if (c.provider === "torrserver" && code === 3 && prepared.type !== "hls" && !serverTried.current.has(c.key)) {
-          serverTried.current.add(c.key);
-          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
-          setActive(null);
-          void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index, server: true });
           return;
         }
         failed.current.add(c.key);

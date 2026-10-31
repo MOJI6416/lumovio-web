@@ -342,11 +342,11 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
 
   // Resume position once metadata is known.
   useEffect(() => {
-    if (!startedRef.current && duration > 0 && props.startAt > 5 && props.startAt < duration - 10 && (props.prepared.type === "progressive" || props.prepared.seekOnStart)) {
+    if (!startedRef.current && duration > 0 && props.startAt > 5 && props.startAt < duration - 10 && props.prepared.type === "progressive") {
       startedRef.current = true;
       void store.seek(props.startAt);
     } else if (duration > 0) startedRef.current = true;
-  }, [duration, props.startAt, props.prepared.type, props.prepared.seekOnStart, store]);
+  }, [duration, props.startAt, props.prepared.type, store]);
 
   // "Start over" once playback has actually landed on the saved position; it goes after 10 s of
   // playback from there, or as soon as the position moves elsewhere.

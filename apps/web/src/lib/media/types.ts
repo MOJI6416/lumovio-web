@@ -63,8 +63,6 @@ export interface PreparedPlayback {
   url: string;
   /** "remux": `url` is a file the browser rebuilds itself (`lib/media/remux.ts`) before playing. */
   type: "progressive" | "hls" | "remux";
-  /** "hls" of Lumovio's stream preparation service: the playlist is the whole file from 0, so a resume seeks in it. */
-  seekOnStart?: boolean;
   /** For "remux": the audio stream it plays (an `AudioOption.index`). */
   remuxAudio?: number;
   /** For "remux": how that audio comes out — copied as it is, or converted to AAC / Opus in the browser. */
@@ -129,8 +127,7 @@ export interface ProviderClient {
   scan?(onProgress: (p: ScanProgress) => void): Promise<LibraryIndexEntry[]>;
   /** `voice`: the dubbing chosen with a TorrServer release, matched to the file's tracks when no `audioIndex` is given. */
   /** `rebuild`: the plain stream failed to start here: rebuild the file in the browser when it can be (TorrServer). */
-  /** `server`: this browser failed to decode the picture: Lumovio's stream preparation service makes H.264 of it, when on (TorrServer). */
-  prepare(externalId: string, opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean; server?: boolean }): Promise<PreparedPlayback>;
+  prepare(externalId: string, opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean }): Promise<PreparedPlayback>;
   /** Locate an episode's file id on the server (episode-level playback). */
   findEpisode?(seriesExternalId: string, season: number, episode: number): Promise<string | null>;
 }

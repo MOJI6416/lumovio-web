@@ -385,7 +385,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * so is any audio track other than the file's default, which a plain stream can't choose. A dubbing
      * chosen with the release (`voice`) plays the track that credits it, when one track does.
      */
-    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean; server?: boolean } = {}) {
+    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean } = {}) {
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
@@ -444,8 +444,6 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         const p = await optional(probeLegacy(raw), { ok: false as const, reason: "video unknown" });
         if (!p.ok) how = { path: "external", reason: `container avi, ${p.reason}` };
       }
-      // The picture already failed to decode here (a browser that says it takes HEVC and can't): only the service is left.
-      if (choice.server) how = { path: "external", reason: `video ${vs?.codec_name ?? "unknown"}${bitDepth > 8 ? ` ${bitDepth}-bit` : ""}` };
       const legacy = how.path === "legacy";
       const remux = how.path === "remux" || legacy;
       const route = how.path === "remux" || how.path === "legacy" ? how.audio : undefined;
@@ -477,22 +475,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         url: streamUrl(hash, x.file, false),
       }));
       const subtitleSources = ownSubs || subFiles.length ? { file: ownSubs ? raw : null, files: subFiles, headers: raw.headers, targetAddressSpace: raw.targetAddressSpace } : undefined;
-      // Nothing in this browser plays it: Lumovio's stream preparation service, when the owner turned it on (P5).
-      let server: { url: string; video: "copy" | "h264" } | null = null;
-      if (how.path === "external" && probe?.format?.duration && opts.connectionId) {
-        const sr = await import("./server-remux");
-        if (await sr.serverRemuxEnabled()) {
-          const plan = sr.serverRemuxPlan(caps, { ...file0, height: vs?.height ?? null, hdr: /smpte2084|arib-std-b67/.test(vs?.color_transfer ?? ""), channels: chosenAudio?.channels ?? null });
-          if (choice.server) plan.video = "h264";
-          // A refused or failed session leaves the file to another app, as without the service.
-          const url = await optional(
-            sr.serverRemuxSession({ connectionId: opts.connectionId, hash, fileIndex: file.id, audio: chosenAudio?.index ?? 1, duration: Number(probe.format.duration), plan }),
-            null,
-          );
-          if (url) server = { url, video: plan.video };
-        }
-      }
-      const playing = remux || server ? chosenAudio : defaultAudio;
+      const playing = remux ? chosenAudio : defaultAudio;
       const audio: AudioOption[] = as.map((s, i) => ({
         index: s.index,
         label: s.tags?.title ?? s.tags?.language ?? `Audio ${i + 1}`,
@@ -502,10 +485,8 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       }));
       const chosenCodec = chosenAudio?.codec_name ?? "";
       const prepared: PreparedPlayback = {
-        url: server ? server.url : streamUrl(hash, file, true),
-        type: remux ? "remux" : server ? "hls" : "progressive",
-        // The service's playlist is the whole file from 0: a resume seeks in it.
-        seekOnStart: server ? true : undefined,
+        url: streamUrl(hash, file, true),
+        type: remux ? "remux" : "progressive",
         remuxAudio: remux ? chosenAudio?.index : undefined,
         remuxRoute: route,
         remuxEngine: legacy ? "legacy" : undefined,
@@ -513,7 +494,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         remuxSource: remux ? raw : undefined,
         subtitleSources,
         mime: null,
-        method: legacy ? "transcode" : remux ? "remux" : server ? (server.video === "copy" ? "remux" : "transcode") : verdict.ok ? "direct" : "external",
+        method: legacy ? "transcode" : remux ? "remux" : verdict.ok ? "direct" : "external",
         methodNote: legacy
           ? `video ${vs?.codec_name ?? "unknown"} → H.264 in the browser${route && chosenCodec ? `, audio ${chosenCodec} → ${route === "aac" ? "AAC" : "Opus"} in the browser` : ""}`
           : remux
@@ -522,12 +503,9 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
             : "rebuilt in the browser"
           : verdict.ok
             ? null
-            : server
-              ? `${verdict.reason}, server: video ${server.video === "copy" ? "copied" : "→ H.264"}`
-              : verdict.reason,
-        // Another track means rebuilding in the browser, or another session of the service; the player asks for it
-        // (WatchView re-prepares).
-        selectAudio: as.length > 1 && probe && (server || canRemuxInBrowser(caps, { ...file0, audioCodec: null }).ok) ? (i: number) => client.prepare(externalId, { audioIndex: i }) : undefined,
+            : verdict.reason,
+        // Another track means rebuilding in the browser; the player asks for it (WatchView re-prepares).
+        selectAudio: as.length > 1 && probe && canRemuxInBrowser(caps, { ...file0, audioCodec: null }).ok ? (i: number) => client.prepare(externalId, { audioIndex: i }) : undefined,
         subtitles,
         audio,
         voice: wish?.studio ? { studio: wish.studio, match: wished !== null && playing?.index === wished ? "playing" : "unknown" } : undefined,
@@ -538,7 +516,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
           ? {
               container: container?.split(",")[0] ?? null,
               videoCodec: vs?.codec_name ?? null,
-              audioCodec: (remux || server ? chosenAudio : defaultAudio)?.codec_name ?? null,
+              audioCodec: (remux ? chosenAudio : defaultAudio)?.codec_name ?? null,
               width: vs?.width ?? null,
               height: vs?.height ?? null,
               bitrate: probe.format?.bit_rate ? Number(probe.format.bit_rate) : null,
@@ -548,7 +526,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         // Dolby Vision without an HDR10 base layer (profile 5) shows wrong colours where it isn't decoded (PLR-15).
         warning: vs?.side_data_list?.some((x) => /dovi|dolby vision/i.test(x.side_data_type ?? "") && x.dv_profile === 5) && !caps.dolbyVision ? "dv5" : undefined,
         externalUrl: externalUrl(hash, file),
-        incompatibility: verdict.ok || server ? null : verdict.reason,
+        incompatibility: verdict.ok ? null : verdict.reason,
         stats: async () => {
           try {
             const s = await get<TsTorrent>(`/stream?link=${hash}&stat`, 8000);
