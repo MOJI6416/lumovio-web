@@ -908,7 +908,6 @@
     "inviteLinkHint": "Rôle : {role} · valable {hours} h · jusqu’à 10 profils peuvent rejoindre la liste.",
     "copyLink": "Copier le lien",
     "inviteAnother": "Autre lien",
-    "linkCopied": "Lien copié",
     "listMenu": "Actions sur la liste",
     "listMoreLabel": "Plus : {list}",
     "ownerIs": "Propriétaire : {name}",
@@ -2509,5 +2508,11 @@
   "maintenance": {
     "title": "Lumovio est en cours de mise à jour",
     "text": "Nous revenons bientôt. Rouvrez la page dans quelques minutes."
+  },
+  "share": {
+    "link": "Lien",
+    "email": "E-mail",
+    "qrAlt": "Code QR du lien",
+    "qrHint": "Pointez l’appareil photo de votre téléphone vers le code pour y ouvrir la page."
   }
 }

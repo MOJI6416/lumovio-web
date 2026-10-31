@@ -908,7 +908,6 @@
     "inviteLinkHint": "Rol: {role} · {hours} sa geçerli · en fazla 10 profil katılabilir.",
     "copyLink": "Bağlantıyı kopyala",
     "inviteAnother": "Başka bağlantı",
-    "linkCopied": "Bağlantı kopyalandı",
     "listMenu": "Liste işlemleri",
     "listMoreLabel": "Diğer: {list}",
     "ownerIs": "Sahibi: {name}",
@@ -2509,5 +2508,11 @@
   "maintenance": {
     "title": "Lumovio güncelleniyor",
     "text": "Yakında döneceğiz. Sayfayı birkaç dakika sonra yeniden açın."
+  },
+  "share": {
+    "link": "Bağlantı",
+    "email": "E-posta",
+    "qrAlt": "Bağlantının QR kodu",
+    "qrHint": "Sayfayı telefonunuzda açmak için kameranızı koda tutun."
   }
 }

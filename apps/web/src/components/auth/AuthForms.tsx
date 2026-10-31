@@ -14,6 +14,7 @@ import { authErrorKey } from "@/lib/api-errors";
 import { authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-next";
 import { authCall } from "./auth-call";
+import { useAuthCaptcha } from "./captcha";
 import { usePlatform } from "@/lib/platform";
 import { type SocialProvider, SocialButtons } from "./SocialButtons";
 
@@ -91,14 +92,19 @@ export function SignInForm({ providers }: { providers?: SocialProvider[] | null 
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const captcha = useAuthCaptcha();
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const found: Errors = { email: checkEmail(email), password: password ? undefined : t("passwordMissing") };
+    if (!found.email && !found.password && captcha.missing) found.form = tr("support.errCaptcha");
     setErrors(found);
-    if (found.email || found.password) return;
+    if (found.email || found.password || found.form) return;
     setBusy(true);
-    const res = await authCall(() => authClient.signIn.email({ email: email.trim(), password, callbackURL: localized(locale, next) }));
+    const res = await authCall(() =>
+      authClient.signIn.email({ email: email.trim(), password, callbackURL: localized(locale, next) }, { headers: captcha.headers() }),
+    );
+    captcha.spent();
     if (res.error) {
       const key = authErrorKey(res.error);
       const field = fieldOf(key);
@@ -126,6 +132,7 @@ export function SignInForm({ providers }: { providers?: SocialProvider[] | null 
             {t("forgot")}
           </Link>
         </div>
+        {captcha.widget}
         {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
         <Button type="submit" className="w-full" size="lg" loading={busy}>
           {tc("signIn")}
@@ -178,6 +185,7 @@ export function SignUpForm({ providers }: { providers?: SocialProvider[] | null 
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState<Sent | null>(null);
+  const captcha = useAuthCaptcha();
   // "Check your email" survives a reload of the page in this tab (AUTH-09).
   useEffect(() => setSent(readSent()), []);
 
@@ -187,16 +195,18 @@ export function SignUpForm({ providers }: { providers?: SocialProvider[] | null 
       email: checkEmail(email),
       password: password.length >= MIN_PASSWORD ? undefined : password ? t("errPasswordShort") : t("passwordMissing"),
     };
+    if (!found.email && !found.password && captcha.missing) found.form = tr("support.errCaptcha");
     setErrors(found);
-    if (found.email || found.password) return;
+    if (found.email || found.password || found.form) return;
     setBusy(true);
     const address = email.trim();
     const res = await authCall(() =>
       authClient.signUp.email(
         { email: address, password, name: name.trim() || address.split("@")[0]!, callbackURL: localized(locale, withNext("/profiles", next)) },
-        { headers: { "x-lumovio-locale": locale } },
+        { headers: { "x-lumovio-locale": locale, ...captcha.headers() } },
       ),
     );
+    captcha.spent();
     setBusy(false);
     if (res.error) {
       const key = authErrorKey(res.error);
@@ -259,6 +269,7 @@ export function SignUpForm({ providers }: { providers?: SocialProvider[] | null 
             <PasswordInput id={id} aria-describedby={d} invalid={invalid} autoComplete="new-password" size="lg" value={password} onChange={(e) => setPassword(e.target.value)} />
           )}
         </Field>
+        {captcha.widget}
         {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
         <Button type="submit" className="w-full" size="lg" loading={busy}>
           {tc("signUp")}
@@ -335,12 +346,17 @@ export function ForgotForm() {
   const [sentAt, setSentAt] = useState<number | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const left = useCooldown(sentAt);
+  const captcha = useAuthCaptcha();
   const send = async () => {
+    if (captcha.missing) return setErrors({ form: tr("support.errCaptcha") });
     setBusy(true);
     setErrors({});
     // Same response whether or not the account exists (no account enumeration); a refused or lost
     // request (bad address, too many requests, offline) says so instead of pretending it was sent.
-    const res = await authCall(() => authClient.requestPasswordReset({ email: email.trim(), redirectTo: localized(locale, "/auth/reset") }));
+    const res = await authCall(() =>
+      authClient.requestPasswordReset({ email: email.trim(), redirectTo: localized(locale, "/auth/reset") }, { headers: captcha.headers() }),
+    );
+    captcha.spent();
     setBusy(false);
     if (res.error) {
       const key = authErrorKey(res.error);
@@ -357,6 +373,8 @@ export function ForgotForm() {
     <Card icon={sentAt ? MailCheck : KeyRound} title={sentAt ? t("checkEmailTitle") : t("forgotTitle")} subtitle={sentAt ? t("forgotSentText", { email: email.trim() }) : t("forgotText")}>
       {sentAt ? (
         <div className="flex flex-col gap-3">
+          {/* "Send again" is a reset request too: it needs its own check. */}
+          {captcha.widget}
           {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
           <Button variant="secondary" size="lg" className="w-full tabular-nums" loading={busy} disabled={left > 0} onClick={() => void send()}>
             {left > 0 ? t("resendIn", { time: clock(left) }) : t("resend")}
@@ -372,6 +390,7 @@ export function ForgotForm() {
               <Input id={id} aria-describedby={d} invalid={invalid} type="email" autoComplete="email" size="lg" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
             )}
           </Field>
+          {captcha.widget}
           {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
           <Button type="submit" className="w-full" size="lg" loading={busy}>
             {t("sendLink")}

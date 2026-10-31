@@ -908,7 +908,6 @@
     "inviteLinkHint": "Função: {role} · válido por {hours} h · até 10 perfis podem entrar.",
     "copyLink": "Copiar link",
     "inviteAnother": "Outro link",
-    "linkCopied": "Link copiado",
     "listMenu": "Ações da lista",
     "listMoreLabel": "Mais: {list}",
     "ownerIs": "Dono: {name}",
@@ -2509,5 +2508,11 @@
   "maintenance": {
     "title": "O Lumovio está sendo atualizado",
     "text": "Voltamos logo. Abra a página de novo em alguns minutos."
+  },
+  "share": {
+    "link": "Link",
+    "email": "E-mail",
+    "qrAlt": "QR code do link",
+    "qrHint": "Aponte a câmera do celular para o código para abrir a página nele."
   }
 }

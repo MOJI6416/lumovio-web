@@ -35,6 +35,9 @@ const AUTH_CODES: Record<string, string> = {
   ACCOUNT_TEMPORARILY_LOCKED: "auth.errTooManyAttempts",
   BANNED_USER: "auth.errBanned",
   REGISTRATION_CLOSED: "auth.errRegistrationClosed",
+  // Turnstile on sign-in, sign-up and the reset (components/auth/captcha.tsx): the check didn't pass or wasn't sent.
+  MISSING_RESPONSE: "support.errCaptcha",
+  VERIFICATION_FAILED: "support.errCaptcha",
 };
 
 /** Better Auth sign-in, sign-up, password reset, 2FA and social sign-in errors. */

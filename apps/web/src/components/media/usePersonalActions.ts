@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useSession } from "@/components/providers/Providers";
 import type { GateReason, GuestIntent } from "@/components/shell/GuestGate";
-import { toast } from "@/components/ui/Toast";
 import type { ToastOptions } from "@/components/ui/toast-store";
 import { libraryKey, useLibraryState, useSetLibraryState } from "@/hooks/useLibraryState";
 import { getPathname } from "@/i18n/navigation";
@@ -14,6 +13,7 @@ import { api } from "@/lib/api";
 import { trackOutcome } from "@/lib/discovery-metrics";
 import { titleHref } from "@/lib/slug";
 import { useAction } from "@/lib/use-action";
+import { sharePage } from "@/components/share/share";
 
 /*
  * The personal actions on a title (design-system 8.1) — one set of requests, on-screen changes, toasts and "Undo" for
@@ -197,19 +197,9 @@ export function usePersonalActions(t: ActionTitle) {
       },
     }).then(() => undefined);
 
-  /** The system share sheet, or the link copied with a toast. Closing the share sheet is not a failure. */
-  const share = async () => {
-    const url = new URL(getPathname({ href: titleHref(t.kind, t.tmdbId, t.title), locale }), window.location.origin).toString();
-    try {
-      if (navigator.share) await navigator.share({ title: t.title, url });
-      else {
-        await navigator.clipboard.writeText(url);
-        toast.success(tt("shareCopied"));
-      }
-    } catch (e) {
-      if (!(e instanceof DOMException && e.name === "AbortError")) toast.error(tr("errors.generic"));
-    }
-  };
+  /** The system share sheet on a touch device, Lumovio's own on a computer (components/share). */
+  const share = () =>
+    sharePage({ title: t.title, url: new URL(getPathname({ href: titleHref(t.kind, t.tmdbId, t.title), locale }), window.location.origin).toString() });
 
   /**
    * What a guest pressed before signing in, done once they are back (GuestGate), with the usual toast and Undo.

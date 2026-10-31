@@ -2,10 +2,21 @@
 
 import type { Me } from "@lumovio/contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { ApiRequestError, setClientLocale } from "@/lib/api";
+import { shareStore } from "../share/share";
 import { BackCover } from "../shell/BackCover";
 import { Toaster } from "../ui/Toast";
+
+// The share window (fields, QR) loads only once something is shared, not with every page (bundle budget).
+const ShareHost = dynamic(() => import("../share/ShareDialog").then((m) => m.ShareHost), { ssr: false });
+const sharing = () => shareStore.get() !== null;
+
+function LazyShareHost() {
+  const open = useSyncExternalStore(shareStore.subscribe, sharing, () => false);
+  return open ? <ShareHost /> : null;
+}
 
 interface Session {
   me: Me | null;
@@ -50,6 +61,7 @@ export function Providers({ children, me, apiDown = false, locale, tv }: { child
       <QueryClientProvider client={client}>
         {children}
         <Toaster />
+        {!tv && <LazyShareHost />}
         {!tv && <BackCover />}
       </QueryClientProvider>
     </SessionContext.Provider>

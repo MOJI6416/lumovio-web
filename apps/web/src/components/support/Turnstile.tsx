@@ -33,10 +33,11 @@ function load(): Promise<void> {
 }
 
 /**
- * Cloudflare Turnstile for a guest's form (support): the check in the page's language; `onToken` gets the token, or
- * null when it expires or fails. Only where the API has Turnstile configured (`turnstileSiteKey`).
+ * Cloudflare Turnstile for a guest's form (support, sign-in, sign-up, the password reset): the check in the page's
+ * language; `onToken` gets the token, or null when it expires or fails. `theme` "dark" on the always-dark sign-in
+ * pages. Only where the API has Turnstile configured (`turnstileSiteKey`).
  */
-export function Turnstile({ siteKey, onToken }: { siteKey: string; onToken: (token: string | null) => void }) {
+export function Turnstile({ siteKey, onToken, theme = "auto" }: { siteKey: string; onToken: (token: string | null) => void; theme?: "auto" | "dark" }) {
   const box = useRef<HTMLDivElement>(null);
   const locale = useLocale();
   useEffect(() => {
@@ -48,7 +49,7 @@ export function Turnstile({ siteKey, onToken }: { siteKey: string; onToken: (tok
         id = window.turnstile.render(box.current, {
           sitekey: siteKey,
           language: locale,
-          theme: "auto",
+          theme,
           callback: (t: string) => onToken(t),
           "expired-callback": () => onToken(null),
           "error-callback": () => onToken(null),
@@ -59,6 +60,6 @@ export function Turnstile({ siteKey, onToken }: { siteKey: string; onToken: (tok
       gone = true;
       if (id && window.turnstile) window.turnstile.remove(id);
     };
-  }, [siteKey, locale, onToken]);
+  }, [siteKey, locale, onToken, theme]);
   return <div ref={box} className="min-h-16" />;
 }

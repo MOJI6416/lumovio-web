@@ -146,6 +146,9 @@ export const DOCS_RU: Record<LegalDoc, () => ReactNode> = {
         ними и не одобрен ими.
       </P>
       <P>
+        Знаки в окне «Поделиться» называют, куда уйдёт ссылка: Telegram, WhatsApp, X, Facebook и Reddit — товарные знаки их владельцев, изображения из <A href="https://simpleicons.org">Simple Icons</A> (CC0). Lumovio не связан с ними и не одобрен ими.
+      </P>
+      <P>
         Оценка Lumovio — собственная производная оценка Lumovio, рассчитанная по приведённым выше оценкам IMDb, TMDB, Rotten Tomatoes, Metacritic, Letterboxd, Trakt и MyAnimeList
         (TVmaze и AniList в неё не входят). Ни один из этих сервисов её не публикует и не одобряет; как она устроена — ниже.
       </P>

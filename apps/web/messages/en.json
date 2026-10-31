@@ -908,7 +908,6 @@
     "inviteLinkHint": "Role: {role} · valid for {hours} h · up to 10 profiles can join.",
     "copyLink": "Copy link",
     "inviteAnother": "Another link",
-    "linkCopied": "Link copied",
     "listMenu": "List actions",
     "listMoreLabel": "More: {list}",
     "ownerIs": "Owner: {name}",
@@ -2861,5 +2860,11 @@
   "maintenance": {
     "title": "Lumovio is being updated",
     "text": "We’ll be back soon. Open the page again in a few minutes."
+  },
+  "share": {
+    "link": "Link",
+    "email": "Email",
+    "qrAlt": "QR code of the link",
+    "qrHint": "Point your phone's camera at the code to open the page there."
   }
 }

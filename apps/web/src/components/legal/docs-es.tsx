@@ -145,6 +145,9 @@ export const DOCS_ES: Record<LegalDoc, () => ReactNode> = {
         <A href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html">GPL-2.0</A>. Lumovio no está afiliado a ellos ni respaldado por ellos.
       </P>
       <P>
+        Las marcas de la ventana de compartir indican adónde va un enlace: Telegram, WhatsApp, X, Facebook y Reddit son marcas comerciales de sus propietarios, tomadas de <A href="https://simpleicons.org">Simple Icons</A> (CC0). Lumovio no está afiliado a ellas ni cuenta con su respaldo.
+      </P>
+      <P>
         Lumovio Score es la nota derivada propia de Lumovio, calculada a partir de las notas de IMDb, TMDB, Rotten Tomatoes, Metacritic, Letterboxd, Trakt y MyAnimeList
         mencionadas arriba (TVmaze y AniList no forman parte de ella). Ninguno de estos servicios la publica ni la respalda; abajo se explica cómo funciona.
       </P>

@@ -32,6 +32,7 @@ import { GridSkeleton } from "./GridSkeleton";
 import { readFilters, readSort, useUrlState } from "./url-state";
 import { mergedItems } from "./whole-list";
 import { rulesHref } from "./rules-url";
+import { sharePage } from "@/components/share/share";
 
 type Item = ListDetails["items"][number];
 type Pages = InfiniteData<ListDetails, number>;
@@ -120,17 +121,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
     },
   });
 
-  const copy = useAction({ run: (text: string) => navigator.clipboard.writeText(text), success: t("linkCopied") });
-  const share = async () => {
-    const url = window.location.href.split("?")[0]!;
-    if (!navigator.share) return void copy.run(url);
-    try {
-      await navigator.share({ title: l.name, url });
-    } catch (e) {
-      // Closing the share sheet is not a failure; anything else falls back to copying the link.
-      if (!(e instanceof DOMException && e.name === "AbortError")) void copy.run(url);
-    }
-  };
+  const share = () => sharePage({ title: l.name, url: window.location.href.split("?")[0]! });
 
   // Deleting and leaving are confirmed first (8.3); the request runs in the dialog.
   const deleteOrLeave = async () => {

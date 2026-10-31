@@ -908,7 +908,6 @@
     "inviteLinkHint": "Rola: {role} · ważny {hours} godz. · może dołączyć do 10 profili.",
     "copyLink": "Kopiuj link",
     "inviteAnother": "Kolejny link",
-    "linkCopied": "Skopiowano link",
     "listMenu": "Działania na liście",
     "listMoreLabel": "Więcej: {list}",
     "ownerIs": "Właściciel: {name}",
@@ -2509,5 +2508,11 @@
   "maintenance": {
     "title": "Lumovio jest aktualizowane",
     "text": "Wracamy niedługo. Otwórz stronę ponownie za kilka minut."
+  },
+  "share": {
+    "link": "Link",
+    "email": "E-mail",
+    "qrAlt": "Kod QR linku",
+    "qrHint": "Skieruj aparat telefonu na kod, aby otworzyć na nim stronę."
   }
 }
