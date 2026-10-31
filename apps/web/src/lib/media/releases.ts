@@ -83,6 +83,8 @@ export function packOf(name: string): PackInfo {
   const t = name.replace(/[._]/g, " ");
   // "S02E01-09", "S02E01-E09", a whole series "S1-8E1-73" or "S01E01-S08E73" (episodes counted across its seasons).
   const se = /(?<![\p{L}\d])s(\d{1,2})(?:\s*[-–]\s*s?(\d{1,2}))?\s?e(\d{1,4})(?:\s*[-–]\s*(?:e|s(\d{1,2})\s?e)?(\d{1,4}))?(?!\d)/iu.exec(t);
+  // "02x01-10", "2x05": season × episode, as some trackers write it (never a "1920x1080" frame size).
+  const sx = se ? null : /(?<![\p{L}\d])(\d{1,2})x(\d{2,3})(?:\s*[-–]\s*(?:\d{1,2}x)?(\d{2,3}))?(?!\d)/iu.exec(t);
   let seasons: number[] = [];
   let cours = false;
   let episodes: PackInfo["episodes"] = null;
@@ -91,6 +93,10 @@ export function packOf(name: string): PackInfo {
     // The total right after the range: "S5E1-5 of 10", "S02E01-08 из 10".
     const of = /^\s*(?:из|of|з)\s*(\d{1,4})(?!\d)/iu.exec(t.slice(se.index + se[0].length));
     episodes = { from: Number(se[3]), to: Number(se[5] ?? se[3]), of: of ? Number(of[1]) : null };
+  } else if (sx) {
+    seasons = [Number(sx[1])];
+    const of = /^\s*(?:из|of|з)\s*(\d{1,4})(?!\d)/iu.exec(t.slice(sx.index + sx[0].length));
+    episodes = { from: Number(sx[2]), to: Number(sx[3] ?? sx[2]), of: of ? Number(of[1]) : null };
   } else {
     for (const m of t.matchAll(/(?<![\p{L}\d])s(\d{1,2})(?:\s*[-–]\s*s?(\d{1,2}))?(?![\p{L}\d])/giu)) seasons.push(Number(m[1]), Number(m[2] ?? m[1]));
     for (const m of t.matchAll(/(?:seasons?|сезоны?|сезони|сезон)\s*:?\s*(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?(?!\d)/giu)) seasons.push(Number(m[1]), Number(m[2] ?? m[1]));

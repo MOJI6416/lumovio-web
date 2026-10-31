@@ -63,7 +63,11 @@ export type LookupResult = SearchAnswer;
  * servers never search, store or relay torrents). Results stay in memory for 30 minutes; ranking
  * follows the profile's preferences, or `quality` for this viewing, without searching again.
  */
-export function useTorrentLookup(d: TitleSummary, source: SourceState | null, enabled = true, quality?: ReleaseQuality) {
+/**
+ * A series' `season` is the one the viewing is for: a release whose name holds only other seasons sinks and is never
+ * recommended (`rankReleases`).
+ */
+export function useTorrentLookup(d: TitleSummary, source: SourceState | null, enabled = true, quality?: ReleaseQuality, season: number | null = null) {
   const { me } = useSession();
   const base = useReleasePrefs();
   const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
@@ -72,11 +76,11 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
       connectionId: source?.id ?? "",
       connectionName: source?.name ?? "",
       total: r.results.length,
-      ranked: rankReleases(r.results, d, prefs),
+      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null),
       at: r.at,
       emptyAt: r.emptyAt,
     }),
-    [source, d, prefs],
+    [source, d, prefs, season],
   );
   const qc = useQueryClient();
   const key = lookupKey(me?.activeProfile?.id ?? null, source?.id ?? null, d.id);

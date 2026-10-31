@@ -195,7 +195,8 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   }, [found, d, prefs, season]);
   // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
   const options = useMemo(() => {
-    const all = voiceOptions(view?.ranked ?? [], 60);
+    // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
+    const all = voiceOptions((view?.ranked ?? []).filter((x) => x.holds !== false), 60);
     const rank = (o: VoiceOption) => {
       const i = o.language ? base.languages.indexOf(o.language) : -1;
       return i >= 0 ? i : o.language ? base.languages.length : base.languages.length + 1;
@@ -203,7 +204,10 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     return all.map((o, i) => ({ o, i })).sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || a.i - b.i).map((x) => x.o);
   }, [view, base.languages]);
   const inVoice = (x: RankedRelease) => voice === null || voiceKeys(x).includes(voice);
-  const versions = useMemo(() => pictureVersions((view?.ranked ?? []).filter((x) => !x.dead && (voice === null || voiceKeys(x).includes(voice)))), [view, voice]);
+  const versions = useMemo(
+    () => pictureVersions((view?.ranked ?? []).filter((x) => !x.dead && x.holds !== false && (voice === null || voiceKeys(x).includes(voice)))),
+    [view, voice],
+  );
   const trackers = useMemo(() => {
     const m = new Map<string, number>();
     // A torrent several indexers returned counts for each of them.
@@ -216,7 +220,8 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     ? [
         ...view.ranked
           .filter((x) => inVoice(x) && (picture === null || x.picture === picture))
-          .sort(sort === "recommended" ? () => 0 : ORDER[sort])
+          // Whatever the order, releases of other seasons only stay below the wanted season's (the rank puts them there).
+          .sort(sort === "recommended" ? () => 0 : (a, b) => Number(a.holds === false) - Number(b.holds === false) || ORDER[sort](a, b))
           .map((x) => x.result),
         ...(voice === null && picture === null ? view.rest : []),
       ].filter((r) => tracker === null || trackersOf(r).some((name) => (name ?? "?") === tracker))

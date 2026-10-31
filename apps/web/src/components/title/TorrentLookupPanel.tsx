@@ -27,7 +27,7 @@ import { api } from "@/lib/api";
 import { bestOf, pictureReasons, type Range, type RankedRelease, type ReleaseInfo, voiceOptions } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
 import { useAction } from "@/lib/use-action";
-import { sourcesHref, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 
 /**
  * "Where to watch" without a copy on the profile's servers (design-system 7.15, SRC-01, SRC-09): this device searches
@@ -50,9 +50,10 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
   const prefs = useReleasePrefs();
   const [mode, setMode] = useState<ReleaseQuality>(prefs.quality);
   const source = autoSearchSource(sources, Boolean(me?.activeProfile?.isKids));
-  const lookup = useTorrentLookup(d, source, true, mode);
-  const text = useReleaseText();
   const { data: state } = useLibraryState(d.id);
+  // "Watch" opens the episode the title's Play would (resume, else the next): the release has to hold its season.
+  const lookup = useTorrentLookup(d, source, true, mode, d.kind === "tv" ? startEpisode(d, state?.progress).season : null);
+  const text = useReleaseText();
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<RankedRelease | null>(null);
@@ -61,7 +62,8 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
   const [picture, setPicture] = useState<string | null>(null);
   useEffect(() => setMode(prefs.quality), [prefs.quality]);
   const ranked = lookup.data?.ranked;
-  const options = useMemo(() => voiceOptions(ranked ?? []), [ranked]);
+  // Releases of other seasons only aren't offered as an audio or a picture to pick.
+  const options = useMemo(() => voiceOptions((ranked ?? []).filter((x) => x.holds !== false)), [ranked]);
 
   // "Save as default": this viewing's quality mode becomes the profile's (Settings → Profile), with Undo.
   const profile = me?.activeProfile;

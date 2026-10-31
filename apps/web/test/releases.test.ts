@@ -368,6 +368,27 @@ describe("season packs by the name (TS5)", () => {
     expect(holdsSeason(packOf("Breaking Bad 1080p"), 1)).toBeNull();
   });
 
+  it("reads season × episode as trackers write it, never a frame size (owner, 2026-10-31: season 2 offered season 4)", () => {
+    expect(packOf("Ведьмак / The Witcher [04x01-08 из 08] (2025) WEB-DL 1080p | LostFilm")).toEqual({
+      seasons: { from: 4, to: 4 },
+      cours: false,
+      episodes: { from: 1, to: 8, of: 8 },
+    });
+    expect(packOf("The Bear 2x05 720p").seasons).toEqual({ from: 2, to: 2 });
+    expect(holdsSeason(packOf("Ведьмак / The Witcher [04x01-08 из 08] (2025)"), 2)).toBe(false);
+    expect(packOf("Movie 1920x1080 BDRip").seasons).toBeNull();
+    expect(packOf("Show [S02] 720x576 DVDRip").seasons).toEqual({ from: 2, to: 2 });
+    for (const [name, season] of [
+      ["Ведьмак / The Witcher / Сезон: 2 / Серии: 1-8 из 8 (2021) WEB-DLRip", 2],
+      ["Ведьмак (2 сезон) / The Witcher (2021) WEB-DL 1080p", 2],
+      ["Ведьмак / The Witcher [S02] (2021) WEB-DL 1080p", 2],
+      ["The.Witcher.S04.2160p.NF.WEB-DL", 4],
+      ["Ведьмак / The Witcher (4-й сезон) 2025", 4],
+    ] as const) {
+      expect(packOf(name).seasons, name).toEqual({ from: season, to: season });
+    }
+  });
+
   it("sinks a release holding other seasons below the rest and never recommends it", () => {
     const show = { title: "Во все тяжкие", originalTitle: "Breaking Bad", kind: "tv" as const, year: 2008, originalLanguage: "en" };
     const rel = (title: string, seeders: number): TsSearchResult => ({ title, link: `magnet:?xt=urn:btih:${title}`, hash: null, size: null, seeders, peers: null, tracker: "RuTracker.org", published: null });
