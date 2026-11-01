@@ -5,7 +5,7 @@ import { languageCode } from "../explain";
  * last time for this title, matched by language and kind (never by position — another episode's file has its own
  * order); else, when the audio is in a language the profile doesn't list among its audio languages, the first of its
  * subtitle languages (Settings → Profile, "chosen in this order"); else the audio language's forced subtitles (signs
- * and foreign lines of a dubbed film); else none.
+ * and foreign lines of a dubbed film); else none. The timing offset set in the player is remembered for the title too.
  */
 
 export interface SubtitleFacts {
@@ -70,14 +70,36 @@ export function loadMemory(key: string): SubtitleMemory | null {
 }
 
 export function saveMemory(key: string, value: SubtitleMemory) {
+  remember(KEY, key, value);
+}
+
+/** The latest `KEEP` titles' values under `storageKey`, the newest last; `undefined` forgets the title's. */
+function remember(storageKey: string, key: string, value: unknown) {
   try {
-    const all = JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, SubtitleMemory>;
+    const all = JSON.parse(localStorage.getItem(storageKey) ?? "{}") as Record<string, unknown>;
     delete all[key];
-    all[key] = value;
+    if (value !== undefined) all[key] = value;
     const keys = Object.keys(all);
     for (const k of keys.slice(0, Math.max(0, keys.length - KEEP))) delete all[k];
-    localStorage.setItem(KEY, JSON.stringify(all));
+    localStorage.setItem(storageKey, JSON.stringify(all));
   } catch {
     // Storage unavailable: the choice holds for this playback only.
   }
+}
+
+const OFFSET_KEY = "lumovio.player.subtitle-offset";
+
+/** The subtitle timing offset set for a title on this device (per profile), in seconds; 0 when none. */
+export function loadOffset(key: string): number {
+  try {
+    const v = (JSON.parse(localStorage.getItem(OFFSET_KEY) ?? "{}") as Record<string, unknown>)[key];
+    return typeof v === "number" && Number.isFinite(v) ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Remembers the offset for the title; back at 0 it is forgotten. */
+export function saveOffset(key: string, value: number) {
+  remember(OFFSET_KEY, key, value === 0 ? undefined : value);
 }

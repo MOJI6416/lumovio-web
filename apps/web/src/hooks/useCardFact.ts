@@ -28,6 +28,11 @@ export function useCardFact(title: TitleSummary): string | null {
     case "premiere":
       return tr("rows.premiereOn", { date: day(f.date) });
     case "airing":
+      // The episode's number only where it is the releases' one (API curation `releaseNumbered`), else the date alone.
+      if (f.episode && (f.next || f.last))
+        return f.next
+          ? tr("rows.nextEpisodeNumbered", { season: f.episode.season, episode: f.episode.episode, date: day(f.next) })
+          : tr("rows.lastEpisodeNumbered", { season: f.episode.season, episode: f.episode.episode, date: day(f.last!) });
       return f.next ? tr("rows.nextEpisodeOn", { date: day(f.next) }) : f.last ? tr("rows.lastEpisodeOn", { date: day(f.last) }) : null;
     case "length": {
       if (f.seasons > 1) return tr("rows.lengthSeasons", { seasons: f.seasons, episodes: f.episodes });

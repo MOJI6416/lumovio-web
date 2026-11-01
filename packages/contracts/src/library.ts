@@ -137,6 +137,9 @@ export const RULES_CATALOG_LIMIT = 100;
 export const CatalogRulesQuery = DiscoverQuery.pick({
   kind: true,
   sort: true,
+  imdbVotesMax: true,
+  opinions: true,
+  mood: true,
   genres: true,
   withoutGenres: true,
   yearFrom: true,

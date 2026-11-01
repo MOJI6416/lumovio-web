@@ -1,4 +1,4 @@
-import type { CatalogPage, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
+import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { interleave, personalShelves, withoutPersonal } from "@/components/media/personal-home";
 import { catalogShelf, continueShelf, personalShelf } from "@/components/tvui/media/shelves";
@@ -18,13 +18,14 @@ export default async function TvHomePage({ params }: { params: Promise<{ locale:
   setRequestLocale(locale);
   const t = await getTranslations();
   const empty = { items: [] as TitleSummary[], wanted: [] as TitleSummary[] };
-  const [home, movieGenres, tvGenres, cont, onServers, recs] = await Promise.all([
+  const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
     serverApi<CatalogPage>("/api/catalog/home"),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/movie").catch(() => ({ genres: [] })),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/tv").catch(() => ({ genres: [] })),
     serverApi<{ items: ContinueWatchingItem[] }>("/api/continue").catch(() => ({ items: [] })),
     serverApi<typeof empty>("/api/library/on-servers").catch(() => empty),
     optional(serverApi<Recommendations>("/api/recommendations"), null),
+    optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] as CatalogRow[] }),
   ]);
   const genres = [...movieGenres.genres, ...tvGenres.genres];
   const rows = home.rows;
@@ -39,7 +40,8 @@ export default async function TvHomePage({ params }: { params: Promise<{ locale:
     servers.length >= 3 ? { key: "servers", title: t("rows.inYourLibraries"), shape: "poster", items: servers.map((x) => ({ title: trimOverview(x) })), href: "/browse/movie?view=all&watch=now" } : null,
     ...shelves.lead.map((s) => personalShelf(s, t, genres)),
     trending ? catalogShelf(trending, t, true) : null,
-    ...interleave(withoutPersonal(catalogRows, [...shelves.lead, ...shelves.later]), shelves.later).map((r) =>
+    // The Watchlist's shelves (short films, finished series) without "Show all": the TV's library has no such filters.
+    ...interleave(withoutPersonal(catalogRows, [...shelves.lead, ...shelves.later]), [...library.rows.map((r) => ({ ...r, href: null })), ...shelves.later]).map((r) =>
       "kind" in r ? personalShelf(r, t, genres) : catalogShelf(r, t),
     ),
   ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent, type PointerEvent, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, type RefObject, useEffect, useRef, useState } from "react";
 import { afterPageLoad } from "@/lib/page-load";
 
 /*
@@ -8,8 +8,10 @@ import { afterPageLoad } from "@/lib/page-load";
  * the positioning engine) are needed only once someone opens one. So the field is drawn by a light button with the
  * same look, and the full control loads when the pointer comes near it or it gets the focus, then takes its place —
  * open already, if it was pressed (or Enter / Space / an arrow was pressed) before it arrived, and focused, if the
- * light button was. Loaded once, it renders directly everywhere after that. A page that shows one also fetches it
- * when the browser is idle, so it's usually there before anyone reaches for it — without being first-load JS.
+ * light button was. The light one stays until someone reaches for it also once the module is loaded: swapping every
+ * mounted one at once cost Library → Ratings ~0.7 s of one long task per "Show more" (60 rows, 60 Radix Selects, 4×
+ * CPU). A page that shows one also fetches it when the browser is idle, so it's usually there before anyone reaches
+ * for it — without being first-load JS.
  */
 
 /**
@@ -63,16 +65,12 @@ export const OPEN_KEYS = ["Enter", " ", "ArrowDown", "ArrowUp"];
 
 /**
  * The light stand-in's side: `full` is the module once it should take over, `start` says whether it opens and takes
- * the focus at once, `activate(open)` goes for it. The first render is always the stand-in (as on the server).
+ * the focus at once, `activate(open)` goes for it. It is the stand-in until `activate` (as on the server).
  */
 export function useLazySwap<M>(control: LazyControl<M>, light: RefObject<HTMLElement | null>) {
   const [full, setFull] = useState<M | null>(null);
   const start = useRef({ open: false, focus: false });
   useIdlePrefetch(control);
-  useLayoutEffect(() => {
-    const m = control.loaded();
-    if (m) setFull(() => m);
-  }, [control]);
   const activate = (open: boolean) => {
     if (open) start.current.open = true;
     void control.load().then((m) => {

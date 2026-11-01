@@ -5,6 +5,7 @@ import { cn } from "@/components/ui/cn";
 import { Link } from "@/i18n/navigation";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
+import { useHoldForMore } from "./hold";
 
 /*
  * TV cards (design-system 7.12 TV variant, 10.3): one stop of the remote each — a link to the title (or to what it
@@ -69,6 +70,7 @@ export const TvCard = memo(function TvCard({
   rank,
   initial,
   fluid,
+  onMore,
 }: {
   title: TitleSummary;
   shape?: TvCardShape;
@@ -84,7 +86,10 @@ export const TvCard = memo(function TvCard({
   rank?: number;
   initial?: boolean;
   fluid?: boolean;
+  /** A card with "More" (removing it from Continue watching, the history, a list): held OK opens it (./hold). */
+  onMore?: (index: number) => void;
 }) {
+  const hold = useHoldForMore(onMore ? () => onMore(index) : undefined);
   const wide = shape === "wide";
   const src = wide ? tmdbImage(title.backdropPath, "w780") : tmdbImage(title.posterPath, "w342");
   return (
@@ -95,6 +100,7 @@ export const TvCard = memo(function TvCard({
       data-index={index}
       data-tv-initial={initial || undefined}
       aria-label={label ?? title.title}
+      {...hold}
       className={cn(
         "tv-focus relative block shrink-0 overflow-hidden rounded-sm bg-surface-2",
         (fluid ? FLUID : SHAPE)[shape],

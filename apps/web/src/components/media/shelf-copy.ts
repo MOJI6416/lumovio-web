@@ -40,6 +40,18 @@ export const SHELF_COPY: Record<string, ShelfCopy> = {
   weekend: { title: "rows.weekendMiniseries", why: "rows.weekendMiniseriesWhy", note: "rows.weekendMiniseriesNote" },
   airing: { note: "rows.airingAnimeNote" },
   anime_finished: { title: "rows.finishedAnime", note: "rows.finishedAnimeNote" },
+  anime_short: { title: "rows.shortAnime", why: "rows.shortAnimeWhy", note: "rows.shortAnimeNote" },
+  // Lumovio Score's shelves (API catalog/score-shelves.ts): the grid sorted by the Score, under their conditions.
+  best_score: { title: "rows.bestScore", why: "rows.bestScoreWhy", note: "rows.bestScoreNote" },
+  critics_loved: { title: "rows.criticsLoved", why: "rows.criticsLovedWhy", note: "rows.criticsLovedNote" },
+  underrated: { title: "rows.underrated", why: "rows.underratedWhy", note: "rows.underratedNote" },
+  mood_feel_good: { title: "rows.moodFeelGood", why: "rows.moodFeelGoodWhy", note: "rows.moodFeelGoodNote" },
+  mood_mind_bending: { title: "rows.moodMindBending", why: "rows.moodMindBendingWhy", note: "rows.moodMindBendingNote" },
+  mood_edge_of_seat: { title: "rows.moodEdgeOfSeat", why: "rows.moodEdgeOfSeatWhy", note: "rows.moodEdgeOfSeatNote" },
+  // The profile's own Watchlist (API library/home-shelves.ts); "All" is the Watchlist with the same filters.
+  watchlist_short: { why: "rows.watchlistShortWhy", note: "rows.watchlistShortNote" },
+  watchlist_finished: { why: "rows.watchlistFinishedWhy", note: "rows.watchlistFinishedNote" },
+  servers_unwatched: { why: "rows.serversUnwatchedWhy", note: "rows.serversUnwatchedNote" },
 };
 
 const GENRE_SHELF = /^genre_(\d+)$/;

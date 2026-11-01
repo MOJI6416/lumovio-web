@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { MediaNetError } from "./net";
 import { parseRelease } from "./releases";
+import { markedTitle } from "./torrent-link";
 import { torrServerFor } from "./torrent-source";
 import type { TsTorrent } from "./torrserver";
 
@@ -40,6 +41,8 @@ export interface ManagedTorrent {
   fromLumovio: boolean;
   /** The film or series it was added for in Lumovio, as written then ("Дюна (2021)"); null when it doesn't say. */
   addedFor: string | null;
+  /** The title its own data names (Lumovio's mark, Lampa's card): a sure match while it isn't linked (`torrent-link`). */
+  mark: string | null;
   /** What Lumovio's index links to this torrent on this server: a film, or episodes, of any title. */
   links: TorrentIndexEntry["links"];
   /** Picture and audio as far as the release name tells. */
@@ -77,6 +80,7 @@ export function managedTorrents(list: ListedTorrent[], index: TorrentIndexEntry[
         fromLumovio: mark !== null,
         // Before SRC-06 a torrent was added under the film's name: that name is what it was added for.
         addedFor: typeof mark?.title === "string" ? mark.title : mark && t.title ? t.title : null,
+        mark: markedTitle(t.data),
         links: own,
         release: { resolution: info.resolution, hdr: info.hdr, voice: info.voice, studios: info.studios, languages: info.languages },
         addedAt: typeof t.timestamp === "number" && t.timestamp > 0 ? t.timestamp : null,
@@ -97,6 +101,29 @@ export function removalScope(t: Pick<ManagedTorrent, "links">): { titles: string
   const episodes = new Set(t.links.filter((l) => l.season !== null).map((l) => `${l.titleId}:${l.season}:${l.episode}`)).size;
   const films = titles.filter((id) => id.startsWith("movie:")).length;
   return { titles, episodes, films };
+}
+
+/** What the profile has watched of a title, as `/api/library/state` says it. */
+export type WatchedState = { watchedCount: number; watchedEpisodes: string[] };
+
+/**
+ * "Watched in this profile" (TS7 filter): every film the torrent is linked to watched to the end in this profile, and
+ * every episode its files are bound to. A series' torrent whose files aren't bound to episodes yet tells nothing, so it
+ * isn't counted; nor is one not linked at all. It helps make a list to remove — it says nothing of other profiles.
+ */
+export function watchedInProfile(t: Pick<ManagedTorrent, "links">, states: ReadonlyMap<string, WatchedState>): boolean {
+  if (t.links.length === 0) return false;
+  for (const id of new Set(t.links.map((l) => l.titleId))) {
+    const s = states.get(id);
+    if (!s) return false;
+    if (id.startsWith("movie:")) {
+      if (s.watchedCount === 0) return false;
+      continue;
+    }
+    const eps = t.links.filter((l) => l.titleId === id && l.season !== null && l.episode !== null);
+    if (eps.length === 0 || !eps.every((l) => s.watchedEpisodes.includes(`s${l.season}e${l.episode}`))) return false;
+  }
+  return true;
 }
 
 export type RemovalStatus =

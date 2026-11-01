@@ -36,6 +36,27 @@ interface Layer {
   close: () => void;
   /** What had the focus when the layer opened: it gets it back (TV2). */
   opener: HTMLElement | null;
+  /** Where the opener stood — its zone, key and place —, for when the layer took it away (a removed card). */
+  from: { zone: string; key: string | null; index: number } | null;
+  /** A state of the screen itself (the player's controls, the sources over the player): no box to keep the focus in. */
+  inline: boolean;
+  /** Its history entry exists (pushed only once the steps back already asked for have landed). */
+  pushed: boolean;
+  /** Dismissed: its step back is on the way. */
+  leaving: boolean;
+}
+
+/** Where the focus goes back when a layer closes: its opener, else the same item in its zone, else the neighbour. */
+function returnTarget(l: Layer): HTMLElement | null {
+  const o = l.opener;
+  if (o?.isConnected && isUsable(o)) return o;
+  if (!l.from) return null;
+  const zone = document.querySelector<HTMLElement>(`[data-zone="${CSS.escape(l.from.zone)}"]`);
+  if (!zone) return null;
+  const same = l.from.key ? findByKey(zone, l.from.key) : null;
+  if (same && isUsable(same)) return same;
+  const items = itemsOf(zone);
+  return items[Math.min(Math.max(0, l.from.index), items.length - 1)] ?? null;
 }
 
 export type { NavApi } from "./context";
@@ -157,9 +178,20 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   const sameScreen = useRef(false);
   /** The last focused item outside the menu: → from the menu goes back to it. */
   const lastContent = useRef<HTMLElement | null>(null);
+  /** Steps back asked for by `dismiss` that haven't landed yet: a layer opened meanwhile waits for them. */
+  const backs = useRef(0);
+  /** `leave` is going back past the open layers to the previous screen. */
+  const away = useRef(false);
+
+  const push = useCallback((l: Layer) => {
+    l.pushed = true;
+    window.history.pushState({ ...(window.history.state as object), tvLayer: l.id }, "");
+  }, []);
+  /** The history entries of the layers that are open and not on their way out. */
+  const entries = useCallback(() => layers.current.filter((l) => l.pushed && !l.leaving).length, []);
 
   const scope = useCallback((): HTMLElement => {
-    const top = layers.current[layers.current.length - 1];
+    const top = layers.current.findLast((l) => !l.inline && !l.leaving);
     if (top) {
       // A TV layer, or a layer of a shared component (the player's panels) that keeps its own dialog.
       const own = document.querySelector<HTMLElement>(`[data-tv-layer="${top.id}"]`) ?? [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].filter(isUsable).pop();
@@ -257,7 +289,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
         if (opts?.replace) router.replace(href);
         else router.push(href);
       };
-      const open = layers.current.length;
+      const open = entries();
       if (!open) return go();
       // Close the layers through the history first; navigate once they are gone.
       const onPop = () => {
@@ -267,15 +299,21 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
       window.addEventListener("popstate", onPop);
       window.history.go(-open);
     },
-    [router],
+    [router, entries],
   );
 
   const back = useCallback(() => {
-    if (layers.current.length) {
+    const top = layers.current.findLast((l) => !l.leaving);
+    // An inline layer is a state of the screen: the screen's own step goes first (a preparation is cancelled).
+    if (top && !top.inline) {
       window.history.back();
       return;
     }
     for (let i = backHandlers.current.length - 1; i >= 0; i--) if (backHandlers.current[i]!()) return;
+    if (top) {
+      window.history.back();
+      return;
+    }
     const screen = document.querySelector<HTMLElement>("[data-tv-screen]");
     const level = (screen?.dataset.tvScreen ?? "detail") as ScreenLevel;
     const nav = document.querySelector<HTMLElement>('[data-zone="nav"]');
@@ -299,10 +337,13 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
 
   const leave = useCallback<NavApi["leave"]>(
     (fallback) => {
-      if ((session.get<number>(DEPTH) ?? 0) > 0) window.history.back();
-      else navigate(fallback, { replace: true });
+      if ((session.get<number>(DEPTH) ?? 0) > 0) {
+        // Past the entries of the layers still open (the player's controls): one step to the previous screen.
+        away.current = true;
+        window.history.go(-(entries() + 1));
+      } else navigate(fallback, { replace: true });
     },
-    [navigate],
+    [navigate, entries],
   );
 
   const replaceQuery = useCallback<NavApi["replaceQuery"]>((query) => {
@@ -311,17 +352,34 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
     window.history.replaceState(null, "", `${window.location.pathname}${q ? `?${q}` : ""}`);
   }, []);
 
-  const openLayer = useCallback<NavApi["openLayer"]>((close) => {
+  const openLayer = useCallback<NavApi["openLayer"]>((close, opts) => {
     const id = ++seq.current;
-    layers.current.push({ id, close, opener: document.activeElement as HTMLElement | null });
-    window.history.pushState({ ...(window.history.state as object), tvLayer: id }, "");
+    const opener = document.activeElement as HTMLElement | null;
+    const zone = opener ? zoneOf(opener) : null;
+    const from =
+      opener && zone?.dataset.zone
+        ? { zone: zone.dataset.zone, key: keyOf(opener), index: itemsOf(zone).indexOf(opener) }
+        : null;
+    const layer: Layer = { id, close, opener, from, inline: Boolean(opts?.inline), pushed: false, leaving: false };
+    layers.current.push(layer);
+    // A step back still on its way (a layer dismissed in the same moment) would land on this entry: it waits for it.
+    if (!backs.current) push(layer);
     return {
       id,
       dismiss: () => {
-        if (layers.current.some((l) => l.id === id)) window.history.back();
+        if (!layers.current.includes(layer) || layer.leaving) return;
+        if (!layer.pushed) {
+          // Never in the history: gone at once.
+          layers.current = layers.current.filter((l) => l !== layer);
+          layer.close();
+          return;
+        }
+        layer.leaving = true;
+        backs.current++;
+        window.history.back();
       },
     };
-  }, []);
+  }, [push]);
 
   const onBack = useCallback<NavApi["onBack"]>((handler) => {
     backHandlers.current.push(handler);
@@ -334,24 +392,47 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const at = ((e.state as { tvLayer?: number } | null)?.tvLayer ?? 0) as number;
+      if (backs.current) backs.current--;
+      // `leave`: past the layers to the previous screen — they close with this one, nothing to give the focus back to.
+      const left = away.current;
+      away.current = false;
       let closed: Layer | null = null;
-      while (layers.current.length && layers.current[layers.current.length - 1]!.id > at) {
-        closed = layers.current.pop()!;
-        closed.close();
+      for (let i = layers.current.length - 1; i >= 0; i--) {
+        const l = layers.current[i]!;
+        if (!l.pushed || (l.id <= at && !left)) continue;
+        layers.current.splice(i, 1);
+        l.close();
+        closed = l;
+      }
+      // Layers opened while a step back was on its way get their entries now (and keep the focus they took).
+      let opened = false;
+      if (!backs.current)
+        for (const l of layers.current)
+          if (!l.pushed) {
+            push(l);
+            opened = true;
+          }
+      if (left) {
+        popped.current = true;
+        return;
       }
       if (closed) {
-        const opener = closed.opener;
-        // After React removed the layer: back on what opened it, else the screen's start (TV2).
-        requestAnimationFrame(() =>
-          opener?.isConnected && isUsable(opener) ? focus(opener, { reveal: false }) : focusStart(),
-        );
+        const layer = closed;
+        // An inline layer leaves the focus to its screen (the player puts it on the picture).
+        if (layer.inline || opened) return;
+        // After React removed the layer: back on what opened it (or where it stood), else the screen's start (TV2).
+        requestAnimationFrame(() => {
+          const el = returnTarget(layer);
+          if (el) focus(el, { reveal: el !== layer.opener });
+          else focusStart();
+        });
         return;
       }
       if (!at) popped.current = true;
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [focus, focusStart]);
+  }, [focus, focusStart, push]);
 
   // Keys of the remote. Bubbling: a control that handles an arrow itself (a text field, a slider) says so with
   // preventDefault and the shell leaves it.

@@ -1,15 +1,16 @@
 "use client";
 
 import type { ConnectionSummary } from "@lumovio/contracts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListVideo, Lock, RefreshCw, SearchX, Trash2, X } from "lucide-react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link2, ListVideo, Lock, RefreshCw, SearchX, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { formatSize, useReleaseText } from "@/components/sources/release-text";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { FilterChip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { IconButton } from "@/components/ui/IconButton";
@@ -21,10 +22,36 @@ import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { formatDate, relativeTime } from "@/lib/format";
 import { parseRelease } from "@/lib/media/releases";
-import { forgetTorrents, invalidateAvailability, loadTorrentManager, type ManagedTorrent, type RemovalResult } from "@/lib/media/torrent-manage";
+import { matchTorrents, type TorrentMatch, titleName } from "@/lib/media/torrent-link";
+import {
+  forgetTorrents,
+  invalidateAvailability,
+  loadTorrentManager,
+  type ManagedTorrent,
+  type RemovalResult,
+  type WatchedState,
+  watchedInProfile,
+} from "@/lib/media/torrent-manage";
 import { netErrorText } from "./net-errors";
 import { RemoveTorrentsDialog, useLinks, useLinkLines } from "./RemoveTorrentsDialog";
 import { profileHasAccess } from "./server-actions";
+
+// The linking dialogs load when one opens, not with the list (bundle budget).
+const LinkTorrentDialog = lazy(() => import("./LinkTorrentsDialog").then((m) => ({ default: m.LinkTorrentDialog })));
+const LinkAllDialog = lazy(() => import("./LinkTorrentsDialog").then((m) => ({ default: m.LinkAllDialog })));
+
+/** Releases not linked in Lumovio matched to titles on opening, at most (two requests to the catalog). */
+const MATCH_MAX = 80;
+
+/** What the active profile has watched of these titles (`/api/library/state`, 100 a request). */
+async function watchedStates(titleIds: string[]): Promise<Map<string, WatchedState>> {
+  const out = new Map<string, WatchedState>();
+  for (let i = 0; i < titleIds.length; i += 100) {
+    const { states } = await api<{ states: (WatchedState & { titleId: string })[] }>(`/api/library/state?ids=${titleIds.slice(i, i + 100).join(",")}`);
+    for (const s of states) out.set(s.titleId, s);
+  }
+  return out;
+}
 
 /**
  * "TorrServer → Added torrents" (S20, C35; design-system 9 Tool; SRC-20): the server's own list, read from this
@@ -64,6 +91,30 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [removing, setRemoving] = useState<ManagedTorrent[] | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [filter, setFilter] = useState<"all" | "unlinked" | "watched">("all");
+  const [linking, setLinking] = useState<ManagedTorrent | null>(null);
+  const [linkingAll, setLinkingAll] = useState(false);
+
+  // Releases not linked in Lumovio, matched to catalog titles on this device (lib/media/torrent-link): a sure match is
+  // proposed, anything less is the person's choice; nothing is linked by itself.
+  const unlinked = (data.data?.torrents ?? []).filter((x) => x.links.length === 0).slice(0, MATCH_MAX);
+  const matches = useQuery({
+    queryKey: ["torrent-matches", connectionId, unlinked.map((x) => x.hash).join(",")],
+    queryFn: () => matchTorrents(unlinked.map((x) => ({ hash: x.hash, name: x.name, mark: x.mark }))),
+    enabled: unlinked.length > 0,
+    retry: false,
+    staleTime: 10 * 60_000,
+  });
+  // What this profile has watched of the linked titles: the "Watched in this profile" filter, read again with the list.
+  const linkedTitles = [...new Set((data.data?.torrents ?? []).flatMap((x) => x.links.map((l) => l.titleId)))].sort();
+  const watched = useQuery({
+    queryKey: ["torrent-watched", connectionId, me?.activeProfile?.id ?? null, data.data?.readAt ?? 0, linkedTitles.join(",")],
+    queryFn: () => watchedStates(linkedTitles),
+    enabled: linkedTitles.length > 0,
+    // The chip stays while a refresh reads them again.
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
 
   if (kids) return <EmptyState icon={ListVideo} title={t("title")} text={t("kidsOnly")} />;
   if (conns.isLoading) return <Skeleton shape="md" className="h-40 w-full" />;
@@ -77,7 +128,26 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
   const titles = data.data?.titles ?? {};
   const all = data.data?.torrents ?? [];
   const q = query.trim().toLowerCase();
-  const rows = q ? all.filter((x) => [x.name, x.hash, x.addedFor ?? "", ...linkLines(x, titles)].some((s) => s.toLowerCase().includes(q))) : all;
+  const states = watched.data;
+  const isWatched = (x: ManagedTorrent) => (states ? watchedInProfile(x, states) : false);
+  const watchedCount = all.filter(isWatched).length;
+  const unlinkedCount = all.filter((x) => x.links.length === 0).length;
+  // A filter whose chip is gone (its last release linked or removed) shows everything again.
+  const shownFilter = filter === "unlinked" && unlinkedCount === 0 ? "all" : filter === "watched" && watchedCount === 0 && !watched.isLoading ? "all" : filter;
+  const byFilter = shownFilter === "unlinked" ? all.filter((x) => x.links.length === 0) : shownFilter === "watched" ? all.filter(isWatched) : all;
+  const rows = q ? byFilter.filter((x) => [x.name, x.hash, x.addedFor ?? "", ...linkLines(x, titles)].some((s) => s.toLowerCase().includes(q))) : byFilter;
+  const matched = matches.data ?? {};
+  const sure = unlinked.flatMap((x) => {
+    const m = matched[x.hash];
+    return m?.status === "sure" && all.some((y) => y.hash === x.hash && y.links.length === 0) ? [{ torrent: x, title: m.title }] : [];
+  });
+  const linked = (done: boolean) => {
+    setLinking(null);
+    setLinkingAll(false);
+    if (!done) return;
+    invalidateAvailability(qc);
+    refresh();
+  };
   const shownSelected = rows.filter((x) => selected.has(x.hash));
   const toggle = (hash: string) =>
     setSelected((s) => {
@@ -153,6 +223,31 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
           {t("emptyServer", { count: empty.length })}
         </InlineAlert>
       )}
+      {/* Releases added outside Lumovio (or unlinked) whose title is sure: linked after a review, never by themselves. */}
+      {sure.length > 0 && (
+        <InlineAlert
+          tone="info"
+          action={
+            <Button variant="tertiary" size="sm" icon={Link2} aria-haspopup="dialog" onClick={() => setLinkingAll(true)}>
+              {t("reviewLink")}
+            </Button>
+          }
+        >
+          {t("matchedBanner", { count: unlinkedCount, sure: sure.length })}
+        </InlineAlert>
+      )}
+      {matches.isError && (
+        <InlineAlert
+          tone="warning"
+          action={
+            <Button variant="tertiary" size="sm" onClick={() => void matches.refetch()}>
+              {tm("retry")}
+            </Button>
+          }
+        >
+          {t("matchFailed")}
+        </InlineAlert>
+      )}
 
       {data.isLoading ? (
         <div className="flex flex-col gap-2" aria-hidden>
@@ -164,6 +259,23 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
         <EmptyState icon={ListVideo} title={t("empty")} text={t("emptyText")} />
       ) : data.data ? (
         <section aria-label={t("title")} className="flex flex-col gap-2">
+          {(unlinkedCount > 0 || watchedCount > 0) && (
+            <fieldset className="flex flex-wrap gap-2">
+              <legend className="sr-only">{t("filters")}</legend>
+              {unlinkedCount > 0 && (
+                <FilterChip selected={shownFilter === "unlinked"} count={unlinkedCount} onClick={() => setFilter(shownFilter === "unlinked" ? "all" : "unlinked")}>
+                  {t("filterUnlinked")}
+                </FilterChip>
+              )}
+              {watchedCount > 0 && (
+                <FilterChip selected={shownFilter === "watched"} count={watchedCount} onClick={() => setFilter(shownFilter === "watched" ? "all" : "watched")}>
+                  {t("filterWatched")}
+                </FilterChip>
+              )}
+            </fieldset>
+          )}
+          {/* It helps make a list to remove; it says nothing of the other profiles (TS7). */}
+          {shownFilter === "watched" && <p className="px-1 text-body-s text-text-2">{t("watchedNote", { profile: me?.activeProfile?.name ?? "" })}</p>}
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 text-body-s text-text-2">
             <Checkbox
               label={t("selectAll")}
@@ -182,7 +294,17 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
           ) : (
             <ul className="divide-y divide-line overflow-hidden rounded-md border border-line bg-surface-1">
               {rows.map((x) => (
-                <TorrentRow key={x.hash} x={x} titles={titles} selected={selected.has(x.hash)} onToggle={() => toggle(x.hash)} onRemove={() => setRemoving([x])} locale={locale} />
+                <TorrentRow
+                  key={x.hash}
+                  x={x}
+                  titles={titles}
+                  match={x.links.length === 0 ? (matched[x.hash] ?? null) : null}
+                  selected={selected.has(x.hash)}
+                  onToggle={() => toggle(x.hash)}
+                  onRemove={() => setRemoving([x])}
+                  onLink={() => setLinking(x)}
+                  locale={locale}
+                />
               ))}
             </ul>
           )}
@@ -203,6 +325,18 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
       )}
 
       {removing && <RemoveTorrentsDialog connection={conn} torrents={removing} titles={titles} onClose={finished} />}
+      <Suspense fallback={null}>
+        {linking && (
+          <LinkTorrentDialog
+            connection={conn}
+            torrent={linking}
+            candidates={matched[linking.hash]?.candidates ?? []}
+            initial={matched[linking.hash]?.title ?? null}
+            onClose={linked}
+          />
+        )}
+        {linkingAll && <LinkAllDialog connection={conn} pairs={sure} onClose={linked} />}
+      </Suspense>
     </div>
   );
 }
@@ -224,16 +358,21 @@ function ServersLink() {
 function TorrentRow({
   x,
   titles,
+  match,
   selected,
   onToggle,
   onRemove,
+  onLink,
   locale,
 }: {
   x: ManagedTorrent;
   titles: Parameters<ReturnType<typeof useLinks>>[1];
+  /** For a release not linked in Lumovio: the titles its name or data fit (null while they are looked up). */
+  match: TorrentMatch | null;
   selected: boolean;
   onToggle: () => void;
   onRemove: () => void;
+  onLink: () => void;
   locale: string;
 }) {
   const t = useTranslations("torrentManager");
@@ -267,6 +406,16 @@ function TorrentRow({
         {links.length > 0 && words && <p className="text-body-s text-text-1">{words}</p>}
         <p className="text-body-s break-words text-text-3">{x.name}</p>
         {origin && <p className="text-body-s text-text-2">{origin}</p>}
+        {/* Not linked: the title it looks like, when one is sure, or how many fit; linking is the person's choice (C133). */}
+        {links.length === 0 && (
+          <div className="flex flex-wrap items-center gap-x-3">
+            {match?.status === "sure" && <p className="text-body-s text-text-1">{t("looksLike", { title: titleName(match.title) })}</p>}
+            {match?.status === "unsure" && <p className="text-body-s text-text-2">{t("severalFit", { count: match.candidates.length })}</p>}
+            <Button variant="tertiary" size="sm" icon={Link2} aria-haspopup="dialog" className="-ms-3" onClick={onLink} aria-label={t("linkOne", { name: x.name })}>
+              {t("link")}
+            </Button>
+          </div>
+        )}
         {(facts || x.active) && (
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-s text-text-2">
             {facts && <span>{facts}</span>}

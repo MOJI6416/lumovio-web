@@ -13,9 +13,10 @@ import { toast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
 import { forgetCredentials } from "@/lib/media/clients";
 import { jellyfinClient, jellyfinLogin, jellyfinPublicInfo, jellyfinQuickConnect } from "@/lib/media/jellyfin";
-import { MediaNetError, mixedContentBlocked, refineAddressError } from "@/lib/media/net";
+import { isPrivateHost, MediaNetError, mixedContentBlocked, type NetErrorCode, refineAddressError } from "@/lib/media/net";
 import { type PlexResource, plexPickConnection, plexPollPin, plexResources, plexStartPin } from "@/lib/media/plex";
 import { torrServerClient } from "@/lib/media/torrserver";
+import { Diagnosis } from "./ConnectionHelp";
 import { netErrorText } from "./net-errors";
 import { ServerMark } from "./ServerMark";
 
@@ -38,7 +39,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [errors, setErrors] = useState<{ url?: string; username?: string; password?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ url?: string; username?: string; password?: string; form?: string; code?: NetErrorCode }>({});
   const [qcCode, setQcCode] = useState<string | null>(null);
   const [plexServers, setPlexServers] = useState<PlexResource[] | null>(null);
   const [plexToken, setPlexToken] = useState<string | null>(null);
@@ -56,10 +57,11 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
   /** A failure in words, at the field it is about: wrong sign-in at the password, the rest under the form. */
   const fail = async (err: unknown) => {
     const refined = await refineAddressError(err, normalized(), lookupHost);
-    const text = netErrorText(t, refined);
+    const text = netErrorText(t, refined, normalized());
     if (refined instanceof MediaNetError && refined.code === "auth") setErrors({ password: text });
     else if (refined instanceof MediaNetError && refined.code === "not_found") setErrors({ url: text });
-    else setErrors({ form: text });
+    // A network failure comes with what to try (./ConnectionHelp `Diagnosis`); anything else is said as it is.
+    else setErrors({ form: text, code: refined instanceof MediaNetError ? refined.code : undefined });
   };
   // Each server type starts clean: an error of one type or step is not carried to another.
   const chooseKind = (k: ProviderKind | null) => {
@@ -107,7 +109,10 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
     if (found.url || found.username) return;
     setBusy(true);
     try {
-      if (mixedContentBlocked(u) && !/^http:\/\/(localhost|127\.)/.test(u)) {
+      // A public http:// address can't be reached from a secure page at all. One on this device or the home network is
+      // tried: Chrome and Edge (Local Network Access, 142+) reach it once the person allows it (lib/media/net
+      // `mediaFetch`); a browser that refuses it says so then (errMixedContentLan, errLocalNetwork).
+      if (mixedContentBlocked(u) && !isPrivateHost(u)) {
         throw new MediaNetError("mixed_content", "Blocked: HTTP server on an HTTPS page");
       }
       if (kind === "jellyfin") {
@@ -339,7 +344,8 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
               <p className="mt-2 text-h2 tabular-nums tracking-widest text-text-1">{qcCode}</p>
             </div>
           )}
-          {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
+          {/* The error with the steps to try (C132): "Server didn't answer" → is it on, open the address here, away from home… */}
+          {errors.code ? <Diagnosis failure={errors.code} kind={kind} address={normalized()} /> : errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
           <DialogActions className="flex-wrap">
             {back}
             {kind === "jellyfin" && (

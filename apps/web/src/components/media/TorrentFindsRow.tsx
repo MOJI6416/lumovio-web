@@ -9,11 +9,11 @@ import { usePlayable } from "@/hooks/useAvailability";
 import { autoSearchSource, isOut, type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { api } from "@/lib/api";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { bestOf, RESOLUTION_LABEL, rankReleases, torrentQuery } from "@/lib/media/releases";
+import { bestOf, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty } from "@/lib/media/torrserver";
 import { optional } from "@/lib/optional";
-import { dropLocalFinds, fetchFinds, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
+import { dropLocalFinds, fetchFinds, findPictureText, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { PosterCard } from "./PosterCard";
 import { Row } from "./Row";
 
@@ -80,7 +80,8 @@ export function TorrentFindsRow() {
         const kept = keepThroughEmpty(qc.getQueryData<LookupResult>(key), { ...found, at: Date.now() });
         qc.setQueryData(key, kept);
         if (kept.emptyAt) continue;
-        const f = await optional(reportFind(x.id, bestOf(rankReleases(found.results, x, prefs))), null);
+        const ranked = rankReleases(found.results, x, prefs);
+        const f = await optional(reportFind(x.id, bestOf(ranked), ranked), null);
         if (f) qc.setQueryData<{ finds: TorrentFinds }>(findsKey(profile.id), (old) => ({ finds: { ...old?.finds, [x.id]: f } }));
       }
     })();
@@ -97,7 +98,8 @@ export function TorrentFindsRow() {
     return [
       prefs.languages.length > 1 && b.language ? names.of(b.language) : null,
       b.studio ?? (b.voice ? tt(`voice_${b.voice}`) : null),
-      b.resolution ? RESOLUTION_LABEL[b.resolution] : null,
+      // Every picture version it was found in (TS5): "1080p, 4K HDR".
+      findPictureText(b),
     ]
       .filter(Boolean)
       .join(" · ");

@@ -18,6 +18,37 @@ function LazyShareHost() {
   return open ? <ShareHost /> : null;
 }
 
+// The speed meter (`?perf=1`, performance handoff §5.2) loads only in a tab that turned it on.
+const PerfMeter = dynamic(() => import("../perf/PerfMeter").then((m) => m.PerfMeter), { ssr: false });
+const PERF_KEY = "lumovio.perf";
+
+function PerfGate({ tv }: { tv: boolean }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const asked = new URLSearchParams(location.search).get("perf");
+    try {
+      if (asked === "1") sessionStorage.setItem(PERF_KEY, "1");
+      if (asked === "0") sessionStorage.removeItem(PERF_KEY);
+      setOn(sessionStorage.getItem(PERF_KEY) === "1");
+    } catch {
+      setOn(asked === "1");
+    }
+    // The page's own speed in the field (lib/vitals), once the page is idle: not with the first JS.
+    const start = () => void import("@/lib/vitals").then((m) => m.startVitals(tv));
+    if ("requestIdleCallback" in window) requestIdleCallback(start, { timeout: 4000 });
+    else setTimeout(start, 2000);
+  }, [tv]);
+  const off = () => {
+    try {
+      sessionStorage.removeItem(PERF_KEY);
+    } catch {
+      // Without storage it was on for this page only.
+    }
+    setOn(false);
+  };
+  return on ? <PerfMeter tv={tv} onOff={off} /> : null;
+}
+
 interface Session {
   me: Me | null;
   /** /api/me didn't answer (network, timeout, 5xx): `me` is unknown, not "signed out" (SH-03). */
@@ -62,6 +93,7 @@ export function Providers({ children, me, apiDown = false, locale, tv }: { child
         {children}
         <Toaster />
         {!tv && <LazyShareHost />}
+        <PerfGate tv={tv} />
         {!tv && <BackCover />}
       </QueryClientProvider>
     </SessionContext.Provider>

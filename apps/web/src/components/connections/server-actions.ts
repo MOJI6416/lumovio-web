@@ -10,7 +10,7 @@ import { api } from "@/lib/api";
 import { relativeTime } from "@/lib/format";
 import { MediaNetError } from "@/lib/media/net";
 import { randomId } from "@/lib/random-id";
-import { netErrorText } from "./net-errors";
+import { failureDetail, netErrorText } from "./net-errors";
 
 // The server's state as a dot and a word (7.4, 7.16): never only a colour.
 export const STATUS: Record<string, Status> = {
@@ -56,8 +56,9 @@ export function useServerActions(c: ConnectionSummary, onChange: () => void) {
   const [scanned, setScanned] = useState<number | null>(null);
 
   /**
-   * `quiet`: the check the list runs by itself (SRV-08) — the row shows the result; a failure is said as after a press,
-   * with the server's name.
+   * `quiet`: the check the list runs by itself (SRV-08) — the row shows the result, a failure included: its status
+   * and what went wrong, with "What to do" (no toast repeating "Unreachable" over the bottom of the screen; phones
+   * 2026-10-30). A pressed check says its result in a toast as well.
    */
   const test = async ({ quiet = false }: { quiet?: boolean } = {}) => {
     setBusy("test");
@@ -71,12 +72,12 @@ export function useServerActions(c: ConnectionSummary, onChange: () => void) {
     } catch (e) {
       const status = e instanceof MediaNetError && e.code === "auth" ? "unauthorized" : "unreachable";
       try {
-        await api(`/api/connections/${c.id}/check`, { method: "POST", json: { status, detail: null } });
+        // The failure's kind ("local_network", "timeout"…), never its text: the row says it in the person's words.
+        await api(`/api/connections/${c.id}/check`, { method: "POST", json: { status, detail: failureDetail(e) } });
       } catch {
         // Only the stored status stays as it was; the toast below says what failed.
       }
-      // Nobody pressed anything for the quiet one: the toast names the server.
-      toast.error(quiet ? t("checkFailedFor", { name: c.name, reason: netErrorText(t, e) }) : netErrorText(t, e));
+      if (!quiet) toast.error(netErrorText(t, e, c.baseUrl));
     } finally {
       setBusy(null);
       onChange();

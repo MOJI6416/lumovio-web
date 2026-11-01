@@ -20,7 +20,8 @@ const KEYS: Record<string, string> = { up: "ArrowUp", down: "ArrowDown", left: "
 
 /**
  * The TV's side of the event stream (TV document §7.2, §7.3, §12.4): what changed on a phone or a computer — lists,
- * progress, a profile's preferences, servers — is fetched again when the remote rests and no layer is open (the
+ * progress, a profile's preferences, servers and the copies on them (`index`: a torrent added, linked or removed, a
+ * scan) — is fetched again when the remote rests and no layer is open (the
  * current viewing isn't touched); after a gap (sleep, lost network) everything shown is; a session removed from
  * Devices goes back to the code screen at once; the phone remote's keys go the way the remote's keys go, its text
  * into the search. Reconnects with a growing pause up to a minute; no polling.

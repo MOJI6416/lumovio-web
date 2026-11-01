@@ -1,4 +1,4 @@
-import type { TitleDetails } from "@lumovio/contracts";
+import type { MoreBy, TitleDetails } from "@lumovio/contracts";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -143,6 +143,8 @@ export default async function TitlePage({ params, searchParams }: { params: Para
   tabs.push({ id: "details", label: t("details") });
   const asked = (Array.isArray(tabParam) ? tabParam[0] : tabParam) as TitleTabId | undefined;
   const active: TitleTabId = asked && TITLE_TABS.includes(asked) && tabs.some((x) => x.id === asked) ? asked : tabs[0]!.id;
+  // "More by …" (the director's or creator's other titles) only when its tab is open: one more request, from a cache.
+  const moreBy = active === "related" ? await optional(serverApi<MoreBy | null>(`/api/catalog/title/${d.kind}/${d.tmdbId}/more-by`), null) : null;
 
   return (
     <article>
@@ -163,7 +165,7 @@ export default async function TitlePage({ params, searchParams }: { params: Para
             <Availability title={core} />
           </div>
         )}
-        {active === "related" && <RelatedTab collection={collection} related={related} relatedOther={relatedOther} />}
+        {active === "related" && <RelatedTab collection={collection} related={related} relatedOther={relatedOther} moreBy={moreBy} />}
         {active === "videos" && <VideosTab videos={d.videos} title={d.title} />}
         {active === "details" && <TitleFacts details={d} locale={locale} />}
       </TitleTabs>

@@ -36,7 +36,8 @@ export function TitleScreen({
   const locale = useLocale();
   const cast = d.cast.slice(0, 20);
   const series = d.kind === "tv" && d.seasons.length > 0;
-  const backdrop = tmdbImage(d.backdropPath, "w1280");
+  // A fanart.tv background the profile chose on the site stands in the TMDB backdrop's place (title/ArtChooser).
+  const backdrop = tmdbImage(d.backdropPath, "w1280") ?? d.altBackdrop?.url ?? null;
   const original = d.originalTitle && d.originalTitle !== d.title ? d.originalTitle : null;
   return (
     <div data-tv-screen="detail" className="stage relative h-full overflow-hidden bg-stage">

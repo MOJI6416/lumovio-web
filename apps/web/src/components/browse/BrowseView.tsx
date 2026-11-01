@@ -24,7 +24,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { type BrowseState, browseState, discoverQuery, filtersQuery, INDEX_SORTS, isIndexSort } from "@/lib/discover";
+import { type BrowseState, browseState, discoverQuery, filtersQuery, INDEX_SORTS, isIndexSort, MOOD_NAME } from "@/lib/discover";
 import { formatRuntime, languageName } from "@/lib/format";
 
 const LANGS = ["en", "ja", "ko", "fr", "es", "de", "it", "uk", "ru", "zh", "hi", "pt", "tr", "pl", "sv", "da"];
@@ -35,7 +35,7 @@ const fromAny = (v: string) => (v === ANY ? null : v);
 /** TMDB stops counting at about this many results: past it the number is a ceiling, not a count (CAT-07). */
 const COUNT_CEILING = 20000;
 /** Every filter of the grid in the address (the sort and the series/films switch are not filters). */
-const FILTER_KEYS = ["genres", "yearFrom", "yearTo", "ratingMin", "language", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax", "shelf"];
+const FILTER_KEYS = ["genres", "yearFrom", "yearTo", "ratingMin", "language", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax", "imdbVotesMax", "opinions", "mood", "shelf"];
 
 type Patch = Record<string, string | null>;
 
@@ -208,6 +208,7 @@ export function BrowseView({
 }) {
   const t = useTranslations("browse");
   const tc = useTranslations("common");
+  const trows = useTranslations("rows");
   const locale = useLocale();
   const params = useSearchParams();
   const router = useRouter();
@@ -244,7 +245,7 @@ export function BrowseView({
   // biome-ignore lint/correctness/useExhaustiveDependencies: the state fields are the inputs
   const apiQuery = useMemo(
     () => discoverQuery(kind, state),
-    [kind, state.sort, state.genres.join(","), state.yearFrom, state.yearTo, state.ratingMin, state.language, state.anime, state.without.join(","), state.runtimeMax, state.type, state.status, state.votesMin, state.votesMax, state.noSpecials, state.episodesMax],
+    [kind, state.sort, state.genres.join(","), state.yearFrom, state.yearTo, state.ratingMin, state.language, state.anime, state.without.join(","), state.runtimeMax, state.type, state.status, state.votesMin, state.votesMax, state.noSpecials, state.episodesMax, state.imdbVotesMax, state.opinions, state.mood],
   );
 
   // The sorts on Lumovio's own catalog index these filters allow (IMDb, Lumovio Score, critics), with how many of the
@@ -299,7 +300,9 @@ export function BrowseView({
   const shelf = SHELF_COPY[params.get("shelf") ?? ""]?.title ? params.get("shelf") : null;
   // Conditions without a control of their own; a shelf's page counts them as one (its name stands for them), and a
   // shelf with none of them ("Anime series", "Popular series") adds nothing to the count (CAT-11).
-  const hiddenCount = state.without.length + [state.votesMin, state.votesMax, isMovie && state.noSpecials, tv && state.episodesMax].filter(Boolean).length;
+  const hiddenCount =
+    state.without.length +
+    [state.votesMin, state.votesMax, isMovie && state.noSpecials, tv && state.episodesMax, state.imdbVotesMax, state.opinions, isMovie && state.mood].filter(Boolean).length;
   const activeCount =
     state.genres.length +
     [state.yearFrom, state.yearTo, state.ratingMin, state.language, isMovie && state.runtimeMax, series && state.type, tv && state.status].filter(Boolean).length +
@@ -314,6 +317,9 @@ export function BrowseView({
         ...(state.votesMax ? [{ key: "vmax", label: t("votesMax", { count: Number(state.votesMax) }), clear: { votesMax: null } }] : []),
         ...(isMovie && state.noSpecials ? [{ key: "nospecials", label: t("noSpecials"), clear: { nospecials: null } }] : []),
         ...(tv && state.episodesMax ? [{ key: "episodes", label: t("episodesMax", { count: Number(state.episodesMax) }), clear: { episodesMax: null } }] : []),
+        ...(state.imdbVotesMax ? [{ key: "imdbmax", label: t("imdbVotesMax", { count: Number(state.imdbVotesMax) }), clear: { imdbVotesMax: null } }] : []),
+        ...(state.opinions ? [{ key: "opinions", label: t("criticsHigher"), clear: { opinions: null } }] : []),
+        ...(isMovie && state.mood ? [{ key: "mood", label: t("mood", { name: trows(MOOD_NAME[state.mood]) }), clear: { mood: null } }] : []),
       ];
 
   // The phone's filter sheet works on a copy of the address and applies it with "Show N" (CAT-03).

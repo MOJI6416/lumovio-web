@@ -16,6 +16,8 @@ export const LABEL: Record<ImportSource, string> = {
   lampa: "Lampa / CUB",
   stremio: "Stremio",
   lumovio: "Lumovio",
+  jellyfin: "Jellyfin",
+  plex: "Plex",
 };
 
 /** The file name for an upload; Trakt/Simkl imports are named by what started them (IMP-02). */
@@ -23,6 +25,8 @@ export function JobName({ job }: { job: ImportJob }) {
   const t = useTranslations("import");
   if (job.origin === "sync") return t("originSync", { source: LABEL[job.source] });
   if (job.origin === "account") return t("originAccount", { source: LABEL[job.source] });
+  // Read from the person's own server: the file is this device's, not one they chose.
+  if (job.source === "jellyfin" || job.source === "plex") return t("originServer", { source: LABEL[job.source] });
   return job.fileName ?? LABEL[job.source];
 }
 

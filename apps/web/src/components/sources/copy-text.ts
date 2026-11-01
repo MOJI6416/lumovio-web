@@ -2,7 +2,8 @@
 
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
-import { parseRelease } from "@/lib/media/releases";
+import { useSession } from "@/components/providers/Providers";
+import { creditsStudio, parseRelease } from "@/lib/media/releases";
 import { formatSize, useReleaseText } from "./release-text";
 
 const KIND_LABEL: Record<Availability["kind"], string> = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" };
@@ -18,6 +19,9 @@ export function useCopyText() {
   const t = useTranslations("titlePage");
   const locale = useLocale();
   const text = useReleaseText();
+  const profile = useSession().me?.activeProfile;
+  const langs = profile?.audioLanguages ?? [];
+  const studios = profile?.voiceStudios ?? [];
 
   const releaseName = (s: Availability, all: Availability[]): string | null => {
     if (s.kind !== "torrserver") return null;
@@ -32,10 +36,25 @@ export function useCopyText() {
     return told(s.label) ? s.label : told(own) ? own : (s.label ?? own);
   };
 
+  /** A server's copy's audio languages in words, the profile's own first: "Russian, English". */
+  const languagesOf = (s: Availability): string | null => {
+    const own = s.quality?.audioLanguages ?? [];
+    if (own.length === 0) return null;
+    const sorted = [...own].sort((a, b) => rank(a) - rank(b));
+    return sorted.slice(0, 3).map((l, i) => (i === 0 ? text.cap(text.language(l)) : text.language(l))).join(", ");
+  };
+  const rank = (l: string) => {
+    const i = langs.indexOf(l);
+    return i < 0 ? langs.length : i;
+  };
+
   return {
-    /** The copy's version: "1080p · HDR10 · HEVC" from the server, or the release's picture and audio. */
+    /**
+     * The copy's version: "1080p · HDR10 · HEVC · Russian, English" from the server (the audio languages its scan read),
+     * or the release's picture and audio.
+     */
     version: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string => {
-      const known = [s.quality?.resolution, s.quality?.hdr, s.quality?.videoCodec?.toUpperCase()].filter(Boolean).join(" · ");
+      const known = [s.quality?.resolution, s.quality?.hdr, s.quality?.videoCodec?.toUpperCase(), languagesOf(s)].filter(Boolean).join(" · ");
       if (known) return known;
       const name = releaseName(s, all);
       if (name) {
@@ -52,6 +71,24 @@ export function useCopyText() {
         .join(" · "),
     /** The release's full name, for the copy's details. */
     releaseName,
+    /**
+     * What a copy's audio has to do with the profile, as a release's row says it (7.4 Tag, `audioMatch`): one of its
+     * studios a TorrServer copy's release credits ("your dubbing"), else one of its audio languages — the server's
+     * tracks for Jellyfin and Plex, the release name for TorrServer ("your language"). Null when nothing is known.
+     */
+    audioMatch: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): { kind: "studio"; studio: string } | { kind: "language"; language: string } | null => {
+      if (s.kind !== "torrserver") {
+        const l = langs.find((x) => s.quality?.audioLanguages?.includes(x));
+        return l ? { kind: "language", language: l } : null;
+      }
+      const name = releaseName(s, all);
+      if (!name) return null;
+      const studio = studios.find((x) => creditsStudio(name, x));
+      if (studio) return { kind: "studio", studio };
+      const info = parseRelease(name, null, originalLanguage);
+      const l = langs.find((x) => info.languages.includes(x));
+      return l ? { kind: "language", language: l } : null;
+    },
     kindLabel: (s: Availability) => KIND_LABEL[s.kind],
   };
 }

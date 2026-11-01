@@ -8,10 +8,14 @@ import { type FocusEvent, useMemo, useState } from "react";
 import { CardRating } from "@/components/media/CardRating";
 import { TvButton } from "@/components/ui/tv/TvButton";
 import { api } from "@/lib/api";
+import { CardMoreLayer, type CardTarget, HoldHint, useHidden, useStable } from "../media/hold";
 import { TvCard } from "../media/TvCard";
 import { TvState } from "../shell/TvState";
 
-/** A list on a TV (S10 TV): its name, owner and count, then its titles as a grid, page after page (LIB-24). */
+/**
+ * A list on a TV (S10 TV): its name, owner and count, then its titles as a grid, page after page (LIB-24). Whoever
+ * may edit it removes a title from it with the card's "More" (held OK, ../media/hold).
+ */
 export function ListScreen({ id, initial }: { id: string; initial: ListDetails }) {
   const tc = useTranslations("common");
   const tv = useTranslations("tvui");
@@ -23,7 +27,17 @@ export function ListScreen({ id, initial }: { id: string; initial: ListDetails }
     getNextPageParam: (last) => last.nextOffset ?? undefined,
     initialData: { pages: [initial], pageParams: [0] },
   });
-  const titles = useMemo(() => (q.data?.pages ?? []).flatMap((p) => p.items.map((i) => i.title)), [q.data]);
+  const { hidden, hide } = useHidden();
+  const [more, setMore] = useState<CardTarget | null>(null);
+  const canEdit = initial.role === "owner" || initial.role === "editor";
+  const titles = useMemo(
+    () => (q.data?.pages ?? []).flatMap((p) => p.items.map((i) => i.title)).filter((x) => !hidden.has(x.id)),
+    [q.data, hidden],
+  );
+  const onMore = useStable((i: number) => {
+    const x = titles[i];
+    if (x) setMore({ kind: "list", title: x, list: { id, name: initial.name } });
+  });
   const onFocus = (e: FocusEvent<HTMLDivElement>) => {
     const i = Number((e.target as HTMLElement).dataset.index);
     setFocused(titles[i] ?? null);
@@ -45,6 +59,7 @@ export function ListScreen({ id, initial }: { id: string; initial: ListDetails }
                   <span className="truncate font-semibold text-text-1">{focused.title}</span>
                   {focused.year && <span>{focused.year}</span>}
                   <CardRating title={focused} className="text-text-1" />
+                  {canEdit && <HoldHint className="ms-auto flex shrink-0 items-center gap-3" />}
                 </>
               )}
             </div>
@@ -55,7 +70,7 @@ export function ListScreen({ id, initial }: { id: string; initial: ListDetails }
             ) : (
               <div data-zone="grid" data-zone-axis="grid" onFocus={onFocus} className="grid grid-cols-7 gap-x-6 gap-y-8">
                 {titles.map((x, i) => (
-                  <TvCard key={x.id} title={x} index={i} fluid />
+                  <TvCard key={x.id} title={x} index={i} fluid onMore={canEdit ? onMore : undefined} />
                 ))}
                 {q.isFetchNextPageError && (
                   <TvButton icon={RefreshCw} onClick={() => void q.fetchNextPage()}>
@@ -67,6 +82,9 @@ export function ListScreen({ id, initial }: { id: string; initial: ListDetails }
           </div>
         </div>
       </div>
+      {more && (
+        <CardMoreLayer target={more} hide={() => hide(more.title.id)} onClose={() => setMore(null)} />
+      )}
     </div>
   );
 }

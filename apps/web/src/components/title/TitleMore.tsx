@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CircleCheck, Ellipsis, EyeOff, Heart, ListPlus, Share2 } from "lucide-react";
+import { Bell, CircleCheck, Ellipsis, EyeOff, Heart, ImageIcon, ListPlus, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { CreateListDialog } from "@/components/library/CreateListDialog";
 import { ListPicker } from "@/components/media/ListPicker";
 import { NotInterestedDialog } from "@/components/media/NotInterestedDialog";
@@ -19,6 +19,9 @@ import { randomId } from "@/lib/random-id";
 import type { TitleLibraryState } from "@lumovio/contracts";
 import { isOngoing, type TitleCore } from "./core";
 import { HeroAction } from "./HeroAction";
+
+// The picture chooser loads when it is opened, not with the title page (bundle budget).
+const ArtChooser = lazy(() => import("./ArtChooser").then((m) => ({ default: m.ArtChooser })));
 
 /**
  * The title hero's "More" (design-system 8.1, TTL-02, TTL-08, TTL-09, TTL-20, TTL-24): Favourites, Watched (a series:
@@ -37,6 +40,8 @@ export function TitleMore({ title: d, initialOpen, focusTrigger, label }: { titl
   const [listsOpen, setListsOpen] = useState(false);
   const [newList, setNewList] = useState(false);
   const [hiding, setHiding] = useState(false);
+  const [art, setArt] = useState(false);
+  const ta = useTranslations("art");
   const trigger = useRef<HTMLButtonElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, when it takes the light button's place
   useEffect(() => {
@@ -120,6 +125,12 @@ export function TitleMore({ title: d, initialOpen, focusTrigger, label }: { titl
         <MenuItem icon={Share2} onSelect={() => void a.share()}>
           {tc("share")}
         </MenuItem>
+        {/* The profile's own background and logo for this page (8.16). */}
+        {a.signedIn && (
+          <MenuItem icon={ImageIcon} onSelect={() => setArt(true)}>
+            {ta("menu")}
+          </MenuItem>
+        )}
       </Menu>
       <GuestGate {...a.gate} />
       {a.signedIn && (
@@ -135,6 +146,11 @@ export function TitleMore({ title: d, initialOpen, focusTrigger, label }: { titl
         />
       )}
       {a.signedIn && <CreateListDialog open={newList} onOpenChange={setNewList} onCreated={a.addToNewList} />}
+      {a.signedIn && art && (
+        <Suspense fallback={null}>
+          <ArtChooser kind={d.kind} tmdbId={d.tmdbId} title={d.title} open onOpenChange={setArt} />
+        </Suspense>
+      )}
       {a.signedIn && (
         <NotInterestedDialog open={hiding} onOpenChange={setHiding} title={d.title} genreIds={d.genreIds} onConfirm={(reason) => void a.setHidden(true, undefined, reason)} />
       )}

@@ -12,8 +12,12 @@ import type { Dir } from "./engine";
 export interface NavApi {
   move: (dir: Dir) => boolean;
   back: () => void;
-  /** Opens a layer (dialog, menu, panel): an entry in the history, closed by Back or `dismiss`. */
-  openLayer: (close: () => void) => { id: number; dismiss: () => void };
+  /**
+   * Opens a layer (dialog, menu, panel): an entry in the history, closed by Back or `dismiss`. `inline`: a state of the
+   * screen itself (the player's controls, the sources over the player) — the focus isn't kept inside it nor moved back
+   * when it closes, and the screen's own Back step goes before it.
+   */
+  openLayer: (close: () => void, opts?: { inline?: boolean }) => { id: number; dismiss: () => void };
   /** A screen's own step of Back (hide the player's controls…): return true when it handled it. Newest first. */
   onBack: (handler: () => boolean) => () => void;
   /** Goes to `href`, closing open layers first so no empty "back" steps stay behind. */

@@ -55,7 +55,8 @@ export async function SectionLanding({
   const active = anime ? "anime" : kind;
 
   return (
-    <>
+    // The C5 comparison arm the API built this page in: its shelves' counters carry it (lib/discovery-metrics).
+    <div className="contents" data-discovery-variant={data.variant}>
       {/* The stage under the transparent header: the section's name and controls over the top of the billboard's art,
           first in the order, so the keyboard meets them before the slide's actions. */}
       <div data-hero={featured ? "" : undefined} className={clsx(featured && "stage relative isolate -mt-16 bg-stage")}>
@@ -113,6 +114,6 @@ export async function SectionLanding({
           </Row>
         ))}
       </LinkTabPanel>
-    </>
+    </div>
   );
 }

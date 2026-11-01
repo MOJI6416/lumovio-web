@@ -4,6 +4,7 @@ import type { TitleSummary } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ellipsis, Info, Search, Star, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { memo } from "react";
 import { Poster } from "@/components/media/Poster";
 import { useSession } from "@/components/providers/Providers";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -21,6 +22,7 @@ import { titleHref } from "@/lib/slug";
 import { useAction } from "@/lib/use-action";
 import { CollectionToolbar } from "./CollectionToolbar";
 import { ROW, ROW_GRID, RowsSkeleton } from "./GridSkeleton";
+import { ShowMore, useShowMore } from "./show-more";
 import { readFilters, readSort, useUrlState } from "./url-state";
 
 interface RatingRow {
@@ -38,12 +40,12 @@ const VALUES = Array.from({ length: 10 }, (_, i) => String(10 - i));
 /**
  * Ratings (S09, LIB-12): one row per title with the date it was rated, the value as a Select to change it in place
  * (no toast: the change is seen where it is made, 8.1) and "More" with "Remove rating" — gone at once, "Undo" in the
- * toast puts the same value back. Sorted by date, by value or by name; the type chips of the library apply.
+ * toast puts the same value back. Sorted by date, by value or by name; the type chips of the library apply. Drawn 60
+ * rows at a time with "Show more", sorted and filtered over all of them.
  */
 export function RatingsTab() {
   const t = useTranslations("library");
   const tc = useTranslations("common");
-  const tcard = useTranslations("card");
   const tb = useTranslations("browse");
   const locale = useLocale();
   const kids = Boolean(useSession().me?.activeProfile?.isKids);
@@ -52,6 +54,8 @@ export function RatingsTab() {
   const filters = readFilters(params);
   const sort = readSort<Sort>(params, SORTS, "rated");
   const q = useQuery({ queryKey: ["ratings"], queryFn: () => api<Ratings>("/api/library/ratings"), refetchInterval: untilComplete });
+  // 60 rows at a time (8 000 ratings were 8 400 nodes and nearly two seconds of long tasks drawn at once).
+  const { limit, more } = useShowMore(`ratings?${params.toString()}`);
 
   const put = (titleId: string, value: number | null) =>
     api(`/api/library/rating`, { method: "PUT", json: { titleId, value } });
@@ -153,76 +157,14 @@ export function RatingsTab() {
               />
             ) : (
               // Rows across the page's width: two columns from xl, three from 2xl (owner, 2026-10-25).
-              <ul className={ROW_GRID}>
-                {rows.map((r) => {
-                  const href = titleHref(r.title.kind, r.title.tmdbId, r.title.title);
-                  return (
-                    <li key={r.title.id} className={ROW}>
-                      {/* The poster, the name and the line under it are one link to the title; the controls stand beside it. */}
-                      <Link
-                        href={href}
-                        className="group/row flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-sm py-1"
-                      >
-                        <div className="w-10 shrink-0 overflow-hidden rounded-sm">
-                          <Poster path={r.title.posterPath} title="" kind={r.title.kind} sizes="40px" />
-                        </div>
-                        <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 text-title text-text-1 group-hover/row:underline">
-                            {r.title.title}
-                          </span>
-                          <span className="block text-body-s text-text-2">
-                            {[
-                              r.title.year,
-                              r.title.kind === "movie" ? tc("movie") : tc("series"),
-                              t("ratedOn", {
-                                date:
-                                  // This year "23 окт.", earlier with the year (2.3).
-                                  formatDate(r.ratedAt, locale, {
-                                    day: "numeric",
-                                    month: "short",
-                                    ...(r.ratedAt.startsWith(String(new Date().getFullYear()))
-                                      ? {}
-                                      : { year: "numeric" }),
-                                  }) ?? "",
-                              }),
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
-                        </span>
-                      </Link>
-                      <div className="relative flex shrink-0 items-center gap-1">
-                        <Select
-                          aria-label={t("yourRatingOf", { title: r.title.title })}
-                          size="sm"
-                          className="w-auto shrink-0"
-                          value={String(r.value)}
-                          onValueChange={(v) => void change.run(r, Number(v))}
-                          options={VALUES.map((v) => ({
-                            value: v,
-                            label: t("ratingValue", { value: Number(v) }),
-                          }))}
-                        />
-                        <Menu
-                          label={t("ratingMenu")}
-                          title={r.title.title}
-                          trigger={
-                            <IconButton icon={Ellipsis} label={tcard("more", { title: r.title.title })} />
-                          }
-                        >
-                          <MenuItem icon={Info} href={href}>
-                            {tcard("details")}
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuItem icon={Trash2} tone="danger" onSelect={() => void remove.run(r)}>
-                            {t("removeRating")}
-                          </MenuItem>
-                        </Menu>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                <ul className={ROW_GRID}>
+                  {rows.slice(0, limit).map((r) => (
+                    <RatingItem key={r.title.id} r={r} onChange={change.run} onRemove={remove.run} />
+                  ))}
+                </ul>
+                <ShowMore shown={Math.min(limit, rows.length)} total={rows.length} onMore={more} />
+              </>
             )}
           </div>
         );
@@ -230,3 +172,88 @@ export function RatingsTab() {
     </QueryState>
   );
 }
+
+/**
+ * One rating's row. Memoised: "Show more" draws only the new rows, not again the ones already shown (a row holds a
+ * Select and a menu, and 8 000 ratings drawn at once were nearly two seconds of long tasks).
+ */
+const RatingItem = memo(function RatingItem({
+  r,
+  onChange,
+  onRemove,
+}: {
+  r: RatingRow;
+  onChange: (r: RatingRow, value: number) => unknown;
+  onRemove: (r: RatingRow) => unknown;
+}) {
+  const t = useTranslations("library");
+  const tc = useTranslations("common");
+  const tcard = useTranslations("card");
+  const locale = useLocale();
+  const href = titleHref(r.title.kind, r.title.tmdbId, r.title.title);
+  return (
+    <li className={ROW}>
+      {/* The poster, the name and the line under it are one link to the title; the controls stand beside it. */}
+      <Link
+        href={href}
+        className="group/row flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-sm py-1"
+      >
+        <div className="w-10 shrink-0 overflow-hidden rounded-sm">
+          <Poster path={r.title.posterPath} title="" kind={r.title.kind} sizes="40px" />
+        </div>
+        <span className="min-w-0 flex-1">
+          <span className="line-clamp-2 text-title text-text-1 group-hover/row:underline">
+            {r.title.title}
+          </span>
+          <span className="block text-body-s text-text-2">
+            {[
+              r.title.year,
+              r.title.kind === "movie" ? tc("movie") : tc("series"),
+              t("ratedOn", {
+                date:
+                  // This year "23 окт.", earlier with the year (2.3).
+                  formatDate(r.ratedAt, locale, {
+                    day: "numeric",
+                    month: "short",
+                    ...(r.ratedAt.startsWith(String(new Date().getFullYear()))
+                      ? {}
+                      : { year: "numeric" }),
+                  }) ?? "",
+              }),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+        </span>
+      </Link>
+      <div className="relative flex shrink-0 items-center gap-1">
+        <Select
+          aria-label={t("yourRatingOf", { title: r.title.title })}
+          size="sm"
+          className="w-auto shrink-0"
+          value={String(r.value)}
+          onValueChange={(v) => void onChange(r, Number(v))}
+          options={VALUES.map((v) => ({
+            value: v,
+            label: t("ratingValue", { value: Number(v) }),
+          }))}
+        />
+        <Menu
+          label={t("ratingMenu")}
+          title={r.title.title}
+          trigger={
+            <IconButton icon={Ellipsis} label={tcard("more", { title: r.title.title })} />
+          }
+        >
+          <MenuItem icon={Info} href={href}>
+            {tcard("details")}
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem icon={Trash2} tone="danger" onSelect={() => void onRemove(r)}>
+            {t("removeRating")}
+          </MenuItem>
+        </Menu>
+      </div>
+    </li>
+  );
+});

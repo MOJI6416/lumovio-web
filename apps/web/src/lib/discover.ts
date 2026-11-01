@@ -1,10 +1,18 @@
-import type { IndexSort, MediaKind } from "@lumovio/contracts";
+// Types only: a value from @lumovio/contracts brings its zod schemas into every page's first load (bundle budget).
+import type { IndexSort, MediaKind, Mood } from "@lumovio/contracts";
 
 export const SORTS = ["popularity", "rating", "release_desc", "release_asc", "title", "votes", "imdb", "imdb_votes", "lumovio", "rt", "metacritic"] as const;
 
 /** Sorts on Lumovio's own catalog index, offered only where `GET /api/catalog/sorts` says so, and the score each one is. */
 export const INDEX_SORTS: Record<IndexSort, string> = { imdb: "IMDb", imdb_votes: "IMDb", lumovio: "Lumovio", rt: "Rotten Tomatoes", metacritic: "Metacritic" };
 export const isIndexSort = (s: string): s is IndexSort => s in INDEX_SORTS;
+
+/** A mood's name (a chip, a smart list's condition): its shelf's heading, rows.*. */
+export const MOOD_NAME: Record<Mood, "moodFeelGood" | "moodMindBending" | "moodEdgeOfSeat"> = {
+  feel_good: "moodFeelGood",
+  mind_bending: "moodMindBending",
+  edge_of_seat: "moodEdgeOfSeat",
+};
 
 export interface BrowseState {
   sort: (typeof SORTS)[number];
@@ -28,6 +36,12 @@ export interface BrowseState {
   votesMax: string;
   /** Films: leave out TV specials (TMDB keyword "tv special"), so every pick stands on its own. */
   noSpecials: boolean;
+  /** At most this many IMDb votes ("Underrated"; Lumovio's catalog index only). */
+  imdbVotesMax: string;
+  /** "critics_higher": the Lumovio Score's critics 80+, audiences 20+ points lower (catalog index only). */
+  opinions: "" | "critics_higher";
+  /** Films: a mood shelf's conditions (MOODS). */
+  mood: "" | Mood;
 }
 
 /** TMDB keyword "tv special" (also excluded by the API's under-the-radar shelf). */
@@ -57,6 +71,9 @@ export function browseState(get: (k: string) => string | null | undefined, anime
     votesMin: num(get("votesMin")),
     votesMax: num(get("votesMax")),
     noSpecials: get("nospecials") === "1",
+    imdbVotesMax: num(get("imdbVotesMax")),
+    opinions: get("opinions") === "critics_higher" ? "critics_higher" : "",
+    mood: Object.hasOwn(MOOD_NAME, get("mood") ?? "") ? (get("mood") as Mood) : "",
   };
 }
 
@@ -77,6 +94,9 @@ export function discoverQuery(kind: MediaKind, s: BrowseState): string {
   if (kind === "tv" && s.type) sp.set("tvType", s.type);
   if (kind === "tv" && s.status) sp.set("tvStatus", s.status);
   if (kind === "tv" && s.episodesMax) sp.set("episodesMax", s.episodesMax);
+  if (s.imdbVotesMax) sp.set("imdbVotesMax", s.imdbVotesMax);
+  if (s.opinions) sp.set("opinions", s.opinions);
+  if (kind === "movie" && s.mood) sp.set("mood", s.mood);
   return sp.toString();
 }
 
@@ -89,7 +109,7 @@ export function filtersQuery(kind: MediaKind, s: BrowseState): string {
 
 /** A section page shows its landing unless the URL asks for the grid (filters, sort or "view all"). */
 export function wantsGrid(get: (k: string) => string | null | undefined): boolean {
-  return ["genres", "sort", "yearFrom", "yearTo", "ratingMin", "language", "view", "kind", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax"].some((k) =>
+  return ["genres", "sort", "yearFrom", "yearTo", "ratingMin", "language", "view", "kind", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax", "imdbVotesMax", "opinions", "mood"].some((k) =>
     Boolean(get(k)),
   );
 }

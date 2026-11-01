@@ -19,7 +19,8 @@ import {
   srtToCueText,
 } from "../src/lib/media/subs/text";
 
-// The device check's subtitle clip (scripts/player-check/make-clips.mjs): SRT rus, SRT rus forced, ASS eng, PGS eng.
+// The device check's subtitle clip (scripts/player-check/make-clips.mjs): SRT rus, SRT rus forced, ASS eng, PGS eng,
+// VobSub fre.
 const clip = readFileSync(new URL("../public/player-check/mkv-subs.mkv", import.meta.url));
 const reads: [number, number][] = [];
 const read = async (s: number, e: number) => {
@@ -36,6 +37,7 @@ describe("Matroska subtitle tracks (PLR-14)", () => {
       ["S_TEXT/UTF8", "rus", true],
       ["S_TEXT/ASS", "eng", false],
       ["S_HDMV/PGS", "eng", false],
+      ["S_VOBSUB", "fre", false],
     ]);
     expect(subs[1]!.name).toBe("Forced");
     expect(subs[2]!.codecPrivate && decodeText(subs[2]!.codecPrivate)).toContain("[V4+ Styles]");

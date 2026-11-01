@@ -20,6 +20,7 @@ import { Link as IntlLink, useRouter } from "@/i18n/navigation";
 import { ApiRequestError, api, handle } from "@/lib/api";
 import { importUploadErrorKey } from "@/lib/api-errors";
 import { JobName, JobStatus, LABEL, shortDate } from "./import-shared";
+import { ServerHistoryRead } from "./ServerHistoryRead";
 
 /**
  * Each source's official mark (IMP-10; trademarks of their owners, credited on the Credits page). An app icon with its
@@ -34,6 +35,8 @@ const LOGO: Record<ImportSource, { src: string; fill?: boolean }> = {
   lampa: { src: "/brands/lampa.png", fill: true },
   stremio: { src: "/brands/stremio.svg" },
   lumovio: { src: "/brand/mark.svg" },
+  jellyfin: { src: "/brands/jellyfin.svg" },
+  plex: { src: "/brands/plex.png", fill: true },
 };
 /** Sources that can also be connected by signing in (settings → Trakt and Simkl): then they keep in sync. */
 const ACCOUNT: ImportSource[] = ["trakt", "simkl"];
@@ -160,7 +163,7 @@ function SourceCard({ info: s, selected }: { info: ImportSourceInfo; selected: b
       <span className="min-w-0">
         <span className="block text-title text-text-1">{LABEL[s.source]}</span>
         <span className="block text-body-s text-text-2">
-          {t("methodFile", { types: s.accept.join(", ") })}
+          {s.method === "server" ? t("methodServer") : t("methodFile", { types: s.accept.join(", ") })}
           {ACCOUNT.includes(s.source) && ` · ${t("methodAccount")}`}
         </span>
       </span>
@@ -212,7 +215,7 @@ function Upload({ source, info, profiles, onStarted }: { source: ImportSource; i
           {t("uploadFrom", { source: LABEL[source] })}
         </h2>
         <p className="mt-1 max-w-measure text-body-s text-text-2">
-          <span className="font-semibold text-text-1">{t("howToExport")}: </span>
+          <span className="font-semibold text-text-1">{info.method === "server" ? t("whatItReads") : t("howToExport")}: </span>
           {t(info.helpKey.replace("import.", "") as "help_trakt")}
         </p>
       </div>
@@ -232,6 +235,10 @@ function Upload({ source, info, profiles, onStarted }: { source: ImportSource; i
           {t("kidsTargetText")}
         </InlineAlert>
       )}
+      {info.method === "server" && (source === "jellyfin" || source === "plex") ? (
+        <ServerHistoryRead source={source} busy={busy} onFile={(f) => void upload(f)} />
+      ) : (
+        <>
       {/* The drop area takes a dropped file; "Choose file" opens the picker (one control, no clickable tile). */}
       <div
         onDragOver={(e) => {
@@ -269,6 +276,8 @@ function Upload({ source, info, profiles, onStarted }: { source: ImportSource; i
           if (f) void upload(f);
         }}
       />
+        </>
+      )}
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { languageCode } from "./languages";
 import { parseRelease, type ReleaseTrack } from "./releases";
 
 /*
@@ -67,16 +68,8 @@ export function playbackReasons(note: string | null | undefined): PlaybackReason
   return out;
 }
 
-/** ffprobe's and the servers' ISO 639-2 codes for the languages Lumovio reads in release names. */
-const ISO_639_2: Record<string, string> = { rus: "ru", ukr: "uk", eng: "en", jpn: "ja", ger: "de", deu: "de", fre: "fr", fra: "fr", spa: "es", ita: "it", pol: "pl", kor: "ko", chi: "zh", zho: "zh", por: "pt" };
-
-/** A track's language tag as an ISO 639-1 code ("rus" → "ru"); "und" and nothing are null. */
-export function languageCode(tag: string | null | undefined): string | null {
-  const t = (tag ?? "").trim().toLowerCase();
-  if (!t || t === "und" || t === "unk" || t === "mis" || t === "zxx") return null;
-  if (t.length === 2) return t;
-  return ISO_639_2[t] ?? t;
-}
+// The track language codes live in ./languages (the servers' scans use them too); kept importable from here.
+export { languageCode };
 
 /** What one audio track of a file is, from its language tag and its title ("Dub (Пифагор) AAC", "MVO (HDrezka Studio)"). */
 export interface AudioTrackFacts {

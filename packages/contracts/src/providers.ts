@@ -113,6 +113,11 @@ export const LibraryIndexEntry = z.object({
       resolution: z.string().max(16).nullable(),
       videoCodec: z.string().max(24).nullable(),
       audioCodecs: z.array(z.string().max(24)).max(16),
+      /**
+       * The audio tracks' languages (ISO 639-1, each once, as the server tags them): Jellyfin's and Plex's scans; a
+       * series' from a few of its first episodes. TorrServer copies have none — their release name tells.
+       */
+      audioLanguages: z.array(z.string().min(2).max(3)).max(16),
       hdr: z.string().max(24).nullable(),
       container: z.string().max(24).nullable(),
       sizeBytes: z.number().int().min(0).nullable(),
@@ -153,6 +158,25 @@ export const TorrentBind = z.object({
    * chosen. A file unlinked from its episode is then refused rather than linked again.
    */
   matched: z.boolean().default(false),
+});
+
+/**
+ * `POST /api/catalog/match`: catalog titles for torrents already on a TorrServer, which the device matches itself — by
+ * the title words of a release's name (never the name itself, a hash or a link) or a title id the torrent's own data
+ * names. Answers `{ results: Record<key, TitleSummary[]> }`; nothing is linked by it.
+ */
+export const CatalogMatch = z.object({
+  items: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(256),
+        query: z.string().trim().min(2).max(200).optional(),
+        titleId: TitleId.optional(),
+        kind: z.enum(["movie", "tv"]).optional(),
+      }),
+    )
+    .min(1)
+    .max(40),
 });
 
 /** "I chose this source": it comes first in availability from now on. */
@@ -253,6 +277,19 @@ export const TorrentFindBest = z.object({
   voice: z.enum(["dub", "mvo", "dvo", "avo", "vo"]).nullable(),
   studio: z.string().min(1).max(40).nullable(),
   resolution: z.union([z.literal(2160), z.literal(1080), z.literal(720), z.literal(480)]).nullable(),
+  /**
+   * Every picture version the best release's audio option (its studio, else its language) was found in, lowest first
+   * — 1080p · 4K SDR · 4K HDR; `range` null when the names don't say. Absent from finds reported before it was kept.
+   */
+  pictures: z
+    .array(
+      z.object({
+        resolution: z.union([z.literal(2160), z.literal(1080), z.literal(720), z.literal(480)]).nullable(),
+        range: z.enum(["hdr", "dv", "sdr"]).nullable(),
+      }),
+    )
+    .max(8)
+    .optional(),
 });
 export type TorrentFindBest = z.infer<typeof TorrentFindBest>;
 

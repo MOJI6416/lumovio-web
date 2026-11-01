@@ -1,6 +1,6 @@
 "use client";
 
-import type { Profile } from "@lumovio/contracts";
+import type { Profile, SubtitleStyle } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
@@ -8,6 +8,7 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { RadioGroup } from "@/components/ui/Checkbox";
 import { Combobox } from "@/components/ui/Combobox";
 import { Input } from "@/components/ui/Input";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
 import { SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Switch } from "@/components/ui/Switch";
@@ -15,6 +16,7 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { languageName } from "@/lib/format";
 import { VOICE_STUDIOS } from "@/lib/media/releases";
+import { SUBTITLE_DEFAULTS } from "@/lib/media/subs/view";
 import { useSettingsSave } from "@/lib/use-action";
 import { AUTO, capital, useLocaleOptions } from "./locale-options";
 import { OrderedChoice } from "./OrderedChoice";
@@ -23,7 +25,7 @@ const MEDIA_LANGS = ["en", "uk", "ru", "es", "de", "fr", "pt", "it", "pl", "tr",
 
 type Prefs = Pick<
   Profile,
-  "uiLocale" | "metadataLocale" | "region" | "audioLanguages" | "subtitleLanguages" | "voiceStudios" | "releaseQuality" | "spoilers" | "showAnime"
+  "uiLocale" | "metadataLocale" | "region" | "audioLanguages" | "subtitleLanguages" | "subtitleStyle" | "voiceStudios" | "releaseQuality" | "spoilers" | "showAnime"
 >;
 const pick = (p: Profile): Prefs => ({
   uiLocale: p.uiLocale,
@@ -31,6 +33,7 @@ const pick = (p: Profile): Prefs => ({
   region: p.region,
   audioLanguages: p.audioLanguages,
   subtitleLanguages: p.subtitleLanguages,
+  subtitleStyle: { ...SUBTITLE_DEFAULTS, ...p.subtitleStyle },
   voiceStudios: p.voiceStudios,
   releaseQuality: p.releaseQuality,
   spoilers: p.spoilers,
@@ -39,7 +42,8 @@ const pick = (p: Profile): Prefs => ({
 
 /**
  * Settings → Profile (design-system 7.18, 8.8; audit SET-01, SET-02, PRF-13): the active profile's own choices in
- * sections — Language and region · Catalog · Audio and subtitles · Spoilers · Studios · Release quality. Every choice
+ * sections — Language and region · Catalog · Audio and subtitles · Subtitle appearance · Spoilers · Studios · Release
+ * quality. Every choice
  * applies at once with "Saved" by its section's title; a refusal puts it back and stays in the section with "Retry". A
  * kids profile keeps its languages, audio and spoilers, not the region or anime (an adult sets them in Manage profiles),
  * studios or quality.
@@ -81,6 +85,7 @@ export function ProfileSettings() {
       <LanguageSection {...section} />
       {!p.isKids && <CatalogSection {...section} />}
       <AudioSection {...section} />
+      <SubtitleStyleSection {...section} />
       <SpoilersSection {...section} />
       {!p.isKids && <StudiosSection {...section} />}
       {!p.isKids && <QualitySection {...section} />}
@@ -185,6 +190,63 @@ function AudioSection({ value, change }: SectionProps) {
         />
       </SettingsRow>
     </SettingsSection>
+  );
+}
+
+/**
+ * How subtitles look in the player (design-system 11.1): size, text colour, background, position — each applies at
+ * once (8.8), and the preview under them shows it on a frame of the picture's proportions. A kids profile has it too.
+ */
+function SubtitleStyleSection({ value, change }: SectionProps) {
+  const t = useTranslations("subtitles");
+  const { state, save } = useSettingsSave();
+  const style = value.subtitleStyle;
+  const apply = (patch: Partial<SubtitleStyle>) => {
+    const c = change({ subtitleStyle: { ...style, ...patch } });
+    void save(c.request, c.optimistic);
+  };
+  const choice = <K extends keyof SubtitleStyle>(key: K, options: readonly SubtitleStyle[K][]) => {
+    const name: string = key;
+    return (
+      <SettingsRow label={t(name)}>
+        <SegmentedControl<SubtitleStyle[K]>
+          label={t(name)}
+          value={style[key]}
+          onValueChange={(v) => apply({ [key]: v } as Partial<SubtitleStyle>)}
+          options={options.map((v) => ({ value: v, label: t(`${name}_${String(v)}`) }))}
+        />
+      </SettingsRow>
+    );
+  };
+  return (
+    <SettingsSection title={t("section")} description={t("sectionHint")} save={state}>
+      {choice("size", ["s", "m", "l", "xl"])}
+      {choice("color", ["white", "yellow"])}
+      {choice("edge", ["shadow", "outline", "box"])}
+      {choice("position", ["bottom", "raised"])}
+      <div className="py-4">
+        <SubtitlePreview style={style} label={t("preview")} sample={t("sample")} />
+      </div>
+    </SettingsSection>
+  );
+}
+
+/**
+ * The look on a frame of the picture's proportions (a stage, 3.5): a dark scene that lightens towards the bottom, so the
+ * edge's part in reading it shows; the same CSS as the player's cues (globals.css `.subtitle-sample`).
+ */
+function SubtitlePreview({ style, label, sample }: { style: SubtitleStyle; label: string; sample: string }) {
+  return (
+    <figure
+      aria-label={label}
+      data-sub-size={style.size}
+      data-sub-color={style.color}
+      data-sub-edge={style.edge}
+      data-sub-position={style.position}
+      className="@container stage relative aspect-video w-full max-w-xl overflow-hidden rounded-sm bg-stage bg-linear-to-b from-stage via-surface-3 to-text-2"
+    >
+      <span className="subtitle-sample absolute inset-x-4 mx-auto w-fit text-center">{sample}</span>
+    </figure>
   );
 }
 

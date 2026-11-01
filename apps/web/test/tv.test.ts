@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { entryIndex, nearest } from "../src/components/tvui/nav/engine";
-import { isTvMode, isTvUserAgent, tvAppVersion, tvShellPath } from "../src/lib/tv";
+import { isTvMode, isTvUserAgent, TV_APP_MIN_VERSION, tvAppToUpdate, tvAppVersion, tvShellPath, versionBelow } from "../src/lib/tv";
 
 /*
  * The TV shell (TV document §4.1, §5, §12): which device gets it, where an address is answered, and the remote's
@@ -20,6 +20,20 @@ describe("TV mode", () => {
     expect(isTvMode("1", DESKTOP)).toBe(true);
     expect(isTvMode(undefined, DESKTOP)).toBe(false);
     expect(isTvUserAgent(null)).toBe(false);
+  });
+  it("asks an app older than the minimum to update, only when a newer one is published", () => {
+    expect(versionBelow("1.9", "1.10")).toBe(true);
+    expect(versionBelow("1.10", "1.9")).toBe(false);
+    expect(versionBelow("1.3", "1.3")).toBe(false);
+    expect(versionBelow("1", "1.0.1")).toBe(true);
+    expect(versionBelow("1.0", TV_APP_MIN_VERSION)).toBe(true);
+    expect(tvAppToUpdate(APP, "1.5")).toBe("1.0");
+    // Nothing newer to install, or no manifest: no question.
+    expect(tvAppToUpdate(APP, "1.0")).toBeNull();
+    expect(tvAppToUpdate(APP, null)).toBeNull();
+    expect(tvAppToUpdate(APP.replace("LumovioTV/1.0", `LumovioTV/${TV_APP_MIN_VERSION}`), "1.9")).toBeNull();
+    // A browser isn't an app.
+    expect(tvAppToUpdate(TIZEN, "1.5")).toBeNull();
   });
 });
 

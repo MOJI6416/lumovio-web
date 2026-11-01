@@ -55,7 +55,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   useEffect(() => {
     if (!lookup.data || !inWatchlist || !profileId) return;
     background(
-      reportFind(d.id, bestOf(lookup.data.ranked)).then((f) =>
+      reportFind(d.id, bestOf(lookup.data.ranked), lookup.data.ranked).then((f) =>
         qc.setQueryData<{ finds: TorrentFinds }>(findsKey(profileId), (old) => (old ? { finds: { ...old.finds, [d.id]: f } } : old)),
       ),
     );

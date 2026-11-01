@@ -4,6 +4,7 @@ import { z } from "zod";
 export const MaturityLevel = z.enum(["kids", "family", "teen", "adult"]);
 export type MaturityLevel = z.infer<typeof MaturityLevel>;
 
+/** The avatar's colours (design-system 3.6, `--avatar-*`). */
 export const AVATARS = [
   "aurora",
   "ember",
@@ -18,8 +19,47 @@ export const AVATARS = [
   "moss",
   "coral",
 ] as const;
-export const AvatarId = z.enum(AVATARS);
-export type AvatarId = z.infer<typeof AvatarId>;
+export type AvatarColor = (typeof AVATARS)[number];
+
+/** The white marks drawn on an avatar's colour (design-system 7.17, owner's choice 2026-11-01). */
+export const AVATAR_MARKS = [
+  "projector",
+  "clapper",
+  "popcorn",
+  "ticket",
+  "meteor",
+  "moon",
+  "planet",
+  "sparkle",
+  "rocket",
+  "sun",
+  "fox",
+  "owl",
+  "whale",
+  "cat",
+  "mountain",
+  "wave",
+] as const;
+export type AvatarMark = (typeof AVATAR_MARKS)[number];
+
+/**
+ * A profile's avatar: a colour with the name's initial (`"ember"`, also every avatar saved before marks), or a colour
+ * with a mark (`"ember.fox"`). Kept in the profile's one text column, so no migration.
+ */
+export type AvatarId = AvatarColor | `${AvatarColor}.${AvatarMark}`;
+
+/** Whether `v` is an avatar Lumovio draws. */
+export function isAvatarId(v: unknown): v is AvatarId {
+  if (typeof v !== "string") return false;
+  const [color, mark, ...rest] = v.split(".");
+  return (
+    rest.length === 0 &&
+    (AVATARS as readonly string[]).includes(color!) &&
+    (mark === undefined || (AVATAR_MARKS as readonly string[]).includes(mark))
+  );
+}
+
+export const AvatarId = z.custom<AvatarId>(isAvatarId, { message: "Unknown avatar" });
 
 export const LocaleCode = z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/);
 
@@ -38,6 +78,21 @@ export const SpoilerPrefs = z.object({ stills: z.boolean(), overviews: z.boolean
 export type SpoilerPrefs = z.infer<typeof SpoilerPrefs>;
 export const SPOILER_DEFAULTS: SpoilerPrefs = { stills: true, overviews: true, names: false };
 
+/**
+ * How subtitles look in the player (design-system 11.1): the size, the text's colour, what keeps it readable on the
+ * picture (a shadow, an outline or a box behind it) and how high it stands. Text subtitles take all four; ASS keeps its
+ * own colours and edges (size and height apply), PGS and VobSub pictures take the size and height. A guest and a new
+ * profile get the defaults.
+ */
+export const SubtitleStyle = z.object({
+  size: z.enum(["s", "m", "l", "xl"]),
+  color: z.enum(["white", "yellow"]),
+  edge: z.enum(["shadow", "outline", "box"]),
+  position: z.enum(["bottom", "raised"]),
+});
+export type SubtitleStyle = z.infer<typeof SubtitleStyle>;
+export const SUBTITLE_STYLE_DEFAULTS: SubtitleStyle = { size: "m", color: "white", edge: "shadow", position: "bottom" };
+
 export interface Profile {
   id: string;
   name: string;
@@ -53,6 +108,8 @@ export interface Profile {
   region: string | null;
   audioLanguages: string[];
   subtitleLanguages: string[];
+  /** How subtitles look in the player. */
+  subtitleStyle: SubtitleStyle;
   /** Dubbing and voice-over studios the profile prefers, in order; release search ranks them up. */
   voiceStudios: string[];
   /** The profile's default for picking a release's picture version; a title can pick another for one viewing. */
@@ -86,6 +143,7 @@ export const ProfileUpdate = z.object({
   region: z.string().regex(/^[A-Z]{2}$/).nullable().optional(),
   audioLanguages: z.array(z.string().min(2).max(3)).max(8).optional(),
   subtitleLanguages: z.array(z.string().min(2).max(3)).max(8).optional(),
+  subtitleStyle: SubtitleStyle.optional(),
   voiceStudios: z.array(z.string().trim().min(2).max(40)).max(12).optional(),
   releaseQuality: ReleaseQuality.optional(),
   spoilers: SpoilerPrefs.optional(),

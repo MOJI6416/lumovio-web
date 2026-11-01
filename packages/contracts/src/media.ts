@@ -93,7 +93,8 @@ export interface TitleRelease {
 export type SeriesFact =
   | { kind: "season"; season: number; premiere: string; aired: number; complete: boolean }
   | { kind: "premiere"; date: string }
-  | { kind: "airing"; next: string | null; last: string | null }
+  /** `episode`: the dated one (the next when announced) where its number is the releases' (catalog/curation `releaseNumbered`). */
+  | { kind: "airing"; next: string | null; last: string | null; episode?: { season: number; episode: number } }
   | { kind: "length"; seasons: number; episodes: number; episodeRuntime: number | null };
 
 export interface PersonSummary {
@@ -347,6 +348,12 @@ export interface PersonDetails extends PersonSummary {
   })[];
 }
 
+/** "More by …" on a title page's More like this: the film's director or the series' creator and their other titles. */
+export interface MoreBy {
+  person: { id: number; name: string; role: "director" | "creator" };
+  items: TitleSummary[];
+}
+
 export interface Paged<T> {
   page: number;
   totalPages: number;
@@ -395,6 +402,23 @@ export interface CatalogSearch {
   clear?: boolean;
 }
 
+/**
+ * Mood shelves of the Movies landing and their grid (`mood=`; docs/curation.md "Moods"): TMDB's tone keywords (any of
+ * them), held to genres that fit the mood (any of them) and away from ones that don't, with TMDB's score and votes.
+ * Keywords alone are too loose (Shawshank is "amused" on TMDB) and genres alone say nothing about tone (5.3 of the
+ * discovery study). A filter the grid sets itself replaces the mood's own of the same kind.
+ */
+export const MOODS = {
+  /** hopeful, joyful, feelgood, lighthearted, comforting; comedy, family or romance; no horror, thriller, war, crime, documentary. */
+  feel_good: { keywords: "325824|325832|275276|288816|325784", genres: "35|10751|10749", withoutGenres: "27,53,10752,80,99", ratingMin: 6.8, votesMin: 500 },
+  /** nonlinear timeline, time loop, twist ending, surprise ending, mind-blowing, dream, philosophical; sci-fi, mystery or thriller; no animation or family. */
+  mind_bending: { keywords: "157171|10854|326438|331114|323808|346773|212737", genres: "878|9648|53", withoutGenres: "16,10751", ratingMin: 7, votesMin: 1000 },
+  /** suspenseful, intense; thriller, crime or mystery; no animation, family or horror. */
+  edge_of_seat: { keywords: "314730|321464", genres: "53|80|9648", withoutGenres: "16,10751,27", ratingMin: 7, votesMin: 1000 },
+} as const;
+export type Mood = keyof typeof MOODS;
+export const MOOD_KEYS = Object.keys(MOODS) as [Mood, ...Mood[]];
+
 export const DiscoverQuery = z.object({
   kind: MediaKind.default("movie"),
   page: z.coerce.number().int().min(1).max(500).default(1),
@@ -415,6 +439,15 @@ export const DiscoverQuery = z.object({
   votesMin: z.coerce.number().int().min(0).optional(),
   /** Upper bound on the TMDB vote count: "lesser-known" picks. */
   votesMax: z.coerce.number().int().min(1).optional(),
+  /** Catalog index only: at most this many IMDb votes ("Underrated"). */
+  imdbVotesMax: z.coerce.number().int().min(1).optional(),
+  /**
+   * Catalog index only, while the Lumovio Score is on: "critics_higher" — the Score's Critics part 80+ and its Audience
+   * part at least 20 points lower ("Critics loved it, audiences didn't").
+   */
+  opinions: z.enum(["critics_higher"]).optional(),
+  /** Films: one of MOODS — its keywords, genres and thresholds, under the query's own (TMDB only). */
+  mood: z.enum(MOOD_KEYS).optional(),
   language: z.string().length(2).optional(), // original language
   country: z.string().length(2).optional(), // origin country
   anime: z.coerce.boolean().optional(),
@@ -448,6 +481,11 @@ export interface CatalogPage {
   servers: number;
   featured: FeaturedTitle[];
   rows: CatalogRow[];
+  /**
+   * The C5 comparison arm this page was built in ("lift_a", "lift_b": API catalog/variants.ts), for profiles with a
+   * server; the page's discovery counters carry it in their page key.
+   */
+  variant?: string;
 }
 
 export interface CatalogRow {

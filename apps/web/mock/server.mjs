@@ -29,7 +29,7 @@ function newProfile(name, isKids) {
   return {
     id: randomUUID(),
     name,
-    avatar: isKids ? "bloom" : "aurora",
+    avatar: isKids ? "bloom.owl" : "aurora.projector",
     isKids,
     maturity: isKids ? "kids" : "adult",
     hasPin: false,
@@ -38,6 +38,7 @@ function newProfile(name, isKids) {
     region: null,
     audioLanguages: [],
     subtitleLanguages: [],
+    subtitleStyle: { size: "m", color: "white", edge: "shadow", position: "bottom" },
     voiceStudios: [],
     releaseQuality: "auto",
     spoilers: { stills: true, overviews: true, names: false },
@@ -592,7 +593,7 @@ on("GET", "/api/sessions", async ({ c, req }) => {
 // Profiles
 on("POST", "/api/profiles", async ({ c, body }) => {
   const u = needUser(c);
-  const p = { ...newProfile(body.name ?? "Profile", Boolean(body.isKids)), avatar: body.avatar ?? "aurora" };
+  const p = { ...newProfile(body.name ?? "Profile", Boolean(body.isKids)), avatar: body.avatar ?? "aurora.projector" };
   u.profiles.push(p);
   return p;
 });
@@ -612,6 +613,7 @@ on("PATCH", "/api/profiles/:id", async ({ c, body, params }) => {
           "region",
           "audioLanguages",
           "subtitleLanguages",
+          "subtitleStyle",
         ].includes(k),
       ),
     ),
@@ -683,6 +685,8 @@ on("POST", "/api/preferences/discord/test", async ({ c }) => {
 on("GET", "/api/catalog/home", async ({ c, q }) => catalogPage(c, q, home(c)));
 on("GET", "/api/catalog/section/:kind", async ({ c, q, params }) => catalogPage(c, q, section(c, params.kind, q.get("anime") === "1")));
 on("GET", "/api/catalog/discover", async ({ c, q }) => discover(c, q));
+// The grid's sorts on Lumovio's own catalog index: the mock has no index, so none is offered (TMDB's sorts remain).
+on("GET", "/api/catalog/sorts", async () => ({ imdb: null, imdb_votes: null, lumovio: null, rt: null, metacritic: null }));
 on("GET", "/api/catalog/search", async ({ c, q }) => search(c, q));
 on("GET", "/api/catalog/title/:kind/:id", async ({ c, params }) =>
   details(allowed(c, byId(`${params.kind}:${params.id}`))),
@@ -874,10 +878,11 @@ on("POST", "/api/notifications/read", async () => ({ ok: true }));
 on("GET", "/api/stats", async ({ c }) => stats(needProfile(c)));
 on("GET", "/api/ai/status", async () => ({ available: false }));
 on("GET", "/api/imports/sources", async () => ({
-  sources: ["trakt", "letterboxd", "imdb", "simkl", "netflix", "lampa", "stremio", "lumovio"].map(
+  sources: ["trakt", "letterboxd", "imdb", "simkl", "netflix", "lampa", "stremio", "lumovio", "jellyfin", "plex"].map(
     (source) => ({
       source,
-      method: "file",
+      // Jellyfin and Plex: read from the person's connected server by the device (none in the mock).
+      method: source === "jellyfin" || source === "plex" ? "server" : "file",
       available: false,
       accept: [".json", ".csv", ".zip"],
       helpKey: `import.help_${source}`,
@@ -893,6 +898,13 @@ on("GET", "/api/library/on-servers", async ({ c }) => {
   needProfile(c);
   return { items: [], wanted: [] };
 });
+// The home page's Watchlist shelves (short films, finished series): the mock keeps no runtimes or statuses.
+on("GET", "/api/library/shelves", async ({ c }) => {
+  needProfile(c);
+  return { rows: [] };
+});
+// "More by …" on a title's More like this: the mock has no credits.
+on("GET", "/api/catalog/title/:kind/:id/more-by", async () => null);
 on("GET", "/api/connections", async ({ c }) => {
   needUser(c);
   return { connections: connections.map((x) => x.summary) };

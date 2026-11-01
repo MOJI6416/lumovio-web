@@ -1,12 +1,13 @@
 "use client";
 
-import type { AvatarId, MaturityLevel, Profile } from "@lumovio/contracts";
+import type { AvatarColor, AvatarMark, MaturityLevel, Profile } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { Check, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FocusEvent, type FormEvent, type Ref, useId, useRef, useState } from "react";
 import { AUTO, useLocaleOptions } from "@/components/settings/locale-options";
-import { AVATAR_IDS, ProfileAvatar } from "@/components/ui/Avatar";
+import { AVATAR_COLORS, avatarOf, avatarParts, ProfileAvatar } from "@/components/ui/Avatar";
+import { AVATAR_MARK_IDS } from "@/components/ui/avatar-marks";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
@@ -21,6 +22,26 @@ import { api } from "@/lib/api";
 import { isPinError, profileErrorText } from "./profile-errors";
 
 type PinMode = "keep" | "change" | "remove";
+
+/**
+ * One avatar option as a native radio (arrows move and choose, Tab leaves the group, as ui/RadioGroup): the avatar it
+ * gives, the selection ring and its check.
+ */
+function AvatarOption(props: { group: string; value: string; checked: boolean; onChange: () => void; label: string; avatar: string; name: string }) {
+  return (
+    <label className="relative block cursor-pointer">
+      <input type="radio" name={props.group} value={props.value} checked={props.checked} onChange={props.onChange} aria-label={props.label} className="peer sr-only" />
+      <span className={clsx("block rounded-avatar p-0.5 transition", peerFocusRing, props.checked ? "ring-3 ring-selected-bg" : "opacity-80 hover:opacity-100")}>
+        <ProfileAvatar avatar={props.avatar} name={props.name} size={44} className="!h-auto !w-full aspect-square" />
+      </span>
+      {props.checked && (
+        <span aria-hidden className="absolute -end-1 -top-1 grid size-5 place-items-center rounded-full bg-selected-bg text-selected-fg">
+          <Check className="size-3.5" />
+        </span>
+      )}
+    </label>
+  );
+}
 const PIN = /^\d{4,8}$/;
 
 /** A digit field for a PIN: hidden figures, the phone's number pad. */
@@ -55,7 +76,7 @@ function PinInput(props: {
 
 /**
  * The profile editor of Manage profiles (design-system 7.17, 7.9; audit PRF-07, PRF-08, PRF-09, PRF-13): name, an
- * avatar that tells profiles apart (a free colour is offered first, the swatches carry the name's letter), kids
+ * avatar that tells profiles apart — a colour (a free one offered first) and a white mark or the name's letter — kids
  * profile and age level, anime on or off (8.14), the profile's languages and region — an adult sets them for any profile, a kids one
  * included — and its PIN (set, change, remove). Deleting is in the danger zone at the end, confirmed in a dialog that
  * asks for the PIN when there is one. Errors are said at their field, in the person's language.
@@ -69,7 +90,7 @@ export function ProfileEditor({
   onSaved,
 }: {
   profile: Profile | null;
-  /** The avatars other profiles use: a new profile starts with a free one. */
+  /** The avatars other profiles use: a new profile starts with a free colour and a mark none of them has. */
   taken: string[];
   canDelete: boolean;
   /** Opened by "Set PIN" (8.10): the focus starts in the PIN field, scrolled into view, not in the name. */
@@ -85,9 +106,19 @@ export function ProfileEditor({
   const showPinField = focusPin ? (e: FocusEvent<HTMLInputElement>) => e.currentTarget.scrollIntoView({ block: "center" }) : undefined;
   const options = useLocaleOptions();
   const [name, setName] = useState(profile?.name ?? "");
-  const [avatar, setAvatar] = useState<AvatarId>(
-    (profile?.avatar as AvatarId | undefined) ?? AVATAR_IDS.find((a) => !taken.includes(a)) ?? AVATAR_IDS[taken.length % AVATAR_IDS.length]!,
+  const others = taken.map(avatarParts);
+  const [color, setColor] = useState<AvatarColor>(() =>
+    profile
+      ? avatarParts(profile.avatar).color
+      : (AVATAR_COLORS.find((c) => !others.some((o) => o.color === c)) ?? AVATAR_COLORS[taken.length % AVATAR_COLORS.length]!),
   );
+  const [mark, setMark] = useState<AvatarMark | null>(() =>
+    profile
+      ? avatarParts(profile.avatar).mark
+      : (AVATAR_MARK_IDS.find((m) => !others.some((o) => o.mark === m)) ?? AVATAR_MARK_IDS[taken.length % AVATAR_MARK_IDS.length]!),
+  );
+  const avatar = avatarOf(color, mark);
+  const ownColor = profile ? avatarParts(profile.avatar).color : null;
   const [isKids, setIsKids] = useState(profile?.isKids ?? false);
   const [maturity, setMaturity] = useState<MaturityLevel>(profile?.maturity ?? "adult");
   const [showAnime, setShowAnime] = useState(profile?.showAnime ?? true);
@@ -164,44 +195,47 @@ export function ProfileEditor({
             )}
           </Field>
 
-          <fieldset>
+          <fieldset className="flex flex-col gap-4">
             <legend className="mb-2 text-body-s font-semibold text-text-1">{t("avatar")}</legend>
-            {/* Native radios: arrows move and choose, Tab leaves the group (as ui/RadioGroup). */}
-            <div className="grid grid-cols-6 gap-2">
-              {AVATAR_IDS.map((a, i) => {
-                const on = avatar === a;
-                return (
-                  <label key={a} className="relative block cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`${ids}-avatar`}
-                      value={a}
-                      checked={on}
-                      onChange={() => setAvatar(a)}
-                      // "Avatar 3 · in use", not the palette name ("aurora", X-21).
-                      aria-label={taken.includes(a) && a !== profile?.avatar ? t("avatarOptionTaken", { n: i + 1 }) : t("avatarOption", { n: i + 1 })}
-                      className="peer sr-only"
-                    />
-                    <span
-                      className={clsx(
-                        "block rounded-avatar p-0.5 transition",
-                        peerFocusRing,
-                        on ? "ring-3 ring-selected-bg" : "opacity-80 hover:opacity-100",
-                      )}
-                    >
-                      {/* Before a name is typed the swatch is only the colour, not a "?" (PRF-09). */}
-                      <ProfileAvatar avatar={a} name={name} size={44} className="!h-auto !w-full aspect-square" />
-                    </span>
-                    {on && (
-                      <span aria-hidden className="absolute -end-1 -top-1 grid size-5 place-items-center rounded-full bg-selected-bg text-selected-fg">
-                        <Check className="size-3.5" />
-                      </span>
-                    )}
-                  </label>
-                );
-              })}
-            </div>
-            <p className="mt-2 text-caption font-medium text-text-3">{t("avatarHint")}</p>
+            {/* The colour, then the mark on it (7.17): two radio groups, each a Tab stop. */}
+            <fieldset>
+              <legend className="mb-2 text-caption font-semibold text-text-2">{t("avatarColor")}</legend>
+              <div className="grid grid-cols-6 gap-2">
+                {AVATAR_COLORS.map((c, i) => (
+                  <AvatarOption
+                    key={c}
+                    group={`${ids}-color`}
+                    value={c}
+                    checked={color === c}
+                    onChange={() => setColor(c)}
+                    // "Colour 3 · used by another profile", not the palette name ("aurora", X-21).
+                    label={others.some((o) => o.color === c) && c !== ownColor ? t("avatarOptionTaken", { n: i + 1 }) : t("avatarOption", { n: i + 1 })}
+                    avatar={avatarOf(c, mark)}
+                    name={name}
+                  />
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend className="mb-2 text-caption font-semibold text-text-2">{t("avatarMark")}</legend>
+              <div className="grid grid-cols-6 gap-2">
+                {/* The letter: the name's initial — "A" before a name is typed, so the option isn't a bare colour. */}
+                <AvatarOption group={`${ids}-mark`} value="" checked={mark === null} onChange={() => setMark(null)} label={t("markLetter")} avatar={color} name={name.trim() || "A"} />
+                {AVATAR_MARK_IDS.map((m) => (
+                  <AvatarOption
+                    key={m}
+                    group={`${ids}-mark`}
+                    value={m}
+                    checked={mark === m}
+                    onChange={() => setMark(m)}
+                    label={t("markOption", { mark: t(`mark_${m}`) })}
+                    avatar={avatarOf(color, m)}
+                    name={name}
+                  />
+                ))}
+              </div>
+            </fieldset>
+            <p className="text-caption font-medium text-text-3">{t("avatarHint")}</p>
           </fieldset>
 
           <div className="flex flex-col gap-4">

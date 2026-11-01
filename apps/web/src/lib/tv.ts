@@ -12,6 +12,33 @@ export function tvAppVersion(ua: string | null | undefined): string | null {
   return (ua && TV_APP_UA.exec(ua)?.[1]) || null;
 }
 
+/**
+ * The oldest TV app the site works with (TV document §11.1 «Обновления»): 1.3 is the first release CI signed with the
+ * release key and the site offers. An older app is asked to update; raise this when the site starts relying on
+ * something a newer app adds. A local build is "1.0" — build it with `-PversionName=1.<n>` to skip the question.
+ */
+export const TV_APP_MIN_VERSION = "1.3";
+
+/** Whether dotted version `a` is older than `b` ("1.10" is newer than "1.9"). */
+export function versionBelow(a: string, b: string): boolean {
+  const x = a.split(".").map(Number);
+  const y = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] || 0) - (y[i] || 0);
+    if (d) return d < 0;
+  }
+  return false;
+}
+
+/**
+ * The installed TV app's version when it is older than the site's minimum and a newer one is published (`latest`, the
+ * site's lumovio-tv.json), else null: then the TV shell asks to update it.
+ */
+export function tvAppToUpdate(ua: string | null | undefined, latest: string | null): string | null {
+  const v = tvAppVersion(ua);
+  return v && latest && versionBelow(v, TV_APP_MIN_VERSION) && versionBelow(v, latest) ? v : null;
+}
+
 /** The device's choice of shell: "1" TV, "0" the site, absent — decided by the user agent (TV document §4.1). */
 export const TV_COOKIE = "lumovio_tv";
 

@@ -175,6 +175,8 @@
   --avatar-dusk: linear-gradient(135deg, #c7a2ff, #8a55ea);
   --avatar-bloom: linear-gradient(135deg, #e866d6, #9a1488);
   --avatar-coral: linear-gradient(135deg, #ff86b0, #d6337a);
+  /* 3.6, 11.1 Subtitle text's second colour (the profile's choice; white is the stage's --text-1) — only for subtitles */
+  --subtitle-yellow: #ffd60a;
 }
 
 @media (width >= 40rem) {
@@ -649,19 +651,57 @@
  * Text subtitles the browser draws (11.1, PLR-14): the stage's white with a dark edge on the picture, no box behind,
  * the site's font; the player fills the window, so their size follows its height — larger on a TV (10.3). ASS and PGS
  * keep their own look (libass, pictures).
+ *
+ * The profile's look (`SubtitleStyle`, Settings → Profile → "Subtitle appearance"), as data-sub-* on the player and on
+ * the settings' preview: the size scales them, the colour is white or yellow, the edge a shadow, an outline or a box.
  */
-[data-player] video::cue {
-  color: var(--text-1);
-  background: transparent;
+[data-sub-size="s"] {
+  --sub-scale: 0.8;
+}
+[data-sub-size="l"] {
+  --sub-scale: 1.25;
+}
+[data-sub-size="xl"] {
+  --sub-scale: 1.5;
+}
+[data-sub-color="yellow"] {
+  --sub-color: var(--subtitle-yellow);
+}
+[data-sub-edge="outline"] {
+  --sub-shadow:
+    -1px -1px 0 var(--bg-stage),
+    1px -1px 0 var(--bg-stage),
+    -1px 1px 0 var(--bg-stage),
+    1px 1px 0 var(--bg-stage),
+    0 0 3px var(--bg-stage);
+}
+[data-sub-edge="box"] {
+  --sub-shadow: none;
+  --sub-bg: color-mix(in srgb, var(--bg-stage) 80%, transparent);
+}
+[data-player] video::cue,
+.subtitle-sample {
+  color: var(--sub-color, var(--text-1));
+  background: var(--sub-bg, transparent);
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 4.4vh;
   line-height: 1.25;
-  text-shadow:
-    0 0 2px var(--bg-stage),
-    0 0 4px var(--bg-stage),
-    0 1px 3px var(--bg-stage);
+  text-shadow: var(--sub-shadow, 0 0 2px var(--bg-stage), 0 0 4px var(--bg-stage), 0 1px 3px var(--bg-stage));
+}
+[data-player] video::cue {
+  font-size: calc(4.4vh * var(--sub-scale, 1));
 }
 :root[data-tv="1"] [data-player] video::cue {
-  font-size: 5.4vh;
+  font-size: calc(5.4vh * var(--sub-scale, 1));
+}
+/* The settings' preview: a frame of the picture's proportions, the line as large against it as in the player (but
+ * never under 12 px), as high as "Higher" puts it. */
+.subtitle-sample {
+  /* 4.4 % of the height in the player; 16:9, so ~2.5 % of the width — shown a little larger, for a small frame. */
+  font-size: calc(max(0.9375rem, 3.9cqw) * var(--sub-scale, 1));
+  padding-inline: 0.25em;
+  bottom: 6%;
+}
+[data-sub-position="raised"] .subtitle-sample {
+  bottom: 14%;
 }

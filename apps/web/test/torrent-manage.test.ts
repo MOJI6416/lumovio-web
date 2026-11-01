@@ -19,7 +19,7 @@ vi.mock("../src/lib/api", () => ({
 }));
 vi.mock("../src/lib/media/torrent-source", () => ({ torrServerFor: async () => server }));
 
-const { asTorrentList, loadTorrentManager, managedTorrents, presenceIn, removalScope, removeVia, staleHashes } = await import("../src/lib/media/torrent-manage");
+const { asTorrentList, loadTorrentManager, managedTorrents, presenceIn, removalScope, removeVia, staleHashes, watchedInProfile } = await import("../src/lib/media/torrent-manage");
 
 const H = { film: "a".repeat(40), k4: "b".repeat(40), k1080: "c".repeat(40), pack: "d".repeat(40), other: "e".repeat(40) };
 const listed = (hash: string, extra: Record<string, unknown> = {}) => ({ hash, title: `T ${hash.slice(0, 3)}`, ...extra });
@@ -225,5 +225,27 @@ describe("a source whose torrent left the server (SRC-03)", () => {
     expect(presenceIn([listed(H.other)], H.pack)).toBe("gone");
     expect(presenceIn([], H.pack)).toBe("unknown");
     expect(presenceIn({ error: "nope" }, H.pack)).toBe("unknown");
+  });
+});
+
+describe("watched in this profile (TS7 filter)", () => {
+  const states = new Map([
+    ["movie:1", { watchedCount: 1, watchedEpisodes: [] }],
+    ["movie:2", { watchedCount: 0, watchedEpisodes: [] }],
+    ["tv:3", { watchedCount: 4, watchedEpisodes: ["s1e1", "s1e2", "s1e3"] }],
+  ]);
+  it("counts a film watched to the end and a pack whose bound episodes are all watched", () => {
+    expect(watchedInProfile({ links: [link("movie:1", H.film)] }, states)).toBe(true);
+    expect(watchedInProfile({ links: [link("tv:3", H.pack), link("tv:3", `${H.pack}:1`, 1, 1), link("tv:3", `${H.pack}:2`, 1, 2)] }, states)).toBe(true);
+  });
+  it("leaves out what isn't finished, isn't known, or isn't linked", () => {
+    expect(watchedInProfile({ links: [link("movie:2", H.film)] }, states)).toBe(false);
+    expect(watchedInProfile({ links: [link("tv:3", `${H.pack}:4`, 1, 4)] }, states)).toBe(false);
+    // A series' torrent whose files aren't bound to episodes yet says nothing of what was watched.
+    expect(watchedInProfile({ links: [link("tv:3", H.pack)] }, states)).toBe(false);
+    expect(watchedInProfile({ links: [link("movie:9", H.film)] }, states)).toBe(false);
+    expect(watchedInProfile({ links: [] }, states)).toBe(false);
+    // One film watched, the other not: not watched.
+    expect(watchedInProfile({ links: [link("movie:1", H.film), link("movie:2", `${H.film}:0`)] }, states)).toBe(false);
   });
 });

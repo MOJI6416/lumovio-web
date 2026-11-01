@@ -154,6 +154,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const { me } = useSession();
   const signedIn = Boolean(me?.activeProfile);
   const isKids = Boolean(me?.activeProfile?.isKids);
+  // Copies in the profile's audio language start first (lib/media/source-order).
+  const audioLangs = me?.activeProfile?.audioLanguages;
   const season = d.kind === "tv" ? Number(params.get("s") ?? d.seasons.find((s) => s.seasonNumber > 0)?.seasonNumber ?? 1) : null;
   const episode = d.kind === "tv" ? Number(params.get("e") ?? 1) : null;
   const wanted = params.get("source");
@@ -207,7 +209,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const candidates = useMemo<Candidate[]>(() => {
     if (!avail.data) return [];
     // Files this browser can play untouched come first; transcodes and incompatible files last.
-    const list = orderedSources(avail.data).flatMap(({ server: s }): Candidate[] => {
+    const list = orderedSources(avail.data, undefined, audioLangs).flatMap(({ server: s }): Candidate[] => {
       // A torrent file bound to another episode is not a source for this one.
       if (s.kind === "torrserver" && s.season !== null && (s.season !== season || s.episode !== episode)) return [];
       return [toCandidate(s)];
@@ -219,7 +221,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const ordered = [...torrents.filter(isBound), ...torrents.filter((c) => !isBound(c))];
     let i = 0;
     return list.flatMap((c) => (c.provider !== "torrserver" ? [c] : isBound(c) || !bound.has(c.key) ? [ordered[i++]!] : []));
-  }, [avail.data, season, episode]);
+  }, [avail.data, season, episode, audioLangs]);
 
   const saved = progress.data?.progress.find((x) => x.season === season && x.episode === episode);
   const resumeAt = resumeOverride.current ?? (saved && !saved.completed && saved.positionSec > 30 ? saved.positionSec : 0);
@@ -460,18 +462,21 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           }
         }
         const auth = e instanceof MediaNetError && e.code === "auth";
+        // A TV's browser refusing an http:// server: the server's address is changed on a phone (the TV's "Check the
+        // connection" shows the way there); repeating can't help.
+        const blocked = Boolean(tvNav) && e instanceof MediaNetError && e.code === "mixed_content";
         setPhase({
           ...base,
           message: errorText(e),
-          auth,
+          auth: auth || blocked,
           // Repeating can't bring back a file the torrent doesn't have, or fix a refused sign-in.
-          retry: auth || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false, fromScreen: true }),
+          retry: auth || blocked || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false, fromScreen: true }),
         });
       } finally {
         if (live()) preparing.current = false;
       }
     },
-    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t],
+    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav],
   );
 
   /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
@@ -760,6 +765,24 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     requestAnimationFrame(toList);
   };
   const backToPlayer = () => setPhase({ kind: "playing" });
+  // On a TV the sources over a viewing are a step of the history (TV3): Back of a TV browser that keeps Back to itself
+  // goes back to watching — a preparation under way is dropped — instead of leaving the player.
+  const overPlayer = Boolean(tvNav && active && phase.kind !== "playing");
+  const toWatching = useRef(() => {});
+  toWatching.current = () => {
+    attempt.current++;
+    preparing.current = false;
+    setPhase({ kind: "playing" });
+  };
+  useEffect(() => {
+    if (!tvNav || !overPlayer) return;
+    let own = false;
+    const layer = tvNav.openLayer(() => !own && toWatching.current(), { inline: true });
+    return () => {
+      own = true;
+      layer.dismiss();
+    };
+  }, [tvNav, overPlayer]);
 
   // The copies for the player's "Source" panel: one of them plays from the same position.
   const sourcesInfo = {

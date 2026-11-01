@@ -92,7 +92,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       : { state: "none" };
   const onProbe = useCallback((r: ProbeResult) => setProbe(r), []);
 
-  const first = avail.data ? orderedSources(titleCopies(avail.data))[0]?.server : undefined;
+  const first = avail.data ? orderedSources(titleCopies(avail.data), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
   const offers = (d.watchProviders?.providers ?? []).filter((p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads");
   // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads"; TTL-26).
   const offerNames = [...new Set((offers.length ? offers : (d.watchProviders?.providers ?? [])).map((p) => serviceOf(p.name).name))].slice(0, 3);

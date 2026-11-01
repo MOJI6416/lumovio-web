@@ -9,6 +9,7 @@ import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
+import { useReleaseText } from "@/components/sources/release-text";
 import { InfoTip } from "@/components/sources/InfoTip";
 import { providerSearch } from "@/components/sources/provider-links";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
@@ -58,7 +59,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
-  const copies = data ? orderedSources(data).map((x) => x.server) : [];
+  const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
   const torrServers = (raw?.sources ?? []).filter((s) => s.kind === "torrserver");
   const manage = signedIn && !kids;
   // A torrent's files bound to episodes of this series (they are not copies of their own).
@@ -71,6 +72,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
   const copyText = useCopyText();
+  const releaseText = useReleaseText();
 
   let servers: ReactNode;
   if (!signedIn) {
@@ -93,12 +95,23 @@ export function Availability({ title: d }: { title: TitleCore }) {
   } else if (state.kind === "error") {
     servers = <ErrorState error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />;
   } else if (copies.length > 0) {
-    servers = copies.map((s, i) => (
+    servers = copies.map((s, i) => {
+      // What its audio has to do with the profile: the same label a release's row has (7.4; Jellyfin's tracks too).
+      const match = copyText.audioMatch(s, raw?.servers ?? [], d.originalLanguage);
+      const first = i === 0 && copies.length > 1;
+      return (
           <SourceRow
             key={`${s.connectionId}-${s.externalId}`}
             selected={i === 0}
             icon={<ServerMark kind={s.kind} />}
-            badges={i === 0 && copies.length > 1 ? <Tag>{t("startsFirst")}</Tag> : undefined}
+            badges={
+              first || match ? (
+                <>
+                  {first && <Tag>{t("startsFirst")}</Tag>}
+                  {match && <Tag>{match.kind === "studio" ? t("tsYourVoice", { studio: match.studio }) : t("tsYourLanguage", { language: releaseText.cap(releaseText.language(match.language)) })}</Tag>}
+                </>
+              ) : undefined
+            }
             title={copyText.version(s, raw?.servers ?? [], d.originalLanguage)}
             meta={copyText.meta(s, d.title)}
             action={
@@ -109,7 +122,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
             }
             more={<CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} />}
           />
-    ));
+      );
+    });
   } else if (state.kind === "unreachable" || state.kind === "indexing") {
     servers = (
       <p className="text-body text-text-2">

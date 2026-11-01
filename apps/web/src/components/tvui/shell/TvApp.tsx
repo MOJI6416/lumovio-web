@@ -3,12 +3,15 @@
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
+import { TV_APP_UA } from "@/lib/tv";
 import { TvLayer } from "../nav/TvLayer";
 import { TvNavProvider } from "../nav/TvNav";
 import { ContinueOnPhone } from "./ContinueOnPhone";
 
 /** Announcements load apart from the TV shell's code: they're rare. */
 const TvAnnouncements = dynamic(() => import("./TvAnnouncements").then((m) => m.TvAnnouncements), { ssr: false });
+/** And the check of the TV app's version: only in the app. */
+const TvAppUpdate = dynamic(() => import("./TvAppUpdate").then((m) => m.TvAppUpdate), { ssr: false });
 
 /**
  * The root of the TV shell (app/[locale]/tvui): the remote's navigation, the screen that never scrolls as a page, and
@@ -24,9 +27,17 @@ export function TvApp({ children }: { children: ReactNode }) {
         <div id="tv-layers" />
         <ExternalLinks />
         <TvAnnouncements />
+        <AppUpdate />
       </div>
     </TvNavProvider>
   );
+}
+
+/** The TV app (apps/tv-android) checks its own version against the site's minimum (./TvAppUpdate). */
+function AppUpdate() {
+  const [app, setApp] = useState(false);
+  useEffect(() => setApp(TV_APP_UA.test(navigator.userAgent)), []);
+  return app ? <TvAppUpdate /> : null;
 }
 
 /**

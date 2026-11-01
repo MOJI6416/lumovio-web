@@ -1,5 +1,6 @@
 "use client";
 
+import type { SubtitleStyle } from "@lumovio/contracts";
 import { Container, Controls, Gesture, Hotkey, TimeSlider, useContainer } from "@videojs/react";
 import { I18nProvider } from "@videojs/react/i18n";
 import { HlsJsVideo } from "@videojs/react/media/hlsjs-video";
@@ -36,13 +37,17 @@ import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { PortalContainerContext } from "@/components/ui/portal";
 import { Slider } from "@/components/ui/Slider";
+import { api } from "@/lib/api";
 import { formatClock, formatSize } from "@/lib/format";
 import { detectCapabilities } from "@/lib/media/capabilities";
+import { loadOffset, saveOffset } from "@/lib/media/subs/choice";
+import type { SubtitleFormat } from "@/lib/media/subs/engine";
+import { OFFSET_STEP, SUBTITLE_DEFAULTS, setSubtitleView, shiftTrack, stepOffset, subtitleView } from "@/lib/media/subs/view";
 import { background } from "@/lib/optional";
 import type { RemuxHandle } from "@/lib/media/remux";
 import type { MediaSegment, PreparedPlayback, TrickplayInfo } from "@/lib/media/types";
 import { EndScreen, type EndInfo } from "./EndScreen";
-import { type EpisodesInfo, PlayerPanels, type PlayerPanel, type SourcesInfo } from "./PlayerPanels";
+import { type EpisodesInfo, PlayerPanels, type PlayerPanel, type SourcesInfo, useSignedSeconds } from "./PlayerPanels";
 
 export interface PlayerEvents {
   onTime: (positionSec: number, durationSec: number | null, paused: boolean) => void;
@@ -95,6 +100,7 @@ export function LumovioPlayer(props: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal);
   const subtitleMeta = useSubtitles(videoRef, prepared, props.titleId ?? null);
+  const look = useSubtitleLook(videoRef, props.titleId ?? null);
   const caps = detectCapabilities();
   const useHlsJs = prepared.type === "hls" && caps.hls === "mse";
   // Text tracks from other origins need CORS mode on the element; only enable it when tracks exist.
@@ -121,6 +127,10 @@ export function LumovioPlayer(props: PlayerProps) {
           // Kept out of sight, it is not the page's player: the TV navigation and "Playback info" look for these.
           data-nav-trap={props.hidden ? undefined : true}
           data-player={props.hidden ? undefined : true}
+          // The profile's subtitle look for text cues (globals.css).
+          data-sub-size={look.style.size}
+          data-sub-color={look.style.color}
+          data-sub-edge={look.style.edge}
           tabIndex={-1}
         >
           {useHlsJs ? (
@@ -132,7 +142,7 @@ export function LumovioPlayer(props: PlayerProps) {
               {tracks}
             </Video>
           )}
-          <Chrome {...props} {...(remux ?? {})} subtitleMeta={subtitleMeta} />
+          <Chrome {...props} {...(remux ?? {})} subtitleMeta={subtitleMeta} look={look} />
         </Container>
       </VideoPlayer>
     </I18nProvider>
@@ -197,7 +207,76 @@ function useRemux(ref: RefObject<HTMLVideoElement | null>, prepared: PreparedPla
 }
 
 /** What the player's menu says about a subtitle track beyond its language and name, by the player store's track id. */
-export type SubtitleMeta = Map<string, { forced: boolean; format: "srt" | "vtt" | "ass" | "pgs"; file: boolean }>;
+export type SubtitleMeta = Map<string, { forced: boolean; format: SubtitleFormat; file: boolean }>;
+
+/** The size changed in the player, per profile, until the session's copy of the profile has it (`useSubtitleLook`). */
+const sizeChosen = new Map<string, { before: string; style: SubtitleStyle }>();
+
+/** How subtitles look and when they come, as the player panel changes them. */
+export interface SubtitleLook {
+  style: SubtitleStyle;
+  /** The size from the player: saved to the profile; shown at once, kept for this viewing if saving fails. */
+  setSize: (size: SubtitleStyle["size"]) => void;
+  /** The profile didn't take the size (the panel says so). */
+  sizeFailed: boolean;
+  /** Seconds, positive later (`subs/view.ts`); remembered for the title. */
+  offset: number;
+  setOffset: (seconds: number) => void;
+}
+
+/**
+ * The profile's subtitle look and this title's timing offset (remembered per profile on this device, like the subtitle
+ * choice), handed to every subtitle renderer of the video (`subs/view.ts`) — the browser's cues of a server's subtitle
+ * file included, moved as the browser loads them.
+ */
+function useSubtitleLook(ref: RefObject<HTMLVideoElement | null>, titleId: string | null): SubtitleLook {
+  const { me } = useSession();
+  const profile = me?.activeProfile ?? null;
+  const fromProfile = { ...SUBTITLE_DEFAULTS, ...profile?.subtitleStyle };
+  const key = titleId ? `${profile?.id ?? "guest"}:${titleId}` : null;
+  const [style, setStyle] = useState<SubtitleStyle>(() => {
+    const chosen = profile ? sizeChosen.get(profile.id) : undefined;
+    return chosen && chosen.before === JSON.stringify(fromProfile) ? chosen.style : fromProfile;
+  });
+  const [sizeFailed, setSizeFailed] = useState(false);
+  const [offset, setOffsetState] = useState(() => (key ? loadOffset(key) : 0));
+  useEffect(() => {
+    const video = ref.current;
+    if (video) setSubtitleView(video, { style, offset });
+  }, [ref, style, offset]);
+  // A server's subtitle file (a <track>) is loaded by the browser when it is first shown: its cues move then.
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    const onLoad = (e: Event) => {
+      const track = (e.target as HTMLTrackElement).track;
+      shiftTrack(track, subtitleView(video).offset);
+    };
+    video.addEventListener("load", onLoad, true);
+    return () => video.removeEventListener("load", onLoad, true);
+  }, [ref]);
+  return {
+    style,
+    sizeFailed,
+    setSize: (size) => {
+      if (size === style.size) return;
+      const next = { ...style, size };
+      setStyle(next);
+      setSizeFailed(false);
+      if (!profile) return;
+      sizeChosen.set(profile.id, { before: JSON.stringify(fromProfile), style: next });
+      api(`/api/profiles/${profile.id}`, { method: "PATCH", json: { subtitleStyle: next } }).catch(() => {
+        sizeChosen.delete(profile.id);
+        setSizeFailed(true);
+      });
+    },
+    offset,
+    setOffset: (seconds) => {
+      setOffsetState(seconds);
+      if (key) saveOffset(key, seconds);
+    },
+  };
+}
 
 /**
  * Subtitles the browser can't read itself (PLR-14; `lib/media/subs/engine.ts`, loaded only for a playback that has
@@ -284,10 +363,12 @@ function TrickplayThumb({ tp, time }: { tp: TrickplayInfo; time: number }) {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [role="slider"], [tabindex]:not([tabindex="-1"])';
 const EDITABLE = /INPUT|TEXTAREA|SELECT/;
 
-function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
+function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: SubtitleLook }) {
   const t = useTranslations("player");
   const tc = useTranslations("common");
+  const ts = useTranslations("subtitles");
   const locale = useLocale();
+  const signedSeconds = useSignedSeconds();
   const store = usePlayer();
   const paused = usePlayer((s) => s.paused);
   const ended = usePlayer((s) => s.ended);
@@ -319,6 +400,9 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
   // In the TV shell (tvui): the remote's own model of the player — see the keys below (TV document §6).
   const tvNav = useTvNavOptional();
   const [seekHint, setSeekHint] = useState<{ delta: number; at: number } | null>(null);
+  // G / H moved the subtitles: the new offset, said where the eye is for a moment.
+  const [offsetHint, setOffsetHint] = useState<number | null>(null);
+  const hasSubtitles = props.prepared.subtitles.length > 0 || props.subtitleMeta.size > 0;
   const container = useContainer();
   const startedRef = useRef(false);
   const lastTick = useRef(0);
@@ -479,6 +563,42 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
     const layer = tvNav.openLayer(() => setPanel("none"));
     return () => layer.dismiss();
   }, [tvNav, layerOpen]);
+  // The controls the remote is in (the focus on a control) are a step of the history too: Back of a TV browser that
+  // keeps Back to itself hides them — the focus back on the picture — before it leaves the player (TV3). Hidden by a
+  // key or by themselves, they take their entry back.
+  const [inControls, setInControls] = useState(false);
+  useEffect(() => {
+    if (!tvNav || !container) return;
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const a = document.activeElement;
+        setInControls(Boolean(a && a !== container && container.contains(a)));
+      });
+    };
+    document.addEventListener("focusin", update);
+    document.addEventListener("focusout", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("focusin", update);
+      document.removeEventListener("focusout", update);
+    };
+  }, [tvNav, container]);
+  const hideControls = useRef(() => {});
+  hideControls.current = () => {
+    store.toggleControls(false);
+    container?.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    if (!tvNav || !inControls || hidden || endShown) return;
+    let own = false;
+    const layer = tvNav.openLayer(() => !own && hideControls.current(), { inline: true });
+    return () => {
+      own = true;
+      layer.dismiss();
+    };
+  }, [tvNav, inControls, hidden, endShown]);
   // The TV app keeps the screen on while a video plays (window.LumovioTV, apps/tv-android), off when it stops.
   useEffect(() => {
     const app = (window as { LumovioTV?: { keepScreenOn?: (on: boolean) => void } }).LumovioTV;
@@ -492,6 +612,11 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
     const id = window.setTimeout(() => setSeekHint(null), 1200);
     return () => window.clearTimeout(id);
   }, [seekHint]);
+  useEffect(() => {
+    if (offsetHint === null) return;
+    const id = window.setTimeout(() => setOffsetHint(null), 1500);
+    return () => window.clearTimeout(id);
+  }, [offsetHint]);
   // A control keeps the remote's focus only while it can be seen: after 6 s without a key (playing, no panel) the bar
   // goes and the focus is back on the picture, where the arrows seek again.
   const lastKey = useRef(0);
@@ -526,7 +651,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
   // - Escape (a TV remote's Back) closes one layer and nothing else;
   // - Space always plays or pauses (PLR-02) — never "presses" the last button used;
   // - Tab stays inside the player (PLR-09);
-  // - S skip · N next episode · I playback info · ? shortcuts.
+  // - S skip · N next episode · I playback info · ? shortcuts · G / H subtitles earlier / later.
   useEffect(() => {
     if (hidden) return;
     const inPlayer = (el: EventTarget | null) => el instanceof Node && Boolean(container?.contains(el));
@@ -612,7 +737,11 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
       else if ((e.key === "n" || e.key === "N") && props.next) props.next.go();
       else if (e.key === "i" || e.key === "I") setPanel("info");
       else if (e.key === "?") setPanel("help");
-      else {
+      else if (hasSubtitles && (e.key === "g" || e.key === "G" || e.key === "h" || e.key === "H")) {
+        const next = stepOffset(props.look.offset, (e.key === "g" || e.key === "G" ? -1 : 1) * OFFSET_STEP);
+        props.look.setOffset(next);
+        setOffsetHint(next);
+      } else {
         // Any other key shows the controls, even when the focus is not on the player.
         if (!inPlayer(e.target)) store.toggleControls(true);
         return;
@@ -636,11 +765,13 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
     return r ? Math.max(0, r[1] - currentTime) : 0;
   })();
   const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown;
-  // Text subtitles move up above the controls while they show, and back down when they fade (readable either way).
+  // Text subtitles move up above the controls while they show, and back down when they fade (readable either way) —
+  // to the bottom, or two lines higher when the profile puts them "Higher".
+  const raised = props.look.style.position === "raised";
   useEffect(() => {
     const v = container?.querySelector("video");
     if (!v) return;
-    const line = showChrome ? -4 : "auto";
+    const line = showChrome ? -4 : raised ? -3 : "auto";
     // Subtitles drawn on a canvas over the picture — ASS by libass, PGS pictures — keep their own layout: the layer
     // moves up just as far as the picture's lower edge is under the controls, and back down (PLR-18).
     const liftCanvases = () => {
@@ -672,13 +803,13 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
     v.textTracks.addEventListener("change", lift);
     v.textTracks.addEventListener("addtrack", lift);
     // Cues keep arriving as a track is read: new ones follow on the next frame the controls change, or every 2 s.
-    const id = showChrome ? window.setInterval(lift, 2000) : undefined;
+    const id = line !== "auto" ? window.setInterval(lift, 2000) : undefined;
     return () => {
       v.textTracks.removeEventListener("change", lift);
       v.textTracks.removeEventListener("addtrack", lift);
       window.clearInterval(id);
     };
-  }, [showChrome, container]);
+  }, [showChrome, raised, container]);
   // Faded-out controls take no taps: the first tap on a phone shows them instead of pressing an unseen button.
   const hit = showChrome ? "pointer-events-auto" : "pointer-events-none";
   const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
@@ -719,7 +850,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
         {!tv && <Hotkey keys="ArrowDown" action="volumeStep" value={-0.05} target="document" disabled={off} />}
         <Hotkey keys="m" action="toggleMuted" target="document" disabled={off} />
         <Hotkey keys="f" action="toggleFullscreen" target="document" disabled={off} />
-        <Hotkey keys="c" action="toggleSubtitles" target="document" disabled={off || (props.prepared.subtitles.length === 0 && props.subtitleMeta.size === 0)} />
+        <Hotkey keys="c" action="toggleSubtitles" target="document" disabled={off || !hasSubtitles} />
         <Hotkey keys="0-9" action="seekToPercent" target="document" disabled={off} />
         <Gesture type="tap" action="togglePaused" pointer="mouse" disabled={off} />
         <Gesture type="doubletap" action="toggleFullscreen" pointer="mouse" region="center" disabled={off} />
@@ -864,6 +995,16 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
           </div>
         )}
 
+        {offsetHint !== null && !seekHint && (
+          // G / H: where the subtitles are now, in the same place as the remote's seek.
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2 place-items-center">
+            <span className="flex items-center gap-3 rounded-full bg-stage/80 px-6 py-3 text-h2 font-bold text-text-1 tabular-nums">
+              <Captions aria-hidden className="size-8" />
+              {ts("timingHint", { value: t("seconds", { value: signedSeconds.format(offsetHint) }) })}
+            </span>
+          </div>
+        )}
+
         {showSkip && segment && !endShown && (
           <Button variant="secondary" size="lg" icon={FastForward} onClick={skip} className={CORNER}>
             {segment.kind === "intro" ? t("skipIntro") : segment.kind === "recap" ? t("skipRecap") : segment.kind === "outro" && props.next ? t("nextEpisode") : t("skipCredits")}
@@ -919,6 +1060,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta }) {
           hasNext={Boolean(props.next)}
           hasSegments={segments.length > 0}
           subtitleMeta={props.subtitleMeta}
+          look={props.look}
         />
       </Controls.Root>
     </PortalContainerContext.Provider>

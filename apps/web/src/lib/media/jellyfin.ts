@@ -1,6 +1,7 @@
-import type { LibraryIndexEntry } from "@lumovio/contracts";
+import type { LibraryIndexEntry, ServerHistory } from "@lumovio/contracts";
 import { canDirectPlay, detectCapabilities, type PlaybackCapabilities } from "./capabilities";
 import { background, optional } from "../optional";
+import { audioLanguages } from "./languages";
 import { deviceId, joinUrl, mediaFetch } from "./net";
 import type { AudioOption, MediaSegment, PreparedPlayback, ProviderClient, ScanProgress, SubtitleTrack } from "./types";
 
@@ -136,7 +137,10 @@ interface JfItem {
   SeriesId?: string;
   RunTimeTicks?: number;
   MediaSources?: JfMediaSource[];
-  UserData?: { PlaybackPositionTicks?: number; Played?: boolean };
+  /** With `Fields=MediaStreams` (episodes, for a series' audio languages). */
+  MediaStreams?: JfStream[];
+  UserData?: { PlaybackPositionTicks?: number; Played?: boolean; LastPlayedDate?: string };
+  ProductionYear?: number;
 }
 
 export function resolutionLabel(width: number, height: number): string {
@@ -228,6 +232,7 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
                 resolution: v?.Height ? resolutionLabel(v.Width ?? 0, v.Height) : null,
                 videoCodec: v?.Codec ?? null,
                 audioCodecs: src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Codec ?? "").filter(Boolean).slice(0, 8),
+                audioLanguages: audioLanguages(src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Language)),
                 hdr: v?.VideoRange && v.VideoRange !== "SDR" ? v.VideoRange : null,
                 container: src.Container ?? null,
                 sizeBytes: src.Size ?? null,
@@ -256,7 +261,57 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
           if (tid) entries.push({ titleId: tid as LibraryIndexEntry["titleId"], externalId: p.externalId, season: null, episode: null, label: p.label, quality: p.quality });
         }
       }
+      // A series has no file of its own: the audio languages of its first few episodes stand for it (four series at a
+      // time). One that doesn't answer keeps none; the scan goes on.
+      const shows = entries.filter((e) => e.titleId.startsWith("tv:"));
+      for (let i = 0; i < shows.length; i += 4) {
+        await Promise.all(
+          shows.slice(i, i + 4).map(async (e) => {
+            const eps = await optional(
+              call<{ Items: JfItem[] }>(`/Shows/${e.externalId}/Episodes?UserId=${auth.userId}&Fields=MediaStreams&Limit=3&EnableImages=false&EnableUserData=false`),
+              null,
+            );
+            const langs = audioLanguages((eps?.Items ?? []).flatMap((x) => (x.MediaStreams ?? []).filter((s) => s.Type === "Audio").map((s) => s.Language)));
+            if (langs.length > 0) e.quality = { ...(e.quality ?? {}), audioLanguages: langs };
+          }),
+        );
+      }
       return entries;
+    },
+
+    /**
+     * What this sign-in has played (Import history, C134): every film and episode Jellyfin marks played, with the day
+     * last played; an episode with its series' name, year and ids. Resume positions are left on the server.
+     */
+    async history(onProgress: (p: ScanProgress) => void) {
+      const played: JfItem[] = [];
+      let start = 0;
+      const limit = 500;
+      while (true) {
+        const page = await call<{ Items: JfItem[]; TotalRecordCount: number }>(
+          `/Users/${auth.userId}/Items?Recursive=true&IncludeItemTypes=Movie,Episode&Filters=IsPlayed&Fields=ProviderIds,ProductionYear&StartIndex=${start}&Limit=${limit}&EnableImages=false&EnableUserData=true`,
+        );
+        played.push(...page.Items);
+        start += page.Items.length;
+        onProgress({ scanned: start, total: page.TotalRecordCount });
+        if (page.Items.length < limit || start >= page.TotalRecordCount) break;
+      }
+      const seriesIds = [...new Set(played.flatMap((it) => (it.Type === "Episode" && it.SeriesId ? [it.SeriesId] : [])))];
+      const series = new Map<string, JfItem>();
+      for (let i = 0; i < seriesIds.length; i += 100) {
+        const r = await call<{ Items: JfItem[] }>(`/Users/${auth.userId}/Items?Ids=${seriesIds.slice(i, i + 100).join(",")}&Fields=ProviderIds,ProductionYear&EnableImages=false&EnableUserData=false`);
+        for (const s of r.Items) series.set(s.Id, s);
+      }
+      const ids = (p: Record<string, string> | undefined) => {
+        const get = (k: string) => p?.[k] ?? p?.[k.toLowerCase()] ?? p?.[k.toUpperCase()];
+        return { tmdb: get("Tmdb"), imdb: get("Imdb"), tvdb: get("Tvdb") };
+      };
+      return played.flatMap((it): ServerHistory["items"] => {
+        if (it.Type === "Movie") return [{ kind: "movie", title: it.Name, year: it.ProductionYear ?? null, ids: ids(it.ProviderIds), season: null, episode: null, watchedAt: it.UserData?.LastPlayedDate ?? null }];
+        const show = it.SeriesId ? series.get(it.SeriesId) : undefined;
+        if (it.Type !== "Episode" || !show || it.ParentIndexNumber === undefined || it.IndexNumber === undefined) return [];
+        return [{ kind: "episode", title: show.Name, year: show.ProductionYear ?? null, ids: ids(show.ProviderIds), season: it.ParentIndexNumber, episode: it.IndexNumber, watchedAt: it.UserData?.LastPlayedDate ?? null }];
+      });
     },
 
     async findEpisode(seriesId, season, episode) {

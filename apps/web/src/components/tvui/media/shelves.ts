@@ -22,6 +22,7 @@ export function continueShelf(items: ContinueWatchingItem[], t: T, title?: strin
     key: "continue",
     title: title ?? t("rows.continueWatching"),
     shape: "wide",
+    removable: true,
     items: items.map(({ title: x, progress, next }) => {
       const s = next?.season ?? progress.season;
       const e = next?.episode ?? progress.episode;

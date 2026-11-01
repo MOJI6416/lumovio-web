@@ -1,4 +1,4 @@
-import type { LibraryIndexEntry, PlaybackMethod, ProviderKind } from "@lumovio/contracts";
+import type { LibraryIndexEntry, PlaybackMethod, ProviderKind, ServerHistory } from "@lumovio/contracts";
 import type { AudioRoute } from "./playback-choice";
 import type { VoiceWish } from "./releases";
 
@@ -130,4 +130,6 @@ export interface ProviderClient {
   prepare(externalId: string, opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean }): Promise<PreparedPlayback>;
   /** Locate an episode's file id on the server (episode-level playback). */
   findEpisode?(seriesExternalId: string, season: number, episode: number): Promise<string | null>;
+  /** What the signed-in account has played on the server (films and episodes; an episode with its series' ids): Import history. */
+  history?(onProgress: (p: ScanProgress) => void): Promise<ServerHistory["items"]>;
 }

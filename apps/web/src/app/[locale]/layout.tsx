@@ -89,6 +89,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const themePref = c.get("lumovio_theme")?.value ?? "dark";
   // The TV shell (app/[locale]/tvui) is chosen by the proxy for this device (lib/tv.ts); the site is never "TV mode".
   const tv = h.get(TV_SHELL_HEADER) === "tv";
+  // The page's nonce (proxy.ts, Content-Security-Policy): Next's own scripts carry it by themselves, this one is ours.
+  const nonce = h.get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -100,7 +102,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       suppressHydrationWarning
     >
       <head>
-        <ThemeScript />
+        <ThemeScript nonce={nonce} />
       </head>
       <body className="font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={clientMessages}>

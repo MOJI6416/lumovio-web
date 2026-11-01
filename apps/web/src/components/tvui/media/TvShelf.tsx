@@ -16,18 +16,21 @@ import type { TvShelfData } from "./types";
 export function TvShelfFrame({
   id,
   title,
+  up,
   children,
   className,
 }: {
   id: string;
   title: string;
+  /** The zone ↑ goes to (`data-zone-up`), when it isn't the previous shelf. */
+  up?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <section data-zone-frame aria-label={title} className={cn("flex flex-col gap-2", className)}>
       <h2 className="ps-(--tv-pad) text-h3 text-text-1">{title}</h2>
-      <div data-zone={id} data-zone-scroll="x" className="-my-3 overflow-hidden py-3">
+      <div data-zone={id} data-zone-up={up} data-zone-scroll="x" className="-my-3 overflow-hidden py-3">
         <div data-zone-track className="flex w-max items-start gap-6 ps-(--tv-pad) pe-(--gutter)">
           {children}
         </div>
@@ -59,14 +62,19 @@ export const TvShelf = memo(function TvShelf({
   shelf,
   zone,
   initial,
+  onMore,
+  up,
 }: {
   shelf: TvShelfData;
   zone: string;
   initial?: boolean;
+  /** A removable shelf's "More" for its card at this place (./CardMore). */
+  onMore?: (index: number) => void;
+  up?: string;
 }) {
   const shape = shelf.shape === "wide" ? "wide" : "poster";
   return (
-    <TvShelfFrame id={zone} title={shelf.title}>
+    <TvShelfFrame id={zone} title={shelf.title} up={up}>
       {shelf.items.map((it, i) => (
         <TvCard
           key={it.title.id}
@@ -78,6 +86,7 @@ export const TvShelf = memo(function TvShelf({
           progress={it.progress}
           initial={initial && i === 0}
           rank={shelf.shape === "top10" ? i + 1 : undefined}
+          onMore={onMore}
         />
       ))}
       {shelf.href && <TvMoreCard href={shelf.href} shape={shape} />}

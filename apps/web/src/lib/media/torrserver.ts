@@ -462,9 +462,12 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       } catch {
         subtitles = [];
       }
-      // Subtitles the browser can't read itself (PLR-14): a Matroska file's text and picture tracks, read by ranges
-      // around the playhead, and subtitle files next to it in the torrent.
-      const ownSubs = /matroska|webm|mkv/i.test(container ?? "") && (probe?.streams ?? []).some((s) => s.codec_type === "subtitle" && /^(subrip|srt|ass|ssa|webvtt|hdmv_pgs_subtitle|text)$/.test(s.codec_name));
+      // Subtitles the browser can't read itself (PLR-14): a Matroska file's text and picture tracks and an MP4's text
+      // tracks, read by ranges around the playhead, and subtitle files next to it in the torrent.
+      const subtitleCodecs = (probe?.streams ?? []).filter((s) => s.codec_type === "subtitle").map((s) => s.codec_name);
+      const ownSubs =
+        (/matroska|webm|mkv/i.test(container ?? "") && subtitleCodecs.some((c) => /^(subrip|srt|ass|ssa|webvtt|hdmv_pgs_subtitle|dvd_subtitle|text)$/.test(c))) ||
+        (/mp4|mov/i.test(container ?? "") && subtitleCodecs.includes("mov_text"));
       const { externalSubtitles } = await import("./subs/text");
       const subFiles = externalSubtitles(t.file_stats ?? [], file, (t.file_stats ?? []).filter((f) => isVideoFile(f.path) && !isExtra(f.path)).length).map((x) => ({
         path: x.file.path,

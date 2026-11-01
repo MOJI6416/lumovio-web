@@ -23,7 +23,7 @@ export function catalogRules(kind: MediaKind, s: BrowseState): CatalogRulesQuery
   return out as CatalogRulesQuery;
 }
 
-const NUMERIC = new Set(["yearFrom", "yearTo", "ratingMin", "votesMin", "votesMax", "runtimeMax", "episodesMax"]);
+const NUMERIC = new Set(["yearFrom", "yearTo", "ratingMin", "votesMin", "votesMax", "runtimeMax", "episodesMax", "imdbVotesMax"]);
 
 /**
  * The catalog grid with a smart list's conditions ("View all", "Edit conditions" with `editList`): the address
@@ -46,6 +46,9 @@ export function catalogHref(q: CatalogRulesQuery, editList?: string): string {
     ["tvType", "type"],
     ["tvStatus", "status"],
     ["episodesMax", "episodesMax"],
+    ["imdbVotesMax", "imdbVotesMax"],
+    ["opinions", "opinions"],
+    ["mood", "mood"],
   ];
   for (const [k, param] of keys) if (q[k] !== undefined && q[k] !== "") sp.set(param, String(q[k]));
   if (q.withoutKeywords?.split(",").includes(String(TV_SPECIAL_KEYWORD))) sp.set("nospecials", "1");

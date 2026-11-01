@@ -35,12 +35,17 @@ export function RouteLoading({ stage, tv }: { stage?: boolean; tv?: boolean }) {
     );
   if (first)
     return (
-      // The page's own colour at once (the header isn't shown and then covered); the stage and the intro from the delay.
-      <div role="status" aria-label={t("loading")} className="fixed inset-0 z-scrim bg-bg">
-        <div className="boot stage loader-appear absolute inset-0 grid place-items-center bg-stage">
-          <BrandIntro className="w-[min(80vw,30rem)]" />
+      <>
+        {/* The page's place holds the window's height under the intro: else the footer stood in the window and the
+            page coming in pushed it out — a layout shift of 1.0 on every first page (2026-11-01). */}
+        <div aria-hidden className="min-h-dvh" />
+        {/* The page's own colour at once (the header isn't shown and then covered); the stage and the intro from the delay. */}
+        <div role="status" aria-label={t("loading")} className="fixed inset-0 z-scrim bg-bg">
+          <div className="boot stage loader-appear absolute inset-0 grid place-items-center bg-stage">
+            <BrandIntro className="w-[min(80vw,30rem)]" />
+          </div>
         </div>
-      </div>
+      </>
     );
   return (
     <div

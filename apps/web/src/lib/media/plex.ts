@@ -1,6 +1,7 @@
-import type { LibraryIndexEntry } from "@lumovio/contracts";
+import type { LibraryIndexEntry, ServerHistory } from "@lumovio/contracts";
 import { canDirectPlay, detectCapabilities } from "./capabilities";
-import { background } from "../optional";
+import { background, optional } from "../optional";
+import { audioLanguages } from "./languages";
 import { deviceId, joinUrl, mediaFetch } from "./net";
 import type { MediaSegment, AudioOption, PreparedPlayback, ProviderClient, ScanProgress, SubtitleTrack } from "./types";
 import { randomId } from "../random-id";
@@ -74,6 +75,8 @@ interface PlexStream {
   codec: string;
   language?: string;
   languageCode?: string;
+  /** BCP 47 ("ru"), on newer servers. */
+  languageTag?: string;
   displayTitle?: string;
   selected?: boolean;
   default?: boolean;
@@ -93,6 +96,13 @@ interface PlexMetadata {
   Media?: { container: string; videoCodec: string; audioCodec: string; videoResolution?: string; width?: number; height?: number; bitrate?: number; Part: { key: string; size?: number; Stream?: PlexStream[] }[] }[];
   /** Intro / credits markers (Plex Pass analysis), present with includeMarkers=1. */
   Marker?: { type: string; startTimeOffset: number; endTimeOffset: number }[];
+  year?: number;
+  /** Times played to the end and the last time (Unix seconds), for the signed-in account. */
+  viewCount?: number;
+  lastViewedAt?: number;
+  /** An episode's show. */
+  grandparentRatingKey?: string;
+  grandparentTitle?: string;
 }
 
 /** Plex intro / credits markers → skip segments (offsets are in milliseconds). */
@@ -146,8 +156,63 @@ export function plexClient(serverUrl: string, serverToken: string, opts: { syncP
         }
         onProgress({ scanned, total: null });
       }
+      // A section's list gives no streams: each film's own metadata does, a show's through its first episode (six at a
+      // time; not checked against a real Plex server). One that doesn't answer keeps none.
+      const streamsOf = async (key: string) =>
+        (await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/metadata/${key}`)).MediaContainer.Metadata?.[0]?.Media?.[0]?.Part[0]?.Stream ?? [];
+      for (let i = 0; i < entries.length; i += 6) {
+        await Promise.all(
+          entries.slice(i, i + 6).map(async (e) => {
+            const streams = await optional(
+              (async () => {
+                if (e.titleId.startsWith("movie:")) return streamsOf(e.externalId);
+                const leaves = await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/metadata/${e.externalId}/allLeaves?X-Plex-Container-Start=0&X-Plex-Container-Size=1`);
+                const first = leaves.MediaContainer.Metadata?.[0];
+                return first ? streamsOf(first.ratingKey) : [];
+              })(),
+              [] as PlexStream[],
+            );
+            const langs = audioLanguages(streams.filter((s) => s.streamType === 2).map((s) => s.languageCode ?? s.languageTag ?? null));
+            if (langs.length > 0) e.quality = { ...(e.quality ?? {}), audioLanguages: langs };
+          }),
+        );
+      }
       return entries;
     },
+    /**
+     * What the Plex account has played on this server (Import history, C134; built from Plex's documentation, not
+     * checked against a real server): films and episodes with a view count, with the last time played; an episode with
+     * its show's name, year and ids.
+     */
+    async history(onProgress: (p: ScanProgress) => void) {
+      const sections = await call<{ MediaContainer: { Directory: { key: string; type: string }[] } }>("/library/sections");
+      const out: ServerHistory["items"] = [];
+      const ids = (guids: { id: string }[] | undefined) => {
+        const of = (scheme: string) => guids?.find((g) => g.id.startsWith(`${scheme}://`))?.id.slice(scheme.length + 3);
+        return { tmdb: of("tmdb"), imdb: of("imdb"), tvdb: of("tvdb") };
+      };
+      const when = (m: PlexMetadata) => (m.lastViewedAt ? new Date(m.lastViewedAt * 1000).toISOString() : null);
+      for (const s of sections.MediaContainer.Directory) {
+        if (s.type === "movie") {
+          const films = await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/sections/${s.key}/all?type=1&includeGuids=1`);
+          for (const m of films.MediaContainer.Metadata ?? []) {
+            if ((m.viewCount ?? 0) > 0) out.push({ kind: "movie", title: m.title, year: m.year ?? null, ids: ids(m.Guid), season: null, episode: null, watchedAt: when(m) });
+          }
+        } else if (s.type === "show") {
+          const shows = await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/sections/${s.key}/all?type=2&includeGuids=1`);
+          const byKey = new Map((shows.MediaContainer.Metadata ?? []).map((m) => [m.ratingKey, m]));
+          const eps = await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/sections/${s.key}/all?type=4`);
+          for (const e of eps.MediaContainer.Metadata ?? []) {
+            const show = e.grandparentRatingKey ? byKey.get(e.grandparentRatingKey) : undefined;
+            if ((e.viewCount ?? 0) === 0 || !show || e.parentIndex === undefined || e.index === undefined) continue;
+            out.push({ kind: "episode", title: show.title, year: show.year ?? null, ids: ids(show.Guid), season: e.parentIndex, episode: e.index, watchedAt: when(e) });
+          }
+        }
+        onProgress({ scanned: out.length, total: null });
+      }
+      return out;
+    },
+
     async findEpisode(showKey, season, episode) {
       const r = await call<{ MediaContainer: { Metadata?: PlexMetadata[] } }>(`/library/metadata/${showKey}/allLeaves`);
       return r.MediaContainer.Metadata?.find((e) => e.parentIndex === season && e.index === episode)?.ratingKey ?? null;

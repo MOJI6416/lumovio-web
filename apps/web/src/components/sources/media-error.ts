@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useSession } from "@/components/providers/Providers";
 import { apiErrorKey } from "@/lib/api-errors";
 import { MediaNetError } from "@/lib/media/net";
 
@@ -25,13 +26,19 @@ export function netReason(t: ReturnType<typeof useTranslations>, e: MediaNetErro
   }[e.code];
 }
 
-/** The media server's reason, its HTTP status, or the API error's key — never an error's own (English) text. */
+/**
+ * The media server's reason, its HTTP status, or the API error's key — never an error's own (English) text. In the TV
+ * shell an `http://` server refused by the browser has its own words (TV document §7.2): only a TV's browser meets it
+ * (the TV app allows such servers), and it can't be helped on the TV — an https address set on a phone, or the app.
+ */
 export function useMediaErrorText() {
   const t = useTranslations();
   const tn = useTranslations("connections");
   const tp = useTranslations("player");
+  const { tv } = useSession();
   return (e: unknown): string => {
     if (e instanceof MediaNetError) {
+      if (tv && e.code === "mixed_content") return t("tvui.errMixedContent");
       if (e.code !== "http") return netReason(tn, e);
       return e.status ? tp("errorHttp", { status: e.status }) : t("errors.generic");
     }

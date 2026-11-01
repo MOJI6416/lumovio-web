@@ -46,7 +46,11 @@ const config: NextConfig = {
     return apiProxy ? [{ source: "/api/:path*", destination: `${apiProxy}/api/:path*` }] : [];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // The avatar marks' sprite (ui/avatar-marks): its address carries a version, so it can be kept for a year.
+      { source: "/brand/avatar-marks.svg", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+    ];
   },
 };
 

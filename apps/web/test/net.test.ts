@@ -108,3 +108,49 @@ describe("mediaFetch on an HTTPS page", () => {
     expect(await codeOf("http://torr.example.org/echo")).toBe("mixed_content");
   });
 });
+
+describe("an http:// server of the home network on an HTTPS page (limitations: LAN address pre-check)", () => {
+  const refused = () => Promise.reject(new TypeError("Failed to fetch"));
+  afterEach(() => vi.unstubAllGlobals());
+  const onLumovio = (lna: boolean) => {
+    vi.stubGlobal("window", { location: { protocol: "https:" } });
+    vi.stubGlobal("isSecureContext", true);
+    // Chrome 142+ knows `targetAddressSpace` on its requests; other browsers don't.
+    vi.stubGlobal("Request", lna ? class { targetAddressSpace = "unknown"; } : class {});
+  };
+  const codeOf = (url: string) =>
+    mediaFetch(url).then(
+      () => "ok",
+      (e) => (e instanceof MediaNetError ? e.code : String(e)),
+    );
+
+  it("is tried, and reached once the browser lets it through", async () => {
+    onLumovio(true);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("MatriX")));
+    expect(await codeOf("http://192.168.1.20:8090/echo")).toBe("ok");
+  });
+
+  it("says the person refused the local network, when they did", async () => {
+    onLumovio(true);
+    vi.stubGlobal("navigator", { permissions: { query: async () => ({ state: "denied" }) } });
+    vi.stubGlobal("fetch", vi.fn(refused));
+    expect(await codeOf("http://192.168.1.20:8090/echo")).toBe("local_network");
+  });
+
+  it("is mixed content in a browser without Local Network Access", async () => {
+    onLumovio(false);
+    vi.stubGlobal("fetch", vi.fn(refused));
+    expect(await codeOf("http://192.168.1.20:8090/echo")).toBe("mixed_content");
+  });
+});
+
+describe("a failed check as the server's row keeps it", () => {
+  it("is the failure's kind, read back; anything else is no failure", async () => {
+    const { failureDetail, storedFailure } = await import("../src/components/connections/net-errors");
+    expect(storedFailure(failureDetail(new MediaNetError("local_network", "x")))).toBe("local_network");
+    expect(failureDetail(new Error("x"))).toBeNull();
+    expect(storedFailure("Jellyfin 10.10.7")).toBeNull();
+    expect(storedFailure("net:nonsense")).toBeNull();
+    expect(storedFailure(null)).toBeNull();
+  });
+});

@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/Toast";
 import { useRouter } from "@/i18n/navigation";
 import { authErrorKey } from "@/lib/api-errors";
 import { authClient } from "@/lib/auth-client";
+import { groupKey, totpSecret } from "@/lib/totp-key";
 import { useUnsavedChanges } from "./use-unsaved";
 
 const MIN_PASSWORD = 10;
@@ -119,11 +120,12 @@ function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
   );
 }
 
-type Setup = { qr: string; uri: string; backup: string[] };
+type Setup = { qr: string; uri: string; key: string; backup: string[] };
 
 /**
  * Two-step verification: the steps are said first (password → scan the QR code → type a code → keep the backup
- * codes), then it asks for the password. Turning it off asks for the password at the place of the button.
+ * codes), then it asks for the password. Beside the QR code, its setup key as text with "Copy", for an authenticator on
+ * the same phone. Turning it off asks for the password at the place of the button.
  */
 function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassword: boolean }) {
   const t = useTranslations("settings");
@@ -161,7 +163,8 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
     }
     // The QR encoder loads only here, when protection is being turned on (bundle budget).
     const { toDataURL } = await import("qrcode");
-    setSetup({ qr: await toDataURL(r.data.totpURI, { margin: 1, width: 220 }), uri: r.data.totpURI, backup: r.data.backupCodes });
+    const uri = r.data.totpURI;
+    setSetup({ qr: await toDataURL(uri, { margin: 1, width: 220 }), uri, key: totpSecret(uri), backup: r.data.backupCodes });
     setBusy(false);
     setPassword("");
     setMode("scan");
@@ -255,6 +258,29 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
           <div className="flex flex-col gap-4">
             <p className="text-body font-semibold text-text-1">{t("twoFactorStepOf", { n: 2, total: 4 })}</p>
             <p className="text-body text-text-2">{t("scanQr")}</p>
+            {/* The phone that holds the authenticator can't scan its own screen: the same key as text, with Copy. */}
+            {setup.key && (
+              <div className="flex flex-col gap-2 md:max-w-xl">
+                <p className="text-body-s font-semibold text-text-1">{t("setupKey")}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="min-w-0 flex-1 select-all break-all rounded-md bg-surface-2 px-3 py-2 text-body tabular-nums tracking-wide text-text-1 [font-variant-ligatures:none]">
+                    {groupKey(setup.key)}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      void navigator.clipboard.writeText(setup.key).then(
+                        () => toast.success(t("setupKeyCopied")),
+                        () => toast.error(t("setupKeyCopyFailed")),
+                      )
+                    }
+                  >
+                    {tc("copy")}
+                  </Button>
+                </div>
+                <p className="text-caption font-medium text-text-3">{t("setupKeyHint")}</p>
+              </div>
+            )}
             <form onSubmit={(e) => void verify(e)} noValidate className="flex flex-col gap-4 md:max-w-xs">
               <Field label={ta("twoFactorAppCode")} error={error}>
                 {(id, d, invalid) => (

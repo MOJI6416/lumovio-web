@@ -1,11 +1,11 @@
 "use client";
 
-import type { Availability, SeasonDetails } from "@lumovio/contracts";
+import type { Availability, SeasonDetails, SubtitleStyle } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { usePlayer } from "@videojs/react/video";
 import { Info, Keyboard, Play, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { useReleaseText } from "@/components/sources/release-text";
 import { SourceRow } from "@/components/sources/SourceRow";
@@ -23,8 +23,10 @@ import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
 import { episodesOpen } from "@/lib/spoilers";
 import { audioTrackFacts } from "@/lib/media/explain";
+import type { SubtitleFormat } from "@/lib/media/subs/engine";
+import { OFFSET_STEP, stepOffset } from "@/lib/media/subs/view";
 import type { PreparedPlayback } from "@/lib/media/types";
-import type { SubtitleMeta } from "./LumovioPlayer";
+import type { SubtitleLook, SubtitleMeta } from "./LumovioPlayer";
 import { useWhy } from "./use-why";
 
 /** The player's layers (design-system 11.1): a panel on the right on a PC and a TV, a sheet on a phone; keys in a dialog. */
@@ -70,6 +72,7 @@ export function PlayerPanels({
   hasNext,
   hasSegments,
   subtitleMeta,
+  look,
 }: {
   panel: PlayerPanel;
   onPanel: (p: PlayerPanel) => void;
@@ -84,6 +87,7 @@ export function PlayerPanels({
   hasNext: boolean;
   hasSegments: boolean;
   subtitleMeta?: SubtitleMeta;
+  look?: SubtitleLook;
 }) {
   const t = useTranslations("player");
   const close = (o: boolean) => !o && onPanel("none");
@@ -97,7 +101,7 @@ export function PlayerPanels({
   return (
     <>
       <SidePanel open={panel === "tracks"} onOpenChange={close} title={t("audioAndSubtitles")}>
-        <TracksBody prepared={prepared} onAudioChange={onAudioChange} currentTime={currentTime} originalLanguage={originalLanguage} subtitleMeta={subtitleMeta} />
+        <TracksBody prepared={prepared} onAudioChange={onAudioChange} currentTime={currentTime} originalLanguage={originalLanguage} subtitleMeta={subtitleMeta} look={look} />
         {back}
       </SidePanel>
       <SidePanel open={panel === "settings"} onOpenChange={close} title={t("qualityAndSpeed")}>
@@ -146,7 +150,8 @@ function Note({ children }: { children: ReactNode }) {
 
 /**
  * Audio and subtitles (PLR-07): every track in words — "Russian · dubbed (Pifagor)", not "Dub (Пифагор) AAC" — with its
- * format underneath, the one playing checked; one track or none is said so rather than the button disappearing.
+ * format underneath, the one playing checked; one track or none is said so rather than the button disappearing. With
+ * subtitles, their size (the profile's) and timing (this title's) under the list.
  */
 function TracksBody({
   prepared,
@@ -154,12 +159,14 @@ function TracksBody({
   currentTime,
   originalLanguage,
   subtitleMeta,
+  look,
 }: {
   prepared: PreparedPlayback;
   onAudioChange?: (index: number, positionSec: number) => void;
   currentTime: number;
   originalLanguage: string | null;
   subtitleMeta?: SubtitleMeta;
+  look?: SubtitleLook;
 }) {
   const t = useTranslations("player");
   const store = usePlayer();
@@ -218,13 +225,78 @@ function TracksBody({
                 value: tr.id,
                 // "Forced" said once: not again after a track already named "Надписи".
                 label: m?.forced && !words.toLowerCase().includes(t("subtitlesForced").toLowerCase()) ? `${words} · ${t("subtitlesForced")}` : words,
-                description: m ? [m.format.toUpperCase(), m.file ? t("subtitlesFile") : null].filter(Boolean).join(" · ") : undefined,
+                description: m ? [FORMAT_NAME[m.format], m.file ? t("subtitlesFile") : null].filter(Boolean).join(" · ") : undefined,
               };
             }),
           ]}
         />
       )}
+      {subtitleTracks.length > 0 && look && <SubtitleLookBody look={look} />}
     </div>
+  );
+}
+
+/** Format names under a track (technical, the same in every language). */
+const FORMAT_NAME: Record<SubtitleFormat, string> = { srt: "SRT", vtt: "WebVTT", ass: "ASS", pgs: "PGS", vobsub: "VobSub", tx3g: "MP4 Timed Text" };
+
+/** Seconds with a sign and one decimal ("+1.5", "-0.5", "0.0"): the subtitle timing. */
+export function useSignedSeconds() {
+  return new Intl.NumberFormat(useLocale(), { signDisplay: "exceptZero", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+/**
+ * The subtitles' size (saved to the profile; the rest of their look is in Settings → Profile) and their timing for this
+ * title: "Earlier" when they come after the speech, "Later" when before, half a second a press (G / H on a keyboard).
+ */
+function SubtitleLookBody({ look }: { look: SubtitleLook }) {
+  const t = useTranslations("player");
+  const ts = useTranslations("subtitles");
+  const signed = useSignedSeconds();
+  const one = new Intl.NumberFormat(useLocale(), { maximumFractionDigits: 1 });
+  const timing = useId();
+  const later = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <div className="flex flex-col gap-2">
+        <RadioGroup<SubtitleStyle["size"]>
+          legend={ts("sizePlayer")}
+          value={look.style.size}
+          onValueChange={look.setSize}
+          options={(["s", "m", "l", "xl"] as const).map((v) => ({ value: v, label: ts(`size_${v}`) }))}
+        />
+        <Note>{look.sizeFailed ? ts("sizeFailed") : ts("playerNote")}</Note>
+      </div>
+      <section aria-labelledby={timing} className="flex flex-col gap-2">
+        <h3 id={timing} className="text-body-s font-semibold text-text-1">
+          {ts("timing")}
+        </h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => look.setOffset(stepOffset(look.offset, -OFFSET_STEP))}>
+            {ts("earlier")}
+          </Button>
+          <output aria-live="polite" className="min-w-16 text-center text-body font-semibold text-text-1 tabular-nums">
+            {t("seconds", { value: signed.format(look.offset) })}
+          </output>
+          <Button ref={later} variant="secondary" size="sm" onClick={() => look.setOffset(stepOffset(look.offset, OFFSET_STEP))}>
+            {ts("later")}
+          </Button>
+          {look.offset !== 0 && (
+            <Button
+              variant="tertiary"
+              size="sm"
+              onClick={() => {
+                look.setOffset(0);
+                // "Reset" goes with the offset: the focus (a TV remote's) stays in the row.
+                later.current?.focus();
+              }}
+            >
+              {ts("reset")}
+            </Button>
+          )}
+        </div>
+        <Note>{ts("timingNote", { step: one.format(OFFSET_STEP) })}</Note>
+      </section>
+    </>
   );
 }
 
@@ -453,13 +525,15 @@ function SourceBody({ sources, onPick, onSearch }: { sources: SourcesInfo; onPic
 /** Only what works for this video, plus the ways without keys (PLR-13). */
 function Shortcuts({ subtitles, next, segments }: { subtitles: boolean; next: boolean; segments: boolean }) {
   const t = useTranslations("player");
+  const ts = useTranslations("subtitles");
+  const one = new Intl.NumberFormat(useLocale(), { maximumFractionDigits: 1 });
   const rows: [string, string][] = [
     [t("keySpace"), t("keyPlayPause")],
     ["← →  J L", t("keySeek")],
     ["↑ ↓", t("keyVolume")],
     ["M", t("keyMute")],
     ["F", t("keyFullscreen")],
-    ...(subtitles ? [["C", t("keySubtitles")] as [string, string]] : []),
+    ...(subtitles ? [["C", t("keySubtitles")] as [string, string], ["G H", ts("keyTiming", { step: one.format(OFFSET_STEP) })] as [string, string]] : []),
     ...(segments ? [["S", t("keySkip")] as [string, string]] : []),
     ...(next ? [["N", t("nextEpisode")] as [string, string]] : []),
     ["0–9", t("keyJump")],

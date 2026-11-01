@@ -10,6 +10,9 @@ export const ImportSource = z.enum([
   "lampa",
   "stremio",
   "lumovio",
+  // Watch history read from the person's own server by their device, uploaded as a file of `ServerHistory`.
+  "jellyfin",
+  "plex",
 ]);
 export type ImportSource = z.infer<typeof ImportSource>;
 
@@ -115,10 +118,33 @@ export const ImportApply = z.object({
 
 export interface ImportSourceInfo {
   source: ImportSource;
-  method: "file" | "oauth";
+  /** "server": read from a connected Jellyfin or Plex by this device (`ServerHistory`), then the same review as a file. */
+  method: "file" | "oauth" | "server";
   available: boolean;
   /** Accepted file extensions for file imports. */
   accept: string[];
   /** i18n key with export instructions. */
   helpKey: string;
+}
+
+/**
+ * A watch history a device read from the person's own Jellyfin or Plex (the backend never contacts it), uploaded as a
+ * file to `POST /api/imports` with source "jellyfin" or "plex": what was played, as the server knows it. An episode
+ * carries its series' name, year and ids. Resume positions are not part of it.
+ */
+export const SERVER_HISTORY_FORMAT = "lumovio-server-history/1";
+export interface ServerHistory {
+  format: typeof SERVER_HISTORY_FORMAT;
+  server: "jellyfin" | "plex";
+  items: {
+    kind: "movie" | "episode";
+    /** The film's, or the episode's series' name. */
+    title: string;
+    year: number | null;
+    ids: { tmdb?: string; imdb?: string; tvdb?: string };
+    season: number | null;
+    episode: number | null;
+    /** When it was last played to the end, as the server says (ISO); null when it doesn't. */
+    watchedAt: string | null;
+  }[];
 }

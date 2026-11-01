@@ -12,6 +12,8 @@ import { TvButton } from "@/components/ui/tv/TvButton";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
+import { titleHref } from "@/lib/slug";
+import { CardMoreLayer, type CardTarget, HoldHint, useHidden, useStable } from "../media/hold";
 import { TvCard } from "../media/TvCard";
 import { useTvNav } from "../nav/TvNav";
 import { TvState } from "../shell/TvState";
@@ -23,7 +25,9 @@ const ICONS: Record<Tab, LucideIcon> = { continue: Play, watchlist: Bookmark, fa
 /*
  * The library on a TV (S08 TV; TV document §4 "Личная библиотека"): its parts as one row of tabs — Continue watching,
  * Watchlist, Favourites, Lists, History —, each a grid that starts where the tab is; an empty part says so in one line.
- * The tab is in the address (replaced), so Back from a title comes back to the same tab and card.
+ * The tab is in the address (replaced), so Back from a title comes back to the same tab and card. A card of Continue
+ * watching, the Watchlist, Favourites or the History has "More" (held OK, ../media/hold) with its removal; the line
+ * over the grid says so.
  */
 export function LibraryScreen() {
   const t = useTranslations("library");
@@ -72,13 +76,16 @@ export function LibraryScreen() {
                   <span className="truncate font-semibold text-text-1">{focused.title}</span>
                   {focused.year && <span>{focused.year}</span>}
                   <CardRating title={focused} className="text-text-1" />
+                  {tab !== "lists" && <HoldHint className="ms-auto flex shrink-0 items-center gap-3" />}
                 </>
               )}
             </div>
           </header>
           <div className="ps-(--tv-pad) pe-(--gutter)">
             {tab === "continue" && <ContinueTab onFocusTitle={setFocused} />}
-            {(tab === "watchlist" || tab === "favorites") && <ListTab key={tab} kind={tab} onFocusTitle={setFocused} />}
+            {(tab === "watchlist" || tab === "favorites") && (
+              <ListTab key={tab} kind={tab} name={label[tab]} onFocusTitle={setFocused} />
+            )}
             {tab === "lists" && <ListsTab />}
             {tab === "history" && <HistoryTab onFocusTitle={setFocused} />}
           </div>
@@ -112,12 +119,26 @@ function TabState({ q, empty, icon, children }: { q: { isPending: boolean; isErr
   return <>{children}</>;
 }
 
-function Grid({ titles, onFocusTitle }: { titles: TitleSummary[]; onFocusTitle: (t: TitleSummary | null) => void }) {
+/** A card's "More" with its removal (../media/hold); `hide` takes the card off its tab at once. */
+function MoreLayer({ more, hide, onClose }: { more: CardTarget | null; hide: (id: string) => () => void; onClose: () => void }) {
+  if (!more) return null;
+  return <CardMoreLayer target={more} hide={() => hide(more.title.id)} onClose={onClose} />;
+}
+
+function Grid({
+  titles,
+  onFocusTitle,
+  onMore,
+}: {
+  titles: TitleSummary[];
+  onFocusTitle: (t: TitleSummary | null) => void;
+  onMore: (index: number) => void;
+}) {
   const onFocus = (e: FocusEvent<HTMLDivElement>) => onFocusTitle(titles[Number((e.target as HTMLElement).dataset.index)] ?? null);
   return (
     <div data-zone="grid" data-zone-axis="grid" onFocus={onFocus} className="grid grid-cols-7 gap-x-6 gap-y-8">
       {titles.map((x, i) => (
-        <TvCard key={x.id} title={x} index={i} fluid />
+        <TvCard key={x.id} title={x} index={i} fluid onMore={onMore} />
       ))}
     </div>
   );
@@ -127,54 +148,88 @@ function ContinueTab({ onFocusTitle }: { onFocusTitle: (t: TitleSummary | null) 
   const tv = useTranslations("tvui");
   const tk = useTranslations("card");
   const q = useQuery({ queryKey: ["continue"], queryFn: () => api<{ items: ContinueWatchingItem[] }>("/api/continue") });
-  const items = q.data?.items ?? [];
+  const { hidden, hide } = useHidden();
+  const [more, setMore] = useState<CardTarget | null>(null);
+  const items = (q.data?.items ?? []).filter((i) => !hidden.has(i.title.id));
+  const onMore = useStable((i: number) => {
+    const x = items[i]?.title;
+    if (x) setMore({ kind: "continue", title: x, details: titleHref(x.kind, x.tmdbId, x.title) });
+  });
   const onFocus = (e: FocusEvent<HTMLDivElement>) => onFocusTitle(items[Number((e.target as HTMLElement).dataset.index)]?.title ?? null);
   return (
-    <TabState q={q} empty={items.length ? null : tv("libContinueEmpty")} icon={Play}>
-      <div data-zone="grid" data-zone-axis="grid" onFocus={onFocus} className="grid grid-cols-4 gap-x-6 gap-y-8">
-        {items.map(({ title: x, progress, next }, i) => {
-          const s = next?.season ?? progress.season;
-          const e = next?.episode ?? progress.episode;
-          const where = s !== null && e !== null ? (next ? tk("nextEpisode", { season: s, episode: e }) : tk("episode", { season: s, episode: e })) : "";
-          return (
-            <TvCard
-              key={x.id}
-              title={x}
-              shape="wide"
-              index={i}
-              fluid
-              href={`/watch/${x.kind}/${x.tmdbId}${s !== null && e !== null ? `?s=${s}&e=${e}` : ""}`}
-              label={tv("continueLabel", { title: x.title, where })}
-              progress={next ? 0 : (progress.fraction ?? 0)}
-            />
-          );
-        })}
-      </div>
-    </TabState>
+    <>
+      <TabState q={q} empty={items.length ? null : tv("libContinueEmpty")} icon={Play}>
+        <div data-zone="grid" data-zone-axis="grid" onFocus={onFocus} className="grid grid-cols-4 gap-x-6 gap-y-8">
+          {items.map(({ title: x, progress, next }, i) => {
+            const s = next?.season ?? progress.season;
+            const e = next?.episode ?? progress.episode;
+            const where = s !== null && e !== null ? (next ? tk("nextEpisode", { season: s, episode: e }) : tk("episode", { season: s, episode: e })) : "";
+            return (
+              <TvCard
+                key={x.id}
+                title={x}
+                shape="wide"
+                index={i}
+                fluid
+                href={`/watch/${x.kind}/${x.tmdbId}${s !== null && e !== null ? `?s=${s}&e=${e}` : ""}`}
+                label={tv("continueLabel", { title: x.title, where })}
+                progress={next ? 0 : (progress.fraction ?? 0)}
+                onMore={onMore}
+              />
+            );
+          })}
+        </div>
+      </TabState>
+      <MoreLayer more={more} hide={hide} onClose={() => setMore(null)} />
+    </>
   );
 }
 
-function ListTab({ kind, onFocusTitle }: { kind: "watchlist" | "favorites"; onFocusTitle: (t: TitleSummary | null) => void }) {
+function ListTab({ kind, name, onFocusTitle }: { kind: "watchlist" | "favorites"; name: string; onFocusTitle: (t: TitleSummary | null) => void }) {
   const tv = useTranslations("tvui");
   const q = useQuery({ queryKey: ["library-list", kind], queryFn: () => api<ListDetails>(`/api/library/${kind}`) });
-  const titles = (q.data?.items ?? []).map((i) => i.title);
+  const { hidden, hide } = useHidden();
+  const [more, setMore] = useState<CardTarget | null>(null);
+  const titles = (q.data?.items ?? []).map((i) => i.title).filter((x) => !hidden.has(x.id));
+  const onMore = useStable((i: number) => {
+    const x = titles[i];
+    const list = q.data;
+    if (x && list) setMore({ kind: "list", title: x, list: { id: list.id, name } });
+  });
   return (
-    <TabState q={q} empty={titles.length ? null : kind === "watchlist" ? tv("libWatchlistEmpty") : tv("libFavoritesEmpty")} icon={kind === "watchlist" ? Bookmark : Heart}>
-      <Grid titles={titles} onFocusTitle={onFocusTitle} />
-    </TabState>
+    <>
+      <TabState q={q} empty={titles.length ? null : kind === "watchlist" ? tv("libWatchlistEmpty") : tv("libFavoritesEmpty")} icon={kind === "watchlist" ? Bookmark : Heart}>
+        <Grid titles={titles} onFocusTitle={onFocusTitle} onMore={onMore} />
+      </TabState>
+      <MoreLayer more={more} hide={hide} onClose={() => setMore(null)} />
+    </>
   );
 }
 
 function HistoryTab({ onFocusTitle }: { onFocusTitle: (t: TitleSummary | null) => void }) {
   const tv = useTranslations("tvui");
   const q = useQuery({ queryKey: ["history-tv"], queryFn: () => api<{ entries: HistoryEntry[] }>("/api/history?limit=100") });
+  const { hidden, hide } = useHidden();
+  const [more, setMore] = useState<CardTarget | null>(null);
   // A title once, at its latest viewing.
   const seen = new Set<string>();
-  const titles = (q.data?.entries ?? []).map((e) => e.title).filter((x) => (seen.has(x.id) ? false : (seen.add(x.id), true)));
+  const titles = (q.data?.entries ?? [])
+    .map((e) => e.title)
+    .filter((x) => !hidden.has(x.id) && (seen.has(x.id) ? false : (seen.add(x.id), true)));
+  // "Remove from history" takes the title's every viewing, as the card stands for all of them.
+  const onMore = useStable((i: number) => {
+    const x = titles[i];
+    if (!x) return;
+    const ids = (q.data?.entries ?? []).filter((e) => e.title.id === x.id).map((e) => e.id);
+    setMore({ kind: "history", title: x, ids });
+  });
   return (
-    <TabState q={q} empty={titles.length ? null : tv("libHistoryEmpty")} icon={History}>
-      <Grid titles={titles} onFocusTitle={onFocusTitle} />
-    </TabState>
+    <>
+      <TabState q={q} empty={titles.length ? null : tv("libHistoryEmpty")} icon={History}>
+        <Grid titles={titles} onFocusTitle={onFocusTitle} onMore={onMore} />
+      </TabState>
+      <MoreLayer more={more} hide={hide} onClose={() => setMore(null)} />
+    </>
   );
 }
 

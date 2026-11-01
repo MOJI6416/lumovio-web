@@ -19,6 +19,8 @@ export interface TvShelfData {
   items: TvItem[];
   /** The shelf's whole list (a grid with its filters): a last card "See all". */
   href?: string | null;
+  /** Its cards can be removed from it by holding OK (Continue watching, ./CardMore). */
+  removable?: boolean;
 }
 
 /** Overviews as long as the spotlight shows them (three lines): the rest only weighs the page. */

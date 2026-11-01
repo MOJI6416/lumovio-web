@@ -36,9 +36,16 @@ export const REFERENCE_CLIPS: ReferenceClip[] = [
   {
     id: "mkv-subs",
     url: "/player-check/mkv-subs.mkv",
-    label: "MKV · SRT + ASS + PGS",
+    label: "MKV · SRT + ASS + PGS + VobSub",
     facts: { container: "matroska,webm", videoCodec: "h264", audioCodec: "aac" },
     subtitles: { files: [{ path: "mkv-subs.ukr.srt", format: "srt", lang: "uk", forced: false, label: null, url: "/player-check/mkv-subs.ukr.srt" }] },
+  },
+  {
+    id: "mp4-subs",
+    url: "/player-check/mp4-subs.mp4",
+    label: "MP4 · H.264 · AAC · mov_text",
+    facts: { container: "mov,mp4,m4a,3gp,3g2,mj2", videoCodec: "h264", audioCodec: "aac" },
+    subtitles: { files: [] },
   },
   { id: "avi-xvid-mp3", url: "/player-check/avi-xvid-mp3.avi", label: "AVI · Xvid · MP3", facts: { container: "avi", videoCodec: "mpeg4", audioCodec: "mp3" } },
   { id: "avi-mpeg2-ac3", url: "/player-check/avi-mpeg2-ac3.avi", label: "AVI · MPEG-2 · AC-3", facts: { container: "avi", videoCodec: "mpeg2video", audioCodec: "ac3" } },
@@ -63,7 +70,7 @@ export interface ClipResult {
   audio?: boolean | null;
   /** Another audio track, switched to while playing (only for a clip that has one, when it is rebuilt). */
   switched?: boolean | null;
-  /** Each subtitle track ("srt:rus", "srt-forced:rus", "ass:eng", "pgs:eng", "srt-file:uk"): how it was drawn, or false. */
+  /** Each subtitle track ("srt:rus", "srt-forced:rus", "ass:eng", "pgs:eng", "vobsub:fre", "srt-file:uk", "tx3g:rus"): how it was drawn, or false. */
   subtitles?: Record<string, "native" | "libass" | "text" | "canvas" | false>;
   error?: ClipError;
   /** For the report: the media element's error code and the engine's message (English, technical). */
@@ -241,7 +248,7 @@ export async function runClip(clip: ReferenceClip, caps: PlaybackCapabilities, v
 
 /**
  * Shows each subtitle track of a clip in turn, paused at one of its lines, and sees it drawn: an active cue for text,
- * libass's canvas for ASS, pixels on the canvas for PGS.
+ * libass's canvas for ASS, pixels on the canvas for PGS and VobSub.
  */
 async function checkSubtitles(clip: ReferenceClip, video: HTMLVideoElement): Promise<Record<string, "native" | "libass" | "text" | "canvas" | false>> {
   const { startSubtitles } = await import("./subs/engine");
@@ -267,7 +274,7 @@ async function checkSubtitles(clip: ReferenceClip, video: HTMLVideoElement): Pro
       const drawn = () => {
         if (info.renderer === "libass") return Boolean(video.parentElement?.querySelector("canvas.JASSUB"));
         if (info.renderer === "canvas") {
-          const c = video.parentElement?.querySelector<HTMLCanvasElement>("canvas[data-subtitles=pgs]");
+          const c = video.parentElement?.querySelector<HTMLCanvasElement>("canvas[data-subtitles]");
           const d = c?.width ? c.getContext("2d")?.getImageData(0, 0, c.width, c.height).data : null;
           return Boolean(d?.some((v, i) => i % 4 === 3 && v > 0));
         }

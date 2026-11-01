@@ -55,7 +55,7 @@ export default async function HomePage({ params, searchParams }: { params: Promi
   const profile = me?.activeProfile ?? null;
   const { watch } = await searchParams;
   const empty = { items: [] as TitleSummary[], wanted: [] as TitleSummary[] };
-  const [home, movieGenres, tvGenres, cont, onServers, recs] = await Promise.all([
+  const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
     serverApi<CatalogPage>(`/api/catalog/home${watch === "now" && profile ? "?watch=now" : ""}`),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/movie").catch(() => ({ genres: [] })),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/tv").catch(() => ({ genres: [] })),
@@ -64,6 +64,8 @@ export default async function HomePage({ params, searchParams }: { params: Promi
     profile ? serverApi<typeof empty>("/api/library/on-servers").catch(() => empty) : Promise.resolve(empty),
     // Picks from this profile's own favorites and ratings; guests get none (no taste is claimed for them).
     profile ? optional(serverApi<Recommendations>("/api/recommendations"), null) : Promise.resolve(null),
+    // Shelves of the profile's own Watchlist (short films, finished series); none in "watch now".
+    profile && watch !== "now" ? optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] }) : Promise.resolve({ rows: [] as CatalogRow[] }),
   ]);
   // "Watch now": every shelf keeps only titles with a copy on the profile's servers (the API decides).
   const now = home.mode === "now";
@@ -87,7 +89,8 @@ export default async function HomePage({ params, searchParams }: { params: Promi
   // "For you" is a shelf only with three picks (Row); the starter stands in for it until then, never beside it.
   const starter = Boolean(recs && !now && !forYou && !recs.startDismissed && recs.seeds.length < 3);
   const nothing = now && !cont.items.length && !servers.length && !personal.lead.length && !rows.length;
-  const rest = interleave(withoutPersonal(catalogRows, [...personal.lead, ...personal.later]), personal.later);
+  // The Watchlist's shelves go first among the ones placed between the catalog shelves.
+  const rest = interleave(withoutPersonal(catalogRows, [...personal.lead, ...personal.later]), [...library.rows.map(cardRow), ...personal.later]);
   const genres = [...movieGenres.genres, ...tvGenres.genres];
   const seeds = recs?.seeds.length ?? 0;
   const featured = home.featured.length > 0;
@@ -136,6 +139,8 @@ export default async function HomePage({ params, searchParams }: { params: Promi
         </section>
       )}
       <div
+        // The C5 comparison arm the API built this page in: its shelves' counters carry it (lib/discovery-metrics).
+        data-discovery-variant={home.variant}
         className={clsx(
           "relative z-10 mx-auto flex max-w-media flex-col gap-8 md:gap-12",
           // The first shelf comes up onto the dark billboard in the dark theme only; in the light one the stage ends with

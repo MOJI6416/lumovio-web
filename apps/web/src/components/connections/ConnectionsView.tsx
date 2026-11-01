@@ -15,6 +15,8 @@ import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
+import { MediaNetError } from "@/lib/media/net";
+import { netErrorText, storedFailure } from "./net-errors";
 import { ServerMark } from "./ServerMark";
 import type { ServerMenuProps } from "./ServerMenu";
 import { profileHasAccess, STATUS, useServerActions, useServerFact } from "./server-actions";
@@ -24,6 +26,7 @@ export { netErrorText } from "./net-errors";
 // The panel and the add/edit form (with the server clients) load when they are opened (bundle budget).
 const ServerPanel = dynamic(() => import("./ServerPanel").then((m) => m.ServerPanel), { ssr: false });
 const AddConnectionDialog = dynamic(() => import("./AddConnectionDialog").then((m) => m.AddConnectionDialog), { ssr: false });
+const ConnectionHelp = dynamic(() => import("./ConnectionHelp").then((m) => m.ConnectionHelp), { ssr: false });
 const serverMenu = lazyControl(() => import("./ServerMenu"));
 
 /** A server not checked for this long (or never) is checked when the list opens (SRV-08). */
@@ -35,26 +38,35 @@ const RECHECK_AFTER_MS = 24 * 3600_000;
  * actions) and "More" (check, scan, added releases, remove). A server this profile can't use says so and offers only
  * what works without access.
  */
-export function ConnectionsView() {
+export function ConnectionsView({ initial }: { initial?: { connections: ConnectionSummary[] } }) {
   const t = useTranslations("connections");
+  const th = useTranslations("connectionHelp");
   const qc = useQueryClient();
   const { me } = useSession();
   const [adding, setAdding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const q = useQuery({ queryKey: ["connections"], queryFn: () => api<{ connections: ConnectionSummary[] }>("/api/connections") });
+  // The list the page was rendered with (./page): the rows are there at once, so nothing below them moves when they
+  // load (phones 2026-10-30: the footer jumped, CLS 0.26). It is read again here all the same: the check below goes by
+  // this device's own read.
+  const q = useQuery({
+    queryKey: ["connections"],
+    queryFn: () => api<{ connections: ConnectionSummary[] }>("/api/connections"),
+    initialData: initial,
+    refetchOnMount: "always",
+  });
   const refresh = () => void qc.invalidateQueries({ queryKey: ["connections"] });
   // "Not checked" doesn't wait for a press (SRV-08): the servers this profile may use that weren't checked for a day
   // are checked as the list opens, one at a time, each row saying "Checking…" until its usual status comes back.
   const [due, setDue] = useState<string[] | null>(null);
   useEffect(() => {
-    if (due !== null || !q.data || !me) return;
+    if (due !== null || !q.data || !q.isFetchedAfterMount || !me) return;
     const now = Date.now();
     setDue(
       q.data.connections
         .filter((c) => profileHasAccess(c, me) && (!c.lastCheckedAt || now - new Date(c.lastCheckedAt).getTime() > RECHECK_AFTER_MS))
         .map((c) => c.id),
     );
-  }, [due, q.data, me]);
+  }, [due, q.data, q.isFetchedAfterMount, me]);
   const checked = useCallback(() => setDue((d) => d?.slice(1) ?? d), []);
 
   return (
@@ -66,11 +78,12 @@ export function ConnectionsView() {
         </Button>
       </div>
       <div>
-        <Button variant="tertiary" size="sm" icon={HelpCircle} aria-expanded={showHelp} className="-ms-3" onClick={() => setShowHelp(!showHelp)}>
-          {t("networkHelp")}
+        {/* How Lumovio reaches a server and what to do when it can't, per server type (./ConnectionHelp). */}
+        <Button variant="tertiary" size="sm" icon={HelpCircle} aria-haspopup="dialog" className="-ms-3" onClick={() => setShowHelp(true)}>
+          {th("title")}
         </Button>
-        {showHelp && <p className="mt-2 max-w-measure rounded-md border border-line bg-surface-1 p-4 text-body-s text-text-2">{t("networkHelpText")}</p>}
       </div>
+      {showHelp && <ConnectionHelp onClose={() => setShowHelp(false)} />}
 
       {/* A failed load is not "no servers" (X-14): an error with Retry, not "Add server". */}
       <QueryState
@@ -126,12 +139,15 @@ function ServerRow({
   onAutoChecked: () => void;
 }) {
   const t = useTranslations("connections");
+  const th = useTranslations("connectionHelp");
   const { me } = useSession();
   const fact = useServerFact();
   const actions = useServerActions(c, onChange);
   const [open, setOpen] = useState(false);
+  const [help, setHelp] = useState(false);
   const access = profileHasAccess(c, me);
   const testing = actions.busy === "test";
+  const failure = c.status === "unreachable" || c.status === "unauthorized" ? storedFailure(c.statusDetail) : null;
   // Once per turn (React runs effects twice in development); a check already running — pressed — counts as it.
   const started = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: started by the turn only
@@ -156,6 +172,18 @@ function ServerRow({
         </div>
         <p className="mt-1 truncate text-body-s text-text-2">{c.baseUrl}</p>
         {fact(c, actions.scanned) && <p className="text-body-s text-text-2">{fact(c, actions.scanned)}</p>}
+        {/* What the last failed check ran into, in words (in place of a toast over the screen; phones 2026-10-30), and
+            what to do about it (./ConnectionHelp, its steps first). */}
+        {failure && !testing && (
+          <>
+            <p className="text-body-s text-text-2">{netErrorText(t, new MediaNetError(failure, failure), c.baseUrl)}</p>
+            {access && (
+              <Button variant="tertiary" size="sm" icon={HelpCircle} aria-haspopup="dialog" className="-ms-3 mt-1" onClick={() => setHelp(true)}>
+                {th("whatToDo")}
+              </Button>
+            )}
+          </>
+        )}
       </div>
       <div className="flex items-center gap-2 max-sm:w-full max-sm:ps-14">
         <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
@@ -164,6 +192,7 @@ function ServerRow({
         <ServerMore conn={c} access={access} actions={actions} />
       </div>
       {open && <ServerPanel conn={c} access={access} actions={actions} onChange={onChange} onClose={() => setOpen(false)} />}
+      {help && failure && <ConnectionHelp kind={c.kind} failure={failure} server={c} onRetry={() => void actions.test()} onClose={() => setHelp(false)} />}
     </li>
   );
 }

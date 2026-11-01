@@ -6,6 +6,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Tag } from "@/components/ui/Badge";
 import { cn } from "@/components/ui/cn";
 import { api } from "@/lib/api";
+import { MOOD_NAME } from "@/lib/discover";
 import { formatRuntime, languageName } from "@/lib/format";
 
 const SORT_KEY = {
@@ -88,6 +89,9 @@ export function useRuleWords(rules: ListRules, known?: Genre[]): string[] {
     query.votesMin ? tb("votesMin", { count: query.votesMin }) : null,
     query.votesMax ? tb("votesMax", { count: query.votesMax }) : null,
     query.withoutKeywords?.split(",").includes(TV_SPECIAL_KEYWORD) ? tb("noSpecials") : null,
+    query.imdbVotesMax ? tb("imdbVotesMax", { count: query.imdbVotesMax }) : null,
+    query.opinions ? tb("criticsHigher") : null,
+    query.mood ? tb("mood", { name: tr(`rows.${MOOD_NAME[query.mood]}`) }) : null,
     tb(SORT_KEY[query.sort]),
     ...personal,
   ].filter((w): w is string => Boolean(w));

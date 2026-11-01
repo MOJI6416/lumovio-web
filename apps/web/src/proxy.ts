@@ -70,7 +70,43 @@ function withInterfaceLanguages(req: NextRequest): NextRequest {
   return new NextRequest(req.url, { method: req.method, headers });
 }
 
+const DEV = process.env.NODE_ENV === "development";
+
+/**
+ * The pages' Content-Security-Policy for scripts (TV document §11.1 «Смешанный контент»: the TV app lets the page reach
+ * `http://` servers at home, which is safe only while no script but the site's own can run). A script runs only with
+ * this response's nonce — Next reads it from the request's header and puts it on its own scripts, the theme script
+ * takes it from `x-nonce` — or when such a script loads it ('strict-dynamic': Next's chunks, Cloudflare Turnstile on
+ * the sign-in, sign-up, password reset and support forms). WebAssembly may compile (the player's decoders and
+ * rebuild), workers come from the site or a blob (hls.js, JASSUB, the codec workers, the service worker). The rest stays
+ * open on purpose: posters and art come from TMDB and services, media from servers the person chose (any host, `http`
+ * at home), trailers and the Spotify player are frames. 'self' and Turnstile's host only count in a browser without
+ * 'strict-dynamic' (Chromium before 52); development adds 'unsafe-eval' for React's error overlay.
+ */
+function csp(nonce: string) {
+  return [
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://challenges.cloudflare.com${DEV ? " 'unsafe-eval'" : ""}`,
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+  ].join("; ");
+}
+
+/** A page's response gets its own nonce and the policy above; a redirect has no page to protect. */
+function secure(req: NextRequest, res: NextResponse): NextResponse {
+  if (res.headers.get("location")) return res;
+  const nonce = btoa(crypto.randomUUID());
+  const policy = csp(nonce);
+  passHeaders(req, res, { "content-security-policy": policy, "x-nonce": nonce });
+  res.headers.set("content-security-policy", policy);
+  return res;
+}
+
 export default async function proxy(req: NextRequest) {
+  return secure(req, await route(req));
+}
+
+async function route(req: NextRequest) {
   const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").split(":")[0]!.toLowerCase();
   if (CANONICAL && REDIRECT_HOSTS.has(host)) {
     return NextResponse.redirect(new URL(`${req.nextUrl.pathname}${req.nextUrl.search}`, CANONICAL), 308);

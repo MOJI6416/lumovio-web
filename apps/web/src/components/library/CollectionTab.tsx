@@ -4,7 +4,7 @@ import type { TitleLibraryState } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, Heart, ListFilterPlus, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { lazy, Suspense, useState } from "react";
+import { lazy, memo, Suspense, useState } from "react";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleGrid } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
@@ -20,6 +20,7 @@ import { CollectionToolbar } from "./CollectionToolbar";
 import { sortItems, useTitleSorts } from "./sorting";
 import { readFilters, readSort, useUrlState } from "./url-state";
 import { GridSkeleton } from "./GridSkeleton";
+import { ShowMore, useShowMore } from "./show-more";
 import { systemListQuery } from "./whole-list";
 import { editListId, libraryRules } from "./rules-url";
 import type { RulesEdit } from "./SaveRulesDialog";
@@ -49,14 +50,17 @@ function useWatchedIds(ids: string[], enabled: boolean) {
   });
 }
 
+/** A card that doesn't draw again when "Show more" adds the next ones (./show-more). */
+const Card = memo(PosterCard);
+
 const SORTS = ["added", "title", "year", "rating"] as const;
 type Sort = (typeof SORTS)[number];
 
 
 /**
  * "Watchlist" and "Favourites" (S09): the compact filter row with the sort (LIB-04, LIB-10, LIB-17) over the grid of
- * Ф3 poster cards. Filters work on the whole list (every page of it, LIB-24), at once; their state is in the address and
- * survives a tab change.
+ * Ф3 poster cards, 60 at a time with "Show more" (as a list, LIB-14). Filters work on the whole list (every page of it,
+ * LIB-24), at once; their state is in the address and survives a tab change.
  */
 export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites"; locale: string }) {
   const t = useTranslations("library");
@@ -92,6 +96,9 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
     sort,
     locale,
   );
+  // Drawn 60 at a time (a heavy Watchlist was 7 000 nodes and over a second of long tasks at once); filters and the
+  // sort still work on the whole list.
+  const { limit, more } = useShowMore(`${kind}?${params.toString()}`);
   const minutes = (m: number) => formatRuntime(m, (k, v) => tr(k as "common.minutes", v)) ?? "";
   const Icon = kind === "watchlist" ? Bookmark : Heart;
 
@@ -173,16 +180,19 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
                 }
               />
             ) : (
-              <TitleGrid>
-                {items.map((i) => (
-                  <PosterCard
-                    key={i.title.id}
-                    title={i.title}
-                    // The card's own line (year · rating · type); with a length limit on, the length it was kept by.
-                    subtitle={filters.max && i.runtime ? [i.title.year, minutes(i.runtime)].filter(Boolean).join(" · ") : undefined}
-                  />
-                ))}
-              </TitleGrid>
+              <>
+                <TitleGrid>
+                  {items.slice(0, limit).map((i) => (
+                    <Card
+                      key={i.title.id}
+                      title={i.title}
+                      // The card's own line (year · rating · type); with a length limit on, the length it was kept by.
+                      subtitle={filters.max && i.runtime ? [i.title.year, minutes(i.runtime)].filter(Boolean).join(" · ") : undefined}
+                    />
+                  ))}
+                </TitleGrid>
+                <ShowMore shown={Math.min(limit, items.length)} total={items.length} onMore={more} />
+              </>
             )}
           </div>
         )}
