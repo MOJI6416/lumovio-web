@@ -484,6 +484,7 @@
     "tsWhy_uhdHere": "4K: bu cihaz ve ekranı bunu gösterebiliyor.",
     "tsWhy_noUhdScreen": "1080p: bu cihazın ekranı 4K değil. Yine de 4K seçebilirsiniz.",
     "tsWhy_noHevc": "1080p: bu cihaz, 4K’nın genellikle kullandığı HEVC’yi çözemiyor. Yine de 4K seçebilirsiniz.",
+    "tsWhy_uhdNotSmooth": "1080p: tarayıcıya göre HEVC’deki 4K bu cihazda akıcı oynatılmaz. Yine de 4K seçebilirsiniz.",
     "tsWhy_sdrScreen": "SDR: bu cihazın ekranı HDR göstermiyor.",
     "tsWhy_hdrScreen": "HDR: bu cihazın ekranı bunu gösterebiliyor.",
     "tsWhy_best": "Sürüm adlarına göre bu sesin sürümleri arasında en iyi görüntü.",

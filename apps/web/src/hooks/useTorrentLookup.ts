@@ -2,9 +2,9 @@
 
 import type { ReleaseQuality, SourceState, TitleSummary } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
-import { detectCapabilities } from "@/lib/media/capabilities";
+import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
@@ -17,6 +17,8 @@ import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolean } {
   const { me, locale } = useSession();
   const p = me?.activeProfile;
+  // MediaCapabilities' word on 4K HEVC (lib/media/capabilities): kept on the device after the first answer.
+  const uhdSmooth = useSyncExternalStore(onUhdSmooth, uhdSmoothNow, () => null);
   return useMemo(() => {
     const own = p?.audioLanguages ?? [];
     const caps = typeof window !== "undefined" ? detectCapabilities() : null;
@@ -25,9 +27,9 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
       languagesFromProfile: own.length > 0,
       studios: p?.voiceStudios ?? [],
       quality: p?.releaseQuality ?? "auto",
-      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision) },
+      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth },
     };
-  }, [p, locale]);
+  }, [p, locale, uhdSmooth]);
 }
 
 /** The TorrServer this device may search on its own for the profile, if any; never for kids profiles. */

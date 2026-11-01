@@ -218,6 +218,22 @@ describe("picture versions and quality modes (TS1–TS3)", () => {
     expect(pictureReasons(without[0]!, without, noHevc)).toEqual(["noHevc"]);
   });
 
+  it("'auto' keeps 1080p first where the browser says 4K HEVC stutters, and says so; unknown changes nothing", () => {
+    const stutters = prefsOf({ device: { hevc: true, hdr: false, uhd: true, dolbyVision: false, uhdSmooth: false } });
+    const ranked = rankReleases(hdrezka.slice(0, 2), film, stutters);
+    expect(ranked[0]!.info.resolution).toBe(1080);
+    expect(ranked[1]!.fit).toBe("ok");
+    expect(pictureReasons(ranked[0]!, ranked, stutters)).toEqual(["uhdNotSmooth"]);
+    // "Best" still takes 4K: the person asked for it.
+    expect(rankReleases(hdrezka.slice(0, 2), film, { ...stutters, quality: "best" })[0]!.info.resolution).toBe(2160);
+    for (const uhdSmooth of [true, null]) {
+      const p = prefsOf({ device: { hevc: true, hdr: false, uhd: true, dolbyVision: false, uhdSmooth } });
+      const first = rankReleases(hdrezka.slice(0, 2), film, p)[0]!;
+      expect(first.info.resolution).toBe(2160);
+      expect(pictureReasons(first, rankReleases(hdrezka.slice(0, 2), film, p), p)).toEqual(["uhdHere"]);
+    }
+  });
+
   it("gives HDR no bonus on an SDR screen, and the HDR version on an HDR one", () => {
     const four = hdrezka.slice(1);
     const sdr = prefsOf({ device: { hevc: true, hdr: false, uhd: true, dolbyVision: false } });

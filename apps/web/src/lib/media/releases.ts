@@ -496,8 +496,12 @@ export interface ReleasePrefs {
   studios: string[];
   /** How the picture version is picked: the profile's default, or another one for this viewing. */
   quality: ReleaseQuality;
-  /** This device: decodes HEVC (most 4K releases are HEVC), shows HDR, has a 4K screen, decodes Dolby Vision without an HDR10 base. */
-  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean };
+  /**
+   * This device: decodes HEVC (most 4K releases are HEVC), shows HDR, has a 4K screen, decodes Dolby Vision without an
+   * HDR10 base; and whether 4K HEVC plays smoothly by the browser's MediaCapabilities (`uhdSmoothNow`; null or left out:
+   * not known, which changes nothing).
+   */
+  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null };
 }
 
 /** Dynamic range as the name states it: HDR (HDR10/HLG-style, Dolby Vision with such a base too), Dolby Vision alone, or SDR. */
@@ -556,9 +560,12 @@ const VOICE_SCORE: Record<Voice, number> = { dub: 5, mvo: 4, dvo: 3, avo: 2, vo:
 const FIT_SCORE: Record<Fit, number> = { ok: 2, unknown: 1, poor: 0 };
 const UNKNOWN_SIZE = -Number.MAX_SAFE_INTEGER;
 
-/** Resolutions, most wanted first: in "auto", 4K first only where the screen shows it and the device decodes HEVC. */
+/** Whether "auto" puts 4K first: the screen shows it, the device decodes HEVC, and the browser doesn't say it stutters. */
+const uhdFits = (d: ReleasePrefs["device"]) => d.uhd && d.hevc && d.uhdSmooth !== false;
+
+/** Resolutions, most wanted first: in "auto", 4K first only where it fits this device (`uhdFits`). */
 function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
-  return prefs.quality === "auto" && !(prefs.device.uhd && prefs.device.hevc) ? [1080, 2160, 720, null, 480] : [2160, 1080, 720, null, 480];
+  return prefs.quality === "auto" && !uhdFits(prefs.device) ? [1080, 2160, 720, null, 480] : [2160, 1080, 720, null, 480];
 }
 
 /**
@@ -728,7 +735,7 @@ export function voiceOptions(ranked: RankedRelease[], max = 12): VoiceOption[] {
 }
 
 /** Why the pick's picture version won among its audio option's versions, in the quality mode's terms. */
-export type PictureReason = "uhdHere" | "noUhdScreen" | "noHevc" | "sdrScreen" | "hdrScreen" | "best" | "maxResolution" | "smallest";
+export type PictureReason = "uhdHere" | "noUhdScreen" | "noHevc" | "uhdNotSmooth" | "sdrScreen" | "hdrScreen" | "best" | "maxResolution" | "smallest";
 
 /**
  * The reasons for a pick among `among` (its audio option's releases): the resolution or the mode's
@@ -742,10 +749,11 @@ export function pictureReasons(x: RankedRelease, among: RankedRelease[], prefs: 
   const out: PictureReason[] = [];
   if (prefs.quality === "best") out.push(x.info.source ? "best" : "maxResolution");
   else if (x.info.resolution === 2160) {
-    if (prefs.device.uhd && prefs.device.hevc) out.push("uhdHere");
+    if (uhdFits(prefs.device)) out.push("uhdHere");
   } else if (others.some((o) => o.info.resolution === 2160)) {
     if (!prefs.device.uhd) out.push("noUhdScreen");
     else if (!prefs.device.hevc) out.push("noHevc");
+    else if (prefs.device.uhdSmooth === false) out.push("uhdNotSmooth");
   }
   const isHdr = (o: RankedRelease) => o.info.hdrFormats.length > 0;
   if (others.some((o) => o.info.resolution === x.info.resolution && isHdr(o) !== isHdr(x))) {

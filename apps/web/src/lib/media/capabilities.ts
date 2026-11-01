@@ -109,6 +109,62 @@ export function detectCapabilities(): PlaybackCapabilities {
   return cached;
 }
 
+/*
+ * Whether 4K HEVC plays smoothly here (torrserver-release handoff §4: MediaCapabilities as an extra signal, never the
+ * only one): "decodes HEVC" says nothing about a 4K stream on a weak TV or phone. `decodingInfo()` is asked once for a
+ * typical 4K release — HEVC Main 10, 3840 × 2160, 24 fps, 20 Mbit/s, as Media Source would get it (the in-browser
+ * rebuild) or as a file — and its `smooth` kept on the device (localStorage, per browser version), so release search
+ * ranks the same from the first answer on and rows don't move under the focus. null: not known (no API, refused, or
+ * not asked yet).
+ */
+const SMOOTH_KEY = "lumovio.uhd-smooth";
+let uhdSmooth: boolean | null | undefined;
+const smoothListeners = new Set<() => void>();
+let probing = false;
+
+/** The 4K HEVC answer of this device as far as known now; starts asking the first time. */
+export function uhdSmoothNow(): boolean | null {
+  if (uhdSmooth !== undefined) return uhdSmooth;
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = JSON.parse(localStorage.getItem(SMOOTH_KEY) ?? "null") as { ua: string; smooth: boolean } | null;
+    if (saved && saved.ua === navigator.userAgent) uhdSmooth = saved.smooth;
+  } catch {
+    // No storage: asked again on this page.
+  }
+  if (uhdSmooth === undefined) void probeUhdSmooth();
+  return uhdSmooth ?? null;
+}
+
+/** For `useSyncExternalStore`: told once the answer arrives. */
+export function onUhdSmooth(listener: () => void) {
+  smoothListeners.add(listener);
+  return () => smoothListeners.delete(listener);
+}
+
+async function probeUhdSmooth() {
+  const mc = (navigator as Navigator & { mediaCapabilities?: MediaCapabilities }).mediaCapabilities;
+  if (probing || !mc?.decodingInfo) return;
+  probing = true;
+  const video = { contentType: 'video/mp4; codecs="hvc1.2.4.L153.B0"', width: 3840, height: 2160, bitrate: 20_000_000, framerate: 24 };
+  let answer: boolean | null = null;
+  try {
+    const info = await mc.decodingInfo({ type: mediaSourceClass() ? "media-source" : "file", video });
+    answer = info.supported ? info.smooth : null;
+  } catch {
+    answer = null;
+  }
+  uhdSmooth = answer;
+  if (answer !== null) {
+    try {
+      localStorage.setItem(SMOOTH_KEY, JSON.stringify({ ua: navigator.userAgent, smooth: answer }));
+    } catch {
+      // Kept for this page only.
+    }
+  }
+  for (const l of smoothListeners) l();
+}
+
 export type CompatVerdict = { ok: true } | { ok: false; reason: string };
 
 export interface MediaFileFacts {

@@ -484,6 +484,7 @@
     "tsWhy_uhdHere": "4K: questo dispositivo e il suo schermo lo supportano.",
     "tsWhy_noUhdScreen": "1080p: lo schermo di questo dispositivo non è 4K. Puoi comunque scegliere 4K.",
     "tsWhy_noHevc": "1080p: questo dispositivo non decodifica HEVC, il formato tipico del 4K. Puoi comunque scegliere 4K.",
+    "tsWhy_uhdNotSmooth": "1080p: secondo il browser, il 4K in HEVC non sarebbe fluido su questo dispositivo. Puoi comunque scegliere 4K.",
     "tsWhy_sdrScreen": "SDR: lo schermo di questo dispositivo non supporta HDR.",
     "tsWhy_hdrScreen": "HDR: lo schermo di questo dispositivo lo supporta.",
     "tsWhy_best": "L’immagine migliore tra le versioni con questo audio, secondo i nomi delle release.",
