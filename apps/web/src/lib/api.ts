@@ -54,11 +54,17 @@ export async function handle<T>(res: Response): Promise<T> {
   } catch {
     err = undefined;
   }
-  throw new ApiRequestError(
+  const e = new ApiRequestError(
     res.status,
     err?.code ?? "internal",
     err?.message ?? res.statusText,
     err?.issues,
     err?.requestId,
   );
+  // Next keeps an error's own digest from a server render to the browser, so the error page can tell the API's rate
+  // limit (crawlers over 300 requests a minute) from a failure: it says so and doesn't report it.
+  if (res.status === 429) Object.assign(e, { digest: RATE_LIMITED_DIGEST });
+  throw e;
 }
+
+export const RATE_LIMITED_DIGEST = "rate_limited";

@@ -7,6 +7,7 @@ import { FocusCard } from "@/components/shell/FocusCard";
 import { Shell } from "@/components/shell/Shell";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
+import { RATE_LIMITED_DIGEST } from "@/lib/api";
 
 const CHUNK_RELOAD_KEY = "lumovio:chunk-reload";
 
@@ -18,7 +19,10 @@ const CHUNK_RELOAD_KEY = "lumovio:chunk-reload";
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
   const t = useTranslations();
   const [pending, start] = useTransition();
+  // The API's rate limit on a server render (api.ts): "Too many requests", not a failure to report (React #441 reports).
+  const limited = error instanceof Error && (error as Error & { digest?: string }).digest === RATE_LIMITED_DIGEST;
   useEffect(() => {
+    if (limited) return;
     const e = error instanceof Error ? (error as Error & { digest?: string }) : null;
     // A tab opened before a deploy asks for code the new build no longer has: the page loads again, once a minute at
     // most, instead of saying the server failed (most "render" reports in the admin, 2026-10-29).
@@ -49,11 +53,11 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
         // The report is best effort: the error page itself must not fail on it.
       }
     })();
-  }, [error]);
+  }, [error, limited]);
   return (
     <Shell overlay>
       <title>{`${t("errors.serverTitle")} · ${t("common.appName")}`}</title>
-      <FocusCard icon={TriangleAlert} title={t("errors.serverTitle")} text={t("errors.serverText")}>
+      <FocusCard icon={TriangleAlert} title={t("errors.serverTitle")} text={t(limited ? "errors.rateLimited" : "errors.serverText")}>
         <Button
           icon={RefreshCw}
           loading={pending}

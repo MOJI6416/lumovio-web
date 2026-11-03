@@ -1,4 +1,6 @@
 "use client";
+// First: before Better Auth's modules read the environment.
+import "./deno-guard";
 import { deviceAuthorizationClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
