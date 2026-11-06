@@ -1,11 +1,10 @@
 import { clsx } from "clsx";
-import { Popcorn } from "lucide-react";
 
 /**
  * Logos of the services we credit or link to (trademarks of their owners, used only to name the
- * source). Files live in /public/brands: Wikimedia Commons text logos, TMDB's official attribution
- * logo, TVmaze's site logo. Rotten Tomatoes' Popcornmeter gets a generic popcorn icon and Trakt its
- * name only: no logo file of theirs is in the repository.
+ * source). Files live in /public/brands: Wikimedia Commons text logos and icons (the Tomatometer's
+ * tomato and splat, the Popcornmeter's full and spilled bucket), TMDB's official attribution logo,
+ * TVmaze's site logo, Trakt's mark.
  */
 export type Brand =
   | "imdb"
@@ -39,6 +38,8 @@ export const BRAND_NAMES: Record<Brand, string> = {
 const FILES: Partial<Record<Brand, { src: string; cls: string; wordmark: boolean }>> = {
   imdb: { src: "/brands/imdb.svg", cls: "h-[1.05em]", wordmark: true },
   rotten_tomatoes: { src: "/brands/rt-fresh.svg", cls: "h-[1.15em]", wordmark: false },
+  // The Popcornmeter's own bucket (it was a generic popcorn icon until 2026-11-06).
+  rotten_tomatoes_audience: { src: "/brands/rt-popcorn-fresh.svg", cls: "h-[1.15em]", wordmark: false },
   metacritic: { src: "/brands/metacritic.svg", cls: "h-[1.15em]", wordmark: false },
   anilist: { src: "/brands/anilist.svg", cls: "h-[1.15em] rounded-xs", wordmark: false },
   tvmaze: { src: "/brands/tvmaze.png", cls: "h-[1.1em]", wordmark: true },
@@ -51,12 +52,11 @@ const FILES: Partial<Record<Brand, { src: string; cls: string; wordmark: boolean
   trakt: { src: "/brands/trakt.svg", cls: "h-[1.1em]", wordmark: false },
 };
 
-/** Logo sized to the surrounding text. `rotten` switches Rotten Tomatoes to its splat icon. */
+/** Logo sized to the surrounding text. `rotten` switches the Tomatometer to its splat and the Popcornmeter to its spilled bucket. */
 export function BrandMark({ brand, rotten, className }: { brand: Brand; rotten?: boolean; className?: string }) {
   const f = FILES[brand];
-  if (brand === "rotten_tomatoes_audience") return <Popcorn aria-hidden className={clsx("size-[1.1em] shrink-0", className)} />;
   if (!f) return null;
-  const src = brand === "rotten_tomatoes" && rotten ? "/brands/rt-rotten.svg" : f.src;
+  const src = rotten && brand === "rotten_tomatoes" ? "/brands/rt-rotten.svg" : rotten && brand === "rotten_tomatoes_audience" ? "/brands/rt-popcorn-spilled.svg" : f.src;
   return <img src={src} alt={BRAND_NAMES[brand]} className={clsx("inline-block w-auto shrink-0 select-none", f.cls, className)} draggable={false} />;
 }
 

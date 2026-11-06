@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ScoreMark } from "@/components/media/ScoreBadge";
 import {
   heroItems,
+  heroScore,
   RatingLogo,
   ratingItems,
   sourceName,
@@ -29,7 +30,8 @@ export function Ratings({
   const q = useTitleExternal(kind, tmdbId);
   const value = useRatingValue();
   const items = heroItems(ratingItems(q.data, kind, tmdbId, tmdbRating, tmdbVotes));
-  const score = q.data?.score ?? null;
+  // As on cards and the site's hero: a low-confidence Lumovio Score only in Details.
+  const score = heroScore(q.data?.score);
   if (q.isPending) return <div aria-hidden className="h-8" />;
   if (!score && items.length === 0) return null;
   return (

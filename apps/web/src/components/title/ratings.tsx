@@ -5,12 +5,11 @@ import type { ReactNode } from "react";
 import { BRAND_NAMES, type Brand, BrandMark } from "@/components/media/BrandMark";
 import { ScoreMark } from "@/components/media/ScoreBadge";
 import { api } from "@/lib/api";
-import { formatDate } from "@/lib/format";
 
 /*
- * A title's ratings, one way for the hero's chips, "All ratings" and the Details tab (design-system 1.3, 7.14 item 3,
- * TTL-10, X-20): every source's own score with its logo, how many votes stand behind it, when and by whom it was
- * delivered. The Lumovio Score is Lumovio's own derived number and never stands for any service's score.
+ * A title's ratings, one language for the hero, the Details tab and the TV (design-system 1.3, 7.14 item 3, 7.22):
+ * every source's own score with its logo, its scale and the votes behind it, split into critics and audience. The
+ * Lumovio Score is Lumovio's own derived number and never stands for any service's score.
  */
 
 export const CREDIT_NAMES: Record<RatingProvider, string> = {
@@ -31,7 +30,13 @@ export function useTitleExternal(kind: MediaKind, tmdbId: number) {
   });
 }
 
-export type RatingItem = Omit<ExternalRating, "source" | "via"> & { source: ExternalRating["source"] | "tmdb"; via: RatingProvider | "tmdb" };
+/** The "Ratings" section in Details, which the hero's ratings line opens (`?tab=details#ratings`). */
+export const RATINGS_ANCHOR = "ratings";
+/** "How it's calculated" for the Lumovio Score: a link to it opens the shares (`#lumovio-score`). */
+export const SCORE_ANCHOR = "lumovio-score";
+
+export type RatingItem =Omit<ExternalRating, "source" | "via"> & { source: ExternalRating["source"] | "tmdb"; via: RatingProvider | "tmdb" };
+export type TitleScore = NonNullable<TitleExternal["score"]>;
 
 /** The sources' scores plus TMDB's own, which the details already carry. */
 export function ratingItems(data: TitleExternal | undefined, kind: MediaKind, tmdbId: number, tmdbRating: number | null, tmdbVotes: number | null): RatingItem[] {
@@ -49,54 +54,60 @@ export function heroItems(items: RatingItem[]): RatingItem[] {
   return [audience, critics].filter((r): r is RatingItem => Boolean(r));
 }
 
-const OUT_OF_10 = new Set(["imdb", "tmdb", "tvmaze", "myanimelist"]);
+/** The Lumovio Score where it stands on its own — the hero, the TV: as on cards, only at medium or high confidence. */
+export const heroScore = (score: TitleScore | null | undefined) => (score && score.confidence !== "low" ? score : null);
+
+/** Critics publish reviews (Tomatometer, Metascore); everyone else counts the audience's votes. */
+export const ratingGroup = (source: RatingItem["source"]): "critics" | "audience" => (source === "rotten_tomatoes" || source === "metacritic" ? "critics" : "audience");
+
+/** The scale a source scores on, written after its number ("/10"); null for a per cent, which says it by itself. */
+const SCALE: Partial<Record<RatingItem["source"], 5 | 10 | 100>> = { imdb: 10, tmdb: 10, tvmaze: 10, myanimelist: 10, letterboxd: 5, metacritic: 100 };
+export const ratingScale = (source: RatingItem["source"]) => SCALE[source] ?? null;
 
 /** A whole per cent in the locale's way (2.3): "83%" in en, "83 %" in fr and de, "%83" in tr. */
 export const percent = (n: number, locale: string) => new Intl.NumberFormat(locale, { style: "percent" }).format(n / 100);
 
-/** The value as its source writes it, with the locale's decimal sign and per cent (2.3): "8,0", "83 %", "74", "3,9/5". */
+/** The number as its source writes it, without its scale, with the locale's decimal sign and per cent (2.3): "8,0", "83 %", "74", "3,9". */
 export function useRatingValue() {
   const locale = useLocale();
   const one = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const decimal = one.formatToParts(1.5).find((p) => p.type === "decimal")?.value ?? ".";
   return (r: Pick<RatingItem, "source" | "display">): string => {
-    if (OUT_OF_10.has(r.source)) {
-      const n = Number.parseFloat(r.display);
-      return Number.isFinite(n) ? one.format(n) : r.display;
-    }
-    if (r.source === "metacritic") return r.display.replace(/[/]100$/, "");
+    const of = SCALE[r.source];
+    const n = Number.parseFloat(r.display);
+    if (of && Number.isFinite(n)) return of === 100 ? String(Math.round(n)) : one.format(n);
     // "83%" → "83 %" in fr/de, "%83" in tr.
     const pct = /^(\d+)%$/.exec(r.display);
-    if (pct) return percent(Number(pct[1]), locale);
-    // "3.9/5" → "3,9/5" in ru/uk.
-    return r.display.replace(/(\d)\.(\d)/, `$1${decimal}$2`);
+    return pct ? percent(Number(pct[1]), locale) : r.display;
   };
 }
 
-/** The logo of a source, 16 px tall in a chip. */
+/** The logo of a source, sized to the text around it; a Tomatometer or Popcornmeter under 60 is the rotten / spilled one. */
 export function RatingLogo({ source, score }: { source: RatingItem["source"] | "lumovio"; score?: number }): ReactNode {
   if (source === "lumovio") return <ScoreMark className="size-4" />;
-  return <BrandMark brand={source as Brand} rotten={source === "rotten_tomatoes" && (score ?? 100) < 60} />;
+  return <BrandMark brand={source as Brand} rotten={(source === "rotten_tomatoes" || source === "rotten_tomatoes_audience") && (score ?? 100) < 60} />;
 }
 
 export const sourceName = (source: RatingItem["source"]) => BRAND_NAMES[source as Brand];
 
-/** "1.2M votes · as of 24 Oct 2026 · via MDBList": what stands behind a score and who delivered it. */
-export function useRatingMeta() {
+/** The votes or reviews behind a score: short for the column ("804 тыс."), whole for a screen reader ("оценок: 804 тыс."). */
+export function useRatingCount() {
   const t = useTranslations("ratings");
   const locale = useLocale();
-  const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
-  return (r: Pick<RatingItem, "source" | "count" | "asOf" | "fetchedAt" | "via">): string[] =>
-    [
-      r.count ? (r.source === "rotten_tomatoes" || r.source === "metacritic" ? t("reviews", { count: compact.format(r.count) }) : t("votes", { count: compact.format(r.count) })) : null,
-      r.asOf
-        ? t("asOf", { date: formatDate(r.asOf, locale, { dateStyle: "medium" }) ?? r.asOf })
-        : r.fetchedAt
-          ? t("fetched", { date: formatDate(r.fetchedAt, locale, { dateStyle: "medium" }) ?? r.fetchedAt })
-          : null,
-      r.via !== r.source && r.via !== "tmdb" ? t("via", { provider: CREDIT_NAMES[r.via] }) : null,
-    ].filter((x): x is string => Boolean(x));
+  // Two significant figures at most, as a column wants them: "804 тыс.", "3,7 млн", "62".
+  const compact = new Intl.NumberFormat(locale, { notation: "compact" });
+  return (r: Pick<RatingItem, "source" | "count">) => {
+    if (!r.count) return null;
+    const short = compact.format(r.count);
+    return { short, full: ratingGroup(r.source) === "critics" ? t("reviews", { count: short }) : t("votes", { count: short }) };
+  };
 }
 
-/** Who the scores come from, for the "i" and the foot of "All ratings". */
+/** What makes a Lumovio Score less sure, said on its panel: "Early score", "Few ratings", "Backed by one source" (method v3). */
+export function useScoreNotes() {
+  const t = useTranslations("score");
+  return (score: TitleScore): string[] =>
+    [score.early ? t("early") : null, score.confidence === "low" ? (score.sources === 1 ? t("oneSource") : t("few")) : null].filter((x): x is string => Boolean(x));
+}
+
+/** Who the scores come from, for the foot of "Ratings". */
 export const creditLine = (data: TitleExternal | undefined) => [...(data?.credits ?? []).map((c) => CREDIT_NAMES[c]), "TMDB"].join(" · ");

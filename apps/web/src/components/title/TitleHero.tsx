@@ -123,7 +123,7 @@ export async function TitleHero({ details: d, children }: { details: TitleDetail
             {d.certification && <AgeRating rating={d.certification} className="ms-1" />}
           </p>
           <div className="mt-4 max-md:order-2">
-            <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} title={d.title} />
+            <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
           </div>
           <div className="mt-4 max-md:order-3">
             {d.overview ? (

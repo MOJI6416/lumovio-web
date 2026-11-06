@@ -3,80 +3,282 @@
 import type { MediaKind } from "@lumovio/contracts";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
-import { BrandMark, type Brand, isWordmark } from "@/components/media/BrandMark";
+import { useEffect, useState } from "react";
+import { type Brand, isWordmark } from "@/components/media/BrandMark";
 import { ScoreMark } from "@/components/media/ScoreBadge";
+import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Link } from "@/components/ui/Link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDate } from "@/lib/format";
 import { useHydrated } from "./hydrated";
-import { useScoreNotes } from "./RatingList";
-import { creditLine, RatingLogo, ratingItems, sourceName, useRatingMeta, useRatingValue, useTitleExternal } from "./ratings";
+import {
+  creditLine,
+  percent,
+  RATINGS_ANCHOR,
+  type RatingItem,
+  RatingLogo,
+  ratingGroup,
+  ratingItems,
+  ratingScale,
+  SCORE_ANCHOR,
+  sourceName,
+  type TitleScore,
+  useRatingCount,
+  useRatingValue,
+  useScoreNotes,
+  useTitleExternal,
+} from "./ratings";
 
-/** The anchor "All ratings" links to (`?tab=details#lumovio-score`): it opens "How it's calculated". */
-const SCORE_ANCHOR = "lumovio-score";
-/** A grid cell of three rows (name, number, votes) the tile inside shares with its neighbours (./Tile). */
-const TILE_CELL = "row-span-3 grid grid-rows-subgrid gap-y-0";
+type Group = "critics" | "audience";
+const GROUPS: Group[] = ["critics", "audience"];
 
 /**
- * One source's score: its logo (and name, unless the logo spells it), the number, the votes behind it. The tile's three
- * lines are rows of the grid around it (subgrid, TTL-27): a name that wraps in one tile ("Rotten / Tomatoes") moves the
- * numbers of the whole row down together, so they stay on one line.
+ * A row of a source: its name, its meter, its value, its votes — the same columns in every group, so the meters of
+ * critics and audience start and end on one line (7.22). From a tablet one line: the name keeps its width and the
+ * meter takes what is left, up to 24 rem, so on a wide page the name stands at the start and the meter, value and
+ * votes at the end, as a table's row. On a phone the name, value and votes are the line and the meter runs under it
+ * across the row (METER_UNDER), as long as it can be.
  */
-function Tile({ href, logo, name, value, meta, large }: { href?: string | null; logo: ReactNode; name: string | null; value: ReactNode; meta?: ReactNode; large?: boolean }) {
+const ROW = "grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 md:grid-cols-[minmax(12rem,1fr)_minmax(0,24rem)_4.5rem_5rem] md:gap-x-4";
+/** "How it's calculated": name, the share's meter, the share. */
+const SHARE_ROW = "grid-cols-[minmax(0,1fr)_auto] gap-x-3 md:grid-cols-[minmax(12rem,1fr)_minmax(0,24rem)_4.5rem] md:gap-x-4";
+const METER_UNDER = "max-md:col-span-full max-md:row-start-2 max-md:mt-1.5";
+
+const FILL = { score: "bg-brand-mark", part: "bg-text-1", source: "bg-text-2", faint: "bg-text-3" } as const;
+
+/** A number drawn on its scale, 0–100: a track with its share filled. The number beside it says it; the meter is only seen. */
+function Meter({ value, tone = "source", className }: { value: number; tone?: keyof typeof FILL; className?: string }) {
+  return (
+    <span aria-hidden className={cn("block h-1 overflow-hidden rounded-full bg-surface-3", className)}>
+      <span className={cn("block h-full rounded-full", FILL[tone])} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    </span>
+  );
+}
+
+/** A source's logo, and its name unless the logo spells it (a wordmark, whose alt is the name). */
+function SourceLabel({ source, score }: { source: RatingItem["source"]; score?: number }) {
+  const word = isWordmark(source as Brand);
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span aria-hidden={!word} className="flex h-5 shrink-0 items-center">
+        <RatingLogo source={source} score={score} />
+      </span>
+      {!word && <span className="min-w-0 text-body-s font-semibold text-text-1 md:text-body">{sourceName(source)}</span>}
+    </span>
+  );
+}
+
+function useGroupName() {
+  const t = useTranslations("score");
+  return (g: Group) => (g === "critics" ? t("groupCritics") : t("groupAudience"));
+}
+
+/**
+ * The Lumovio Score as the section's lead: the number, what it means ("Higher than 96% of films"), its meter in the
+ * mark's colour, and the critics' and audience's parts on the meters the sources use. A low-confidence score is drawn
+ * faint and says why in a tag; "How it's calculated" opens the sources' shares under it.
+ */
+function ScorePanel({ score, kind, open, onToggle }: { score: TitleScore; kind: MediaKind; open: boolean; onToggle: () => void }) {
+  const t = useTranslations("titlePage");
+  const ts = useTranslations("score");
+  const notes = useScoreNotes()(score);
+  const groupName = useGroupName();
+  const low = score.confidence === "low";
+  const parts = GROUPS.map((g) => [g, g === "critics" ? score.critics : score.audience] as const).filter((p): p is readonly [Group, number] => p[1] != null);
+  return (
+    <div id={SCORE_ANCHOR} className="flex scroll-mt-32 flex-col rounded-md bg-surface-1 p-4 md:p-6 lg:col-start-1 lg:row-start-1">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-title text-text-1">
+        <ScoreMark className="size-5" />
+        {ts("name")}
+        {notes.map((n) => (
+          <Tag key={n} className="ms-1">
+            {n}
+          </Tag>
+        ))}
+      </p>
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className={cn("text-display tabular-nums", low ? "text-text-2" : "text-text-1")}>{score.score}</span>
+        <span className="text-body text-text-2">{ts("rank", { score: score.score, kind })}</span>
+      </p>
+      <Meter value={score.score} tone={low ? "faint" : "score"} className="mt-3 h-2" />
+      {parts.length > 0 && (
+        <dl className="mt-6 grid grid-cols-[auto_minmax(0,1fr)_2.5rem] items-center gap-x-3 gap-y-3">
+          {parts.map(([g, v]) => (
+            <div key={g} className="col-span-full grid grid-cols-subgrid items-center">
+              <dt className="text-body-s text-text-2">{groupName(g)}</dt>
+              <dd aria-hidden>
+                <Meter value={v} tone={low ? "faint" : "part"} />
+              </dd>
+              <dd className="text-end text-body font-semibold tabular-nums text-text-1">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {/* At the panel's foot when the sources beside it are taller. */}
+      <div className="mt-auto pt-4">
+        <Button variant="tertiary" size="sm" icon={open ? ChevronUp : ChevronDown} aria-expanded={open} aria-controls="score-how" className="-ms-3" onClick={onToggle}>
+          {t("scoreHow")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** "How it's calculated": each counted source's share of the score by group, what was left out and why, the method. */
+function How({ score }: { score: TitleScore }) {
+  const t = useTranslations("titlePage");
+  const ts = useTranslations("score");
+  const locale = useLocale();
+  const groupName = useGroupName();
+  const groups = GROUPS.map((g) => [g, score.inputs.filter((i) => i.group === g).sort((a, b) => b.share - a.share)] as const).filter(([, l]) => l.length > 0);
+  return (
+    // Under the two panels on a computer, right under its button on a phone (the grid's order).
+    <div id="score-how" className="rounded-md bg-surface-1 p-4 md:p-6 lg:col-span-2 lg:row-start-2 lg:grid lg:grid-cols-2 lg:gap-x-12">
+      <div className="flex flex-col gap-5">
+        {groups.map(([g, list]) => (
+          <div key={g} className={cn("grid", SHARE_ROW)}>
+            <h3 className="col-span-full grid grid-cols-subgrid pb-1 text-body-s text-text-2">
+              <span className="md:col-span-2">{groupName(g)}</span>
+              <span className="text-end tabular-nums">{percent(list.reduce((s, i) => s + i.share, 0), locale)}</span>
+            </h3>
+            <ul className="col-span-full grid grid-cols-subgrid">
+              {list.map((i) => (
+                <li key={i.source} className="col-span-full grid grid-cols-subgrid items-center py-2">
+                  <SourceLabel source={i.source} score={Number.parseInt(i.display, 10)} />
+                  <Meter value={i.share} className={METER_UNDER} />
+                  <span className="text-end text-body-s tabular-nums text-text-2">
+                    <span aria-hidden>{percent(i.share, locale)}</span>
+                    <span className="sr-only">{ts("share", { share: i.share })}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 lg:mt-0">
+        {score.excluded.length > 0 && (
+          <>
+            <h3 className="pb-1 text-body-s text-text-2">{ts("notCounted")}</h3>
+            <ul className="flex flex-col">
+              {score.excluded.map((e) => (
+                <li key={e.source} className="py-2 text-body-s text-text-2">
+                  <span className="font-semibold text-text-1">{sourceName(e.source)}</span> — {ts(`reason.${e.reason}`)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <p className={cn("text-caption text-text-3", score.excluded.length > 0 && "mt-4")}>
+          {ts("disclaimer")} {t("scoreVersion", { version: score.version, date: formatDate(score.calibration, locale, { dateStyle: "long" }) ?? score.calibration })}
+        </p>
+        <Link variant="action" arrow href="/legal/credits#lumovio-score" className="mt-2">
+          {ts("methodology")}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/** A source in its group: logo and name, the meter of its number on its own scale, the number with its scale, the votes. */
+function SourceRow({ r }: { r: RatingItem }) {
+  const tr = useTranslations("ratings");
+  const value = useRatingValue()(r);
+  const count = useRatingCount()(r);
+  const of = ratingScale(r.source);
+  const cls = "col-span-full grid grid-cols-subgrid items-center py-2";
   const body = (
     <>
-      {/* The name wraps rather than being cut (8.11). */}
-      <span className="flex min-h-5 items-start gap-2">
-        <span className="flex h-5 shrink-0 items-center">{logo}</span>
-        {name && <span className="min-w-0 text-body-s font-semibold text-text-2">{name}</span>}
+      <SourceLabel source={r.source} score={r.score} />
+      <Meter value={r.score} className={METER_UNDER} />
+      <span className="whitespace-nowrap text-end tabular-nums">
+        <span aria-hidden>
+          <span className="text-body font-semibold text-text-1">{value}</span>
+          {of && <span className="text-caption text-text-3">/{of}</span>}
+        </span>
+        <span className="sr-only">{of ? tr("outOf", { value, scale: of }) : value}</span>
       </span>
-      <span className={cn("mt-2 block tabular-nums text-text-1", large ? "text-h1" : "text-h3")}>{value}</span>
-      {meta && <span className="mt-0.5 block text-body-s text-text-2">{meta}</span>}
+      <span className="whitespace-nowrap text-end text-body-s tabular-nums text-text-3">
+        {count && (
+          <>
+            <span aria-hidden>{count.short}</span>
+            <span className="sr-only">{count.full}</span>
+          </>
+        )}
+      </span>
     </>
   );
-  // A panel of the redesign: --surface-1, radius 16, no border (redesign-2026-11.md; the settings' groups).
-  const box = "row-span-3 grid grid-rows-subgrid gap-y-0 rounded-md bg-surface-1 p-4";
-  return href ? (
-    <a href={href} target="_blank" rel="noreferrer noopener" className={cn(box, "transition-colors duration-fast ease-fast hover:bg-surface-2")}>
-      {body}
-    </a>
-  ) : (
-    <div className={box}>{body}</div>
+  return (
+    <li className="col-span-full grid grid-cols-subgrid">
+      {r.url ? (
+        // The row is the link to the source's page; the subgrid keeps its columns (the margin and padding cancel out).
+        <a href={r.url} target="_blank" rel="noreferrer noopener" className={cn(cls, "-mx-2 rounded-sm px-2 transition-colors duration-fast ease-fast hover:bg-surface-2")}>
+          {body}
+        </a>
+      ) : (
+        <span className={cls}>{body}</span>
+      )}
+    </li>
+  );
+}
+
+/** The sources, critics then audience, each a quiet table: a heading with the votes' column named once, then a row each. */
+function Sources({ items, apart, className }: { items: RatingItem[]; apart: boolean; className?: string }) {
+  const groupName = useGroupName();
+  const tr = useTranslations("ratings");
+  const groups = GROUPS.map((g) => [g, items.filter((r) => ratingGroup(r.source) === g)] as const).filter(([, l]) => l.length > 0);
+  // Without a Lumovio Score the two groups stand side by side on a computer, so neither stretches across the page.
+  const side = apart && groups.length === 2;
+  return (
+    <div className={cn("rounded-md bg-surface-1 p-4 md:p-6", side && "lg:grid lg:grid-cols-2 lg:gap-x-12", className)}>
+      {groups.map(([g, list], i) => (
+        // content-start: beside a longer group its rows keep their height instead of spreading out.
+        <div key={g} className={cn("grid content-start", ROW, i > 0 && (side ? "mt-5 lg:mt-0" : "mt-5"))}>
+          <h3 id={`ratings-${g}`} className="col-span-full grid grid-cols-subgrid pb-1 text-body-s text-text-2">
+            <span className="col-span-2 md:col-span-3">{groupName(g)}</span>
+            {list.some((r) => r.count) && (
+              <span aria-hidden className="text-end">
+                {g === "critics" ? tr("reviewsHead") : tr("votesHead")}
+              </span>
+            )}
+          </h3>
+          <ul aria-labelledby={`ratings-${g}`} className="col-span-full grid grid-cols-subgrid">
+            {list.map((r) => (
+              <SourceRow key={r.source} r={r} />
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 
 /**
- * "Ratings" in "Details" (TTL-10, TTL-21, C13; owner 2026-10-25): one compact grid of the sources — the Lumovio Score
- * first, then each source with its logo, number and votes, a link to its page — and who delivered them in the "i".
- * The date and the provider of each score are in the hero's "All ratings". "How the Lumovio Score is calculated" is
- * folded under the grid — what the number means, each source's share, what was left out and why, the methodology
- * page — and "All ratings" opens it (#lumovio-score).
+ * "Ratings" in "Details" (7.22; TTL-10, TTL-21, C13; owner 2026-11-06: "I expected more"): the Lumovio Score as the lead
+ * — the number, what it means, its meter, critics and audience — beside the sources split the same way, each source's
+ * number drawn on a meter of its own scale so "8.4/10", "92%" and "4.4/5" read alike. "How it's calculated" opens the
+ * shares; the hero's ratings line opens this section (#ratings), a link to #lumovio-score opens the shares too.
  */
 export function RatingsSection({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: MediaKind; tmdbId: number; tmdbRating: number | null; tmdbVotes: number | null }) {
   const t = useTranslations("titlePage");
-  const ts = useTranslations("score");
   const tr = useTranslations("ratings");
-  const locale = useLocale();
   const q = useTitleExternal(kind, tmdbId);
   const items = ratingItems(q.data, kind, tmdbId, tmdbRating, tmdbVotes);
   const score = q.data?.score ?? null;
   const hydrated = useHydrated();
-  const value = useRatingValue();
-  const meta = useRatingMeta();
-  const notes = useScoreNotes();
   const [open, setOpen] = useState(false);
   const ready = hydrated && !q.isPending;
 
-  // Arriving from "All ratings" (or a shared link to it): "How it's calculated" open and in view.
+  // Arriving from the hero's ratings (#ratings) or a link to the shares (#lumovio-score): in view, the shares open.
   useEffect(() => {
     if (!ready) return;
     const check = () => {
-      if (window.location.hash !== `#${SCORE_ANCHOR}`) return;
-      setOpen(true);
-      requestAnimationFrame(() => document.getElementById(SCORE_ANCHOR)?.scrollIntoView({ block: "start" }));
+      const id = window.location.hash.slice(1);
+      if (id !== SCORE_ANCHOR && id !== RATINGS_ANCHOR) return;
+      if (id === SCORE_ANCHOR) setOpen(true);
+      requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
     };
     check();
     window.addEventListener("hashchange", check);
@@ -85,106 +287,23 @@ export function RatingsSection({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: 
 
   if (!ready)
     return (
-      <div className="page-x">
-        <Skeleton className="h-32 w-full" />
+      <div className="page-x grid gap-3 md:gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full max-lg:hidden" />
       </div>
     );
   if (items.length === 0 && !score) return null;
   return (
-    <section aria-labelledby="ratings-h" className="page-x">
+    <section id={RATINGS_ANCHOR} aria-labelledby="ratings-h" className="page-x scroll-mt-32">
       <h2 id="ratings-h" className="mb-3 text-h2 text-text-1 md:mb-4">
         {t("ratings")}
       </h2>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] md:gap-4">
-        {score && (
-          // The Lumovio Score first and twice as wide, its number large, "How it's calculated" in it (2026-11-06).
-          <li className={cn(TILE_CELL, "col-span-2")}>
-            <Tile
-              large
-              logo={<ScoreMark className="size-5" />}
-              name={ts("name")}
-              value={score.score}
-              meta={
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  {notes(score).length > 0 && <span>{notes(score).join(" ")}</span>}
-                  <Button
-                    variant="tertiary"
-                    size="sm"
-                    icon={open ? ChevronUp : ChevronDown}
-                    aria-expanded={open}
-                    aria-controls="score-how"
-                    className="-ms-3"
-                    onClick={() => setOpen((o) => !o)}
-                  >
-                    {t("scoreHow")}
-                  </Button>
-                </span>
-              }
-            />
-          </li>
-        )}
-        {items.map((r) => (
-          <li key={r.source} className={TILE_CELL}>
-            <Tile
-              href={r.url}
-              logo={<RatingLogo source={r.source} score={r.score} />}
-              name={isWordmark(r.source as Brand) ? null : sourceName(r.source)}
-              value={value(r)}
-              // The votes only: the date and who delivered it are in "All ratings".
-              meta={r.count ? meta({ ...r, asOf: null, fetchedAt: null, via: "tmdb" })[0] : null}
-            />
-          </li>
-        ))}
-      </ul>
-      {score && (
-        <div id={SCORE_ANCHOR} className="scroll-mt-32">
-          {open && (
-            // The whole width of the grid above, as one more panel of it (it stood narrow at the start, 2026-11-06).
-            <div id="score-how" className="mt-3 rounded-md bg-surface-1 p-4 md:mt-4 md:p-6">
-              <p className="max-w-measure text-body text-text-2">{t("scoreWhat", { score: score.score, kind })}</p>
-              <p className="mt-2 max-w-measure text-body text-text-2">{t("scoreMade")}</p>
-              <h3 className="mt-5 text-title text-text-1">{ts("counted")}</h3>
-              <ul className="mt-3 flex flex-col gap-4">
-                {score.inputs.map((i) => (
-                  <li key={i.source}>
-                    <div className="flex items-center justify-between gap-3 text-body-s">
-                      <span className="inline-flex min-w-0 items-center gap-2">
-                        <BrandMark brand={i.source as Brand} rotten={i.source === "rotten_tomatoes" && Number.parseInt(i.display, 10) < 60} />
-                        {/* A wordmark already spells the name. */}
-                        {!isWordmark(i.source as Brand) && <span className="font-semibold text-text-1">{sourceName(i.source)}</span>}
-                        <span className="text-text-2">{i.group === "critics" ? ts("groupCritics") : ts("groupAudience")}</span>
-                      </span>
-                      <span className="shrink-0 tabular-nums text-text-2">{ts("share", { share: i.share })}</span>
-                    </div>
-                    <div aria-hidden className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                      <div className="h-full rounded-full bg-progress" style={{ width: `${i.share}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              {score.excluded.length > 0 && (
-                <>
-                  <h3 className="mt-5 text-title text-text-1">{ts("notCounted")}</h3>
-                  <ul className="mt-2 flex flex-col gap-1.5">
-                    {score.excluded.map((e) => (
-                      <li key={e.source} className="text-body-s text-text-2">
-                        <span className="font-semibold text-text-1">{sourceName(e.source)}</span> — {ts(`reason.${e.reason}`)}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              <p className="mt-5 text-body-s text-text-2">
-                {ts("disclaimer")} {t("scoreVersion", { version: score.version, date: formatDate(score.calibration, locale, { dateStyle: "long" }) ?? score.calibration })}
-              </p>
-              <Link variant="action" arrow href="/legal/credits#lumovio-score" className="mt-2">
-                {ts("methodology")}
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-      {/* Who delivered the scores, in a quiet line (it was in the "i", 2026-11-06). */}
+      <div className={cn("grid gap-3 md:gap-4", score && items.length > 0 && "lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]")}>
+        {score && <ScorePanel score={score} kind={kind} open={open} onToggle={() => setOpen((o) => !o)} />}
+        {score && open && <How score={score} />}
+        {items.length > 0 && <Sources items={items} apart={!score} className={score ? "lg:col-start-2 lg:row-start-1" : undefined} />}
+      </div>
+      {/* Who delivered the scores, in a quiet line. */}
       <p className="mt-4 text-caption text-text-3">{tr("sources", { sources: creditLine(q.data) })}</p>
     </section>
   );

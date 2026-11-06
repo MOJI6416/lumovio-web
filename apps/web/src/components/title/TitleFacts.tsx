@@ -33,7 +33,7 @@ function Section({ id, title, info, children }: { id: string; title: string; inf
  * 1. Facts — a grid of what the hero doesn't say: status in the interface language, the full release date, the number
  *    of episodes, countries, languages, networks (and TMDB's keywords in English only, they have no translation); the
  *    credits for the data and the art (TMDB, Fanart.tv) in the "i";
- * 2. Ratings — a compact grid of the sources, "How the Lumovio Score is calculated" folded under it (./RatingsSection);
+ * 2. Ratings — the Lumovio Score beside the sources, critics and audience, each on a meter (./RatingsSection);
  * 3. Cast and 4. Creators — shelves of PersonCards;
  * 5. Soundtrack;
  * 6. Elsewhere — the title on TMDB, IMDb, Wikidata, its own site, Letterboxd, Kinopoisk…
