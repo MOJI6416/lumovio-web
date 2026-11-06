@@ -5,12 +5,11 @@ import { useLocale, useTranslations } from "next-intl";
 import type { MouseEvent, ReactNode } from "react";
 import { Artwork } from "@/components/media/Artwork";
 import { CardRating } from "@/components/media/CardRating";
-import { CARD_GAP_X, GRID_COLS, SHELF_COLS } from "@/components/media/card-sizes";
+import { CARD_GAP_X, SHELF_COLS } from "@/components/media/card-sizes";
 import { PersonCard } from "@/components/media/PersonCard";
 import { PosterCard, PosterCardSkeleton, useCardMark, useRatingText } from "@/components/media/PosterCard";
 import { Row } from "@/components/media/Row";
 import { cn } from "@/components/ui/cn";
-import { Link as ActionLink } from "@/components/ui/Link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Link } from "@/i18n/navigation";
 import { latinLang } from "@/lib/format";
@@ -146,7 +145,8 @@ function BestTitle({ title, genres, heading }: { title: TitleSummary; genres: Re
 
 /**
  * The groups under the best match: films, series and people, each a shelf in the answer's order. A title group with
- * more than its shelf shows has "See all" — the type's whole list in place (`onScope`), a real address for a new tab.
+ * more than its shelf shows has its heading as the link to all of them ("Films ›", as the home's shelves, 7.13): a
+ * press opens the type's whole list in place (`onScope`); the address is real, for a new tab.
  */
 export function ResultGroups({
   groups,
@@ -161,26 +161,16 @@ export function ResultGroups({
   scopeHref: (k: GroupKey) => string;
 }) {
   const t = useTranslations("search");
-  const tc = useTranslations("common");
   const tl = useTranslations("library");
   const dept = useDepartment();
   const title = (k: GroupKey) => (k === "movie" ? tl("filterMovies") : k === "tv" ? tl("filterSeries") : t("people"));
-  const seeAll = (k: GroupKey) => (
-    <ActionLink
-      variant="action"
-      arrow
-      href={scopeHref(k)}
-      aria-label={`${tc("seeAll")}: ${title(k)}`}
-      className="justify-end max-sm:min-w-11"
-      onClick={(e: MouseEvent) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-        e.preventDefault();
-        onScope(k);
-      }}
-    >
-      {tc("seeAll")}
-    </ActionLink>
-  );
+  // The heading's link switches the type here instead of loading the page again (a modified click opens the address).
+  const inPlace = (k: GroupKey) => (e: MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (!(e.target as HTMLElement).closest("h2 a")) return;
+    e.preventDefault();
+    onScope(k);
+  };
   return (
     <>
       {groups.order.map((k) =>
@@ -193,8 +183,8 @@ export function ResultGroups({
             </Row>
           </div>
         ) : (
-          <div key={k} className="-mx-(--gutter)">
-            <Row id={`search-${k}`} title={title(k)} actions={more(k) ? seeAll(k) : undefined}>
+          <div key={k} className="-mx-(--gutter)" onClickCapture={more(k) ? inPlace(k) : undefined}>
+            <Row id={`search-${k}`} title={title(k)} href={more(k) ? scopeHref(k) : undefined}>
               {groups[k].map((x) => (
                 <PosterCard key={x.id} title={x} />
               ))}
@@ -206,11 +196,30 @@ export function ResultGroups({
   );
 }
 
+/**
+ * The search's grids run edge to edge, as the catalog's (design-system 5.4, 8ff9576): as many columns as fit cards of
+ * at least the shelf's width (posters 144 from md, 168 from xl; people 112 and 128), sharing what is left; three on a
+ * phone. `auto-fill` keeps a short result's cards at a column's size.
+ */
+export const RESULT_GRID = cn(
+  "grid grid-cols-3 gap-y-6 md:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]",
+  CARD_GAP_X,
+);
+const PEOPLE_GRID = cn(
+  "grid grid-cols-3 gap-y-6 md:grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(8rem,1fr))]",
+  CARD_GAP_X,
+);
+
+/** Search results as a grid of posters (a type's whole list, the description search's titles). */
+export function ResultGrid({ children }: { children: ReactNode }) {
+  return <div className={RESULT_GRID}>{children}</div>;
+}
+
 /** Everyone the search found, as a grid of round photos (the "People" type). */
 export function PeopleGrid({ people }: { people: PersonSummary[] }) {
   const dept = useDepartment();
   return (
-    <div className={cn("grid gap-y-6", GRID_COLS.person, CARD_GAP_X)}>
+    <div className={PEOPLE_GRID}>
       {people.map((p) => (
         <PersonCard key={p.id} person={p} subtitle={dept(p)} />
       ))}

@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { PosterCard } from "@/components/media/PosterCard";
-import { Row, TitleGrid } from "@/components/media/Row";
+import { Row } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/Chip";
@@ -19,7 +19,7 @@ import { Progress } from "@/components/ui/Progress";
 import { api } from "@/lib/api";
 import { AI_MAX, AI_MIN, AiPanel, useAiSearch } from "./AiSearch";
 import { recentSearches } from "./recent-searches";
-import { BestMatchBlock, PeopleGrid, ResultGroups, ResultsSkeleton } from "./SearchResults";
+import { BestMatchBlock, PeopleGrid, ResultGrid, ResultGroups, ResultsSkeleton } from "./SearchResults";
 import { SearchField } from "./SearchField";
 import { SearchStart } from "./SearchStart";
 import { layoutFix, otherLayout } from "./search-helpers";
@@ -392,11 +392,11 @@ export function SearchView({
               ) : typed.isError && !typed.data ? (
                 <ErrorState error={typed.error} title={t("loadError")} onRetry={() => void typed.refetch()} retrying={typed.isFetching} />
               ) : typedTitles.length > 0 ? (
-                <TitleGrid>
+                <ResultGrid>
                   {typedTitles.map((x) => (
                     <PosterCard key={x.id} title={x} />
                   ))}
-                </TitleGrid>
+                </ResultGrid>
               ) : (
                 <EmptyState icon={Search} title={t("noneOfKind")} />
               )}

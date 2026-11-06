@@ -6,7 +6,6 @@ import { CircleHelp, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
-import { TitleGrid } from "@/components/media/Row";
 import { GuestGatePanel } from "@/components/shell/GuestGate";
 import { Button } from "@/components/ui/Button";
 import { InputChip } from "@/components/ui/Chip";
@@ -16,6 +15,7 @@ import { Link } from "@/components/ui/Link";
 import { Select } from "@/components/ui/Select";
 import { capitalize, formatRuntime, languageName } from "@/lib/format";
 import { api } from "@/lib/api";
+import { ResultGrid } from "./SearchResults";
 import { catalogHref } from "./search-helpers";
 
 /** The last search survives a trip to a title page and back. */
@@ -184,12 +184,12 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
           <span className="sr-only" role="status">
             {t("aiWorking")}
           </span>
-          <TitleGrid>
+          <ResultGrid>
             {Array.from({ length: 12 }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
               <PosterCardSkeleton key={i} />
             ))}
-          </TitleGrid>
+          </ResultGrid>
         </div>
       ) : error != null ? (
         // In words by the error's code (a limit, an outage), never over the previous results (SRCH-02).
@@ -211,7 +211,7 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
           {data.results.length === 0 ? (
             <EmptyState icon={Sparkles} title={t("aiEmptyTitle")} text={t("aiEmpty")} />
           ) : (
-            <TitleGrid>
+            <ResultGrid>
               {data.results.map((r) => (
                 <PosterCard
                   key={r.id}
@@ -219,7 +219,7 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
                   subtitle={[r.year, r.runtime ? minutes(r.runtime) : null, why(r.why) ?? (r.kind === "movie" ? tc("movie") : tc("series"))].filter(Boolean).join(" · ")}
                 />
               ))}
-            </TitleGrid>
+            </ResultGrid>
           )}
         </div>
       ) : (
