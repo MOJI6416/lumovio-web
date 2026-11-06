@@ -3,7 +3,6 @@
 import { Ellipsis, Info, Magnet, Pencil, Play, RefreshCw, Search, SearchX, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRef } from "react";
-import { InfoTip } from "@/components/sources/InfoTip";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize, isPack, packWords, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
@@ -95,10 +94,12 @@ export function TorrentFinder(props: FinderProps) {
     <SourceSection
       id="finder-h"
       title={tp("viaTorrServer", { name: server })}
-      info={<InfoTip title={tp("viaTorrServer", { name: server })} note={`${t("finderNote", { server })} ${where}`} rules={t("finderRules")} />}
+
     >
       {/* The query, on a phone folded into one line until it is to be changed (SRC-10: the filters and the first results fit the first screen). */}
       <div className={editing || !found ? undefined : "max-md:hidden"}>{searchForm}</div>
+      {/* No "i" by the heading (2026-11-06): how the search works stays for a screen reader. */}
+      <p className="sr-only">{`${t("finderNote", { server })} ${where} ${t("finderRules")}`}</p>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-s text-text-2" aria-live="polite">
         {status.kind === "searching" ? (
           <span role="status">{found ? t("refreshing") : t("searching")}</span>

@@ -5,10 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Ellipsis, Info, Magnet, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
-import { InfoTip } from "@/components/sources/InfoTip";
 import { useSession } from "@/components/providers/Providers";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { AudioMatchBadge, formatSize, QUALITY_MODES, useReleaseText } from "@/components/sources/release-text";
+import { QualityBadges, qualityMarks } from "@/components/sources/QualityBadges";
+import { AudioMatchBadge, formatSize, QUALITY_MODES, SOURCE_LABEL, useReleaseText } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { AccentBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -130,17 +130,6 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
     <SourceSection
       id="torrserver-h"
       title={tp("viaTorrServer", { name: source.name })}
-      info={
-        <InfoTip
-          title={tp("viaTorrServer", { name: source.name })}
-          note={`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}
-          link={
-            <ActionLink variant="action" arrow href="/settings/profile">
-              {t("tsSettings")}
-            </ActionLink>
-          }
-        />
-      }
       footer={
         lookup.data && (
           <ActionLink variant="action" arrow href={pickHref} className="self-start">
@@ -149,7 +138,10 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
         )
       }
     >
-      <p className="text-body-s text-text-2" aria-live="polite">
+      {/* No "i" by the heading (2026-11-06): what the search does stays for a screen reader. */}
+      <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>
+      {/* The search's state while it runs or finds nothing; with a release shown the row says it (2026-11-06). */}
+      <p className={chosen ? "sr-only" : "text-body-s text-text-2"} aria-live="polite">
         {heading}
         {lookup.data?.emptyAt ? ` ${t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) })}` : ""}
       </p>
@@ -179,10 +171,22 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
           title={text.audio(chosen, option?.studio) || text.option({ studio: null, voice: null, language: null })}
           meta={
             <>
-              {[text.picture(chosen.info), formatSize(chosen.result.size, locale), chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null, chosen.result.tracker]
-                .filter(Boolean)
-                .join(" · ")}
-              {reasons.length > 0 && <span className="mt-0.5 block">{reasons.map((r) => t(`tsWhy_${r}`)).join(" ")}</span>}
+              {/* The picture as marks (4K, HDR10, Dolby Vision, Atmos — QualityBadges), then the source, size, seeders, tracker. */}
+              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                <QualityBadges marks={qualityMarks({ resolution: chosen.info.resolution, hdrFormats: chosen.info.hdrFormats, audio: [chosen.result.title] })} />
+                <span>
+                  {[
+                    chosen.info.resolution === null || chosen.info.resolution < 720 ? text.picture(chosen.info) : chosen.info.source ? SOURCE_LABEL[chosen.info.source] : null,
+                    formatSize(chosen.result.size, locale),
+                    chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null,
+                    chosen.result.tracker,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </span>
+              {/* Why this picture was picked: for a screen reader only (no explanations on screen, 2026-11-06). */}
+              {reasons.length > 0 && <span className="sr-only">{reasons.map((r) => t(`tsWhy_${r}`)).join(" ")}</span>}
               {chosen.fit !== "ok" && (
                 <span className="mt-0.5 flex items-center gap-1 text-text-1">
                   <TriangleAlert aria-hidden className="size-4 shrink-0 text-warning" />
@@ -271,14 +275,17 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
             options={QUALITY_MODES.map((m) => ({ value: m, label: t(`tsQuality_${m}`) }))}
           />
           {/* The scope of the choice, said where it is made (SRC-09): this viewing, or the profile's default. */}
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 text-body-s text-text-2">
-            {mode !== prefs.quality ? t("tsQualityOnce") : tp("qualityDefault")}
-            {mode !== prefs.quality && profile && (
-              <Button variant="tertiary" size="sm" loading={saveMode.pending} onClick={() => void saveMode.run(mode)}>
-                {tp("saveDefault")}
-              </Button>
-            )}
-          </p>
+          {/* Said only when it differs from the profile's default (no explanation otherwise, 2026-11-06). */}
+          {mode !== prefs.quality && (
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 text-body-s text-text-2">
+              {t("tsQualityOnce")}
+              {profile && (
+                <Button variant="tertiary" size="sm" loading={saveMode.pending} onClick={() => void saveMode.run(mode)}>
+                  {tp("saveDefault")}
+                </Button>
+              )}
+            </p>
+          )}
         </fieldset>
       )}
       <ReleaseDetails release={details} onClose={() => setDetails(null)} />
