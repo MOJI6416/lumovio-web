@@ -349,6 +349,7 @@
     "mood": "Atmosfera: {name}"
   },
   "search": {
+    "allResults": "Tutti i risultati",
     "placeholder": "Film, serie, anime, persone…",
     "label": "Cerca nel catalogo",
     "aiToggle": "Descrivilo",

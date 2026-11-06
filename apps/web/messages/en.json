@@ -349,6 +349,7 @@
     "mood": "Mood: {name}"
   },
   "search": {
+    "allResults": "All results",
     "placeholder": "Films, series, anime, people…",
     "label": "Search the catalog",
     "aiToggle": "Describe it",

@@ -349,6 +349,7 @@
     "mood": "Humeur : {name}"
   },
   "search": {
+    "allResults": "Tous les résultats",
     "placeholder": "Films, séries, animes, personnes…",
     "label": "Rechercher dans le catalogue",
     "aiToggle": "Décrire",

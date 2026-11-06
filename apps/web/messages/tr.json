@@ -349,6 +349,7 @@
     "mood": "Ruh hâli: {name}"
   },
   "search": {
+    "allResults": "Tüm sonuçlar",
     "placeholder": "Filmler, diziler, anime, kişiler…",
     "label": "Katalogda ara",
     "aiToggle": "Tarif et",

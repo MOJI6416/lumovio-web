@@ -349,6 +349,7 @@
     "mood": "Nastrój: {name}"
   },
   "search": {
+    "allResults": "Wszystkie wyniki",
     "placeholder": "Filmy, seriale, anime, osoby…",
     "label": "Szukaj w katalogu",
     "aiToggle": "Opisz słowami",

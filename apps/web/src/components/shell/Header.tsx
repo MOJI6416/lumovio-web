@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { buttonClass } from "@/components/ui/Button";
@@ -12,6 +12,7 @@ import { showsAnime } from "@/lib/show-anime";
 import { useSession } from "../providers/Providers";
 import { AccountMenu, SIGNED_OUT_KEY } from "./AccountMenu";
 import { useSignInLinks } from "./GuestGate";
+import { HeaderSearch } from "./HeaderSearch";
 import { useNavigationLoading } from "./NavigationLoading";
 import { PrefsMenu } from "./PrefsMenu";
 import { Wordmark } from "./Wordmark";
@@ -158,19 +159,8 @@ export function Header({ overlay }: { overlay: boolean }) {
           </ul>
         </nav>
         <div className="ms-auto flex items-center gap-3">
-          {/* Looks like the search field and opens the search page with its one field focused (SH-05); not shown there. */}
-          {!pathname.startsWith("/search") && (
-            <Link
-              href="/search"
-              aria-label={t("search")}
-              aria-keyshortcuts="/"
-              className="flex size-10 items-center justify-center gap-2 rounded-full text-text-1 transition-colors duration-fast ease-fast hover:bg-surface-2 max-md:hidden lg:w-60 lg:justify-start lg:rounded-sm lg:border lg:border-line-2 lg:bg-surface-2 lg:px-3 lg:text-text-2 lg:hover:bg-surface-3"
-            >
-              <Search aria-hidden className="size-5 shrink-0" />
-              <span className="text-body max-lg:hidden">{t("search")}</span>
-              <kbd className="ms-auto rounded-xs border border-line-2 px-1.5 font-sans text-caption text-text-2 max-lg:hidden">/</kbd>
-            </Link>
-          )}
+          {/* A round search button that opens its field and results right here (HeaderSearch); not on the search page. */}
+          {!pathname.startsWith("/search") && <HeaderSearch />}
           {me ? (
             <AccountMenu />
           ) : (

@@ -349,6 +349,7 @@
     "mood": "Stimmung: {name}"
   },
   "search": {
+    "allResults": "Alle Ergebnisse",
     "placeholder": "Filme, Serien, Anime, Personen…",
     "label": "Katalog durchsuchen",
     "aiToggle": "Beschreiben",

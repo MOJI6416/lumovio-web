@@ -349,6 +349,7 @@
     "mood": "Estado de ánimo: {name}"
   },
   "search": {
+    "allResults": "Todos los resultados",
     "placeholder": "Películas, series, anime, personas…",
     "label": "Buscar en el catálogo",
     "aiToggle": "Describir",

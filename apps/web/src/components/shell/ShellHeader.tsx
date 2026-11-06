@@ -15,17 +15,19 @@ export function ShellHeader({ overlay }: { overlay?: boolean }) {
   const params = useSearchParams();
   const router = useRouter();
   useEffect(() => {
-    // "/" opens search from anywhere (except while typing).
+    // "/" opens search from anywhere (except while typing): from md the header's own field (HeaderSearch) takes it,
+    // below md (and on the search page, which has no header field) the search page.
     const on = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === "/" && !e.metaKey && !e.ctrlKey && !/INPUT|TEXTAREA|SELECT/.test(el.tagName) && !el.isContentEditable) {
+        if (window.matchMedia("(min-width: 48rem)").matches && !pathname.startsWith("/search")) return;
         e.preventDefault();
         router.push("/search");
       }
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
-  }, [router]);
+  }, [router, pathname]);
   // The first paint's guess; the header then checks the page itself (Header).
   const art = overlay ?? (ART.some((r) => r.test(pathname)) || (SECTION.test(pathname) && !wantsGrid((k) => params.get(k))));
   return <Header key={pathname} overlay={art} />;
