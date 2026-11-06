@@ -7,8 +7,8 @@ import { useSearchParams } from "next/navigation";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { RulesEdit } from "@/components/library/SaveRulesDialog";
+import { CARD_GAP_X } from "@/components/media/card-sizes";
 import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
-import { TitleGrid } from "@/components/media/Row";
 import { keepShelf, SHELF_COPY } from "@/components/media/shelf-copy";
 import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
@@ -37,6 +37,17 @@ const fromAny = (v: string) => (v === ANY ? null : v);
 const COUNT_CEILING = 20000;
 /** Keys of the loading grid's 18 skeleton cards. */
 const SKELETONS = Array.from({ length: 18 }, (_, i) => `skeleton-${i}`);
+/**
+ * The catalog's grid runs edge to edge, as the filter row above it (5.4, owner 2026-11-06): as many columns as fit
+ * cards of at least 144 px (md) or 168 px (xl), and they share what is left — fixed columns left up to a column's
+ * width empty on the right (193 px at 1920 with a scrollbar). Three columns on a phone. From 2xl the minimum stays 168:
+ * at 1920 that is nine cards of ≈ 183 px, the shelf's 184 and its image, not eight blown-up ones. `auto-fill` keeps a
+ * short result's cards at that size instead of stretching a few across the page.
+ */
+const CATALOG_GRID = cn(
+  "grid grid-cols-3 gap-y-6 md:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]",
+  CARD_GAP_X,
+);
 /** Every filter of the grid in the address (the sort and the series/films switch are not filters). */
 const FILTER_KEYS = ["genres", "yearFrom", "yearTo", "ratingMin", "language", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax", "imdbVotesMax", "opinions", "mood", "shelf"];
 
@@ -503,7 +514,7 @@ export function BrowseView({
       : draftCount.totalIsEstimate
         ? t("apply")
         : t("showCount", { count: countText(draftCount.totalResults) });
-  const grid = (children: ReactNode) => <TitleGrid>{children}</TitleGrid>;
+  const grid = (children: ReactNode) => <div className={CATALOG_GRID}>{children}</div>;
   // TMDB's own sorts in the owner's order (2026-10-25), then the ones on Lumovio's catalog index over the whole
   // filtered catalog (not a loaded page) — each only where the filters allow it and enough titles have the score.
   const indexOption = (s: keyof typeof INDEX_SORTS, label: string) => (sorts.data?.[s] || state.sort === s ? [{ value: s, label }] : []);
