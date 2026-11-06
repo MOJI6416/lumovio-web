@@ -36,10 +36,10 @@ export function useRatingText() {
 
 /**
  * Poster card (design-system 7.12, sizes 5.4): the poster with at most one badge ("On your server") and one personal
- * mark, the name in up to two lines and one line of metadata under it — the same in shelves, catalog grids, search,
- * lists and filmographies. The metadata is what the shelf chose it by ("Added 22 Oct", "In digital since 13 Oct"), or
- * the year, the card's one rating and the type. "More" (8.1) on the artwork; a long press on a touch screen opens it
- * too. The width comes from the shelf or grid around it (./card-sizes).
+ * mark, the name in up to two lines and one line of metadata — on the poster's foot in a shelf, under it in a grid
+ * (catalog, search, lists, filmographies). The metadata is what the shelf chose it by ("Added 22 Oct", "In digital
+ * since 13 Oct"), or the card's one rating, the year and the type. "More" (8.1) on the artwork; a long press on a touch
+ * screen opens it too. The width comes from the shelf or grid around it (./card-sizes).
  */
 export function PosterCard({
   title,
@@ -97,8 +97,9 @@ export function PosterCard({
   const bare = Boolean(useShelf()) && Boolean(title.posterPath);
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
-  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
-  const meta = subtitle ? [subtitle] : fact ? [factShown ?? fact] : [title.year, rating];
+  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38). Else the
+  // rating first, then the year — as the billboard's line — so a narrow card that has room for one keeps the rating.
+  const meta = subtitle ? [subtitle] : fact ? [factShown ?? fact] : [rating, title.year];
   const caption = (
     <CardMeta
       title={title.title}

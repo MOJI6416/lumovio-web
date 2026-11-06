@@ -10,6 +10,7 @@ import { ActionMark } from "@/components/ui/BrandMotion";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Link } from "@/components/ui/Link";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
@@ -71,6 +72,8 @@ export function StarterCard({ title, onChange }: { title: TitleSummary; onChange
  * with one tap, and "Pick genres" (the cold start can begin from genres alone). Optional: "Not now" hides it until
  * next week (HOME-03), with "Undo"; likes can be given in the recommendation settings too. After a like, "Done" brings
  * "For you" in its place (the two are never shown together, HOME-04). A kids profile isn't offered the import (PRF-11).
+ * While its titles load it holds its place with posters' skeletons (7.11), so the shelves under it don't jump down;
+ * titles that don't come leave no shelf (an empty shelf is hidden).
  */
 export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
   const t = useTranslations("rows");
@@ -92,7 +95,7 @@ export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
     success: t("starterHidden"),
     undo: () => setDismissed(false),
   });
-  if (gone || !titles.data?.length) return null;
+  if (gone || (!titles.isPending && !titles.data?.length)) return null;
   return (
     <Row
       id="starter"
@@ -140,9 +143,10 @@ export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
         </div>
       }
     >
-      {titles.data.map((title) => (
-        <StarterCard key={title.id} title={title} onChange={(on) => setLiked((n) => n + (on ? 1 : -1))} />
-      ))}
+      {titles.data
+        ? titles.data.map((title) => <StarterCard key={title.id} title={title} onChange={(on) => setLiked((n) => n + (on ? 1 : -1))} />)
+        : // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
+          Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-2/3 w-full" />)}
     </Row>
   );
 }

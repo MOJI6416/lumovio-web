@@ -1,5 +1,6 @@
 import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
 import { clsx } from "clsx";
+import { Server } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Billboard } from "@/components/media/Billboard";
 import { cardRow, cardShelf, forCard } from "@/components/media/card-data";
@@ -16,7 +17,9 @@ import { TorrentFindsRow } from "@/components/media/TorrentFindsRow";
 import { WatchNowToggle } from "@/components/media/WatchNowToggle";
 import { GuestGateLinks } from "@/components/shell/GuestGate";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
-import { Link as UiLink } from "@/components/ui/Link";
+import { buttonClass } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Link } from "@/i18n/navigation";
 import { meFailure } from "@/lib/me-state";
 import { optional } from "@/lib/optional";
 import { pageSeo } from "@/lib/seo";
@@ -39,6 +42,11 @@ const LANDSCAPE_ROWS = new Set(["popular_tv", "on_air", "miniseries"]);
  * titles, new in the profile's genres) between them and no title repeated from a personal shelf's first cards.
  * Shelves with fewer than three cards are not shown (Row); no filter chips inside shelves: "Watch now" is the server
  * shelf's "All" page (HOME-05).
+ *
+ * The first screen (2026-11-06): the billboard and, in either theme, the first shelf under it — "Continue watching"
+ * when there is something to continue — on a phone, a desktop and a wide screen. No explanatory lines: a guest's welcome
+ * is its heading and the way in, "Watch now" says what it is to a screen reader only, and a "Watch now" with nothing to
+ * show is an empty state with the way to a server.
  */
 export default async function HomePage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { locale } = await params;
@@ -131,20 +139,23 @@ export default async function HomePage({ params, searchParams }: { params: Promi
       <h1 className="sr-only">{t("shell.homeHeading")}</h1>
       {featured && <Billboard items={home.featured} genres={[...movieGenres.genres, ...tvGenres.genres]} />}
       {guest && (
-        // What Lumovio is, on the billboard's stage in the first screen (HOME-13); the way in is the same as everywhere (GuestGate).
+        // What Lumovio is, on the billboard's stage in the first screen (HOME-13): its heading and the way in, the same as
+        // everywhere (GuestGate); what it does in a sentence is the section's description for a screen reader (no
+        // explanatory lines, owner 2026-11-06).
         <section
           aria-labelledby="welcome-h"
+          aria-describedby="welcome-text"
           className={clsx(
-            "stage page-x relative z-10 flex flex-col gap-4 border-t border-line bg-stage py-6 md:flex-row md:items-center md:gap-8 md:py-8",
+            "stage page-x relative z-10 flex flex-col gap-4 border-t border-line bg-stage py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 md:py-6",
             featured && "md:in-data-[theme=dark]:-mt-32",
           )}
         >
-          <div className="min-w-0 flex-1">
-            <h2 id="welcome-h" className="text-h2 text-text-1">
-              {t("home.guestTitle")}
-            </h2>
-            <p className="mt-2 max-w-measure text-body text-text-2">{t("home.guestText")}</p>
-          </div>
+          <h2 id="welcome-h" className="min-w-0 text-h2 text-text-1">
+            {t("home.guestTitle")}
+          </h2>
+          <p id="welcome-text" className="sr-only">
+            {t("home.guestText")}
+          </p>
           <div className="flex shrink-0 flex-wrap gap-3">
             <GuestGateLinks lead="signUp" />
           </div>
@@ -155,15 +166,19 @@ export default async function HomePage({ params, searchParams }: { params: Promi
         data-discovery-variant={home.variant}
         className={clsx(
           "relative z-10 mx-auto flex max-w-media flex-col gap-8 md:gap-12",
-          // The first shelf comes up onto the dark billboard in the dark theme only; in the light one the stage ends with
-          // an even edge and the page starts under it (X-27). A guest's welcome takes that place.
-          featured && !guest ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-12" : "mt-8 md:mt-12",
+          // The first shelf comes up onto the dark billboard in the dark theme only; in the light one the stage ends with an
+          // even edge and the page starts under it (X-27), close enough to be in the first screen (Billboard). A guest's
+          // welcome takes that place.
+          featured && !guest ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-8" : "mt-8 md:mt-12",
         )}
       >
         {now && (
-          <div className="page-x flex flex-wrap items-center gap-x-4 gap-y-2">
-            <WatchNowToggle on href="/" label={t("rows.watchNow")} />
-            <p className="text-body-s text-text-2">{t("rows.watchNowNote")}</p>
+          // The switch says what the page is; what it holds is its description for a screen reader.
+          <div className="page-x">
+            <WatchNowToggle on href="/" label={t("rows.watchNow")} describedBy="watch-now-note" />
+            <p id="watch-now-note" className="sr-only">
+              {t("rows.watchNowNote")}
+            </p>
           </div>
         )}
         {cont.items.length > 0 && <ContinueRow items={cont.items} />}
@@ -190,14 +205,19 @@ export default async function HomePage({ params, searchParams }: { params: Promi
         {/* Nothing or little to start from: offer the optional starter until it is finished or put off (HOME-03). */}
         {starter && <StarterRow likedGenres={recs?.likedGenres ?? []} />}
         {nothing && (
-          <p className="page-x text-body-s text-text-2">
-            {home.servers > 0 ? t("rows.watchNowEmpty") : t("title.noServers")}{" "}
-            {home.servers === 0 && (
-              <UiLink variant="action" arrow href="/settings/connections">
-                {t("title.connectServer")}
-              </UiLink>
-            )}
-          </p>
+          // Nothing with a copy on the servers (7.11): the empty state, with the way to a server when there is none; the
+          // switch above is the way back to the whole catalog. Its sentence is the heading (no full stop on a heading).
+          <EmptyState
+            icon={Server}
+            title={(home.servers > 0 ? t("rows.watchNowEmpty") : t("title.noServers")).replace(/\.$/, "")}
+            action={
+              home.servers === 0 ? (
+                <Link href="/settings/connections" className={buttonClass("primary")}>
+                  {t("title.connectServer")}
+                </Link>
+              ) : undefined
+            }
+          />
         )}
         {top10.length > 0 && (
           <Row title={t("rows.top10")} note={t("rows.top10Note")} id="top10" kind="top10" min={3}>

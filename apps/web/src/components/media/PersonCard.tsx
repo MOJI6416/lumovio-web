@@ -16,7 +16,7 @@ export function PersonCard({ person, subtitle, subtitleLang }: { person: PersonS
       <Link href={personHref(person.id, person.name)} className="group/link block focus-visible:outline-none">
         {/* The name under it names the link. */}
         <Artwork shape="person" src={tmdbImage(person.profilePath, "w185")} placeholder="person" sizes="136px" />
-        <CardMeta title={person.name} meta={[subtitle && subtitleLang ? <span lang={subtitleLang}>{subtitle}</span> : subtitle]} align="center" />
+        <CardMeta title={person.name} meta={[subtitle && subtitleLang ? <span key="role" lang={subtitleLang}>{subtitle}</span> : subtitle]} align="center" />
       </Link>
     </div>
   );

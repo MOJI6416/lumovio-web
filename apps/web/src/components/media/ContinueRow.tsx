@@ -11,8 +11,8 @@ import { LandscapeCard } from "./LandscapeCard";
 import { Row } from "./Row";
 
 /**
- * "Continue watching" (and "Next episode" in the library): landscape cards straight to the player, with the episode and
- * the time left under the frame ("Season 2 · episode 3 · 18 min left", 2.3) and the progress along its bottom. Its
+ * "Continue watching" (and "Next episode" in the library): landscape cards straight to the player, with ▶, the episode
+ * and the time left on the frame ("▶ Season 2 · episode 3 · 18 min left", 2.3) and the progress along its bottom. Its
  * "More" menu is shown on touch screens too and holds "Remove from Continue watching" — gone at once, "Undo" in the
  * toast brings it back where it was (HOME-01, 8.3) — and "More info" for the title page.
  */
@@ -61,6 +61,7 @@ export function ContinueRow({ items: initial, title: heading, id = "continue" }:
             href={href}
             meta={meta}
             label={[title.title, ...meta].filter(Boolean).join(", ")}
+            plays
             progress={next ? 0 : progress.fraction}
             showState={false}
             moreVisibility="always"

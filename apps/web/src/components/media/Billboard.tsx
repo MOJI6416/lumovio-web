@@ -4,18 +4,22 @@ import type { FeaturedTitle, Genre } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { Pause } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type MouseEvent, type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "@/components/ui/IconButton";
 import { usePlayable } from "@/hooks/useAvailability";
+import { Link } from "@/i18n/navigation";
 import { capitalize } from "@/lib/format";
 import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
 import { afterPageLoad } from "@/lib/page-load";
 import { rotates, SlideClock } from "@/lib/rotation";
+import { titleHref } from "@/lib/slug";
 import { CardRating } from "./CardRating";
 import { HeroActions } from "./HeroActions";
 import { TitleLogo } from "./TitleLogo";
 
 const INTERVAL_MS = 8000;
+/** A finger's sideways move that turns the slide: this far, and mostly sideways. */
+const SWIPE_PX = 48;
 
 /**
  * The billboard of the home page and the catalog sections (design-system 7.14): full-bleed artwork on the stage (3.5,
@@ -27,12 +31,17 @@ const INTERVAL_MS = 8000;
  * button (a toggle with the pause icon, never a ▶ that reads as "Watch", HOME-12) and the progress segments sit at the
  * end of the actions' row, 44 px to tap on a phone; the segments are one Tab stop, ←/→ move between slides.
  *
+ * The art and the title open the title's page (the largest thing on the screen does what "More info" does; the button
+ * stays the keyboard's way there), and a finger swiped sideways over the billboard turns the slide.
+ *
  * Phone: a 2:1 band of art under the header, the text and buttons under it on the stage, so the next shelf starts in
- * the first screen. `under="header"` (home) puts the stage under the transparent header and marks the page as opening
- * on art (`data-hero`). `section` (a catalog section) is the same billboard inside the section's stage, which lies under
- * the header and lays the section's name and controls over the top of the art (browse/SectionLanding, owner 2026-10-25):
- * its top scrim is deeper for them, and on a phone its band of art starts under the header and is taller, with room for
- * them over it.
+ * the first screen. From a tablet the billboard is 88 % of the screen in the dark theme, where the first shelf comes up
+ * onto it, and 72 % in the light one, where the stage ends with an even edge: the first shelf is in the first screen in
+ * either (2026-11-06; it was under the fold in the light theme). `under="header"` (home) puts the stage under the
+ * transparent header and marks the page as opening on art (`data-hero`). `section` (a catalog section) is the same
+ * billboard inside the section's stage, which lies under the header and lays the section's name and controls over the
+ * top of the art (browse/SectionLanding, owner 2026-10-25): its top scrim is deeper for them, and on a phone its band of
+ * art starts under the header and is taller, with room for them over it.
  */
 export function Billboard({ items, genres, under = "header" }: { items: FeaturedTitle[]; genres: Genre[]; under?: "header" | "section" }) {
   const t = useTranslations();
@@ -48,6 +57,9 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   const segments = useRef<(HTMLButtonElement | null)[]>([]);
   const [clock] = useState(() => new SlideClock(INTERVAL_MS));
   const slide = useRef(index);
+  // Where a finger went down (a swipe turns the slide), and whether the press that ends became a swipe.
+  const touch = useRef<{ x: number; y: number; id: number } | null>(null);
+  const swiped = useRef(false);
   // "Watch" only where something can actually play; otherwise the details page is the main action.
   const playable = usePlayable(items.map((f) => f.id));
   // The next slide's art is fetched once the page has loaded, not beside the first slide's (the largest image of the
@@ -109,6 +121,28 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     go(next);
     segments.current[next]?.focus();
   };
+  const onPointerDown = (e: PointerEvent) => {
+    swiped.current = false;
+    touch.current = e.pointerType === "mouse" ? null : { x: e.clientX, y: e.clientY, id: e.pointerId };
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    const from = touch.current;
+    touch.current = null;
+    if (!from || from.id !== e.pointerId || items.length < 2) return;
+    const dx = e.clientX - from.x;
+    if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(e.clientY - from.y) * 1.5) return;
+    const rtl = root.current ? getComputedStyle(root.current).direction === "rtl" : false;
+    swiped.current = true;
+    // The next slide comes from the side the finger moves away from.
+    go(index + (dx < 0 !== rtl ? 1 : -1));
+  };
+  // The tap that ends a swipe opens nothing.
+  const onClickCapture = (e: MouseEvent) => {
+    if (!swiped.current) return;
+    swiped.current = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
   const genreName = (id: number) => {
     const name = genres.find((g) => g.id === id)?.name;
     return name ? capitalize(name, locale) : undefined;
@@ -117,6 +151,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   if (!item) return null;
   const hero = under === "header";
   const section = under === "section";
+  const href = titleHref(item.kind, item.tmdbId, item.title);
 
   // The first slide's art is the page's largest paint: fetched from the head, not when its <img> is reached.
   preloadBackdrop(items[0]?.backdropPath);
@@ -132,18 +167,35 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
       onBlurCapture={(e) => {
         if (!root.current?.contains(e.relatedTarget as Node | null)) setFocus(false);
       }}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        touch.current = null;
+      }}
+      onClickCapture={onClickCapture}
       data-hero={hero ? "" : undefined}
       className={clsx(
-        "relative isolate overflow-hidden bg-stage",
+        // A finger's sideways move is the billboard's (a swipe), its up and down the page's; pinch zoom stays.
+        "relative isolate touch-pan-y touch-pinch-zoom overflow-hidden bg-stage",
         // Home: under the transparent header; a phone's band of art starts below it. A section: its stage is under it.
         hero && "-mt-16 max-md:pt-16",
         // At least 88 % of the screen; taller when the text needs it (a phone held sideways, a two-line logo) — it never
-        // goes up under the header or the section's own row (owner, 2026-10-30).
+        // goes up under the header or the section's own row (owner, 2026-10-30). The home's light theme: 72 %, so the
+        // first shelf under the even edge is in the first screen too.
         "md:flex md:min-h-[max(88svh,37.5rem)] md:flex-col",
+        hero && "md:in-data-[theme=light]:min-h-[max(72svh,34rem)]",
       )}
     >
-      {/* The art: a 2:1 band in the flow on a phone, the whole billboard from a tablet. */}
-      <div className={clsx("relative -z-20 aspect-2/1 md:absolute md:inset-0 md:aspect-auto", section && "max-md:aspect-auto max-md:h-[calc(4rem+62.5vw)]")}>
+      {/* The art: a 2:1 band in the flow on a phone, the whole billboard from a tablet. It opens the title (the keyboard's
+          way there is "More info"). */}
+      <Link
+        href={href}
+        tabIndex={-1}
+        aria-hidden
+        aria-label={item.title}
+        draggable={false}
+        className={clsx("relative -z-20 block aspect-2/1 md:absolute md:inset-0 md:aspect-auto", section && "max-md:aspect-auto max-md:h-[calc(4rem+62.5vw)]")}
+      >
         {items.map((f, i) => {
           const near = i === index || (loaded && i === (index + 1) % items.length);
           return (
@@ -155,6 +207,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                   sizes={BACKDROP_SIZES}
                   alt=""
                   fetchPriority={i === 0 ? "high" : "low"}
+                  draggable={false}
                   className="size-full object-cover object-[50%_30%] md:object-[50%_22%]"
                 />
               )}
@@ -162,40 +215,49 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
           );
         })}
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent md:hidden" />
-      </div>
+      </Link>
       {/* Scrims: header legibility, the text column (--scrim-start: what keeps a logo or a name legible, with no glow
           around it), and the hand-off into the page. Always dark over artwork (3.5). */}
-      {hero && <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent max-md:hidden" />}
-      {section && <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-48 bg-linear-to-b from-stage/90 via-stage/60 to-transparent md:h-64" />}
-      <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% max-md:hidden rtl:bg-linear-to-l" />
+      {/* The scrims and the text column let a press through to the art; the title and the controls take their own. */}
+      {hero && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent max-md:hidden" />}
+      {section && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 bg-linear-to-b from-stage/90 via-stage/60 to-transparent md:h-64" />}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% max-md:hidden rtl:bg-linear-to-l" />
       {/* Dark theme: into the page, where the first shelf comes up onto it; light theme: an even dark edge (3.5, X-27). */}
-      <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-t from-bg via-stage/55 to-transparent max-md:hidden in-data-[theme=light]:from-stage" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-t from-bg via-stage/55 to-transparent max-md:hidden in-data-[theme=light]:from-stage" />
 
       <div
         className={clsx(
-          "stage page-x relative mx-auto flex max-w-media flex-col pb-6 md:w-full md:flex-1 md:justify-end md:pb-16 md:in-data-[theme=dark]:pb-44",
+          "stage page-x pointer-events-none relative mx-auto flex max-w-media flex-col pb-6 md:w-full md:flex-1 md:justify-end md:pb-16 md:in-data-[theme=dark]:pb-44",
           // Room for the header above the text (and the section's title row under it).
           hero ? "md:pt-[calc(var(--header-h)+2rem)]" : section && "md:pt-[calc(var(--header-h)+6rem)]",
         )}
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-8">
-          <div key={item.id} aria-roledescription="slide" aria-label={`${index + 1} / ${items.length}: ${item.title}`} className="flex max-w-[38.75rem] animate-fade-up flex-col items-center text-center md:items-start md:text-start">
+          {/* biome-ignore lint/a11y/useSemanticElements: a carousel's slide is a group (APG carousel), not a form's fieldset */}
+          <div key={item.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} / ${items.length}: ${item.title}`} className="flex max-w-[38.75rem] animate-fade-up flex-col items-center text-center md:items-start md:text-start">
+            {/* The title opens its page, as the art does (no Tab stop of its own: "More info" is it). */}
             {item.logo ? (
               <h2 className="w-full">
-                <TitleLogo
-                  logo={item.logo}
-                  alt={item.title}
-                  className={clsx(
-                    "mx-auto max-w-[78vw] object-contain md:mx-0 md:max-w-[28.75rem]",
-                    // The logo's height limit (TitleLogo); a wide one lower.
-                    item.logo.aspectRatio > 3.2 ? "[--logo-h:5rem] md:[--logo-h:7.5rem]" : "[--logo-h:6rem] md:[--logo-h:10rem]",
-                  )}
-                >
-                  <span className="block text-balance text-display">{item.title}</span>
-                </TitleLogo>
+                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto block rounded-sm">
+                  <TitleLogo
+                    logo={item.logo}
+                    alt={item.title}
+                    className={clsx(
+                      "mx-auto max-w-[78vw] object-contain md:mx-0 md:max-w-[28.75rem]",
+                      // The logo's height limit (TitleLogo); a wide one lower.
+                      item.logo.aspectRatio > 3.2 ? "[--logo-h:5rem] md:[--logo-h:7.5rem]" : "[--logo-h:6rem] md:[--logo-h:10rem]",
+                    )}
+                  >
+                    <span className="block text-balance text-display">{item.title}</span>
+                  </TitleLogo>
+                </Link>
               </h2>
             ) : (
-              <h2 className="text-balance text-display">{item.title}</h2>
+              <h2 className="text-balance text-display">
+                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto rounded-sm">
+                  {item.title}
+                </Link>
+              </h2>
             )}
             <p className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-body-s font-semibold text-text-1 md:mt-5 md:justify-start md:text-body">
               {[
@@ -214,12 +276,16 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                 ))}
             </p>
             {item.overview && <p className="mt-3 line-clamp-3 max-w-140 text-body-l text-text-1 max-md:hidden">{item.overview}</p>}
-            <HeroActions title={item} playable={playable.data ? Boolean(playable.data[item.id]) : undefined} className="mt-5 max-w-[26.25rem] md:mt-6 md:max-w-none" />
+            <HeroActions
+              title={item}
+              playable={playable.data ? Boolean(playable.data[item.id]) : undefined}
+              className="pointer-events-auto mt-5 max-w-[26.25rem] md:mt-6 md:max-w-none"
+            />
           </div>
 
           {items.length > 1 && (
             // Centred under the centred text and buttons on a phone, bottom right next to them from md (7.14).
-            <div className="flex items-center justify-center gap-1 md:shrink-0 md:justify-end">
+            <div className="pointer-events-auto flex items-center justify-center gap-1 md:shrink-0 md:justify-end">
               {!reduced && <IconButton icon={Pause} variant="stage" size="sm" pressed={paused} label={t("home.pauseRotation")} onClick={() => setPaused((p) => !p)} />}
               {/* biome-ignore lint/a11y/useSemanticElements: a group of carousel controls, not a form's fieldset */}
               <div role="group" aria-label={t("home.slides")} className="flex items-center">

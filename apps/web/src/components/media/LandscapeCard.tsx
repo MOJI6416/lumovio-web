@@ -1,6 +1,7 @@
 "use client";
 
 import type { TitleSummary } from "@lumovio/contracts";
+import { Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
@@ -20,15 +21,17 @@ import { useDismissed, useShelf } from "./shelf-context";
 
 /**
  * Landscape card (design-system 7.12, sizes 5.4): a 16:9 frame with the same badge, mark and progress as a poster, the
- * name and one line of metadata under it — never text over the frame. "Continue watching" and "Next episode" give it
- * the episode and the time left ("Season 3 · episode 16 · 22 min left") and a link straight to the player; series
- * shelves give it nothing and it shows the year, the rating and the type, or the shelf's fact.
+ * name and one line of metadata — on the frame's foot in a shelf (ArtCaption), under it elsewhere. "Continue watching"
+ * and "Next episode" give it the episode and the time left ("Season 3 · episode 16 · 22 min left") and a link straight
+ * to the player, with ▶ before the line (`plays`: a press starts playing, not the title page); series shelves give it
+ * nothing and it shows the rating, the year and the type, or the shelf's fact.
  */
 export function LandscapeCard({
   title,
   href,
   meta: metaProp,
   label,
+  plays = false,
   progress,
   priority,
   showState = true,
@@ -43,6 +46,8 @@ export function LandscapeCard({
   meta?: ReactNode[];
   /** The accessible name, in place of the name, year and type. */
   label?: string;
+  /** The card's link starts playing (the player, not the title page): ▶ before the line. */
+  plays?: boolean;
   progress?: number | null;
   priority?: boolean;
   /** The personal mark and progress from the library ("Continue watching" brings its own progress). */
@@ -63,7 +68,7 @@ export function LandscapeCard({
   const kindLabel = title.isAnime ? t("anime") : title.kind === "movie" ? t("movie") : t("series");
   const rating = title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
-  const meta = metaProp ?? (fact ? [fact] : [title.year, rating, kindLabel]);
+  const meta = metaProp ?? (fact ? [fact] : [rating, title.year, kindLabel]);
   const img = title.backdropPath ?? title.posterPath;
   const bare = inShelf && Boolean(img);
   const shownProgress = progress !== undefined ? progress : showState ? (state?.progress?.fraction ?? null) : null;
@@ -102,7 +107,16 @@ export function LandscapeCard({
         />
         {/* In a shelf the name and line stand on the art, as every card of a shelf (ArtCaption); a backdrop has no title. */}
         <CardMeta title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} className={bare ? "hidden in-data-[tv=1]:block" : undefined} />
-        {bare && <ArtCaption shape="landscape" title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} aboveBar={shownProgress != null} />}
+        {bare && (
+          <ArtCaption
+            shape="landscape"
+            title={title.title}
+            meta={meta}
+            lead={plays ? <Play aria-hidden className="me-1 inline size-3 fill-current align-[-0.125em]" /> : undefined}
+            wrap={!metaProp && Boolean(fact)}
+            aboveBar={shownProgress != null}
+          />
+        )}
       </Link>
       {more && (
         <div className={cn("pointer-events-none absolute inset-x-0 top-0", artBox("landscape"))}>

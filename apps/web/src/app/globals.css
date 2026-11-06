@@ -462,34 +462,29 @@
   /* 7.13 A shelf off the screen isn't drawn until it comes near (performance-handoff §3, P2): a long home page or
    * landing paints and composites only what is on screen, so scrolling keeps its frame rate on a slow phone, and the
    * posters of far shelves wait until they are approached. Until it is first drawn it holds the height of a shelf of its
-   * cards (heading, cards of media/card-sizes.ts, a one-line name and metadata — a poster shelf without them since the
-   * 2026-11 redesign; measured at 390, 768, 1280 and 1536 px, posters again 2026-11-06 at 390, 768 and 1440),
-   * so the page's height — and where Back returns — stays; then its own. The clip margin keeps a focus ring at its edge.
+   * cards (the heading — the "All" link is the heading itself — and cards of media/card-sizes.ts with their names on the
+   * art, a person's under the circle; measured 2026-11-06 at 390, 768, 1440 and 1920 px; a Top 10 shelf is a poster
+   * shelf's height since its posters are a poster card's), so the page's height — and where Back returns — stays; then
+   * its own. The clip margin keeps a focus ring at its edge.
    * The TV mode draws every shelf: its remote navigation measures the cards on each press (10.3; the TV shell decides). */
   .shelf {
-    --shelf-h: 14rem;
+    --shelf-h: 12.8rem;
     content-visibility: auto;
     contain-intrinsic-block-size: auto var(--shelf-h);
     overflow-clip-margin: 0.75rem;
   }
   .shelf[data-shelf="landscape"] {
-    --shelf-h: 16.35rem;
-  }
-  .shelf[data-shelf="top10"] {
-    --shelf-h: 17.7rem;
+    --shelf-h: 10.75rem;
   }
   .shelf[data-shelf="person"] {
     --shelf-h: 12.6rem;
   }
   @media (width >= 48rem) {
     .shelf {
-      --shelf-h: 16.5rem;
+      --shelf-h: 16.4rem;
     }
     .shelf[data-shelf="landscape"] {
-      --shelf-h: 17.25rem;
-    }
-    .shelf[data-shelf="top10"] {
-      --shelf-h: 19.5rem;
+      --shelf-h: 12.7rem;
     }
     .shelf[data-shelf="person"] {
       --shelf-h: 14.15rem;
@@ -497,13 +492,10 @@
   }
   @media (width >= 80rem) {
     .shelf {
-      --shelf-h: 18.75rem;
+      --shelf-h: 18.6rem;
     }
     .shelf[data-shelf="landscape"] {
-      --shelf-h: 16.85rem;
-    }
-    .shelf[data-shelf="top10"] {
-      --shelf-h: 21.8rem;
+      --shelf-h: 13.55rem;
     }
     .shelf[data-shelf="person"] {
       --shelf-h: 15.15rem;
@@ -511,13 +503,10 @@
   }
   @media (width >= 96rem) {
     .shelf {
-      --shelf-h: 24.65rem;
+      --shelf-h: 20.1rem;
     }
     .shelf[data-shelf="landscape"] {
-      --shelf-h: 17.95rem;
-    }
-    .shelf[data-shelf="top10"] {
-      --shelf-h: 22.75rem;
+      --shelf-h: 14.7rem;
     }
     .shelf[data-shelf="person"] {
       --shelf-h: 15.65rem;

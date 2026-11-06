@@ -1,21 +1,25 @@
 import { Fragment, type ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 import { type ArtShape, artBox } from "./Artwork";
+import { MetaLine } from "./CardMeta";
 
 const real = (p: ReactNode) => p !== null && p !== undefined && p !== false && p !== "";
 
 /**
  * A card's name and one line on the foot of its art, on a scrim (owner, 2026-11-06: one look for every card of a
  * shelf — poster, landscape, Top 10 — instead of a caption under it; design-system 7.12). Small type for a phone's
- * poster (~110 px wide), room for "More" only where a mouse shows it, and the layer rises with the art on hover and
+ * poster (112 px wide), room for "More" only where a mouse shows it, and the layer rises with the art on hover and
  * focus (Artwork's 1.04), or the scrim would stay behind the picture. Over a progress bar it leaves the bar in view.
- * The site's TV mode keeps the caption under the art. Decorative: the card's link carries its whole name.
+ * The line never cuts a part: what doesn't fit is left out whole (MetaLine), a shelf's fact takes two lines. `lead`
+ * stands before the line (the ▶ of a card that plays at once). The site's TV mode keeps the caption under the art.
+ * Decorative: the card's link carries its whole name.
  */
 export function ArtCaption({
   shape,
   title,
   titleLang,
   meta,
+  lead,
   wrap = false,
   aboveBar = false,
 }: {
@@ -23,7 +27,8 @@ export function ArtCaption({
   title: string;
   titleLang?: string;
   meta: ReactNode[];
-  /** A shelf's fact or a subtitle takes two lines; year and score one. */
+  lead?: ReactNode;
+  /** A shelf's fact or a subtitle takes two lines; the rating and year one. */
   wrap?: boolean;
   /** The art shows a progress bar along its bottom. */
   aboveBar?: boolean;
@@ -39,20 +44,25 @@ export function ArtCaption({
         artBox(shape),
       )}
     >
-      <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-2.5 pt-10 pb-2.5 pointer-fine:pe-11">
+      <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-2 pt-10 pb-2 sm:px-2.5 sm:pb-2.5 pointer-fine:pe-11">
         <p className="line-clamp-2 break-words text-body-s font-semibold text-text-1" lang={titleLang}>
           {title}
         </p>
-        {parts.length > 0 && (
-          <p className={cn("mt-0.5 text-caption text-text-2", wrap ? "line-clamp-2" : "truncate")}>
-            {parts.map((p, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
-              <Fragment key={i}>
-                {i > 0 && " · "}
-                {p}
-              </Fragment>
-            ))}
-          </p>
+        {wrap ? (
+          parts.length > 0 && (
+            <p className="mt-0.5 line-clamp-2 text-caption text-text-2">
+              {lead}
+              {parts.map((p, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
+                <Fragment key={i}>
+                  {i > 0 && " · "}
+                  {p}
+                </Fragment>
+              ))}
+            </p>
+          )
+        ) : (
+          <MetaLine parts={parts} lead={lead} className="mt-0.5 text-caption text-text-2" />
         )}
       </div>
     </div>

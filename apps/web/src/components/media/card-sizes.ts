@@ -7,8 +7,11 @@
  * | Card               | Phone | md  | xl  | 2xl |
  * | Poster 2:3         | 112   | 144 | 168 | 184 |
  * | Landscape 16:9     | 240   | 280 | 304 | 336 |
- * | Top 10             | 168   | 208 | 248 | 264 |
+ * | Top 10 (numeral + poster) | 64 + 112 | 80 + 144 | 92 + 168 | 100 + 184 |
  * | Person 1:1 (circle)| 96    | 112 | 128 | 136 |
+ *
+ * A Top 10 card's poster is a poster card's (2026-11-06): the shelf is the same row of posters as every other, with the
+ * rank beside each.
  */
 
 export type CardShape = "poster" | "landscape" | "top10" | "person";
@@ -17,9 +20,12 @@ export type CardShape = "poster" | "landscape" | "top10" | "person";
 export const SHELF_COLS: Record<CardShape, string> = {
   poster: "auto-cols-[7rem] md:auto-cols-[9rem] xl:auto-cols-[10.5rem] 2xl:auto-cols-[11.5rem]",
   landscape: "auto-cols-[15rem] md:auto-cols-[17.5rem] xl:auto-cols-[19rem] 2xl:auto-cols-[21rem]",
-  top10: "auto-cols-[10.5rem] md:auto-cols-[13rem] xl:auto-cols-[15.5rem] 2xl:auto-cols-[16.5rem]",
+  top10: "auto-cols-[11rem] md:auto-cols-[14rem] xl:auto-cols-[16.25rem] 2xl:auto-cols-[17.75rem]",
   person: "auto-cols-[6rem] md:auto-cols-[7rem] xl:auto-cols-[8rem] 2xl:auto-cols-[8.5rem]",
 };
+
+/** A Top 10 card's two columns: the rank's numeral and the poster, a poster card's width. */
+export const TOP10_COLS = "grid-cols-[4rem_7rem] md:grid-cols-[5rem_9rem] xl:grid-cols-[5.75rem_10.5rem] 2xl:grid-cols-[6.25rem_11.5rem]";
 
 /** Gaps between cards (5.1): 8 phone · 12 tablet · 16 desktop. */
 export const CARD_GAP_X = "gap-x-2 md:gap-x-3 xl:gap-x-4";

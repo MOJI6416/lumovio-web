@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Children, type ReactNode, type RefObject, startTransition, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHydrated } from "@/components/title/hydrated";
 import { IconButton } from "@/components/ui/IconButton";
-import { Link } from "@/components/ui/Link";
+import { Link } from "@/i18n/navigation";
 import { discoveryPage, observeShelf } from "@/lib/discovery-metrics";
 import { CARD_GAP_X, type CardShape, GRID_COLS, SHELF_COLS } from "./card-sizes";
 import { type Shelf, ShelfContext } from "./shelf-context";
@@ -70,13 +70,15 @@ function useRovingCards(ref: RefObject<HTMLElement | null>, shown: boolean) {
 }
 
 /**
- * A shelf (design-system 7.13): the h2, the "i" with what it is and how it was picked (instead of grey notes, HOME-07),
- * and "All" at the end of the heading row whenever there is a whole page of it — always visible. Cards of one width
- * (5.4) in a row that scrolls with a swipe and snaps; on a phone the next card peeks in; on a tablet and desktop arrows
- * appear at the edges on hover, and the edges fade where there is more. A shelf with fewer than `min` cards is not shown:
- * the home page and the catalog pass 3 (7.13, HOME-05), "Continue watching" 1; a profile's own collections keep any
- * count until their screens decide (Ф6). No filter chips inside a shelf: a filter is the "All" page (7.13).
- * A card that leaves the shelf ("Not interested") does so at once; "Undo" puts it back (./shelf-context).
+ * A shelf (design-system 7.13): the h2 — itself the link to the whole of the shelf ("Popular series ›", 2026-11-06,
+ * as Apple TV's and Netflix's: the link stands at its name, not 1,300 px away in lime at the row's other end) whenever
+ * there is a page of it. What the shelf is and how it was picked is the section's description for a screen reader
+ * (HOME-07). Cards of one width (5.4) in a row that scrolls with a swipe and snaps; on a phone the next card peeks in;
+ * on a tablet and desktop arrows appear at the edges on hover, centred on the art, and the edges fade where there is
+ * more. A shelf with fewer than `min` cards is not shown: the home page and the catalog pass 3 (7.13, HOME-05),
+ * "Continue watching" 1; a profile's own collections keep any count until their screens decide (Ф6). No filter chips
+ * inside a shelf: a filter is the "All" page (7.13). A card that leaves the shelf ("Not interested") does so at once;
+ * "Undo" puts it back (./shelf-context).
  */
 export function Row({
   title,
@@ -200,9 +202,9 @@ export function Row({
   // The edge with more cards fades over the page's gutter (7.13); the other edge stays sharp.
   const side = (more: boolean) => (more ? "transparent" : "black");
   const mask = `linear-gradient(to right, ${side(!edges.start)} 0, black var(--gutter), black calc(100% - var(--gutter)), ${side(!edges.end)} 100%)`;
-  // Arrows over the artwork (pb-16 lifts them from the card's centre to the artwork's), with a mouse, on hover.
-  // A poster shelf has no captions under its cards since the 2026-11 redesign (PosterCard): no lift there.
-  const arrow = `absolute inset-y-0 z-10 flex items-center ${kind === "poster" ? "" : "pb-16"} opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden`;
+  // Arrows over the artwork, with a mouse, on hover. Every card of a shelf has its name on its art since the 2026-11
+  // redesign (ArtCaption): the card's centre is the art's. A person's name is under the circle (pb-12 lifts them there).
+  const arrow = `absolute inset-y-0 z-10 flex items-center ${kind === "person" ? "pb-12" : ""} opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden`;
 
   return (
     // `.shelf`: drawn only when it comes near the screen, holding the height of its kind of cards until then (globals.css);
@@ -216,7 +218,18 @@ export function Row({
     >
       <div className="page-x mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 md:mb-4">
         <h2 id={headingId} className="text-h2 text-text-1">
-          {heading ?? title}
+          {href ? (
+            // The whole heading is the link, 44 tall on a phone without moving the line (5.6: padding, then the same
+            // negative margin); the chevron says where it goes and moves on hover. Its name starts with what it shows
+            // ("Popular series: All", label in name).
+            <Link href={href} className="group/all -my-2.5 inline-flex items-center gap-1 rounded-xs py-2.5 md:-my-1 md:py-1">
+              <span>{heading ?? title}</span>
+              <span className="sr-only">: {t("common.seeAll")}</span>
+              <ChevronRight aria-hidden className="size-5 shrink-0 text-text-2 transition-[translate,color] duration-fast ease-fast group-hover/all:translate-x-0.5 group-hover/all:text-text-1 md:size-6 rtl:group-hover/all:-translate-x-0.5" />
+            </Link>
+          ) : (
+            (heading ?? title)
+          )}
         </h2>
         {/* No "i" by the heading (owner, 2026-11-06: the heading says what the shelf is); what it is and how it was
             picked stays for a screen reader. */}
@@ -226,15 +239,7 @@ export function Row({
           </p>
         )}
         {/* A shelf's own actions take a line of their own on a phone, from the page's margin (the starter shelf's three). */}
-        <div className={clsx("ms-auto flex items-center gap-x-4 gap-y-1", actions && "max-sm:ms-0 max-sm:basis-full")}>
-          {actions}
-          {href && (
-            // At least 44 wide on a phone too, whatever the word's length (5.6; "Усі").
-            <Link variant="action" arrow href={href} aria-label={`${t("common.seeAll")}: ${title}`} className="justify-end max-sm:min-w-11">
-              {t("common.seeAll")}
-            </Link>
-          )}
-        </div>
+        {actions && <div className="ms-auto flex items-center gap-x-4 gap-y-1 max-sm:ms-0 max-sm:basis-full">{actions}</div>}
       </div>
       <div className="relative">
         <ShelfContext.Provider value={shelf}>
