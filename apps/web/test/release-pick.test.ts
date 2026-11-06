@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editionOf, forProfile, NO_CHOICE, pickRelease } from "../src/lib/media/release-pick";
+import { ANY, editionOf, forProfile, NO_CHOICE, pickRelease } from "../src/lib/media/release-pick";
 import { type ReleasePrefs, rankReleases, voiceOptions } from "../src/lib/media/releases";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
 
@@ -107,5 +107,43 @@ describe("pickRelease", () => {
   it("recommends nothing when nothing is alive", () => {
     const dead = rankReleases([result(name("[2001, BDRip 1080p] Dub (Ukr)"), 0)], lotr, p);
     expect(pickRelease(dead, p).chosen).toBeUndefined();
+  });
+});
+
+describe("pickRelease for the sources screen (ANY)", () => {
+  const releases = [
+    result(name("[2001, BDRemux 2160p, HDR10] [Extended Edition] Dub (Ukr) + Original Eng"), 80, 90e9),
+    result(name("[2001, BDRip 1080p] [Theatrical Cut] Dub (Ukr) + Original Eng"), 30, 15e9),
+    result(name("[2001, BDRip 1080p] [Theatrical Cut] Dub + MVO + Original Eng"), 90, 14e9),
+    result(name("[2001, BDRip 720p] MVO"), 0, 4e9),
+  ];
+  const p = prefs({ languages: ["uk"] });
+  const ranked = rankReleases(releases, lotr, p);
+
+  it("keeps every audio and every cut, and picks the best of all", () => {
+    const x = pickRelease(ranked, p, { voice: ANY, edition: ANY, picture: null });
+    expect(x.option).toBeUndefined();
+    expect(x.pool).toHaveLength(3);
+    // The best alive release of the title, whatever its audio (the dead MVO release is never picked).
+    expect(x.chosen).toBe(ranked.find((r) => !r.dead));
+    expect(x.editions.map((e) => e.key).sort()).toEqual(["extended", "theatrical"]);
+    // The cut shown is the chosen release's own (auto on a screen without 4K: the theatrical 1080p).
+    expect(x.chosen?.result.title).toContain("BDRip 1080p] [Theatrical");
+    expect(x.edition).toBe("theatrical");
+    expect(x.options.map((o) => o.key)).toEqual(pickRelease(ranked, p).options.map((o) => o.key));
+  });
+
+  it("narrows to an audio with every cut, and to a cut with every audio", () => {
+    const uk = pickRelease(ranked, p, { voice: "uk|dub", edition: ANY, picture: null });
+    expect(uk.pool.map((r) => r.result.title).every((t) => /Ukr/.test(t))).toBe(true);
+    expect(uk.pool).toHaveLength(2);
+    const cut = pickRelease(ranked, p, { voice: ANY, edition: "theatrical", picture: null });
+    expect(cut.pool).toHaveLength(2);
+    expect(cut.edition).toBe("theatrical");
+  });
+
+  it("leaves Where to watch as it was (no ANY, 12 options at most)", () => {
+    expect(pickRelease(ranked, p, NO_CHOICE)).toEqual(pickRelease(ranked, p, NO_CHOICE, 12));
+    expect(pickRelease(ranked, p, NO_CHOICE).option?.key).toBe("uk|dub");
   });
 });

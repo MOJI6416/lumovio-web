@@ -2,13 +2,13 @@ import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 /**
- * One way to start watching (design-system 7.15, SRC-01, SRC-14): a copy on the profile's server, a TorrServer
- * release, or a streaming service — the same row in "Where to watch", on the sources screen before the player (Ф5) and
- * on TV. The type's icon on the start; line 1 (`title`): what it is — "1080p · Ukrainian · dub (Le Doyen)"; line 2
- * (`meta`, body-s): where and how much — "9,6 GB · 140 seeders · RuTracker"; at most two badges (AccentBadge
- * "Recommended" and a Tag "Your language"); on the end the one action, always labelled "Watch" (`action`), and "More"
- * for what can be done with it (`more`: details, unlink, remove — each confirmed where it can't be undone).
- * The row itself is not a button: the action says what happens (SRC-14).
+ * One way to start watching (design-system 7.15, SRC-01, SRC-14): a copy on the profile's server, a file of a torrent,
+ * a copy in the player's "Source" panel — in the look of "Other copies" (2026-11-06): `--surface-1`, `--radius-lg`, no
+ * border, the type's mark in a circle. Line 1 (`title`): what it is; line 2 (`meta`, body-s): where and how much; one
+ * label above (`badges`: "Now", "Didn't start"); on the end the one action, always labelled "Watch" (`action`), and
+ * "More" for what can be done with it (`more`: details, unlink, remove — each confirmed where it can't be undone).
+ * The row itself is not a button: the action says what happens (SRC-14). The sources screen's releases and copies
+ * are its own lists (ReleaseFinder, CopyChoice).
  *
  * Phones: the action moves under the text, across the row, so a long name is never squeezed. TV: under the text too,
  * at the row's start, so the remote's ↓ goes from row to row (spatial navigation prefers the same column, Ф5).
@@ -30,14 +30,14 @@ export function SourceRow({
   badges?: ReactNode;
   action?: ReactNode;
   more?: ReactNode;
-  /** The one the main button starts (a quiet accent edge, not a colour of its own). */
+  /** The one playing or the one the main button starts: a quiet edge, not a colour of its own. */
   selected?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 rounded-md border border-line bg-surface-1 p-3 md:p-4", selected && "border-line-2", className)}>
+    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg bg-surface-1 p-4", selected && "ring-1 ring-line-2 ring-inset", className)}>
       <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
-        <span aria-hidden className="mt-0.5 grid size-10 shrink-0 place-items-center overflow-hidden rounded-sm bg-surface-2 text-text-2 [&>svg]:size-6">
+        <span aria-hidden className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2 text-text-2 [&>svg]:size-5">
           {icon}
         </span>
         <div className="min-w-0 flex-1">
