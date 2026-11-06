@@ -238,7 +238,8 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
             {/* The title opens its page, as the art does (no Tab stop of its own: "More info" is it). */}
             {item.logo ? (
               <h2 className="w-full">
-                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto block rounded-sm">
+                {/* A wide logo can be under 44 tall on a phone: padding, then the same negative margin (5.6). */}
+                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto -my-1.5 block rounded-sm py-1.5">
                   <TitleLogo
                     logo={item.logo}
                     alt={item.title}
