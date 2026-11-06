@@ -8,6 +8,7 @@ import { useCardFact } from "@/hooks/useCardFact";
 import { Link } from "@/i18n/navigation";
 import { tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
+import { ArtCaption } from "./ArtCaption";
 import { Artwork, artBox } from "./Artwork";
 import { CardMeta } from "./CardMeta";
 import { CardMore, type MoreVisibility, useLongPress } from "./CardMore";
@@ -15,7 +16,7 @@ import type { CardMenuExtra } from "./CardMenu";
 import { CardRating } from "./CardRating";
 import { LANDSCAPE_SIZES } from "./card-sizes";
 import { useCardMark, useRatingText } from "./PosterCard";
-import { useDismissed } from "./shelf-context";
+import { useDismissed, useShelf } from "./shelf-context";
 
 /**
  * Landscape card (design-system 7.12, sizes 5.4): a 16:9 frame with the same badge, mark and progress as a poster, the
@@ -57,12 +58,15 @@ export function LandscapeCard({
   const ratingText = useRatingText();
   const fact = useCardFact(title);
   const press = useLongPress();
+  const inShelf = Boolean(useShelf());
   if (useDismissed(title.id)) return null;
   const kindLabel = title.isAnime ? t("anime") : title.kind === "movie" ? t("movie") : t("series");
   const rating = title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
   const meta = metaProp ?? (fact ? [fact] : [title.year, rating, kindLabel]);
   const img = title.backdropPath ?? title.posterPath;
+  const bare = inShelf && Boolean(img);
+  const shownProgress = progress !== undefined ? progress : showState ? (state?.progress?.fraction ?? null) : null;
 
   return (
     <div className={cn("group/card relative w-full min-w-0 select-none", className)} {...press.handlers}>
@@ -94,9 +98,11 @@ export function LandscapeCard({
           placeholder={title.kind}
           badge={title.onServer ? tr("onServerBadge") : null}
           mark={showState ? mark : null}
-          progress={progress !== undefined ? progress : showState ? (state?.progress?.fraction ?? null) : null}
+          progress={shownProgress}
         />
-        <CardMeta title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} />
+        {/* In a shelf the name and line stand on the art, as every card of a shelf (ArtCaption); a backdrop has no title. */}
+        <CardMeta title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} className={bare ? "hidden in-data-[tv=1]:block" : undefined} />
+        {bare && <ArtCaption shape="landscape" title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} aboveBar={shownProgress != null} />}
       </Link>
       {more && (
         <div className={cn("pointer-events-none absolute inset-x-0 top-0", artBox("landscape"))}>

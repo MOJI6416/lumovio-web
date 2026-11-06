@@ -110,6 +110,8 @@ interface JfStream {
   Width?: number;
   BitDepth?: number;
   VideoRange?: string;
+  /** "SDR", "HDR10", "HDR10Plus", "HLG", "DOVI", "DOVIWithHDR10"… (Jellyfin 10.8+). */
+  VideoRangeType?: string;
   Profile?: string;
 }
 
@@ -231,9 +233,14 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
                 // Classify by the larger of width-implied and actual height (2.39:1 films are 1920×800).
                 resolution: v?.Height ? resolutionLabel(v.Width ?? 0, v.Height) : null,
                 videoCodec: v?.Codec ?? null,
-                audioCodecs: src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Codec ?? "").filter(Boolean).slice(0, 8),
+                // "atmos" after the codecs when a track says Dolby Atmos in its profile or title (the quality marks).
+                audioCodecs: [
+                  ...src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Codec ?? "").filter(Boolean),
+                  ...(src.MediaStreams.some((s) => s.Type === "Audio" && /atmos/i.test(`${s.Profile ?? ""} ${s.DisplayTitle ?? ""}`)) ? ["atmos"] : []),
+                ].slice(0, 8),
                 audioLanguages: audioLanguages(src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Language)),
-                hdr: v?.VideoRange && v.VideoRange !== "SDR" ? v.VideoRange : null,
+                // The HDR format by name (DOVI, HDR10Plus, HDR10, HLG) for the quality marks; the range alone otherwise.
+                hdr: v?.VideoRangeType && v.VideoRangeType !== "SDR" ? v.VideoRangeType : v?.VideoRange && v.VideoRange !== "SDR" ? v.VideoRange : null,
                 container: src.Container ?? null,
                 sizeBytes: src.Size ?? null,
               }

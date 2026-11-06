@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 import { Artwork, artBox } from "./Artwork";
+import { ArtCaption } from "./ArtCaption";
 import { CardMeta } from "./CardMeta";
 import { CardMore, useLongPress } from "./CardMore";
 import { CardRating } from "./CardRating";
@@ -73,7 +74,9 @@ export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank
             badge={title.onServer ? t("onServerBadge") : null}
             mark={mark}
           />
-          <CardMeta title={title.title} meta={[title.year, rating]} wide={[kindLabel]} />
+          {/* As every card of a shelf: the name and line on the poster (ArtCaption), the caption only in the site's TV mode. */}
+          <CardMeta title={title.title} meta={[title.year, rating]} wide={[kindLabel]} className="hidden in-data-[tv=1]:block" />
+          {title.posterPath && <ArtCaption shape="poster" title={title.title} meta={[title.year, rating]} />}
         </Link>
         <div className={cn("pointer-events-none absolute inset-x-0 top-0", artBox("poster"))}>
           <CardMore title={title} openSignal={press.signal} className="absolute end-1.5 bottom-2.5 max-sm:end-0 max-sm:bottom-1" />

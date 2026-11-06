@@ -2,7 +2,7 @@
 
 import type { TitleSummary } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCardFact } from "@/hooks/useCardFact";
@@ -12,6 +12,7 @@ import { latinLang } from "@/lib/format";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 import { Artwork, artBox, type PersonalMark } from "./Artwork";
+import { ArtCaption } from "./ArtCaption";
 import { CardMeta } from "./CardMeta";
 import { CardMore, type MoreVisibility, useLongPress } from "./CardMore";
 import type { CardMenuExtra } from "./CardMenu";
@@ -141,33 +142,7 @@ export function PosterCard({
         {/* A name the catalog has only in Latin letters on a ru/uk page is marked as such (8.11, L10N-11). */}
         {caption}
         {bare && (
-          <div
-            aria-hidden
-            className={cn(
-              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm in-data-[tv=1]:hidden",
-              // It rises with the art on hover and focus (Artwork's 1.04), or the scrim would stay behind the picture.
-              "transition-[scale] duration-base ease-base pointer-fine:group-hover/card:scale-[1.04] group-focus-visible/link:scale-[1.04] motion-reduce:scale-100!",
-              artBox("poster"),
-            )}
-          >
-            {/* Small type for a poster's foot (a phone's poster is ~110 px wide); room for "More" only where a mouse shows it. */}
-            <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-2.5 pt-10 pb-2.5 pointer-fine:pe-11">
-              <p className="line-clamp-2 break-words text-body-s font-semibold text-text-1" lang={latinLang(title.title, locale)}>
-                {title.title}
-              </p>
-              {meta.some(Boolean) && (
-                <p className={cn("mt-0.5 text-caption text-text-2", subtitle || fact ? "line-clamp-2" : "truncate")}>
-                  {meta.filter(Boolean).map((m, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
-                    <Fragment key={i}>
-                      {i > 0 && " · "}
-                      {m}
-                    </Fragment>
-                  ))}
-                </p>
-              )}
-            </div>
-          </div>
+          <ArtCaption shape="poster" title={title.title} titleLang={latinLang(title.title, locale)} meta={meta} wrap={Boolean(subtitle || fact)} aboveBar={fraction != null} />
         )}
       </Link>
       {(more || children) && (

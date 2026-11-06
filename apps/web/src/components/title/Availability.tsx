@@ -10,14 +10,15 @@ import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
 import { useReleaseText } from "@/components/sources/release-text";
-import { InfoTip } from "@/components/sources/InfoTip";
+import { type QualityMark, QualityBadges } from "@/components/sources/QualityBadges";
+import { formatSize } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Link as ActionLink, linkClass } from "@/components/ui/Link";
+import { Link as ActionLink } from "@/components/ui/Link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useLibraryState } from "@/hooks/useLibraryState";
@@ -112,10 +113,16 @@ export function Availability({ title: d }: { title: TitleCore }) {
                 </>
               ) : undefined
             }
-            title={copyText.version(s, raw?.servers ?? [], d.originalLanguage)}
-            meta={copyText.meta(s, d.title)}
+            title={s.connectionName}
+            meta={
+              <CopyLine
+                marks={copyText.marks(s, raw?.servers ?? [], d.originalLanguage)}
+                words={[copyText.sound(s, raw?.servers ?? [], d.originalLanguage), formatSize(s.quality?.sizeBytes ?? null, locale)]}
+                fallback={copyText.version(s, raw?.servers ?? [], d.originalLanguage)}
+              />
+            }
             action={
-              <Link href={playOf(s)} className={buttonClass("secondary", "md")}>
+              <Link href={playOf(s)} className={buttonClass(i === 0 ? "primary" : "secondary", "md")}>
                 <Play aria-hidden className="fill-current" />
                 {t("tsWatch")}
               </Link>
@@ -187,6 +194,21 @@ export function Availability({ title: d }: { title: TitleCore }) {
 }
 
 /**
+ * Under a copy's server name: its marks (4K, Dolby Vision, Atmos — QualityBadges) and what is heard and how big; the
+ * release's or server's words when it gives no marks.
+ */
+function CopyLine({ marks, words, fallback }: { marks: QualityMark[]; words: (string | null)[]; fallback: string }) {
+  const rest = words.filter(Boolean).join(" · ");
+  if (marks.length === 0) return <>{[fallback, ...words.slice(1)].filter(Boolean).join(" · ")}</>;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+      <QualityBadges marks={marks} />
+      {rest && <span>{rest}</span>}
+    </span>
+  );
+}
+
+/**
  * Legal streaming for the profile's region: each service by name, opening its own search for the title (TTL-12, TTL-14).
  * Nothing in the region is said in words, with the way to change the region (not "Streaming: —").
  */
@@ -205,14 +227,18 @@ function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
     <SourceSection
       id="streaming-h"
       title={title}
-      info={<InfoTip title={title} note={t("offersExternal")} rules={t("streamingAttribution")} />}
       footer={
-        wp?.link &&
         rows.length > 0 && (
-          <a href={wp.link} target="_blank" rel="noreferrer noopener" className={linkClass("action", "self-start")}>
-            {tp("allOffersTmdb")}
-            <ExternalLink aria-hidden className="size-4" />
-          </a>
+          // The data's source in a quiet line (it was in the "i", 2026-11-06), and TMDB's page of every offer.
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-3">
+            {t("streamingAttribution")}
+            {wp?.link && (
+              <a href={wp.link} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-6 items-center gap-1 underline underline-offset-3 hover:text-text-1 max-sm:min-h-11">
+                {tp("allOffersTmdb")}
+                <ExternalLink aria-hidden className="size-3.5" />
+              </a>
+            )}
+          </p>
         )
       }
     >
@@ -226,28 +252,36 @@ function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
           )}
         </p>
       ) : (
-        rows.map(({ provider: p, name, kinds, withAds, ids }) => {
-          const query = (id: number) => (d.originalTitle && id !== 117 ? d.originalTitle : d.title);
-          const href = ids.map((id) => providerSearch(id, query(id))).find(Boolean) ?? null;
-          // "With ads" in TMDB's own kinds is a free offer; a paid plan with ads is said as such.
-          const meta = [...kinds.map((k) => t(OFFER_LABEL[k])), withAds && !kinds.includes("ads") ? tp("planWithAds") : null].filter(Boolean).join(" · ");
-          return (
-            <SourceRow
-              key={p.id}
-              icon={p.logoPath ? <img src={tmdbImage(p.logoPath, "w92") ?? undefined} alt="" className="size-full object-cover" loading="lazy" /> : <Tv />}
-              title={name}
-              meta={meta}
-              action={
-                href ? (
-                  <a href={href} target="_blank" rel="noreferrer noopener" aria-label={tp("watchOn", { service: name })} className={buttonClass("secondary", "md")}>
-                    <ExternalLink aria-hidden />
-                    {t("tsWatch")}
+        // Services as tiles, as Apple TV's channels (owner, 2026-11-06): the logo, the name, the kind of offer; the tile
+        // opens the service's own search for the title.
+        <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-5 lg:grid-cols-7">
+          {rows.map(({ provider: p, name, kinds, withAds, ids }) => {
+            const query = (id: number) => (d.originalTitle && id !== 117 ? d.originalTitle : d.title);
+            const href = ids.map((id) => providerSearch(id, query(id))).find(Boolean) ?? null;
+            // "With ads" in TMDB's own kinds is a free offer; a paid plan with ads is said as such.
+            const meta = [...kinds.map((k) => t(OFFER_LABEL[k])), withAds && !kinds.includes("ads") ? tp("planWithAds") : null].filter(Boolean).join(" · ");
+            const tile = (
+              <>
+                <span aria-hidden className="grid size-16 place-items-center overflow-hidden rounded-md bg-surface-2 text-text-2 transition-[scale] duration-fast ease-fast group-hover/tile:scale-105 [&>svg]:size-7">
+                  {p.logoPath ? <img src={tmdbImage(p.logoPath, "w92") ?? undefined} alt="" className="size-full object-cover" loading="lazy" /> : <Tv />}
+                </span>
+                <span className="mt-2 line-clamp-2 text-center text-body-s font-semibold text-text-1">{name}</span>
+                <span className="mt-0.5 line-clamp-2 text-center text-caption text-text-3">{meta}</span>
+              </>
+            );
+            return (
+              <li key={p.id}>
+                {href ? (
+                  <a href={href} target="_blank" rel="noreferrer noopener" aria-label={tp("watchOn", { service: name })} className="group/tile flex flex-col items-center rounded-md">
+                    {tile}
                   </a>
-                ) : undefined
-              }
-            />
-          );
-        })
+                ) : (
+                  <div className="flex flex-col items-center">{tile}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </SourceSection>
   );

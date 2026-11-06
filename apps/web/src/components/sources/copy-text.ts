@@ -4,6 +4,7 @@ import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
 import { creditsStudio, parseRelease } from "@/lib/media/releases";
+import { type QualityMark, qualityMarks } from "./QualityBadges";
 import { formatSize, useReleaseText } from "./release-text";
 
 const KIND_LABEL: Record<Availability["kind"], string> = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" };
@@ -63,6 +64,24 @@ export function useCopyText() {
         if (words) return words;
       }
       return KIND_LABEL[s.kind];
+    },
+    /**
+     * The copy's picture and sound as marks (QualityBadges): the server's quality data, or what its release's name says.
+     */
+    marks: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): QualityMark[] => {
+      const q = s.quality;
+      if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, audio: q.audioCodecs });
+      const name = releaseName(s, all);
+      if (!name) return [];
+      const info = parseRelease(name, null, originalLanguage);
+      return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, audio: [name] });
+    },
+    /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
+    sound: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
+      const own = languagesOf(s);
+      if (own) return own;
+      const name = releaseName(s, all);
+      return name ? text.audio({ info: parseRelease(name, null, originalLanguage), language: null }) || null : null;
     },
     /** Where it is and how big: "On «torr» · TorrServer · 9.6 GB". */
     meta: (s: Availability, title: string) =>
