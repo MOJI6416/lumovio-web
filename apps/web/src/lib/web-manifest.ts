@@ -16,8 +16,8 @@ export function webManifest({ lang, locale, description }: { lang: string; local
     start_url: locale === "en" ? "/" : `/${locale}`,
     scope: "/",
     display: "standalone",
-    background_color: "#0b0c10", // ui-lint-ignore hex-color: the manifest takes literal colours (3.6)
-    theme_color: "#0b0c10", // ui-lint-ignore hex-color: the manifest takes literal colours (3.6)
+    background_color: "#0a0a0b", // ui-lint-ignore hex-color: the manifest takes literal colours (3.6)
+    theme_color: "#0a0a0b", // ui-lint-ignore hex-color: the manifest takes literal colours (3.6)
     orientation: "any",
     categories: ["entertainment", "video"],
     icons: [

@@ -268,7 +268,7 @@ export function TokenShowcase({ initialTheme, siteTv }: { initialTheme: Theme; s
       data-theme={theme}
       data-tv={tv ? "1" : undefined}
       style={{ zoom }}
-      // Token names are code: Manrope would join "--" into a dash.
+      // Token names are code: the UI font could join "--" into a dash.
       className="min-h-dvh bg-bg pb-24 text-text-1 [font-variant-ligatures:none]"
     >
       <header className="page-x flex flex-col gap-4 pt-10 pb-6">

@@ -18,6 +18,7 @@ import { ApiRequestError, api } from "@/lib/api";
 import { authErrorKey } from "@/lib/api-errors";
 import { authClient } from "@/lib/auth-client";
 import { relativeTime } from "@/lib/format";
+import { ThisDevice } from "./ThisDevice";
 
 /**
  * Sign-ins from one browser ("Chrome · Windows"): repeated sign-ins with the same User-Agent become one row (SET-06),
@@ -108,6 +109,7 @@ export function DevicesSettings() {
 
   return (
     <div className="space-y-6">
+      <ThisDevice />
       <QueryState
         query={q}
         loading={

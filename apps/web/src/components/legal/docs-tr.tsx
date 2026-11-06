@@ -176,7 +176,7 @@ export const DOCS_TR: Record<LegalDoc, () => ReactNode> = {
           </>,
           "Lumovio sunucusunda akış hazırlama (açıksa): Alpine Linux imajında x264 (GPL-2.0 veya sonrası) ile FFmpeg",
           "Radix UI, Lucide (MIT / ISC)",
-          "Manrope yazı tipi (SIL OFL 1.1)",
+          "Onest yazı tipi (SIL OFL 1.1)",
         ]}
       />
       <P>Lumovio web istemcisi, Apache License 2.0 altında açık kaynaktır.</P>

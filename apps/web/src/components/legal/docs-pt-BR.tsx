@@ -175,7 +175,7 @@ export const DOCS_PT_BR: Record<LegalDoc, () => ReactNode> = {
           </>,
           "Preparação de streams no servidor do Lumovio (quando ativada): FFmpeg com x264 (GPL-2.0 ou posterior) em uma imagem Alpine Linux",
           "Radix UI, Lucide (MIT / ISC)",
-          "Fonte Manrope (SIL OFL 1.1)",
+          "Fonte Onest (SIL OFL 1.1)",
         ]}
       />
       <P>O cliente web do Lumovio é de código aberto sob a Licença Apache 2.0.</P>

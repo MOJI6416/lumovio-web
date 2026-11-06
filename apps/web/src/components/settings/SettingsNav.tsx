@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Bell, ChevronRight, Database, KeyRound, type LucideIcon, MonitorSmartphone, RefreshCw, Server, Shield, Sparkles, UserRound } from "lucide-react";
+import { Bell, ChevronRight, Database, KeyRound, LifeBuoy, type LucideIcon, MonitorSmartphone, RefreshCw, Server, Shield, Sparkles, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
@@ -30,6 +30,8 @@ export function useSettingsSections(): SettingsSection[] {
     { href: "/settings/services", label: t("services.title"), icon: RefreshCw },
     { href: "/settings/notifications", label: t("settings.notifications"), icon: Bell },
     { href: "/settings/privacy", label: t("settings.privacy"), icon: Database },
+    // Support left the account menu (redesign-2026-11.md 5): the form and «Мои обращения» open as their own page.
+    { href: "/support", label: t("support.title"), icon: LifeBuoy },
   ];
 }
 

@@ -1954,7 +1954,7 @@
     "reauthTitle": "Die {service}-Anmeldung ist abgelaufen",
     "connectHint": "Ein {service}-Konto gehört zu einem Lumovio-Profil.",
     "connectTo": "Mit einem Profil verbinden",
-    "title": "Trakt & Simkl",
+    "title": "Synchronisierung",
     "loadError": "Trakt & Simkl konnten nicht geladen werden",
     "intro": "Verbinde ein Trakt- oder Simkl-Konto mit einem Profil. Dessen Verlauf, Bewertungen und Merkliste kommen in Lumovio an; was du hier schaust, geht nur dorthin zurück, wo du das Schreiben aktivierst.",
     "trakt": "Verlauf, Bewertungen und Merkliste sowie Scrobbling aus dem Lumovio-Player.",

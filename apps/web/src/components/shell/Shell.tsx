@@ -12,7 +12,7 @@ import { ShellHeader } from "./ShellHeader";
  */
 export function Shell({ children, overlay, top }: { children: ReactNode; overlay?: boolean; top?: ReactNode }) {
   return (
-    <div className="max-md:pb-[calc(4rem+env(safe-area-inset-bottom))]">
+    <div className="max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
       {/* Above the header (announcements): a page's art slides under the header, never over this. */}
       {top}
       <ShellHeader overlay={overlay} />

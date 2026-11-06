@@ -39,7 +39,7 @@ const LAYOUTS: Record<ButtonLayout, string> = {
 };
 
 const BASE =
-  "relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-sm font-semibold transition-[background-color,color,opacity,scale] duration-fast ease-fast active:not-disabled:scale-98 disabled:opacity-40 [&_svg]:shrink-0";
+  "relative inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-[background-color,color,opacity,scale] duration-fast ease-fast active:not-disabled:scale-98 disabled:opacity-40 [&_svg]:shrink-0";
 
 /**
  * Classes of a button, for links that look like one (`<Link className={buttonClass("secondary")}>`). `extra` is for

@@ -1954,7 +1954,7 @@
     "reauthTitle": "The {service} sign-in has expired",
     "connectHint": "A {service} account goes with one Lumovio profile.",
     "connectTo": "Connect to a profile",
-    "title": "Trakt & Simkl",
+    "title": "Sync",
     "loadError": "Couldn't load Trakt & Simkl",
     "intro": "Link a Trakt or Simkl account to one profile. Its history, ratings and watchlist come into Lumovio; what you watch here goes back only where you turn writing on.",
     "trakt": "History, ratings and watchlist, and scrobbling from Lumovio's player.",

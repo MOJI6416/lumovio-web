@@ -1954,7 +1954,7 @@
     "reauthTitle": "L’accesso a {service} è scaduto",
     "connectHint": "Un account {service} si abbina a un solo profilo Lumovio.",
     "connectTo": "Collega a un profilo",
-    "title": "Trakt e Simkl",
+    "title": "Sincronizzazione",
     "loadError": "Impossibile caricare Trakt e Simkl",
     "intro": "Collega un account Trakt o Simkl a un profilo. Cronologia, voti e Da guardare arrivano in Lumovio; ciò che guardi qui torna indietro solo dove attivi la scrittura.",
     "trakt": "Cronologia, voti e Da guardare, più lo scrobbling dal player di Lumovio.",

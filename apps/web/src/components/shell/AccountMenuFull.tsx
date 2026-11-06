@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, DoorOpen, Globe, LifeBuoy, LogOut, Settings, Shield, Tv, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, DoorOpen, Globe, LogOut, Settings, Shield, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DropdownMenu as DM } from "radix-ui";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
@@ -12,7 +12,7 @@ import { Menu, MenuCheckboxItem, MenuItem, MenuLabel, MenuSeparator } from "@/co
 import { usePortalContainer } from "@/components/ui/portal";
 import { toast } from "@/components/ui/Toast";
 import { usePathname } from "@/i18n/navigation";
-import { setTvMode, type ThemePref } from "@/lib/prefs";
+import type { ThemePref } from "@/lib/prefs";
 import { useSession } from "../providers/Providers";
 import { LanguageField, THEMES, ThemeSwitch, themeKey, useInterfaceLanguage, useThemePref } from "./Preferences";
 
@@ -162,18 +162,18 @@ export function PrefsMenu({ initialOpen = false, focusTrigger = false }: { initi
 }
 
 /**
- * The account menu (design-system 7.19, audit SH-08): the current profile on top, "Switch profile" (the profile
- * screen, not every profile listed here), the profile's own pages, theme, language, TV mode, settings and sign out.
- * The sections of settings are not repeated here. On a phone it is a sheet.
+ * The account menu (redesign-2026-11.md 5, audit SH-08): the current profile on top, "Switch profile" (the profile
+ * screen, not every profile listed here), settings and sign out — nothing else. Theme, site language and TV mode are
+ * this device's settings (Settings → Devices), support is in the settings' navigation, calendar and stats are in the
+ * library. On a phone it is a sheet.
  */
 /** The full menu; ./AccountMenu draws a light trigger until this module arrives, then hands over (open, if pressed). */
 export function AccountMenu({ initialOpen = false, focusTrigger = false }: { initialOpen?: boolean; focusTrigger?: boolean }) {
   const t = useTranslations("nav");
   const ts = useTranslations("shell");
   const tc = useTranslations("common");
-  const tsu = useTranslations("support");
   const te = useTranslations("errors");
-  const { me, tv, locale } = useSession();
+  const { me, locale } = useSession();
   const phone = usePhoneLayout();
   const pathname = usePathname();
   const [open, setOpen] = useState(initialOpen);
@@ -261,26 +261,9 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
         </MenuItem>
       )}
       <MenuSeparator />
-      <MenuItem icon={CalendarDays} href="/calendar">
-        {t("calendar")}
-      </MenuItem>
-      <MenuItem icon={BarChart3} href="/stats">
-        {t("stats")}
-      </MenuItem>
-      <MenuSeparator />
-      <PrefsItems phone={phone} />
-      <MenuCheckboxItem icon={Tv} checked={tv} onCheckedChange={setTvMode}>
-        {t("tvMode")}
-      </MenuCheckboxItem>
       <MenuItem icon={Settings} href="/settings">
         {t("settings")}
       </MenuItem>
-      {/* Support (admin handoff «Поддержка»): the form and «Мои обращения»; not from a kids profile. */}
-      {!kids && (
-        <MenuItem icon={LifeBuoy} href="/support">
-          {tsu("title")}
-        </MenuItem>
-      )}
       {me.user.role === "admin" && !kids && (
         // The admin is another app on this origin (apps/admin at /admin): a full page load, not the site's router.
         <MenuItem icon={Shield} onSelect={() => window.location.assign("/admin")}>

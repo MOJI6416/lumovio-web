@@ -96,7 +96,7 @@ export function ConnectionHelp({
                 <li>
                   {t.rich("httpsTailscale", {
                     command: `tailscale serve --bg ${port}`,
-                    // A command to type: Manrope without ligatures ("--" stays two hyphens, 4.1), no monospace.
+                    // A command to type: the UI font without ligatures ("--" stays two hyphens, 4.1), no monospace.
                     code: (chunks) => <code className="whitespace-nowrap font-sans text-text-1 [font-variant-ligatures:none]">{chunks}</code>,
                   })}
                 </li>

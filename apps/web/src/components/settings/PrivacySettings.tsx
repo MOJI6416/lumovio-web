@@ -236,7 +236,7 @@ function DangerZone() {
   };
   return (
     <SettingsSection title={t("dangerZone")}>
-      <SettingsRow label={t("deleteAccount")} description={t("deleteHint")}>
+      <SettingsRow label={t("deleteAccount")} description={t("deleteHint")} risk>
         <Button variant="danger-tertiary" icon={Trash2} onClick={() => void remove()}>
           {t("deleteAccount")}
         </Button>

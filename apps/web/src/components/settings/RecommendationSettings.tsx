@@ -99,7 +99,7 @@ export function RecommendationSettings() {
         </>
       )}
       <SettingsSection title={t("resetTitle")}>
-        <SettingsRow label={t("reset")} description={t("resetText")}>
+        <SettingsRow label={t("reset")} description={t("resetText")} risk>
           <Button variant="danger-tertiary" onClick={() => void reset()}>
             {t("reset")}
           </Button>

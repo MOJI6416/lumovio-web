@@ -1954,7 +1954,7 @@
     "reauthTitle": "{service} oturumunun süresi doldu",
     "connectHint": "Bir {service} hesabı tek bir Lumovio profiline bağlanır.",
     "connectTo": "Bir profile bağla",
-    "title": "Trakt ve Simkl",
+    "title": "Senkronizasyon",
     "loadError": "Trakt ve Simkl yüklenemedi",
     "intro": "Bir Trakt veya Simkl hesabını tek bir profile bağlayın. Geçmişi, puanları ve izleme listesi Lumovio’ya gelir; burada izledikleriniz yalnızca yazmayı açtığınız yere geri gider.",
     "trakt": "Geçmiş, puanlar ve izleme listesi, ayrıca Lumovio oynatıcısından scrobble.",

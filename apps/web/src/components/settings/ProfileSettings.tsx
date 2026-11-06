@@ -20,6 +20,7 @@ import { SUBTITLE_DEFAULTS } from "@/lib/media/subs/view";
 import { useSettingsSave } from "@/lib/use-action";
 import { AUTO, capital, useLocaleOptions } from "./locale-options";
 import { OrderedChoice } from "./OrderedChoice";
+import { ThisDevice } from "./ThisDevice";
 
 const MEDIA_LANGS = ["en", "uk", "ru", "es", "de", "fr", "pt", "it", "pl", "tr", "ja", "ko", "zh", "ar", "hi", "id"];
 
@@ -90,6 +91,7 @@ export function ProfileSettings() {
       {!p.isKids && <StudiosSection {...section} />}
       {!p.isKids && <QualitySection {...section} />}
       {!p.isKids && <ProfilesSection />}
+      {p.isKids && <ThisDevice />}
     </div>
   );
 }

@@ -1954,7 +1954,7 @@
     "reauthTitle": "O acesso ao {service} expirou",
     "connectHint": "Uma conta do {service} fica ligada a um perfil do Lumovio.",
     "connectTo": "Conectar a um perfil",
-    "title": "Trakt e Simkl",
+    "title": "Sincronização",
     "loadError": "Não foi possível carregar Trakt e Simkl",
     "intro": "Vincule uma conta do Trakt ou do Simkl a um perfil. O histórico, as avaliações e o Quero assistir de lá chegam ao Lumovio; o que você assiste aqui só volta para onde você ativar o envio.",
     "trakt": "Histórico, avaliações e Quero assistir, e scrobbling a partir do player do Lumovio.",

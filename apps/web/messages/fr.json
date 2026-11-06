@@ -1954,7 +1954,7 @@
     "reauthTitle": "La connexion à {service} a expiré",
     "connectHint": "Un compte {service} est associé à un seul profil Lumovio.",
     "connectTo": "Connecter à un profil",
-    "title": "Trakt et Simkl",
+    "title": "Synchronisation",
     "loadError": "Impossible de charger Trakt et Simkl",
     "intro": "Liez un compte Trakt ou Simkl à un profil. Son historique, ses notes et sa liste À regarder arrivent dans Lumovio ; ce que vous regardez ici n’y repart que là où vous activez l’écriture.",
     "trakt": "Historique, notes et liste À regarder, et scrobbling depuis le lecteur de Lumovio.",

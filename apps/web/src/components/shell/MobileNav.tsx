@@ -10,8 +10,9 @@ import { useSignInLinks } from "./GuestGate";
 /**
  * The bottom tab bar of a phone (< md, design-system 7.19 and 1.3): Home · Catalog · Search · Library, and "Sign in"
  * for a guest in place of the library. The catalog's sections (Movies / Series / Anime) are a switch at the top of the
- * catalog. An opaque --bg, so the labels read over the stage of a hero in either theme (≥ 4.5:1, audit M1); the
- * iOS home indicator's safe area is below it, and the shell leaves room for both (Shell).
+ * catalog. A floating pill since the 2026-11 redesign (redesign-2026-11.md 4): 16 px in from the sides, above the iOS
+ * home indicator; a near-opaque surface with blur, so the labels read over the stage of a hero in either theme (≥ 4.5:1,
+ * audit M1). The shell leaves room for it (Shell).
  */
 export function MobileNav() {
   const t = useTranslations("nav");
@@ -37,17 +38,17 @@ export function MobileNav() {
   return (
     <nav
       aria-label={t("mainMenu")}
-      className="fixed inset-x-0 bottom-0 z-header border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-4 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-header rounded-full border border-line bg-surface-2/90 shadow-float backdrop-blur-xl in-data-[theme=light]:bg-surface-1/90 md:hidden"
     >
-      <ul className="grid h-16 grid-cols-4">
+      <ul className="grid h-16 grid-cols-4 gap-1 p-1.5">
         {items.map((i) => (
           <li key={i.label}>
             <Link
               href={i.href}
               aria-current={i.on ? "page" : undefined}
               className={cn(
-                "flex h-full flex-col items-center justify-center gap-1 text-caption focus-visible:-outline-offset-4",
-                i.on ? "text-text-1" : "text-text-3",
+                "flex h-full flex-col items-center justify-center gap-0.5 rounded-full text-caption focus-visible:-outline-offset-4",
+                i.on ? "bg-text-1/10 font-semibold text-text-1" : "text-text-3",
               )}
             >
               {/* Active: the lime icon in the dark theme, a filled one in the text colour in the light theme (7.19). */}

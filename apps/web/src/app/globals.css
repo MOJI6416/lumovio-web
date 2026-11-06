@@ -22,15 +22,15 @@
 .stage {
   color-scheme: dark;
   /* 3.2 Neutral roles */
-  --bg: #0b0c10;
-  --surface-1: #14161b;
-  --surface-2: #1c1f26;
-  --surface-3: #262a33;
+  --bg: #0a0a0b;
+  --surface-1: #161618;
+  --surface-2: #1f1f22;
+  --surface-3: #2a2a2e;
   --line: rgb(255 255 255 / 0.08);
   --line-2: rgb(255 255 255 / 0.16);
-  --text-1: #f5f6f8;
-  --text-2: #b4b9c4;
-  --text-3: #868c98;
+  --text-1: #f5f5f7;
+  --text-2: #a1a1a6;
+  --text-3: #8a8a8f;
   --scrim: rgb(0 0 0 / 0.72);
   /* 3.3 Accent — lime */
   --brand-mark: #dcfa63;
@@ -39,15 +39,15 @@
   --accent-press: #c6e24f;
   --accent-soft: rgb(220 250 99 / 0.12);
   --selected-bg: #dcfa63;
-  --selected-fg: #0b0c10;
+  --selected-fg: #0a0a0b;
   --progress: #dcfa63;
   --focus: #dcfa63;
   --tab-indicator: #dcfa63;
   --switch-on: #dcfa63;
-  --switch-knob-on: #0b0c10;
+  --switch-knob-on: #0a0a0b;
   --link: #dcfa63;
   --link-decoration: none; /* 7.3: action links are underlined only where --link is black (light, not on a stage) */
-  --on-accent: #0b0c10;
+  --on-accent: #0a0a0b;
   /* 3.4 Statuses */
   --success: #34d399;
   --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
@@ -67,32 +67,32 @@
 [data-theme="light"] {
   color-scheme: light;
   /* 3.2 Neutral roles */
-  --bg: #f6f7f9;
+  --bg: #f5f5f7;
   --surface-1: #ffffff;
-  --surface-2: #eef0f3;
-  --surface-3: #e1e4ea;
-  --line: rgb(10 12 16 / 0.09);
-  --line-2: rgb(10 12 16 / 0.18);
-  --text-1: #0b0c10;
-  --text-2: #4a505c;
-  --text-3: #656b77;
-  --scrim: rgb(10 12 16 / 0.45);
+  --surface-2: #ececef;
+  --surface-3: #dedee3;
+  --line: rgb(10 10 11 / 0.09);
+  --line-2: rgb(10 10 11 / 0.18);
+  --text-1: #0a0a0b;
+  --text-2: #48484d;
+  --text-3: #67676c;
+  --scrim: rgb(10 10 11 / 0.45);
   /* 3.3 Accent — on light, lime is a highlight on black, never text on white */
-  --brand-mark: #0b0c10;
+  --brand-mark: #0a0a0b;
   --accent: #dcfa63;
   --accent-hover: #e7ff85;
   --accent-press: #c6e24f;
   --accent-soft: rgb(220 250 99 / 0.35);
-  --selected-bg: #0b0c10;
+  --selected-bg: #0a0a0b;
   --selected-fg: #dcfa63;
   --progress: #6f8f00;
   --focus: #5c7800;
-  --tab-indicator: #0b0c10;
-  --switch-on: #0b0c10;
+  --tab-indicator: #0a0a0b;
+  --switch-on: #0a0a0b;
   --switch-knob-on: #dcfa63;
-  --link: #0b0c10;
+  --link: #0a0a0b;
   --link-decoration: underline;
-  --on-accent: #0b0c10;
+  --on-accent: #0a0a0b;
   /* 3.4 Statuses */
   --success: #0f9d6a;
   --success-soft: color-mix(in srgb, var(--success) 10%, transparent);
@@ -126,8 +126,8 @@
 /* Theme-independent tokens. Sizes are rem, so the TV root size scales them (10.3). */
 :root {
   /* 3.5 Stage: always dark; text over art only on a scrim */
-  --bg-stage: #0b0c10;
-  --scrim-start: linear-gradient(90deg, rgb(11 12 16 / 0.92) 0%, rgb(11 12 16 / 0.55) 45%, transparent 75%);
+  --bg-stage: #0a0a0b;
+  --scrim-start: linear-gradient(90deg, rgb(10 10 11 / 0.92) 0%, rgb(10 10 11 / 0.55) 45%, transparent 75%);
   --scrim-bottom: linear-gradient(0deg, var(--bg-stage) 0%, transparent 40%);
   /* 4.2 Type scale: phone (< 640) here, larger screens below */
   --type-display: 2.25rem;
@@ -299,11 +299,12 @@
 
 /* Theme-independent tokens that are Tailwind keys themselves (always emitted as variables). */
 @theme static {
-  /* 6.1 Radius roles: rounded-xs (labels), rounded-sm (buttons, fields, posters), rounded-md (panels, menus, toasts),
-   * rounded-lg (dialogs, sheets), rounded-full. These replace Tailwind's own md (6 px) and lg (8 px) since Ф1. */
+  /* 6.1 Radius roles: rounded-xs (labels), rounded-sm (fields, posters, menu rows), rounded-md (panels, menus, toasts,
+   * settings groups), rounded-lg (dialogs, sheets), rounded-full (buttons since the 2026-11 redesign). These replace
+   * Tailwind's own md (6 px) and lg (8 px) since Ф1; sm 12 and md 16 since redesign-2026-11.md 3. */
   --radius-xs: 0.25rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
   --radius-lg: 1.25rem;
   /* 6.1 A profile avatar's squircle (rounded-avatar): part of its identity, not a size step. */
   --radius-avatar: 28%;

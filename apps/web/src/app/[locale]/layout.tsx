@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Onest } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
@@ -19,7 +19,8 @@ import { TV_SHELL_HEADER } from "@/lib/tv";
 
 // Every interface language is Latin or Cyrillic (design-system 4.1): latin-ext carries the letters of pl, tr, de, fr,
 // es, it and pt-BR (ł ş ğ ı İ ä ß œ ç ã…). CJK names in the data fall back to the system fonts of --font-sans.
-const ui = Manrope({
+// Onest since the 2026-11 redesign (docs/design/redesign-2026-11.md).
+const ui = Onest({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-ui",
   display: "swap",
@@ -56,8 +57,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export async function generateViewport(): Promise<Viewport> {
   const [c, h] = await Promise.all([cookies(), headers()]);
   const pref = c.get("lumovio_theme")?.value;
-  const dark = "#0b0c10"; // ui-lint-ignore hex-color: theme-color meta = --bg (dark)
-  const light = "#f6f7f9"; // ui-lint-ignore hex-color: theme-color meta = --bg (light)
+  const dark = "#0a0a0b"; // ui-lint-ignore hex-color: theme-color meta = --bg (dark)
+  const light = "#f5f5f7"; // ui-lint-ignore hex-color: theme-color meta = --bg (light)
   return {
     themeColor: /Discordbot/i.test(h.get("user-agent") ?? "")
       ? BRAND_LIME

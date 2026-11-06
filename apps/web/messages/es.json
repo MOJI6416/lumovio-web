@@ -1954,7 +1954,7 @@
     "reauthTitle": "La sesión de {service} ha caducado",
     "connectHint": "Una cuenta de {service} va con un perfil de Lumovio.",
     "connectTo": "Conectar a un perfil",
-    "title": "Trakt y Simkl",
+    "title": "Sincronización",
     "loadError": "No se pudieron cargar Trakt y Simkl",
     "intro": "Vincula una cuenta de Trakt o Simkl a un perfil. Su historial, valoraciones y Pendientes llegan a Lumovio; lo que ves aquí vuelve solo adonde actives la escritura.",
     "trakt": "Historial, valoraciones y Pendientes, y scrobbling desde el reproductor de Lumovio.",

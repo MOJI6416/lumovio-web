@@ -1954,7 +1954,7 @@
     "reauthTitle": "Logowanie w serwisie {service} wygasło",
     "connectHint": "Konto {service} jest powiązane z jednym profilem Lumovio.",
     "connectTo": "Połącz z profilem",
-    "title": "Trakt i Simkl",
+    "title": "Synchronizacja",
     "loadError": "Nie udało się wczytać Trakt i Simkl",
     "intro": "Połącz konto Trakt lub Simkl z jednym profilem. Jego historia, oceny i lista do obejrzenia trafią do Lumovio; to, co oglądasz tutaj, wraca tylko tam, gdzie włączysz zapis.",
     "trakt": "Historia, oceny i lista do obejrzenia oraz scrobbling z odtwarzacza Lumovio.",
