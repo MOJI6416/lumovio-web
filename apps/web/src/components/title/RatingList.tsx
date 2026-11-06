@@ -36,7 +36,7 @@ export function RatingList({ items, score, kind, scoreLink }: { items: RatingIte
           <div className="min-w-0 flex-1">
             <p className="flex items-baseline justify-between gap-3">
               <span className="text-title text-text-1">{t("name")}</span>
-              <span className="text-title tabular-nums text-text-1">{score.score}</span>
+              <span className="text-h3 tabular-nums text-text-1">{score.score}</span>
             </p>
             <p className="mt-0.5 text-body-s text-text-2">{[label(score.score, kind, score.confidence), ...notes(score)].join(" ")}</p>
             {scoreLink}
@@ -52,9 +52,12 @@ export function RatingList({ items, score, kind, scoreLink }: { items: RatingIte
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline justify-between gap-3">
                 <span className="text-title text-text-1">{sourceName(r.source)}</span>
-                <span className="text-title tabular-nums text-text-1">{value(r)}</span>
+                <span className="text-h3 tabular-nums text-text-1">{value(r)}</span>
               </span>
-              {meta(r).length > 0 && <span className="mt-0.5 block text-body-s text-text-2">{meta(r).join(" · ")}</span>}
+              {/* The votes only (2026-11-06): when and through whom is the list's foot, not every row's. */}
+              {meta({ ...r, asOf: null, fetchedAt: null, via: "tmdb" }).length > 0 && (
+                <span className="mt-0.5 block text-body-s text-text-2">{meta({ ...r, asOf: null, fetchedAt: null, via: "tmdb" }).join(" · ")}</span>
+              )}
             </span>
           </>
         );

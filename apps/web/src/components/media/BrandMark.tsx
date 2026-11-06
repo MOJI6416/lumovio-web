@@ -47,6 +47,8 @@ const FILES: Partial<Record<Brand, { src: string; cls: string; wordmark: boolean
   kinopoisk: { src: "/brands/kinopoisk.svg", cls: "h-[0.8em]", wordmark: true },
   myanimelist: { src: "/brands/myanimelist.svg", cls: "h-[1.15em] rounded-xs", wordmark: false },
   wikidata: { src: "/brands/wikidata.svg", cls: "h-[0.9em]", wordmark: false },
+  // Trakt had no mark and its scores stood without a logo (owner, 2026-11-06).
+  trakt: { src: "/brands/trakt.svg", cls: "h-[1.1em]", wordmark: false },
 };
 
 /** Logo sized to the surrounding text. `rotten` switches Rotten Tomatoes to its splat icon. */

@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
 import { BrandMark, type Brand, isWordmark } from "@/components/media/BrandMark";
 import { ScoreMark } from "@/components/media/ScoreBadge";
-import { InfoTip } from "@/components/sources/InfoTip";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Link } from "@/components/ui/Link";
@@ -26,7 +25,7 @@ const TILE_CELL = "row-span-3 grid grid-rows-subgrid gap-y-0";
  * lines are rows of the grid around it (subgrid, TTL-27): a name that wraps in one tile ("Rotten / Tomatoes") moves the
  * numbers of the whole row down together, so they stay on one line.
  */
-function Tile({ href, logo, name, value, meta }: { href?: string | null; logo: ReactNode; name: string | null; value: ReactNode; meta?: string | null }) {
+function Tile({ href, logo, name, value, meta, large }: { href?: string | null; logo: ReactNode; name: string | null; value: ReactNode; meta?: ReactNode; large?: boolean }) {
   const body = (
     <>
       {/* The name wraps rather than being cut (8.11). */}
@@ -34,11 +33,12 @@ function Tile({ href, logo, name, value, meta }: { href?: string | null; logo: R
         <span className="flex h-5 shrink-0 items-center">{logo}</span>
         {name && <span className="min-w-0 text-body-s font-semibold text-text-2">{name}</span>}
       </span>
-      <span className="mt-2 block text-h3 tabular-nums text-text-1">{value}</span>
+      <span className={cn("mt-2 block tabular-nums text-text-1", large ? "text-h1" : "text-h3")}>{value}</span>
       {meta && <span className="mt-0.5 block text-body-s text-text-2">{meta}</span>}
     </>
   );
-  const box = "row-span-3 grid grid-rows-subgrid gap-y-0 rounded-md border border-line bg-surface-1 p-4";
+  // A panel of the redesign: --surface-1, radius 16, no border (redesign-2026-11.md; the settings' groups).
+  const box = "row-span-3 grid grid-rows-subgrid gap-y-0 rounded-md bg-surface-1 p-4";
   return href ? (
     <a href={href} target="_blank" rel="noreferrer noopener" className={cn(box, "transition-colors duration-fast ease-fast hover:bg-surface-2")}>
       {body}
@@ -92,17 +92,35 @@ export function RatingsSection({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: 
   if (items.length === 0 && !score) return null;
   return (
     <section aria-labelledby="ratings-h" className="page-x">
-      <div className="mb-3 flex items-center gap-1 md:mb-4">
-        <h2 id="ratings-h" className="text-h2 text-text-1">
-          {t("ratings")}
-        </h2>
-        <InfoTip title={t("ratings")} note={tr("sources", { sources: creditLine(q.data) })} />
-      </div>
+      <h2 id="ratings-h" className="mb-3 text-h2 text-text-1 md:mb-4">
+        {t("ratings")}
+      </h2>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] md:gap-4">
         {score && (
-          <li className={TILE_CELL}>
-            {/* What the number means is in the fold below; the tile says only what qualifies it ("Few ratings"). */}
-            <Tile logo={<ScoreMark className="size-5" />} name={ts("name")} value={score.score} meta={notes(score).join(" ") || null} />
+          // The Lumovio Score first and twice as wide, its number large, "How it's calculated" in it (2026-11-06).
+          <li className={cn(TILE_CELL, "col-span-2")}>
+            <Tile
+              large
+              logo={<ScoreMark className="size-5" />}
+              name={ts("name")}
+              value={score.score}
+              meta={
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {notes(score).length > 0 && <span>{notes(score).join(" ")}</span>}
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    icon={open ? ChevronUp : ChevronDown}
+                    aria-expanded={open}
+                    aria-controls="score-how"
+                    className="-ms-3"
+                    onClick={() => setOpen((o) => !o)}
+                  >
+                    {t("scoreHow")}
+                  </Button>
+                </span>
+              }
+            />
           </li>
         )}
         {items.map((r) => (
@@ -119,20 +137,10 @@ export function RatingsSection({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: 
         ))}
       </ul>
       {score && (
-        <div id={SCORE_ANCHOR} className="mt-3 scroll-mt-32 md:mt-4">
-          <Button
-            variant="tertiary"
-            size="sm"
-            icon={open ? ChevronUp : ChevronDown}
-            aria-expanded={open}
-            aria-controls="score-how"
-            className="-ms-3"
-            onClick={() => setOpen((o) => !o)}
-          >
-            {t("scoreHow")}
-          </Button>
+        <div id={SCORE_ANCHOR} className="scroll-mt-32">
           {open && (
-            <div id="score-how" className="mt-3 max-w-180 rounded-md border border-line bg-surface-1 p-4 md:p-6">
+            // The whole width of the grid above, as one more panel of it (it stood narrow at the start, 2026-11-06).
+            <div id="score-how" className="mt-3 rounded-md bg-surface-1 p-4 md:mt-4 md:p-6">
               <p className="max-w-measure text-body text-text-2">{t("scoreWhat", { score: score.score, kind })}</p>
               <p className="mt-2 max-w-measure text-body text-text-2">{t("scoreMade")}</p>
               <h3 className="mt-5 text-title text-text-1">{ts("counted")}</h3>
@@ -176,6 +184,8 @@ export function RatingsSection({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: 
           )}
         </div>
       )}
+      {/* Who delivered the scores, in a quiet line (it was in the "i", 2026-11-06). */}
+      <p className="mt-4 text-caption text-text-3">{tr("sources", { sources: creditLine(q.data) })}</p>
     </section>
   );
 }
