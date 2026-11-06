@@ -201,7 +201,8 @@ export function Row({
   const side = (more: boolean) => (more ? "transparent" : "black");
   const mask = `linear-gradient(to right, ${side(!edges.start)} 0, black var(--gutter), black calc(100% - var(--gutter)), ${side(!edges.end)} 100%)`;
   // Arrows over the artwork (pb-16 lifts them from the card's centre to the artwork's), with a mouse, on hover.
-  const arrow = "absolute inset-y-0 z-10 flex items-center pb-16 opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden";
+  // A poster shelf has no captions under its cards since the 2026-11 redesign (PosterCard): no lift there.
+  const arrow = `absolute inset-y-0 z-10 flex items-center ${kind === "poster" ? "" : "pb-16"} opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden`;
 
   return (
     // `.shelf`: drawn only when it comes near the screen, holding the height of its kind of cards until then (globals.css);

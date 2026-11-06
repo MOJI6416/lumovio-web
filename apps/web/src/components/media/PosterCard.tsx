@@ -17,7 +17,7 @@ import { CardMore, type MoreVisibility, useLongPress } from "./CardMore";
 import type { CardMenuExtra } from "./CardMenu";
 import { CardRating, ratingText } from "./CardRating";
 import { POSTER_SIZES } from "./card-sizes";
-import { useDismissed } from "./shelf-context";
+import { useDismissed, useShelf } from "./shelf-context";
 
 /** The card's one personal mark (7.12): "Watched" outranks "Watchlist". */
 export function useCardMark(title: Pick<TitleSummary, "id" | "kind">, enabled = true) {
@@ -86,10 +86,26 @@ export function PosterCard({
   const shelfFact = useCardFact(title);
   const fact = factProp ?? shelfFact;
   const press = useLongPress();
+  // In a shelf a poster speaks for itself, as on Apple TV (redesign-2026-11.md 5): no caption under it; with a mouse the
+  // name, year and score come up over the poster's foot on hover and focus. A card that says why it is in the shelf
+  // (a fact, a subtitle), one without a poster, a grid and the site's TV mode keep the caption. The link's name is whole
+  // either way.
+  const inShelf = Boolean(useShelf());
+  const bare = inShelf && !subtitle && !fact && Boolean(title.posterPath);
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
   const meta = subtitle ? [subtitle] : fact ? [fact] : [title.year, rating];
+  const caption = (
+    <CardMeta
+      title={title.title}
+      titleLang={latinLang(title.title, locale)}
+      meta={meta}
+      wide={subtitle || fact ? [] : [kindLabel]}
+      wrap={Boolean(subtitle || fact)}
+      className={bare ? "hidden in-data-[tv=1]:block" : undefined}
+    />
+  );
 
   return (
     <div className={cn("group/card relative w-full min-w-0 select-none", className)} {...press.handlers}>
@@ -124,7 +140,20 @@ export function PosterCard({
           progress={fraction}
         />
         {/* A name the catalog has only in Latin letters on a ru/uk page is marked as such (8.11, L10N-11). */}
-        <CardMeta title={title.title} titleLang={latinLang(title.title, locale)} meta={meta} wide={subtitle || fact ? [] : [kindLabel]} wrap={Boolean(subtitle || fact)} />
+        {caption}
+        {bare && (
+          <div
+            aria-hidden
+            className={cn(
+              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm opacity-0 transition-opacity duration-base ease-base group-hover/card:opacity-100 group-focus-within/card:opacity-100 pointer-coarse:hidden in-data-[tv=1]:hidden",
+              artBox("poster"),
+            )}
+          >
+            <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-3 pt-12 pb-3 pe-11">
+              <CardMeta title={title.title} titleLang={latinLang(title.title, locale)} meta={[title.year, rating]} className="mt-0" />
+            </div>
+          </div>
+        )}
       </Link>
       {(more || children) && (
         // The artwork's box over it, for what sits on the artwork but is not part of the link.
