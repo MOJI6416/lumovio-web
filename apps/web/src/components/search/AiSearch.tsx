@@ -4,16 +4,14 @@ import type { AiFilters, AiResultTitle, AiSearchResponse } from "@lumovio/contra
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CircleHelp, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
 import { TitleGrid } from "@/components/media/Row";
 import { GuestGatePanel } from "@/components/shell/GuestGate";
 import { Button } from "@/components/ui/Button";
 import { InputChip } from "@/components/ui/Chip";
-import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { Textarea } from "@/components/ui/Input";
 import { Link } from "@/components/ui/Link";
 import { Select } from "@/components/ui/Select";
 import { capitalize, formatRuntime, languageName } from "@/lib/format";
@@ -26,6 +24,9 @@ const RUNTIMES = [60, 90, 100, 120, 150, 180];
 /** "Any" in a Select (Radix keeps the empty value for "nothing chosen"). */
 const ANY = "any";
 const EXAMPLES = ["aiExample1", "aiExample2", "aiExample3"] as const;
+/** A description is at least this long, and the API takes this much. */
+export const AI_MIN = 3;
+export const AI_MAX = 300;
 
 type Saved = { text: string; data: AiSearchResponse };
 
@@ -43,80 +44,106 @@ async function readSaved(): Promise<Saved | null> {
 }
 
 /**
- * Describing in words (S05; SRCH-01…SRCH-03, SRCH-09, SRCH-10, CAT-08). The model turns the text into the catalog's
- * own conditions (miniseries, a finished story, length, years, genres…); they stand under the field as Selects and
- * InputChips — changing one re-queries the catalog only, no model call. "Like …" shapes the result. A text that
- * describes nothing is said so; a failure is an ErrorState in words instead of the previous results. Before the
- * first search, examples fill the page, so it doesn't collapse. A guest gets the sign-in panel with examples.
+ * Searching by description (S05; SRCH-01…SRCH-03, SRCH-09, SRCH-10): the state of the search page's second way to
+ * search, which shares its field. `run` asks the model once for a text; `apply` re-queries the catalog with edited
+ * conditions, no model call. `ran` is the text the shown results are for — the page offers "Find" again once the
+ * field says something else. `available` is false where the server has no model (the way isn't offered then).
+ * Arriving with a text (`?mode=ai&q=`) restores this tab's last search of that text, else searches it.
  */
-export function AiSearch({ signedIn, text, onTextChange }: { signedIn: boolean; text: string; onTextChange: (v: string) => void }) {
-  const t = useTranslations("search");
-  const tc = useTranslations("common");
-  const tg = useTranslations("shell.gate");
-  const tr = useTranslations();
-  const locale = useLocale();
+export function useAiSearch({ enabled, signedIn, arrival }: { enabled: boolean; signedIn: boolean; arrival: string }) {
   const [data, setData] = useState<AiSearchResponse | null>(null);
+  const [ran, setRan] = useState<string | null>(null);
   const status = useQuery({
     queryKey: ["ai-status"],
     queryFn: () => api<{ available: boolean }>("/api/ai/status"),
     staleTime: Infinity,
+    enabled,
   });
   const save = (next: Saved) => {
     setData(next.data);
+    setRan(next.text);
     try {
       sessionStorage.setItem(STORE, JSON.stringify(next));
     } catch {
       /* storage unavailable: the search simply isn't kept for the way back */
     }
   };
-  const run = useMutation({
+  const runM = useMutation({
     mutationFn: (query: string) => api<AiSearchResponse>("/api/ai/search", { method: "POST", json: { query } }),
     onSuccess: (d, query) => save({ text: query, data: d }),
   });
   // Edited conditions re-query the catalog only; the notes about the original wording stay.
-  const apply = useMutation({
+  const applyM = useMutation({
     mutationFn: (filters: AiFilters) => api<Omit<AiSearchResponse, "approximate" | "unsupported">>("/api/ai/results", { method: "POST", json: { filters } }),
-    onSuccess: (d) => data && save({ text, data: { ...data, ...d } }),
+    onSuccess: (d) => data && save({ text: ran ?? "", data: { ...data, ...d } }),
   });
+  const run = (text: string) => {
+    const v = text.trim().slice(0, AI_MAX);
+    if (v.length < AI_MIN || !signedIn) return;
+    applyM.reset();
+    runM.mutate(v);
+  };
+  const runRef = useRef(run);
+  runRef.current = run;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once, on arrival
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once the way is open, on arrival
   useEffect(() => {
+    if (!enabled || !signedIn) return;
     let live = true;
     void readSaved().then((saved) => {
-      if (!live || !saved) return;
-      // A search started before the saved one was read wins; the field keeps what the person typed.
-      if (!text) onTextChange(saved.text);
-      setData((cur) => cur ?? saved.data);
+      if (!live) return;
+      const want = arrival.trim();
+      if (saved && (!want || saved.text === want)) {
+        setData((cur) => cur ?? saved.data);
+        setRan((cur) => cur ?? saved.text);
+      } else if (want) runRef.current(want);
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [enabled, signedIn]);
 
-  if (status.data && !status.data.available) {
-    return <EmptyState icon={Sparkles} title={t("aiUnavailableTitle")} text={t("aiUnavailable")} />;
-  }
+  return {
+    available: status.data?.available !== false,
+    data,
+    ran,
+    run,
+    edit: (patch: Partial<AiFilters>) => {
+      if (!data) return;
+      runM.reset();
+      applyM.mutate({ ...data.filters, ...patch });
+    },
+    busy: runM.isPending || applyM.isPending,
+    error: runM.error ?? applyM.error,
+    retry: () => (runM.isError ? runM.variables && runM.mutate(runM.variables) : data && applyM.mutate(applyM.variables ?? data.filters)),
+  };
+}
+
+export type AiSearchState = ReturnType<typeof useAiSearch>;
+
+/**
+ * What searching by description shows under the field: a guest — the sign-in panel (SRCH-03, AUTH-02); before the
+ * first search — examples that search at once; while it works — the grid's placeholders; a failure in words by its code,
+ * never over the previous results (SRCH-02); a text that describes nothing — said so, with the examples; then the
+ * conditions the model read (Selects and InputChips: a change re-queries the catalog only) and the titles, each with
+ * why it is there when that says more than the description. The page keeps its height meanwhile (SRCH-10).
+ */
+export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signedIn: boolean; onExample: (text: string) => void }) {
+  const t = useTranslations("search");
+  const tc = useTranslations("common");
+  const tg = useTranslations("shell.gate");
+  const tr = useTranslations();
+  const locale = useLocale();
+
   if (!signedIn) {
-    // A guest sees what describing in words gives, with examples, and the one way in (SRCH-03, AUTH-02).
     return (
-      <div className="mt-6 max-w-3xl rounded-md border border-line bg-surface-1">
+      <div className="mt-8 max-w-3xl rounded-md border border-line bg-surface-1">
         <GuestGatePanel reason="ai" next="/search?mode=ai" />
       </div>
     );
   }
-
-  const submit = (value = text) => {
-    const v = value.trim();
-    if (v.length < 3) return;
-    apply.reset();
-    run.mutate(v);
-  };
+  const { data, busy, error } = ai;
   const f = data?.filters;
-  const edit = (patch: Partial<AiFilters>) => {
-    if (!f) return;
-    run.reset();
-    apply.mutate({ ...f, ...patch });
-  };
   const genre = (id: number) => {
     const name = data?.genres.find((g) => g.id === id)?.name;
     return name ? capitalize(name, locale) : `#${id}`;
@@ -130,70 +157,27 @@ export function AiSearch({ signedIn, text, onTextChange }: { signedIn: boolean; 
       : w.kind === "like"
         ? t("aiSimilar", { title: w.title })
         : t(w.role === "director" ? "aiWhyDirector" : w.role === "actor" ? "aiWhyActor" : "aiWhyPerson", { name: w.name });
-  const busy = run.isPending || apply.isPending;
-  const error = run.error ?? apply.error;
-  const understood = data?.understood !== false;
 
   const examples = (
-    <div className="mt-6 max-w-3xl">
-      <p className="text-title text-text-1">{tg("aiExamples")}</p>
+    <section className="mt-8" aria-labelledby="ai-examples">
+      <h2 id="ai-examples" className="text-title text-text-1">
+        {tg("aiExamples")}
+      </h2>
       <ul className="mt-3 flex flex-col items-start gap-2">
         {EXAMPLES.map((k) => (
           <li key={k} className="max-w-full">
-            {/* Fills the field with the example and searches it. */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="max-w-full"
-              onClick={() => {
-                onTextChange(tg(k));
-                submit(tg(k));
-              }}
-            >
+            {/* Puts the example in the field and searches it. */}
+            <Button variant="secondary" size="sm" icon={Sparkles} className="max-w-full" onClick={() => onExample(tg(k))}>
               <span className="truncate">{tg(k)}</span>
             </Button>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 
   return (
-    // The page keeps its height while there is nothing yet: the examples stand there (SRCH-10).
     <div className="min-h-[60svh]">
-      <form
-        className="max-w-3xl"
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-      >
-        <Textarea
-          value={text}
-          onChange={(e) => onTextChange(e.target.value)}
-          placeholder={t("aiPlaceholder")}
-          aria-label={t("aiToggle")}
-          aria-describedby="ai-hint"
-          rows={2}
-          maxLength={300}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-        />
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Said before the first search; on a phone, once there are results, it gives its lines to them (R3). */}
-          <p id="ai-hint" className={cn("text-body-s text-text-2", f && data && "max-sm:hidden")}>
-            {t("aiHint")}
-          </p>
-          <Button type="submit" icon={Sparkles} loading={run.isPending} disabled={text.trim().length < 3} className="shrink-0">
-            {t("aiSubmit")}
-          </Button>
-        </div>
-      </form>
-
       {busy ? (
         <div className="mt-8" aria-busy>
           <span className="sr-only" role="status">
@@ -208,21 +192,15 @@ export function AiSearch({ signedIn, text, onTextChange }: { signedIn: boolean; 
         </div>
       ) : error != null ? (
         // In words by the error's code (a limit, an outage), never over the previous results (SRCH-02).
-        <ErrorState
-          className="mt-4"
-          error={error}
-          title={t("aiFailed")}
-          onRetry={() => (run.isError ? submit() : f && apply.mutate(apply.variables ?? f))}
-          retrying={busy}
-        />
-      ) : data && !understood ? (
+        <ErrorState className="mt-8" error={error} title={t("aiFailed")} onRetry={ai.retry} retrying={busy} />
+      ) : data && data.understood === false ? (
         <>
           <EmptyState icon={CircleHelp} title={t("aiNotUnderstood")} text={t("aiNotUnderstoodText")} className="max-w-3xl" />
           {examples}
         </>
       ) : f && data ? (
-        <div className="mt-6" aria-live="polite">
-          <Conditions f={f} data={data} edit={edit} genre={genre} minutes={minutes} locale={locale} />
+        <div className="mt-8" aria-live="polite">
+          <Conditions f={f} data={data} edit={ai.edit} genre={genre} minutes={minutes} locale={locale} />
           <div className="mt-6 mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
             <p className="text-body-s tabular-nums text-text-2">{t("aiCount", { count: data.results.length })}</p>
             <Link variant="action" arrow href={catalogHref(f)}>

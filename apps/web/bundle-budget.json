@@ -112,9 +112,9 @@
       "jsChunks": 14
     },
     "/[locale]/search": {
-      "jsGzip": 211279,
-      "cssGzip": 20624,
-      "jsChunks": 16
+      "jsGzip": 221202,
+      "cssGzip": 24299,
+      "jsChunks": 18
     },
     "/[locale]/settings": {
       "jsGzip": 205770,

@@ -1,432 +1,431 @@
 "use client";
 
 import type { CatalogRow, CatalogSearch, TitleSummary } from "@lumovio/contracts";
-import { type InfiniteData, keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { History, Search, Sparkles } from "lucide-react";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { Search, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
-import { PersonCard } from "@/components/media/PersonCard";
-import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
+import { type FormEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { PosterCard } from "@/components/media/PosterCard";
 import { Row, TitleGrid } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/Chip";
+import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { InlineAlert } from "@/components/ui/InlineAlert";
-import { SearchInput } from "@/components/ui/Input";
 import { Progress } from "@/components/ui/Progress";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { api } from "@/lib/api";
-import { AiSearch } from "./AiSearch";
-import { departmentKey, layoutFix, otherLayout } from "./search-helpers";
+import { AI_MAX, AI_MIN, AiPanel, useAiSearch } from "./AiSearch";
+import { recentSearches } from "./recent-searches";
+import { BestMatchBlock, PeopleGrid, ResultGroups, ResultsSkeleton } from "./SearchResults";
+import { SearchField } from "./SearchField";
+import { SearchStart } from "./SearchStart";
+import { layoutFix, otherLayout } from "./search-helpers";
+import {
+  DEBOUNCE_MS,
+  type GenreTile,
+  type GroupKey,
+  groupResults,
+  isEmpty,
+  looksDescriptive,
+  MIN_CHARS,
+  popularOf,
+  QUERY_MAX,
+  type SearchKind,
+  searchUrl,
+  tilesFor,
+} from "./search-model";
 
-const RECENT_KEY = "lumovio.recentSearches";
-/** The API's limit for a query (SRCH-11): the field stops there instead of a 400 and "Search failed". */
-export const QUERY_MAX = 200;
+type Scope = "all" | GroupKey;
+type Mode = "titles" | "ai";
 
-function readRecent(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
-  } catch {
-    return [];
-  }
-}
+const SCOPES: Scope[] = ["movie", "tv", "people"];
+const nextPage = (last: CatalogSearch) => (last.titles.page < last.titles.totalPages ? last.titles.page + 1 : undefined);
+const titlesOf = (pages: CatalogSearch[]) => [...new Map(pages.flatMap((p) => p.titles.results).map((x) => [x.id, x])).values()];
 
-function pushRecent(q: string): string[] {
-  const list = [q, ...readRecent().filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, 8);
-  try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
-  } catch {
-    /* storage unavailable: the list still shows for this visit */
-  }
-  return list;
-}
-
-type SearchResult = CatalogSearch;
-type Kind = "all" | "movie" | "tv";
-
-const searchUrl = (q: string, page: number, kind: Kind) =>
-  `/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}${kind === "all" ? "" : `&kind=${kind}`}`;
-const nextPage = (last: SearchResult) => (last.titles.page < last.titles.totalPages ? last.titles.page + 1 : undefined);
-const titlesOf = (pages: SearchResult[]) => [...new Map(pages.flatMap((p) => p.titles.results).map((x) => [x.id, x])).values()];
-
-/** The search address without a server round trip per keystroke (the page's first answer is server-rendered). */
-function replaceUrl(q: string, mode: "titles" | "ai") {
+/** The address follows the search without a history entry per keystroke (the page's first answer is server-rendered). */
+function replaceUrl(q: string, mode: Mode, scope: Scope) {
   const sp = new URLSearchParams();
   if (q) sp.set("q", q);
   if (mode === "ai") sp.set("mode", "ai");
+  else if (q && scope !== "all") sp.set("kind", scope);
   const qs = sp.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
 }
 
 /**
- * Search (S04, S05; Collection template): one field on the page's gutter, under the mode switch "Titles / Describe it"
- * — the text goes along when the mode changes (SRCH-07). Titles: the count, people as PersonCards in a shelf with
- * their department in words (SRCH-06, SRCH-12), type chips and "Show more" (SRCH-05). A type chip searches only films
- * or only series on the server, with their real count (SRCH-13). A kids profile is told in one line that some results
- * are hidden for it (PRF-05). Nothing found offers "Describe it", the same keys on the other keyboard layout and what's
- * popular (SRCH-08). Recent searches update at once.
+ * The search page (S04, S05; design-system 9 "Search"): one field on top — results come as it is typed; under it the
+ * types with their counts and, for whoever may use it, "Describe it", the second way to search with the same text.
+ * Without a query: recent searches, what's popular, genre tiles. With one: the best match larger, then films, series and
+ * people as shelves; a type opens its whole list in place (films and series page by page, SRCH-13). A text that reads as
+ * a description, with no title named like it, is offered "Search by description" first; nothing found offers the same
+ * keys on the other keyboard layout, "Describe it" and what's popular (SRCH-08). A kids profile has neither people nor
+ * "Describe it", and is told in one line when results are hidden for it (PRF-05).
  */
-export function SearchView({ initial, suggestions = [] }: { initial?: { q: string; data: SearchResult }; suggestions?: TitleSummary[] }) {
+export function SearchView({
+  initial,
+  popular: popularProp = [],
+  tiles: allTiles = [],
+  genres = {},
+}: {
+  initial?: { q: string; data: CatalogSearch };
+  popular?: TitleSummary[];
+  tiles?: GenreTile[];
+  /** Genre names by id, films' and series' (the best match's facts). */
+  genres?: Record<number, string>;
+}) {
   const t = useTranslations("search");
   const tc = useTranslations("common");
   const tl = useTranslations("library");
-  const tr = useTranslations();
   const locale = useLocale();
   const params = useSearchParams();
   const { me } = useSession();
-  // A kids profile has no "Describe it" (the API closes AI search to kids, design-system 8.10): ?mode=ai opens the
-  // ordinary search, and the mode switch isn't shown.
-  const aiAllowed = !me?.activeProfile?.isKids;
+  const kids = Boolean(me?.activeProfile?.isKids);
+  const signedIn = Boolean(me?.activeProfile);
   const [q, setQ] = useState(params.get("q") ?? "");
   const [debounced, setDebounced] = useState(q.trim());
-  const [chosenMode, setMode] = useState<"titles" | "ai">(params.get("mode") === "ai" ? "ai" : "titles");
-  const mode = aiAllowed ? chosenMode : "titles";
-  const [kind, setKind] = useState<Kind>("all");
-  const [recent, setRecent] = useState<string[]>([]);
+  const [chosenMode, setMode] = useState<Mode>(params.get("mode") === "ai" ? "ai" : "titles");
+  const [scope, setScope] = useState<Scope>(() => {
+    const k = params.get("kind") as Scope | null;
+    return k && SCOPES.includes(k) ? k : "all";
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on arrival only
-  useEffect(() => {
-    setRecent(readRecent());
-    if (mode === "titles") inputRef.current?.focus();
-  }, []);
+  // A kids profile has no "Describe it" (the API closes AI search to kids, design-system 8.10); nor a server without a
+  // model. ?mode=ai opens the ordinary search then.
+  const ai = useAiSearch({ enabled: !kids, signedIn, arrival: chosenMode === "ai" ? q : "" });
+  const aiOffered = !kids && ai.available;
+  const mode: Mode = aiOffered ? chosenMode : "titles";
+  const titles = mode === "titles";
+  const active = debounced.length >= MIN_CHARS;
 
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(q.trim()), 250);
+    // A mouse and keyboard type at once; a touch screen keeps the page in view until the field is tapped (as Apple TV's).
+    if (window.matchMedia("(pointer: fine)").matches) inputRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(q.trim()), DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [q]);
-
+  // A new query starts from all types (the address's type applies on arrival only).
+  const scoped = useRef(debounced);
   useEffect(() => {
-    // The address follows without a history entry per keystroke.
-    replaceUrl(mode === "titles" ? debounced : "", mode);
-    setKind("all");
-  }, [debounced, mode]);
+    if (scoped.current === debounced) return;
+    scoped.current = debounced;
+    setScope("all");
+  }, [debounced]);
+  // The address names what was searched: the query once it searches, a description once it ran.
+  const searched = mode === "ai" ? (ai.ran ?? "") : active ? debounced : "";
+  useEffect(() => replaceUrl(searched, mode, scope), [searched, mode, scope]);
 
   const first = initial && initial.q === debounced ? initial.data : undefined;
-  // Films, series and people: the people shelf, the type chips' counts and "nothing found" come from this search.
-  const all = useInfiniteQuery({
-    // Its own key: pages of results (InfiniteData), not the one-page answers cached under "search" elsewhere.
-    queryKey: ["search-pages", debounced, locale, "all"],
-    queryFn: ({ pageParam }) => api<SearchResult>(searchUrl(debounced, pageParam, "all")),
-    initialPageParam: 1,
-    getNextPageParam: nextPage,
-    enabled: mode === "titles" && debounced.length > 0,
-    // Results for the URL's query arrive server-rendered; don't refetch them on hydration.
-    initialData: first ? ({ pages: [first], pageParams: [1] } satisfies InfiniteData<SearchResult, number>) : undefined,
+  // Films, series and people of page 1: the best match, the groups, the types' counts and "nothing found".
+  const lead = useQuery({
+    queryKey: ["search", debounced, locale],
+    queryFn: ({ signal }) => api<CatalogSearch>(searchUrl(debounced), { signal }),
+    enabled: titles && active,
+    initialData: first,
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
-  // A type chip: the server's search of only films or only series, page by page (SRCH-13).
+  // A type: the server's search of only films or only series, page by page (SRCH-13).
+  const typedKind: SearchKind | undefined = scope === "movie" || scope === "tv" ? scope : undefined;
   const typed = useInfiniteQuery({
-    queryKey: ["search-pages", debounced, locale, kind],
-    queryFn: ({ pageParam }) => api<SearchResult>(searchUrl(debounced, pageParam, kind)),
+    queryKey: ["search-pages", debounced, locale, typedKind],
+    queryFn: ({ pageParam, signal }) => api<CatalogSearch>(searchUrl(debounced, pageParam, typedKind), { signal }),
     initialPageParam: 1,
     getNextPageParam: nextPage,
-    enabled: mode === "titles" && debounced.length > 0 && kind !== "all",
+    enabled: titles && active && Boolean(typedKind),
     staleTime: 5 * 60_000,
   });
-  const results = kind === "all" ? all : typed;
-  // A query that found something and stayed for a moment goes to "Recent" at once (SRCH-07); a failed one doesn't.
-  const found = mode === "titles" && debounced.length >= 2 && all.isSuccess && !all.isPlaceholderData;
+
+  const data = lead.data;
+  const groups = useMemo(() => (data ? groupResults(data) : null), [data]);
+  const empty = Boolean(data && isEmpty(data) && !lead.isPlaceholderData);
+  const counts = data?.counts;
+  const typedPages = typed.data?.pages ?? [];
+  const typedTitles = titlesOf(typedPages);
+  // Some results of the pages read are hidden for a kids profile (PRF-05): said in a line, without a number.
+  const hidden = Boolean(data?.hidden) || typedPages.some((p) => p.hidden);
+
+  // A query that found something and stayed for a moment goes to "Recent" (SRCH-07); a failed one doesn't.
+  const found = titles && active && lead.isSuccess && !lead.isPlaceholderData && !empty;
+  // Keys typed on the other layout are remembered as what they found ("bynthcntkkfh" → "интерстеллар").
+  const remembered = data?.interpreted ?? debounced;
   useEffect(() => {
     if (!found) return;
-    const id = setTimeout(() => setRecent(pushRecent(debounced)), 1500);
+    const id = setTimeout(() => recentSearches.push(remembered), 1500);
     return () => clearTimeout(id);
-  }, [found, debounced]);
+  }, [found, remembered]);
 
-  const lead = all.data?.pages[0];
-  const people = lead?.people ?? [];
-  // People above the titles only when the query reads as a person's name; for a title's name they follow the titles.
-  const peopleFirst = lead?.peopleFirst !== false;
-  // The keys were typed on the other layout, and that is what was found: the page says what it searched for.
-  const interpreted = lead?.interpreted;
-  const counts = lead?.counts;
-  const empty = all.isSuccess && titlesOf(all.data.pages).length === 0 && people.length === 0;
-  const pages = results.data?.pages ?? [];
-  const shown = titlesOf(pages);
-  const head = pages[0]?.titles;
-  // The server's count: films plus series for "All" (TMDB's own total counts people too, which is the fallback minus the
-  // people shown), never fewer than shown, as the first page adds titles the people found are known for. A kids
-  // profile's count is an estimate until every page is read, and then it is what is shown.
-  const exact = head && !head.totalIsEstimate ? Math.max(kind === "all" && !counts ? head.totalResults - people.length : head.totalResults, shown.length) : null;
-  const total = exact ?? (head && !results.hasNextPage ? shown.length : null);
-  // Some results of the pages read are hidden for a kids profile (PRF-05): said in a line, without a number.
-  const hidden = pages.some((p) => p.hidden);
-
-  // Nothing found: the same keys on the other layout, if that finds something (SRCH-08).
+  // Nothing found: the same keys on the other layout, if that names a title (SRCH-08, SRCH-16).
   const alt = empty ? otherLayout(debounced) : null;
   const altResults = useQuery({
-    queryKey: ["search-alt", alt, locale],
-    queryFn: () => api<SearchResult>(`/api/catalog/search?q=${encodeURIComponent(alt!)}`),
+    queryKey: ["search", alt, locale],
+    queryFn: () => api<CatalogSearch>(searchUrl(alt!)),
     enabled: Boolean(alt),
     staleTime: 5 * 60_000,
   });
   const fix = layoutFix(alt, altResults.data);
-  // …and what's popular, so it is never a dead end.
-  const popular = useQuery({
+  // …and what's popular, so it is never a dead end (the server's, else asked here).
+  const popularQuery = useQuery({
     queryKey: ["catalog-home-popular", locale],
     queryFn: () => api<{ rows: CatalogRow[] }>("/api/catalog/home"),
-    enabled: empty && suggestions.length === 0,
+    enabled: popularProp.length === 0 && (empty || (titles && !active)),
     staleTime: 10 * 60_000,
-    select: (d) => d.rows[0]?.items.slice(0, 18) ?? [],
+    select: (d) => popularOf(d.rows),
   });
-  const popularTitles = suggestions.length > 0 ? suggestions : (popular.data ?? []);
+  const popular = popularProp.length > 0 ? popularProp : (popularQuery.data ?? []);
+  const tiles = tilesFor(allTiles, kids);
 
-  // People in a shelf of PersonCards (5.4), the department in words, not TMDB's "Acting" (SRCH-06, SRCH-12).
-  const peopleShelf = (
-    <div className="-mx-(--gutter)">
-      <Row id="search-people" kind="person" title={t("people")}>
-        {people.map((p) => {
-          const dept = departmentKey(p.knownFor);
-          return <PersonCard key={p.id} person={p} subtitle={dept ? tr(dept as "person.dept0") : null} />;
-        })}
-      </Row>
-    </div>
-  );
-
-  const switchMode = (m: "titles" | "ai") => {
-    setMode(m);
-    if (m === "titles") requestAnimationFrame(() => inputRef.current?.focus());
+  const focusField = () => requestAnimationFrame(() => inputRef.current?.focus());
+  const max = mode === "ai" ? AI_MAX : QUERY_MAX;
+  const text = q.trim();
+  /** Searches the field's text by description (the chip, "Search by description", an empty result's offer). */
+  const describe = () => {
+    setMode("ai");
+    if (text.length >= AI_MIN && text !== ai.ran) ai.run(text);
+    focusField();
   };
+  const toggleMode = () => {
+    if (mode === "ai") {
+      setMode("titles");
+      focusField();
+    } else describe();
+  };
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (mode === "ai") ai.run(text);
+    else if (text.length >= MIN_CHARS) {
+      setDebounced(text);
+      recentSearches.push(text);
+    }
+    // On a touch screen Enter hides the keyboard, so the results are in view.
+    if (window.matchMedia("(pointer: coarse)").matches) inputRef.current?.blur();
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape" && q) {
+      e.preventDefault();
+      setQ("");
+    }
+  };
+  const searchFor = (v: string) => {
+    setQ(v);
+    setDebounced(v);
+  };
+  const openScope = (k: Scope) => {
+    setScope(k);
+    window.scrollTo({ top: 0 });
+  };
+  // A result opened from the page counts its query as a recent search.
+  const rememberOnOpen = (e: MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a[href]")) recentSearches.push(remembered);
+  };
+
+  const showTypes = titles && active && Boolean(data) && !empty;
+  const canRun = mode === "ai" && signedIn && text.length >= AI_MIN && text !== ai.ran && !ai.busy;
+  const shownOf = (k: SearchKind) => (groups?.[k].length ?? 0) + (groups?.best?.type === "title" && groups.best.title.kind === k ? 1 : 0);
+  const more = (k: SearchKind) => (counts ? counts[k] > shownOf(k) : (data?.titles.totalPages ?? 1) > 1);
+  const scopeHref = (k: GroupKey) => `/search?q=${encodeURIComponent(debounced)}&kind=${k}`;
 
   return (
     <div>
-      <div className="max-w-3xl">
-        {aiAllowed && (
-          <SegmentedControl
-            label={t("mode")}
-            value={mode}
-            onValueChange={switchMode}
-            options={[
-              { value: "titles", label: t("titles") },
-              { value: "ai", label: t("aiToggle") },
-            ]}
-            className="mb-4"
-          />
-        )}
-        {mode === "titles" && (
-          <div className="relative">
-            <SearchInput
-              ref={inputRef}
-              size="lg"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onClear={() => setQ("")}
-              placeholder={t("placeholder")}
-              aria-label={t("label")}
-              enterKeyHint="search"
-              autoComplete="off"
-              spellCheck={false}
-              maxLength={QUERY_MAX}
-            />
-            {/* While results come, a thin bar under the field (the clear button keeps its place). */}
-            {results.isFetching && !results.isFetchingNextPage && <Progress value={null} label={tc("loading")} className="absolute inset-x-0 -bottom-2" />}
-          </div>
-        )}
-        {mode === "titles" && q.length >= QUERY_MAX && (
-          <p className="mt-3 text-body-s text-text-2" role="status">
-            {t("tooLong", { max: QUERY_MAX })}
+      <form onSubmit={submit} className="relative">
+        <SearchField
+          ref={inputRef}
+          id="search-field"
+          value={q}
+          onValueChange={(v) => setQ(v.slice(0, max))}
+          onClear={() => {
+            setQ("");
+            focusField();
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={mode === "ai" ? t("aiPlaceholder") : t("placeholder")}
+          aria-label={mode === "ai" ? t("aiToggle") : t("label")}
+          aria-describedby={mode === "ai" ? "ai-hint" : undefined}
+          maxLength={max}
+        />
+        {/* While results come, a thin bar under the field. */}
+        {titles && lead.isFetching && !first && <Progress value={null} label={tc("loading")} className="absolute inset-x-6 -bottom-2 w-auto" />}
+        {mode === "ai" && (
+          <p id="ai-hint" className="sr-only">
+            {t("aiHint")}
           </p>
         )}
-      </div>
-
-      {mode === "ai" && <AiSearch signedIn={Boolean(me?.activeProfile)} text={q} onTextChange={setQ} />}
-
-      {mode === "titles" && !debounced && (
-        <>
-          {recent.length > 0 && (
-            <section className="mt-8 max-w-3xl" aria-labelledby="recent-h">
-              <div className="mb-3 flex items-center justify-between gap-4">
-                <h2 id="recent-h" className="text-title text-text-1">
-                  {t("recent")}
-                </h2>
-                <Button
-                  variant="tertiary"
-                  size="sm"
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem(RECENT_KEY);
-                    } catch {
-                      /* storage unavailable: the list goes from the screen anyway */
-                    }
-                    setRecent([]);
-                  }}
-                >
-                  {t("clearRecent")}
-                </Button>
-              </div>
-              <ul className="flex flex-wrap gap-2">
-                {recent.map((r) => (
-                  <li key={r} className="min-w-0 max-w-full">
-                    {/* Searches again for this query. */}
-                    <Button variant="secondary" size="sm" icon={History} onClick={() => setQ(r)} className="max-w-full">
-                      <span className="truncate">{r}</span>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {suggestions.length > 0 ? (
-            <section className="mt-10" aria-labelledby="popular-h">
-              <h2 id="popular-h" className="mb-3 text-h2 text-text-1 md:mb-4">
-                {t("popularNow")}
-              </h2>
-              <TitleGrid>
-                {suggestions.map((r) => (
-                  <PosterCard key={r.id} title={r} />
-                ))}
-              </TitleGrid>
-            </section>
-          ) : (
-            recent.length === 0 && <p className="mt-8 text-body text-text-2">{t("startTyping")}</p>
-          )}
-        </>
+      </form>
+      {q.length >= max && (
+        <p className="mt-3 text-body-s text-text-2" role="status">
+          {t("tooLong", { max })}
+        </p>
       )}
 
-      {mode === "titles" && debounced && (
-        <div className="mt-8" aria-live="polite" aria-busy={results.isFetching}>
-          {all.isLoading ? (
-            <ResultsSkeleton />
-          ) : all.isError && !all.data ? (
-            // A failed search is not "nothing found" (X-14).
-            <ErrorState error={all.error} title={t("loadError")} onRetry={() => void all.refetch()} retrying={all.isFetching} />
-          ) : empty ? (
-            <div>
-              <EmptyState
-                icon={Search}
-                title={t("noResults", { q: debounced })}
-                // A kids profile whose search found only what it can't open is told so (PRF-05), with or without a
-                // suggestion on the other layout (SRCH-17).
-                text={lead?.hidden ? t("hiddenAllForKids") : fix ? undefined : t("noResultsHint")}
-                action={
-                  fix ? (
-                    <Button icon={Search} onClick={() => setQ(fix)}>
-                      {t("searchInstead", { q: fix })}
-                    </Button>
-                  ) : (
-                    aiAllowed && (
-                      <Button icon={Sparkles} onClick={() => switchMode("ai")}>
-                        {t("describeInstead")}
-                      </Button>
-                    )
-                  )
-                }
-                secondaryAction={
-                  fix &&
-                  aiAllowed && (
-                    <Button variant="tertiary" icon={Sparkles} onClick={() => switchMode("ai")}>
-                      {t("describeInstead")}
-                    </Button>
-                  )
-                }
-              >
-                {fix && <p className="mt-3 text-body-s text-text-2">{t("didYouMean", { q: fix })}</p>}
-              </EmptyState>
-              {popularTitles.length > 0 && (
-                <section className="mt-4" aria-labelledby="popular-h">
-                  <h2 id="popular-h" className="mb-3 text-h2 text-text-1 md:mb-4">
-                    {t("popularNow")}
-                  </h2>
-                  <TitleGrid>
-                    {popularTitles.map((r) => (
-                      <PosterCard key={r.id} title={r} />
-                    ))}
-                  </TitleGrid>
-                </section>
+      {(showTypes || aiOffered) && (
+        // The types of the answer and the second way to search: one row under the field, scrolling on a phone.
+        // biome-ignore lint/a11y/useSemanticElements: a row of filter chips, not a form's fieldset
+        <div className="scroll-row mt-4 flex items-center gap-2 overflow-x-auto *:shrink-0 max-md:-mx-(--gutter) max-md:px-(--gutter)" role="group" aria-label={t("mode")}>
+          {showTypes && mode === "titles" && (
+            <>
+              <FilterChip selected={scope === "all"} onClick={() => openScope("all")}>
+                {tl("filterAll")}
+              </FilterChip>
+              {/* A type with "· 0" is off: it would only open an empty grid (SRCH-14); its count says why. */}
+              <FilterChip selected={scope === "movie"} count={counts?.movie} disabled={counts?.movie === 0 && scope !== "movie"} onClick={() => openScope("movie")}>
+                {tl("filterMovies")}
+              </FilterChip>
+              <FilterChip selected={scope === "tv"} count={counts?.tv} disabled={counts?.tv === 0 && scope !== "tv"} onClick={() => openScope("tv")}>
+                {tl("filterSeries")}
+              </FilterChip>
+              {(data?.people.length ?? 0) > 0 && (
+                <FilterChip selected={scope === "people"} count={data?.people.length} onClick={() => openScope("people")}>
+                  {t("people")}
+                </FilterChip>
               )}
+            </>
+          )}
+          {showTypes && aiOffered && mode === "titles" && <span aria-hidden className="mx-1 h-5 w-px bg-line-2" />}
+          {aiOffered && (
+            <FilterChip selected={mode === "ai"} icon={Sparkles} onClick={toggleMode}>
+              {t("aiToggle")}
+            </FilterChip>
+          )}
+          {canRun && (
+            <Button size="sm" icon={Sparkles} onClick={() => ai.run(text)}>
+              {t("aiSubmit")}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {mode === "ai" ? (
+        <AiPanel
+          ai={ai}
+          signedIn={signedIn}
+          onExample={(v) => {
+            setQ(v);
+            ai.run(v);
+          }}
+        />
+      ) : !active ? (
+        <SearchStart popular={popular} tiles={tiles} onRecent={searchFor} />
+      ) : lead.isPending ? (
+        <div className="mt-8">
+          <ResultsSkeleton />
+        </div>
+      ) : lead.isError && !data ? (
+        // A failed search is not "nothing found" (X-14).
+        <ErrorState className="mt-8" error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />
+      ) : empty ? (
+        <div className="mt-8" onClickCapture={rememberOnOpen}>
+          <EmptyState
+            icon={Search}
+            title={t("noResults", { q: debounced })}
+            // A kids profile whose search found only what it can't open is told so (PRF-05).
+            text={data?.hidden ? t("hiddenAllForKids") : fix ? t("didYouMean") : undefined}
+            action={
+              fix ? (
+                <Button icon={Search} onClick={() => searchFor(fix)}>
+                  {t("searchInstead", { q: fix })}
+                </Button>
+              ) : (
+                aiOffered && (
+                  <Button icon={Sparkles} onClick={describe}>
+                    {t("findByDescription")}
+                  </Button>
+                )
+              )
+            }
+            secondaryAction={
+              fix &&
+              aiOffered && (
+                <Button variant="tertiary" icon={Sparkles} onClick={describe}>
+                  {t("findByDescription")}
+                </Button>
+              )
+            }
+          />
+          {popular.length > 0 && (
+            <div className="-mx-(--gutter) mt-4">
+              <Row id="search-popular" title={t("popularNow")}>
+                {popular.map((x) => (
+                  <PosterCard key={x.id} title={x} />
+                ))}
+              </Row>
             </div>
-          ) : (
-            <div className="flex flex-col gap-8">
-              {/* A failed refresh above; a failed "Show more" at the button below (CAT-12). */}
-              {all.isError && !all.isFetchNextPageError && <ErrorState error={all.error} title={t("loadError")} onRetry={() => void all.refetch()} retrying={all.isFetching} />}
-              {kind === "all" && people.length > 0 && peopleFirst && peopleShelf}
-              <section aria-labelledby="titles-h">
-                <div className="mb-4">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <h2 id="titles-h" className="text-h2 text-text-1">
-                      {t("titles")}
-                    </h2>
-                    {/* Nothing of a type is said by its chip and the empty state below, not by "0 results" too. */}
-                    {total !== null && total > 0 && <p className="text-body-s tabular-nums text-text-2">{t("resultsCount", { count: total })}</p>}
-                    <div className="flex flex-wrap gap-2" role="group" aria-label={tl("filtersLabel")}>
-                      <FilterChip selected={kind === "all"} onClick={() => setKind("all")}>
-                        {tl("filterAll")}
-                      </FilterChip>
-                      {/* A type with "· 0" is off: it would only open an empty grid (SRCH-14); its count says why. */}
-                      <FilterChip selected={kind === "movie"} count={counts?.movie} disabled={counts?.movie === 0 && kind !== "movie"} onClick={() => setKind("movie")}>
-                        {tl("filterMovies")}
-                      </FilterChip>
-                      <FilterChip selected={kind === "tv"} count={counts?.tv} disabled={counts?.tv === 0 && kind !== "tv"} onClick={() => setKind("tv")}>
-                        {tl("filterSeries")}
-                      </FilterChip>
-                    </div>
-                  </div>
-                  {hidden && <p className="mt-2 text-body-s text-text-2">{t("hiddenForKids")}</p>}
-                  {interpreted && <p className="mt-2 text-body-s text-text-2">{t("searchedAs", { q: interpreted })}</p>}
+          )}
+        </div>
+      ) : (
+        <div
+          className={cn("mt-8 flex flex-col gap-10 transition-opacity duration-base ease-base md:gap-12", lead.isPlaceholderData && "opacity-60")}
+          aria-live="polite"
+          aria-busy={lead.isFetching}
+          onClickCapture={rememberOnOpen}
+        >
+          {(data?.interpreted || hidden) && (
+            <div className="-mb-4 flex flex-col gap-1 md:-mb-6">
+              {data?.interpreted && <p className="text-body-s text-text-2">{t("searchedAs", { q: data.interpreted })}</p>}
+              {hidden && <p className="text-body-s text-text-2">{t("hiddenForKids")}</p>}
+            </div>
+          )}
+          {/* A failed refresh keeps what was shown, with Retry above it (8.4). */}
+          {lead.isError && <ErrorState error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />}
+          {scope === "all" && groups && (
+            <>
+              {aiOffered && looksDescriptive(debounced, data?.clear) && (
+                <div>
+                  <Button variant="secondary" icon={Sparkles} onClick={describe}>
+                    {t("findByDescription")}
+                  </Button>
                 </div>
-                {results.isLoading ? (
-                  <ResultsSkeleton />
-                ) : results.isError && !results.data ? (
-                  <ErrorState error={results.error} title={t("loadError")} onRetry={() => void results.refetch()} retrying={results.isFetching} />
-                ) : shown.length > 0 ? (
-                  <TitleGrid>
-                    {shown.map((r) => (
-                      <PosterCard key={r.id} title={r} />
-                    ))}
-                  </TitleGrid>
-                ) : (
-                  <EmptyState icon={Search} title={t("noneOfKind")} />
-                )}
-                {results.isFetchNextPageError ? (
-                  // The next page didn't come: what is shown stays, with the way to ask again at the same place (8.4).
-                  <InlineAlert
-                    tone="danger"
-                    className="mt-8"
-                    action={
-                      <Button variant="tertiary" size="sm" loading={results.isFetchingNextPage} onClick={() => void results.fetchNextPage()}>
-                        {tc("retry")}
-                      </Button>
-                    }
-                  >
-                    {tc("moreFailed")}
-                  </InlineAlert>
-                ) : (
-                  <>
-                    {/* A chip's answer that failed to refresh ("All" says so above). */}
-                    {kind !== "all" && typed.isError && typed.data && (
-                      <ErrorState error={typed.error} title={t("loadError")} onRetry={() => void typed.refetch()} retrying={typed.isFetching} className="mt-8" />
-                    )}
-                    {results.hasNextPage && (
-                      <div className="mt-8 flex justify-center">
-                        <Button variant="secondary" loading={results.isFetchingNextPage} onClick={() => void results.fetchNextPage()}>
-                          {tc("showMore")}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </section>
-              {kind === "all" && people.length > 0 && !peopleFirst && peopleShelf}
-            </div>
+              )}
+              {groups.best && <BestMatchBlock best={groups.best} genres={genres} />}
+              <ResultGroups groups={groups} more={more} onScope={openScope} scopeHref={scopeHref} />
+            </>
+          )}
+          {scope === "people" && data && <PeopleGrid people={data.people} />}
+          {typedKind && (
+            <section aria-label={typedKind === "movie" ? tl("filterMovies") : tl("filterSeries")}>
+              {typed.isPending ? (
+                <ResultsSkeleton />
+              ) : typed.isError && !typed.data ? (
+                <ErrorState error={typed.error} title={t("loadError")} onRetry={() => void typed.refetch()} retrying={typed.isFetching} />
+              ) : typedTitles.length > 0 ? (
+                <TitleGrid>
+                  {typedTitles.map((x) => (
+                    <PosterCard key={x.id} title={x} />
+                  ))}
+                </TitleGrid>
+              ) : (
+                <EmptyState icon={Search} title={t("noneOfKind")} />
+              )}
+              {typed.isFetchNextPageError ? (
+                // The next page didn't come: what is shown stays, with the way to ask again at the same place (8.4).
+                <InlineAlert
+                  tone="danger"
+                  className="mt-8"
+                  action={
+                    <Button variant="tertiary" size="sm" loading={typed.isFetchingNextPage} onClick={() => void typed.fetchNextPage()}>
+                      {tc("retry")}
+                    </Button>
+                  }
+                >
+                  {tc("moreFailed")}
+                </InlineAlert>
+              ) : (
+                typed.hasNextPage && (
+                  <div className="mt-8 flex justify-center">
+                    <Button variant="secondary" loading={typed.isFetchingNextPage} onClick={() => void typed.fetchNextPage()}>
+                      {tc("showMore")}
+                    </Button>
+                  </div>
+                )
+              )}
+            </section>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-/** The grid's first look while results come: poster placeholders in the same grid. */
-function ResultsSkeleton() {
-  return (
-    <TitleGrid>
-      {Array.from({ length: 12 }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
-        <PosterCardSkeleton key={i} />
-      ))}
-    </TitleGrid>
   );
 }

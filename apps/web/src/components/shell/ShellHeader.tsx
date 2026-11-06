@@ -16,13 +16,15 @@ export function ShellHeader({ overlay }: { overlay?: boolean }) {
   const router = useRouter();
   useEffect(() => {
     // "/" opens search from anywhere (except while typing): from md the header's own field (HeaderSearch) takes it,
-    // below md (and on the search page, which has no header field) the search page.
+    // below md the search page; on the search page itself it puts the focus in its field.
     const on = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
       if (e.key === "/" && !e.metaKey && !e.ctrlKey && !/INPUT|TEXTAREA|SELECT/.test(el.tagName) && !el.isContentEditable) {
-        if (window.matchMedia("(min-width: 48rem)").matches && !pathname.startsWith("/search")) return;
+        const field = pathname.startsWith("/search") ? document.getElementById("search-field") : null;
+        if (!field && window.matchMedia("(min-width: 48rem)").matches) return;
         e.preventDefault();
-        router.push("/search");
+        if (field) field.focus();
+        else router.push("/search");
       }
     };
     window.addEventListener("keydown", on);
