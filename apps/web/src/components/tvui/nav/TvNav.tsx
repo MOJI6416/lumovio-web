@@ -572,7 +572,9 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
           const zone = root.querySelector<HTMLElement>(`[data-zone="${CSS.escape(state.zone)}"]`);
           return zone ? findByKey(zone, state.key) : null;
         }
-        return startItem(false);
+        // The start item still loading (`data-tv-initial-pending`): wait for it rather than start on whatever is
+        // focusable meanwhile — a title's "Trailer" kept the focus once "Resume" appeared (owner's TV, 2026-11-06).
+        return root.querySelector("[data-tv-initial-pending]") ? null : startItem(false);
       },
       state ? 2500 : 4000,
       (el) => {

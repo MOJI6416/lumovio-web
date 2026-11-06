@@ -16,7 +16,8 @@
  *   focused zone's frame at `data-pin` (a fraction of the height) from the top (the home's shelves), otherwise it scrolls
  *   only as far as needed; `data-zone-frame` marks what has to be in view with a zone (its heading), `="top"` the hero.
  * - `data-key` — a stable identity of an item for memory and Back (a title's id, not its index).
- * - `data-tv-initial` — the item a screen starts on.
+ * - `data-tv-initial` — the item a screen starts on; `data-tv-initial-pending` marks where it will be while it loads,
+ *   and the screen waits for it (up to 4 s) instead of starting elsewhere.
  * Items are any enabled focusable elements; `data-tv-skip` keeps one out (a link inside a card, a hidden slide).
  */
 

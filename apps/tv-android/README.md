@@ -51,8 +51,12 @@ From the TV itself: the Downloader app and `lumovio.app/apk`. With adb (develope
 
 ```bash
 adb connect 192.168.1.20:5555
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r --user 0 app/build/outputs/apk/debug/app-debug.apk
 ```
+
+`--user 0` matters on a TV with a work profile: a plain `adb install` puts the app in every profile, and the TV's
+"Install unknown apps" list may then show only the work profile's copy — allowing it there never lets the app you use
+install its update.
 
 ## Tested on
 

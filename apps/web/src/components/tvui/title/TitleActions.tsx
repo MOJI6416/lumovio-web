@@ -156,7 +156,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     <div className="flex flex-col gap-4">
       <div data-zone="actions" data-zone-axis="x" className="flex flex-wrap items-center gap-4">
         {primary?.kind === "loading" && (
-          <span className={cn(main, "pointer-events-none opacity-80")} role="status">
+          <span className={cn(main, "pointer-events-none opacity-80")} role="status" data-tv-initial-pending>
             <RefreshCw aria-hidden className="animate-spin" />
             {tt("checkingAvailability")}
           </span>

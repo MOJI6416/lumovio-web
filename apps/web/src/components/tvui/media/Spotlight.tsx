@@ -18,9 +18,10 @@ import type { TvItem } from "./types";
 /**
  * How long the focus rests before the picture changes. A new backdrop (decode, upload, fade over the scrims) costs a
  * TV ~100 ms of frames — on the owner's TCL a press landing in them took 150–170 ms to show instead of 40–50 — so
- * walking a shelf at a tap's pace (300–500 ms) changes none.
+ * walking at a person's pace changes none: at 600 ms, presses 0.7 s apart down the shelves met every change (p50 88 ms
+ * against 56 ms at 0.4 or 1.5 s apart, 2026-11-06), so the picture waits a whole second of rest.
  */
-const ART_DELAY = 600;
+const ART_DELAY = 1000;
 
 export function TvBackdrop({ src }: { src: string | null }) {
   const [shown, setShown] = useState(src);

@@ -82,7 +82,7 @@ export const TvCard = memo(function TvCard({
   index: number;
   /** 0–1: a progress bar along the bottom (Continue watching). */
   progress?: number;
-  /** A Top 10's place, over the art's top corner (7.4, 6.5). */
+  /** A Top 10's place: an outlined numeral beside the poster, as the site's Top10Card (design-system 7.12). */
   rank?: number;
   initial?: boolean;
   fluid?: boolean;
@@ -92,7 +92,7 @@ export const TvCard = memo(function TvCard({
   const hold = useHoldForMore(onMore ? () => onMore(index) : undefined);
   const wide = shape === "wide";
   const src = wide ? tmdbImage(title.backdropPath, "w780") : tmdbImage(title.posterPath, "w342");
-  return (
+  const card = (
     <Link
       prefetch={false}
       href={href ?? titleHref(title.kind, title.tmdbId, title.title)}
@@ -123,11 +123,6 @@ export const TvCard = memo(function TvCard({
           <span className="line-clamp-1">{title.title}</span>
         </span>
       )}
-      {rank !== undefined && (
-        <span className="stage absolute start-2 top-2 block text-display font-extrabold text-text-1 tabular-nums [-webkit-text-stroke:0.125rem_var(--bg-stage)]">
-          {rank}
-        </span>
-      )}
       {progress !== undefined && (
         <span
           aria-hidden
@@ -140,5 +135,29 @@ export const TvCard = memo(function TvCard({
         </span>
       )}
     </Link>
+  );
+  if (rank === undefined) return card;
+  // The numeral stands beside the poster, the poster alone is the remote's stop (the ring and the growth are its own).
+  return (
+    <div className="flex shrink-0 items-start">
+      <svg aria-hidden viewBox="0 0 120 180" preserveAspectRatio="xMaxYMax meet" className="aspect-2/3 w-23 shrink-0">
+        <text
+          x="118"
+          y="172"
+          textAnchor="end"
+          fontSize={rank >= 10 ? 130 : 182}
+          fontWeight={900}
+          letterSpacing={rank >= 10 ? -12 : 0}
+          fill="var(--bg-stage)"
+          stroke="var(--text-3)"
+          strokeWidth={4}
+          paintOrder="stroke"
+          style={{ fontFamily: "inherit" }}
+        >
+          {rank}
+        </text>
+      </svg>
+      {card}
+    </div>
   );
 });

@@ -72,7 +72,9 @@ export const TvShelf = memo(function TvShelf({
   onMore?: (index: number) => void;
   up?: string;
 }) {
+  const tr = useTranslations("rows");
   const shape = shelf.shape === "wide" ? "wide" : "poster";
+  const top10 = shelf.shape === "top10";
   return (
     <TvShelfFrame id={zone} title={shelf.title} up={up}>
       {shelf.items.map((it, i) => (
@@ -81,11 +83,11 @@ export const TvShelf = memo(function TvShelf({
           title={it.title}
           shape={shape}
           href={it.href}
-          label={it.label}
+          label={top10 ? `${tr("top10Rank", { rank: i + 1 })}: ${it.title.title}` : it.label}
           index={i}
           progress={it.progress}
           initial={initial && i === 0}
-          rank={shelf.shape === "top10" ? i + 1 : undefined}
+          rank={top10 ? i + 1 : undefined}
           onMore={onMore}
         />
       ))}
