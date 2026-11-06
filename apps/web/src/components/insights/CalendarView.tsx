@@ -105,7 +105,7 @@ function Days({ events }: { events: CalendarEvent[] }) {
       {events.some((e) => e.source === "tvmaze") && (
         <p className="mt-8 text-body-s text-text-2">
           {t("scheduleCredit")}{" "}
-          <a href="https://www.tvmaze.com" target="_blank" rel="noreferrer noopener" className="underline underline-offset-3 hover:text-text-1">
+          <a href="https://www.tvmaze.com" target="_blank" rel="noreferrer noopener" className="underline underline-offset-3 hover:text-text-1 inline-flex min-h-6 items-center max-sm:min-h-11">
             TVmaze
           </a>
         </p>

@@ -1562,7 +1562,7 @@
     "methodFile": "Archivo {types}",
     "methodAccount": "o inicia sesión en el servicio",
     "accountHint": "Trakt y Simkl se pueden conectar iniciando sesión; así el historial llega solo:",
-    "accountHintLink": "Trakt y Simkl en los ajustes",
+    "accountHintLink": "Ajustes → Sincronización",
     "uploadFrom": "Importar de {source}",
     "chooseFile": "Elegir archivo",
     "acceptedTypes": "Archivos: {types}",

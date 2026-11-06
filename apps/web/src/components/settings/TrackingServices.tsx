@@ -73,7 +73,7 @@ export function TrackingServices() {
   // A failed load is an error with Retry, not an endless skeleton (X-14).
   return (
     <div className="space-y-6">
-      <p className="max-w-measure text-body text-text-2">{t("intro")}</p>
+      <p className="sr-only">{t("intro")}</p>
       <QueryState
         query={q}
         loading={

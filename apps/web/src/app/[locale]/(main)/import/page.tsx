@@ -24,7 +24,9 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
     <div className="page-x">
       <div className="mx-auto max-w-tool">
-        {!jobView && <PageHeader title={t("title")} description={t("intro")} />}
+        {/* No intro on the screen (redesign-2026-11.md 2); a screen reader still hears what the page is. */}
+        {!jobView && <PageHeader title={t("title")} />}
+        {!jobView && <p className="sr-only">{t("intro")}</p>}
         {me === "unavailable" ? (
           <ServiceUnavailable />
         ) : (

@@ -1562,7 +1562,7 @@
     "methodFile": "Plik {types}",
     "methodAccount": "lub zaloguj się do serwisu",
     "accountHint": "Trakt i Simkl można połączyć przez zalogowanie – wtedy historia przenosi się sama:",
-    "accountHintLink": "Trakt i Simkl w ustawieniach",
+    "accountHintLink": "Ustawienia → Synchronizacja",
     "uploadFrom": "Importuj z serwisu {source}",
     "chooseFile": "Wybierz plik",
     "acceptedTypes": "Pliki: {types}",

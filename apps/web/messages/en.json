@@ -1562,7 +1562,7 @@
     "methodFile": "File {types}",
     "methodAccount": "or sign in to the service",
     "accountHint": "Trakt and Simkl can be connected by signing in — then the history comes over on its own:",
-    "accountHintLink": "Trakt and Simkl in settings",
+    "accountHintLink": "Settings → Sync",
     "uploadFrom": "Import from {source}",
     "chooseFile": "Choose file",
     "acceptedTypes": "Files: {types}",

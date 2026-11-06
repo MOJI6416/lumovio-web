@@ -1562,7 +1562,7 @@
     "methodFile": "Файл {types}",
     "methodAccount": "або вхід у сервіс",
     "accountHint": "Trakt і Simkl можна підключити входом у сервіс — історія переноситиметься сама:",
-    "accountHintLink": "Trakt і Simkl у налаштуваннях",
+    "accountHintLink": "Налаштування → Синхронізація",
     "uploadFrom": "Імпорт із {source}",
     "chooseFile": "Вибрати файл",
     "acceptedTypes": "Підходять файли {types}",

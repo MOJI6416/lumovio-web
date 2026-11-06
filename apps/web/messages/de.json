@@ -1562,7 +1562,7 @@
     "methodFile": "Datei {types}",
     "methodAccount": "oder beim Dienst anmelden",
     "accountHint": "Trakt und Simkl lassen sich per Anmeldung verbinden – dann kommt der Verlauf von selbst:",
-    "accountHintLink": "Trakt und Simkl in den Einstellungen",
+    "accountHintLink": "Einstellungen → Synchronisierung",
     "uploadFrom": "Import aus {source}",
     "chooseFile": "Datei auswählen",
     "acceptedTypes": "Dateien: {types}",

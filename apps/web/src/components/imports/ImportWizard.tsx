@@ -98,7 +98,9 @@ export function ImportWizard() {
               </ul>
               <p className="mt-4 max-w-measure text-body-s text-text-2">
                 {t("accountHint")}{" "}
-                <Link href="/settings/services">{t("accountHintLink")}</Link>
+                <Link href="/settings/services" className="inline-flex min-h-6 items-center max-sm:min-h-11">
+                  {t("accountHintLink")}
+                </Link>
               </p>
             </>
           )}

@@ -1562,7 +1562,7 @@
     "methodFile": "Fichier {types}",
     "methodAccount": "ou via votre compte",
     "accountHint": "Trakt et Simkl peuvent être connectés avec votre compte – l’historique arrive alors tout seul :",
-    "accountHintLink": "Trakt et Simkl dans les paramètres",
+    "accountHintLink": "Paramètres → Synchronisation",
     "uploadFrom": "Importer depuis {source}",
     "chooseFile": "Choisir un fichier",
     "acceptedTypes": "Fichiers : {types}",

@@ -72,7 +72,7 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <p className="max-w-measure text-body text-text-2">{t("intro")}</p>
+        <p className="sr-only">{t("intro")}</p>
         <Button icon={Plus} onClick={() => setAdding(true)}>
           {t("add")}
         </Button>

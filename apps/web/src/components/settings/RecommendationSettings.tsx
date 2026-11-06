@@ -82,7 +82,7 @@ export function RecommendationSettings() {
 
   return (
     <div className="space-y-6">
-      <p className="max-w-measure text-body text-text-2">{t("intro")}</p>
+      <p className="sr-only">{t("intro")}</p>
       {/* One answer feeds every section: when it fails, the page says so once, with "Retry" (8.5), not five times. */}
       {taste.isError && !taste.data ? (
         <QueryState query={taste} error={{ title: t("loadError") }}>

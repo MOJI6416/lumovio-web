@@ -1562,7 +1562,7 @@
     "methodFile": "File {types}",
     "methodAccount": "oppure accedi al servizio",
     "accountHint": "Trakt e Simkl si possono collegare con l’accesso – così la cronologia arriva da sola:",
-    "accountHintLink": "Trakt e Simkl nelle impostazioni",
+    "accountHintLink": "Impostazioni → Sincronizzazione",
     "uploadFrom": "Importa da {source}",
     "chooseFile": "Scegli file",
     "acceptedTypes": "File: {types}",

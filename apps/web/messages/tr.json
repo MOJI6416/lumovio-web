@@ -1562,7 +1562,7 @@
     "methodFile": "Dosya {types}",
     "methodAccount": "veya hizmette oturum açın",
     "accountHint": "Trakt ve Simkl oturum açılarak bağlanabilir – o zaman geçmiş kendiliğinden gelir:",
-    "accountHintLink": "Ayarlarda Trakt ve Simkl",
+    "accountHintLink": "Ayarlar → Senkronizasyon",
     "uploadFrom": "İçe aktar: {source}",
     "chooseFile": "Dosya seç",
     "acceptedTypes": "Dosyalar: {types}",
