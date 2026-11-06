@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { ForgotForm } from "@/components/auth/AuthForms";
+import { ForgotForm } from "@/components/auth/ForgotForm";
 import { redirectSignedIn } from "@/components/auth/redirect-signed-in";
 
 export async function generateMetadata(): Promise<Metadata> {

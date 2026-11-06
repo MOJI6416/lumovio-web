@@ -2,7 +2,7 @@ import type { AuthCapabilities } from "@lumovio/contracts";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { SignInForm } from "@/components/auth/AuthForms";
+import { SignInForm } from "@/components/auth/SignInForm";
 import { configuredProviders } from "@/components/auth/providers";
 import { redirectSignedIn } from "@/components/auth/redirect-signed-in";
 import { optional } from "@/lib/optional";

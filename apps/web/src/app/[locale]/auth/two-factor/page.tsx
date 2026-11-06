@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { TwoFactorForm } from "@/components/auth/AuthForms";
+import { TwoFactorForm } from "@/components/auth/TwoFactorForm";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth");

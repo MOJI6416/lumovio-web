@@ -2,9 +2,11 @@
 
 import type { AuthCapabilities } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Turnstile } from "@/components/support/Turnstile";
+import { lazy, Suspense, useState } from "react";
 import { api } from "@/lib/api";
+
+// Only with keys on the API does any page draw the check, so its code comes then (bundle budget).
+const Turnstile = lazy(() => import("@/components/support/Turnstile").then((m) => ({ default: m.Turnstile })));
 
 /**
  * Cloudflare Turnstile on sign-in, sign-up and the password reset: with keys on the API, Better Auth's captcha plugin
@@ -28,6 +30,10 @@ export function useAuthCaptcha() {
       setToken(null);
       setRound((n) => n + 1);
     },
-    widget: siteKey ? <Turnstile key={round} siteKey={siteKey} onToken={setToken} theme="dark" /> : null,
+    widget: siteKey ? (
+      <Suspense fallback={null}>
+        <Turnstile key={round} siteKey={siteKey} onToken={setToken} />
+      </Suspense>
+    ) : null,
   };
 }
