@@ -2,7 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
+import { type CSSProperties, forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
 
@@ -28,12 +28,15 @@ export const SearchField = forwardRef<
     size?: keyof typeof SIZE;
     trailing?: ReactNode;
     className?: string;
+    /** The pill's own style (the header animates its width). */
+    boxStyle?: CSSProperties;
   }
->(function SearchField({ value, onValueChange, onClear, size = "lg", trailing, className, ...rest }, ref) {
+>(function SearchField({ value, onValueChange, onClear, size = "lg", trailing, className, boxStyle, ...rest }, ref) {
   const t = useTranslations("ui");
   const s = SIZE[size];
   return (
     <div
+      style={boxStyle}
       className={cn(
         "flex w-full items-center gap-2 rounded-full border border-line-2 bg-surface-2 transition-[border-color,box-shadow] duration-fast ease-fast",
         "focus-within:border-focus focus-within:ring-3 focus-within:ring-accent-soft",

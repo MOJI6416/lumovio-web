@@ -4,7 +4,7 @@ import type { CatalogSearch, PersonSummary, TitleSummary } from "@lumovio/contra
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, History, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CardRating } from "@/components/media/CardRating";
 import { useSession } from "@/components/providers/Providers";
 import { recentSearches, useRecentSearches } from "@/components/search/recent-searches";
@@ -31,6 +31,22 @@ type Option =
   | { kind: "person"; key: string; person: PersonSummary; best: boolean }
   | { kind: "describe"; key: string; href: string }
   | { kind: "all"; key: string; href: string };
+
+/** The round button the field grows out of (IconButton md), and how long it takes to shrink back (--dur-base). */
+const BUTTON = 40;
+const CLOSE_MS = 200;
+
+/**
+ * The open field's width: 320, 384 from lg — or, when that would reach into the header's sections (768–1023, a kids
+ * profile's tag, a longer language), from where the sections start, covering them while it is open.
+ */
+function roomFor(el: HTMLElement | null): number {
+  const wide = window.matchMedia("(min-width: 64rem)").matches ? 384 : 320;
+  const nav = el?.closest("header")?.querySelector("nav")?.getBoundingClientRect();
+  if (!el || !nav || nav.width === 0) return wide;
+  const right = el.getBoundingClientRect().right;
+  return right - wide < nav.right + 16 ? Math.max(wide, right - nav.left) : wide;
+}
 
 /**
  * The header's open search (design-system 7.19, 9 "Search"; as Apple TV's; ./HeaderSearch opens it): the field in the
@@ -60,18 +76,39 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
     const id = setTimeout(() => setDq(q.trim()), DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [q]);
-  // Opened: the field takes the focus; a press outside closes it.
+  // The field grows out of the round button and back into it (--dur-base, ease-base: 6.3, 7.19); its width is the
+  // header's room — over the sections when they are in the way, so nothing beside it moves.
+  const [width, setWidth] = useState(BUTTON);
+  const [expanded, setExpanded] = useState(false);
+  const [closing, setClosing] = useState(false);
+  useLayoutEffect(() => {
+    setWidth(roomFor(box.current));
+    const id = requestAnimationFrame(() => setExpanded(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+  /** Shrinks back into the button, then leaves its place to it; at once with reduced motion. */
+  const shrinkRef = useRef(() => {});
+  shrinkRef.current = () => {
+    if (closing) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return closeRef.current();
+    setClosing(true);
+    setExpanded(false);
+    closeTimer.current = setTimeout(() => closeRef.current(), CLOSE_MS);
+  };
+  // Opened: the field takes the focus; a press outside closes it.
   useEffect(() => {
     input.current?.focus();
     const outside = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) closeRef.current();
+      if (!box.current?.contains(e.target as Node)) shrinkRef.current();
     };
     document.addEventListener("pointerdown", outside);
     return () => document.removeEventListener("pointerdown", outside);
   }, []);
-  const close = onClose;
+  const close = () => shrinkRef.current();
   const typed = dq.length >= MIN_CHARS;
   const results = useQuery({
     queryKey: ["search", dq, locale],
@@ -243,7 +280,8 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
   const tail = options.findIndex((o) => o.kind === "all" || (o.kind === "describe" && options[0]?.kind !== "describe"));
 
   return (
-    <div ref={box} className="relative max-md:hidden">
+    // The button's place in the header: the field grows from its end edge over what stands before it.
+    <div ref={box} className="relative size-10 max-md:hidden">
       <SearchField
         ref={input}
         size="md"
@@ -259,13 +297,19 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
         aria-label={tr("nav.search")}
         placeholder={tr("nav.search")}
         maxLength={QUERY_MAX}
-        className="w-80 border-transparent lg:w-96"
+        boxStyle={{ width: expanded ? width : BUTTON }}
+        className="absolute end-0 top-0 z-10 overflow-hidden border-transparent transition-[width,border-color,box-shadow] duration-base ease-base in-data-[tv=1]:transition-none"
       />
       {showList && (
         // The page's theme, not the stage's: over a hero the header is a stage (3.5), its list is the site's own layer.
+        // It comes in as the field opens (fades in, 4 px down) and goes out as it closes.
         <div
           data-theme={document.documentElement.dataset.theme}
-          className="absolute end-0 top-12 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto rounded-md border border-line bg-surface-2 p-2 text-text-1 shadow-float"
+          className={cn(
+            "absolute end-0 top-12 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto rounded-md border border-line bg-surface-2 p-2 text-text-1 shadow-float",
+            "transition-[opacity,translate] duration-base ease-base starting:-translate-y-1 starting:opacity-0 in-data-[tv=1]:transition-none",
+            closing && "pointer-events-none -translate-y-1 opacity-0",
+          )}
         >
           {!q.trim() && (
             <div className="flex items-center justify-between gap-4 px-3 pt-1 pb-1.5">

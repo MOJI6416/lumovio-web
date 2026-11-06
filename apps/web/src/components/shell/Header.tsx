@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
@@ -93,6 +93,23 @@ export function Header({ overlay }: { overlay: boolean }) {
     };
   }, []);
 
+  // Sections that don't fit (768–1023) scroll; while more of them is past the end edge, that edge fades (as a shelf's).
+  const navList = useRef<HTMLUListElement>(null);
+  const [navCut, setNavCut] = useState(false);
+  useEffect(() => {
+    const el = navList.current;
+    if (!el) return;
+    const check = () => setNavCut(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    el.addEventListener("scroll", check, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("scroll", check);
+    };
+  }, []);
+  const navFade = navCut ? "linear-gradient(to right, black calc(100% - 2rem), transparent)" : undefined;
+
   // While another page loads in this one's place (NavigationLoading), the old page's artwork is gone from under it.
   const loading = useNavigationLoading();
   const clear = hero && !scrolled && !loading;
@@ -116,7 +133,7 @@ export function Header({ overlay }: { overlay: boolean }) {
       >
         {tc("skipToContent")}
       </a>
-      <div className="page-x mx-auto flex h-full max-w-media items-center gap-8">
+      <div className="page-x mx-auto flex h-full max-w-media items-center gap-4 lg:gap-8">
         <div className="flex shrink-0 items-center gap-1">
           {/* A home-screen app has no browser Back (7.19): where it came from, else the home page; not on a tab's root. */}
           {!ROOTS.has(pathname) && (
@@ -135,8 +152,14 @@ export function Header({ overlay }: { overlay: boolean }) {
             <Wordmark />
           </Link>
         </div>
-        <nav aria-label={t("mainMenu")} className="max-md:hidden">
-          <ul className="flex items-center gap-1 lg:gap-2">
+        {/* From md to lg the sections are as wide as the header allows: when they don't fit (a kids profile's tag, a
+            longer language) they scroll sideways instead of pushing the search and the account off the screen. */}
+        <nav aria-label={t("mainMenu")} className="min-w-0 max-md:hidden">
+          <ul
+            ref={navList}
+            style={{ maskImage: navFade, WebkitMaskImage: navFade }}
+            className="scroll-row -my-1 flex items-center gap-1 overflow-x-auto py-1 lg:gap-2"
+          >
             {/* Anime only while the profile has it on (8.14). */}
             {NAV.filter((n) => (!("account" in n) || account) && (n.key !== "anime" || showsAnime(me))).map((n) => {
               const on = active(n.href);
@@ -147,7 +170,7 @@ export function Header({ overlay }: { overlay: boolean }) {
                     aria-current={on ? "page" : undefined}
                     // The active section is a pill on a light fill (redesign-2026-11.md 4); the rest are its text.
                     className={cn(
-                      "flex h-9 items-center rounded-full px-3.5 text-body font-medium transition-colors duration-fast ease-fast",
+                      "flex h-9 items-center whitespace-nowrap rounded-full px-3 text-body font-medium transition-colors duration-fast ease-fast lg:px-3.5",
                       on ? "bg-text-1/14 text-text-1" : "text-text-2 hover:bg-text-1/8 hover:text-text-1",
                     )}
                   >
@@ -158,7 +181,7 @@ export function Header({ overlay }: { overlay: boolean }) {
             })}
           </ul>
         </nav>
-        <div className="ms-auto flex items-center gap-3">
+        <div className="ms-auto flex shrink-0 items-center gap-2 lg:gap-3">
           {/* A round search button that opens its field and results right here (HeaderSearch); not on the search page. */}
           {!pathname.startsWith("/search") && <HeaderSearch />}
           {me ? (
