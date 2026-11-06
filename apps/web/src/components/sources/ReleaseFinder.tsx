@@ -440,10 +440,11 @@ function SortPill({ value, onChange }: { value: Finder["sort"]; onChange: (s: Fi
 
 /** Releases as one grouped list (as "Other copies" on the title page): each with "Watch" and "i" for its details. */
 function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResult; x: RankedRelease | undefined }[]; f: Finder; tv: boolean; season: number | null; locale: string }) {
+  const cuts = f.edition ? "chosen" : (f.choice?.editions.length ?? 0) > 1 ? "several" : "named";
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-lg bg-surface-1">
       {rows.map(({ r, x }) => (
-        <ReleaseItem key={r.link} r={r} x={x} linked={f.isLinked(r)} tv={tv} season={season} locale={locale} onWatch={(el) => f.pick(r, el)} onDetails={() => f.setDetailed(r)} />
+        <ReleaseItem key={r.link} r={r} x={x} cuts={cuts} linked={f.isLinked(r)} tv={tv} season={season} locale={locale} onWatch={(el) => f.pick(r, el)} onDetails={() => f.setDetailed(r)} />
       ))}
     </ul>
   );
@@ -457,6 +458,7 @@ function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResul
 function ReleaseItem({
   r,
   x,
+  cuts,
   linked,
   tv,
   season,
@@ -466,6 +468,7 @@ function ReleaseItem({
 }: {
   r: TsSearchResult;
   x: RankedRelease | undefined;
+  cuts: "named" | "several" | "chosen";
   linked: boolean;
   tv: boolean;
   season: number | null;
@@ -503,7 +506,7 @@ function ReleaseItem({
         <p id={head} className="text-title break-words text-text-1">
           {x ? text.audio(x) || text.option({ studio: null, voice: null, language: null }) : <span className="line-clamp-2">{r.title}</span>}
         </p>
-        <p className="mt-0.5 text-body break-words text-text-1">{x ? <ReleaseLine info={x.info} rest={[editionWord(tt, r.title), pack || null, sized]} /> : sized}</p>
+        <p className="mt-0.5 text-body break-words text-text-1">{x ? <ReleaseLine info={x.info} rest={[editionWord(tt, r.title, cuts), pack || null, sized]} /> : sized}</p>
         <p className="mt-0.5 text-body-s break-words text-text-2">{where}</p>
       </div>
       {/* As the card: "Watch", then "i" for the details (a circle "▶" on a phone, where the row is narrow). */}
@@ -517,9 +520,13 @@ function ReleaseItem({
   );
 }
 
-/** The cut a name states, in words ("Extended"), or null. */
-function editionWord(tt: ReturnType<typeof useTranslations>, name: string): string | null {
-  const e = editionOf(name);
+/**
+ * A row's cut in words, as the card says it: none while the "Version" pill names one (every row is that cut); else the
+ * cut the name states, or "Theatrical" for a name without one when the title's releases come in several cuts.
+ */
+function editionWord(tt: ReturnType<typeof useTranslations>, name: string, cuts: "named" | "several" | "chosen"): string | null {
+  if (cuts === "chosen") return null;
+  const e = editionOf(name) ?? (cuts === "several" ? "theatrical" : null);
   return e ? tt(`edition_${e}`) : null;
 }
 
