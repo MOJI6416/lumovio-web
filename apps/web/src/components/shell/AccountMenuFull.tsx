@@ -237,6 +237,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
         <AvatarButton
           id={ACCOUNT_TRIGGER_ID}
           avatar={p?.avatar ?? "aurora"}
+          photo={p?.photo}
           name={name}
           before={kids && <Tag>{ts("kidsTag")}</Tag>}
           aria-label={kids ? `${t("account")}: ${name}, ${ts("kidsTag")}` : `${t("account")}: ${name}`}
@@ -244,7 +245,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
       }
     >
       <div ref={head} className="flex items-center gap-3 px-3 pt-2 pb-3">
-        <ProfileAvatar avatar={p?.avatar ?? "aurora"} name={name} size={40} />
+        <ProfileAvatar avatar={p?.avatar ?? "aurora"} photo={p?.photo} name={name} size={40} />
         <div className="min-w-0">
           <p className="truncate text-title text-text-1">{name}</p>
           {/* A kids profile is marked as one; the parent's e-mail isn't shown there (PRF-01). */}

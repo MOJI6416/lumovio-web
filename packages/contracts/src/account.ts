@@ -21,45 +21,35 @@ export const AVATARS = [
 ] as const;
 export type AvatarColor = (typeof AVATARS)[number];
 
-/** The white marks drawn on an avatar's colour (design-system 7.17, owner's choice 2026-11-01). */
-export const AVATAR_MARKS = [
-  "projector",
-  "clapper",
-  "popcorn",
-  "ticket",
-  "meteor",
-  "moon",
-  "planet",
-  "sparkle",
-  "rocket",
-  "sun",
-  "fox",
-  "owl",
-  "whale",
-  "cat",
-  "mountain",
-  "wave",
-] as const;
-export type AvatarMark = (typeof AVATAR_MARKS)[number];
-
 /**
- * A profile's avatar: a colour with the name's initial (`"ember"`, also every avatar saved before marks), or a colour
- * with a mark (`"ember.fox"`). Kept in the profile's one text column, so no migration.
+ * A profile's avatar colour (design-system 7.17): the circle behind its photo, and with the name's first letter the
+ * avatar itself when there is no photo (`Profile.photo`).
  */
-export type AvatarId = AvatarColor | `${AvatarColor}.${AvatarMark}`;
+export type AvatarId = AvatarColor;
 
-/** Whether `v` is an avatar Lumovio draws. */
+/** Whether `v` is an avatar colour. */
 export function isAvatarId(v: unknown): v is AvatarId {
-  if (typeof v !== "string") return false;
-  const [color, mark, ...rest] = v.split(".");
-  return (
-    rest.length === 0 &&
-    (AVATARS as readonly string[]).includes(color!) &&
-    (mark === undefined || (AVATAR_MARKS as readonly string[]).includes(mark))
-  );
+  return typeof v === "string" && (AVATARS as readonly string[]).includes(v);
 }
 
-export const AvatarId = z.custom<AvatarId>(isAvatarId, { message: "Unknown avatar" });
+/**
+ * The colour of a saved or sent avatar value. Until 2026-11-06 an avatar could carry a drawn mark after a dot
+ * (`"ember.fox"`); the marks are gone and such a value reads as its colour with the letter. null: not an avatar colour.
+ */
+export function avatarColorOf(v: unknown): AvatarId | null {
+  if (typeof v !== "string") return null;
+  const [color, mark, ...rest] = v.split(".");
+  return rest.length === 0 && (mark === undefined || /^[a-z]+$/.test(mark)) && isAvatarId(color) ? color : null;
+}
+
+/** An avatar colour; a page still open from before 2026-11-06 may send one with its mark, which is dropped. */
+export const AvatarId = z
+  .string()
+  .refine((v) => avatarColorOf(v) !== null, { message: "Unknown avatar" })
+  .transform((v) => avatarColorOf(v)!);
+
+/** The side, in pixels, of the square WebP a profile photo is kept as (`PUT /api/profiles/:id/photo`). */
+export const PROFILE_PHOTO_SIZE = 512;
 
 export const LocaleCode = z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/);
 
@@ -97,6 +87,11 @@ export interface Profile {
   id: string;
   name: string;
   avatar: AvatarId;
+  /**
+   * The profile's own photo (design-system 7.17): its address, a new one with every new photo, so it is cached for
+   * good. null: the avatar is its colour with the name's first letter.
+   */
+  photo: string | null;
   isKids: boolean;
   maturity: MaturityLevel;
   hasPin: boolean;
@@ -191,8 +186,8 @@ export type ProfileApprovalState = "none" | "pending" | "approved" | "denied";
 
 /** What the approving phone or computer is asked about. */
 export interface ProfileApprovalDetails {
-  from: { name: string; avatar: string } | null;
-  to: { name: string; avatar: string };
+  from: { name: string; avatar: string; photo: string | null } | null;
+  to: { name: string; avatar: string; photo: string | null };
   /** The device asking, in words ("TV · Android"). */
   device: string;
   status: ProfileApprovalState;

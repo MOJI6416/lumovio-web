@@ -102,6 +102,7 @@ export function ProfilesScreen({
             <span className="relative">
               <ProfileAvatar
                 avatar={p.avatar}
+                photo={p.photo}
                 name={p.name}
                 size="9rem"
                 className="rounded-avatar ring-text-1 group-aria-[current=true]/p:ring-4"
@@ -150,7 +151,7 @@ export function ProfilesScreen({
         <TvLayer look="dialog" label={t("enterPin", { name: pin.profile.name })} onClose={() => setPin(null)}>
           {() => (
             <div className="flex flex-col items-center gap-6">
-              <ProfileAvatar avatar={pin.profile.avatar} name={pin.profile.name} size="5rem" />
+              <ProfileAvatar avatar={pin.profile.avatar} photo={pin.profile.photo} name={pin.profile.name} size="5rem" />
               <h2 className="text-h2 text-text-1">{t("enterPin", { name: pin.profile.name })}</h2>
               <NumPad
                 label={t("pin")}

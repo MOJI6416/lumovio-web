@@ -93,7 +93,7 @@ export function NavRail() {
             aria-label={tv("switchProfile", { name: profile.name })}
             className="tv-focus group/item mb-6 flex h-11 items-center gap-4 rounded-full ps-1 pe-4 text-text-1 focus:bg-text-1 focus:text-bg"
           >
-            <ProfileAvatar avatar={profile.avatar} name={profile.name} size="2.25rem" />
+            <ProfileAvatar avatar={profile.avatar} photo={profile.photo} name={profile.name} size="2.25rem" />
             <span className="truncate text-body font-semibold opacity-0 transition-opacity duration-base group-focus-within/rail:opacity-100">
               {profile.name}
             </span>

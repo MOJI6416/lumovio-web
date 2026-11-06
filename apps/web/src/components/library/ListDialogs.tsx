@@ -143,7 +143,7 @@ export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: 
       <ul className="divide-y divide-line">
         {l.members.map((m) => (
           <li key={m.profileId} className="flex items-center gap-3 py-3">
-            <ProfileAvatar avatar={m.avatar} name={m.name} size={32} />
+            <ProfileAvatar avatar={m.avatar} photo={m.photo} name={m.name} size={32} />
             <span className="min-w-0 flex-1 truncate text-title text-text-1">{m.name}</span>
             {isOwner && m.role !== "owner" ? (
               <>

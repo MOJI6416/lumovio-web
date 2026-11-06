@@ -280,7 +280,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
                     current && !manage && "outline-2 outline-offset-4 outline-text-1 outline-solid",
                   )}
                 >
-                  <ProfileAvatar avatar={p.avatar} name={p.name} size={AVATAR_SIZE} />
+                  <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size={AVATAR_SIZE} />
                   {manage && (
                     // The avatar squircle (6.1), dimmed with the stage veil.
                     <span className="stage absolute inset-0 grid place-items-center rounded-avatar bg-stage/50">

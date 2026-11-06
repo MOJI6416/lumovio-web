@@ -21,6 +21,7 @@ interface PublicProfile {
   handle: string;
   name: string;
   avatar: string;
+  photo: string | null;
   bio: string | null;
   favorites: TitleSummary[];
   ratings: { title: TitleSummary; value: number }[];
@@ -76,7 +77,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     // The page gutter (5.3, X-02): the header and the lists on it; the shelves keep their own edge.
     <div className="mx-auto max-w-media">
       <header className="page-x flex items-center gap-5 pt-6 sm:pt-8">
-        <ProfileAvatar avatar={p.avatar} name={p.name} size={88} />
+        <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size={88} />
         <div className="min-w-0 max-w-tool">
           <h1 className="text-balance text-h1 text-text-1">{p.name}</h1>
           <p className="text-text-2">@{p.handle}</p>

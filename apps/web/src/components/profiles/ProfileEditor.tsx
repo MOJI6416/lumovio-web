@@ -1,13 +1,12 @@
 "use client";
 
-import type { AvatarColor, AvatarMark, MaturityLevel, Profile } from "@lumovio/contracts";
+import type { AvatarColor, MaturityLevel, Profile } from "@lumovio/contracts";
 import { clsx } from "clsx";
-import { Check, Trash2 } from "lucide-react";
+import { Check, CircleAlert, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type FocusEvent, type FormEvent, type Ref, useId, useRef, useState } from "react";
+import { type FocusEvent, type FormEvent, type Ref, useEffect, useId, useRef, useState } from "react";
 import { AUTO, useLocaleOptions } from "@/components/settings/locale-options";
-import { AVATAR_COLORS, avatarOf, avatarParts, ProfileAvatar } from "@/components/ui/Avatar";
-import { AVATAR_MARK_IDS } from "@/components/ui/avatar-marks";
+import { AVATAR_COLORS, avatarColor, ProfileAvatar } from "@/components/ui/Avatar";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Combobox } from "@/components/ui/Combobox";
@@ -18,10 +17,20 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { peerFocusRing } from "@/components/ui/styles";
 import { Switch } from "@/components/ui/Switch";
+import { toast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
+import { loadPicture, type Picture, PhotoCrop } from "./PhotoCrop";
 import { isPinError, profileErrorText } from "./profile-errors";
 
 type PinMode = "keep" | "change" | "remove";
+/** What Save does with the photo: nothing (null), keep a new one (the cropped square and its preview), or remove it. */
+type PhotoChange = { image: Blob; url: string } | "remove" | null;
+
+/** Sends the photo change of a saved profile; the profile as it is after it. */
+function savePhoto(id: string, change: Exclude<PhotoChange, null>): Promise<Profile> {
+  if (change === "remove") return api<Profile>(`/api/profiles/${id}/photo`, { method: "DELETE" });
+  return api<Profile>(`/api/profiles/${id}/photo`, { method: "PUT", body: change.image, headers: { "content-type": change.image.type || "image/png" } });
+}
 
 /**
  * One avatar option as a native radio (arrows move and choose, Tab leaves the group, as ui/RadioGroup): the avatar it
@@ -76,7 +85,8 @@ function PinInput(props: {
 
 /**
  * The profile editor of Manage profiles (design-system 7.17, 7.9; audit PRF-07, PRF-08, PRF-09, PRF-13): name, an
- * avatar that tells profiles apart — a colour (a free one offered first) and a white mark or the name's letter — kids
+ * avatar that tells profiles apart — the profile's own photo, framed in a circle, or a colour (a free one offered
+ * first) with the name's letter — kids
  * profile and age level, anime on or off (8.14), the profile's languages and region — an adult sets them for any profile, a kids one
  * included — and its PIN (set, change, remove). Deleting is in the danger zone at the end, confirmed in a dialog that
  * asks for the PIN when there is one. Errors are said at their field, in the person's language.
@@ -90,7 +100,7 @@ export function ProfileEditor({
   onSaved,
 }: {
   profile: Profile | null;
-  /** The avatars other profiles use: a new profile starts with a free colour and a mark none of them has. */
+  /** The avatars other profiles use: a new profile starts with a colour none of them has. */
   taken: string[];
   canDelete: boolean;
   /** Opened by "Set PIN" (8.10): the focus starts in the PIN field, scrolled into view, not in the name. */
@@ -106,19 +116,21 @@ export function ProfileEditor({
   const showPinField = focusPin ? (e: FocusEvent<HTMLInputElement>) => e.currentTarget.scrollIntoView({ block: "center" }) : undefined;
   const options = useLocaleOptions();
   const [name, setName] = useState(profile?.name ?? "");
-  const others = taken.map(avatarParts);
+  const others = taken.map(avatarColor);
   const [color, setColor] = useState<AvatarColor>(() =>
-    profile
-      ? avatarParts(profile.avatar).color
-      : (AVATAR_COLORS.find((c) => !others.some((o) => o.color === c)) ?? AVATAR_COLORS[taken.length % AVATAR_COLORS.length]!),
+    profile ? avatarColor(profile.avatar) : (AVATAR_COLORS.find((c) => !others.includes(c)) ?? AVATAR_COLORS[taken.length % AVATAR_COLORS.length]!),
   );
-  const [mark, setMark] = useState<AvatarMark | null>(() =>
-    profile
-      ? avatarParts(profile.avatar).mark
-      : (AVATAR_MARK_IDS.find((m) => !others.some((o) => o.mark === m)) ?? AVATAR_MARK_IDS[taken.length % AVATAR_MARK_IDS.length]!),
-  );
-  const avatar = avatarOf(color, mark);
-  const ownColor = profile ? avatarParts(profile.avatar).color : null;
+  const ownColor = profile ? avatarColor(profile.avatar) : null;
+  const [photoChange, setPhotoChange] = useState<PhotoChange>(null);
+  // The chosen photo being framed, and while it opens.
+  const [cropping, setCropping] = useState<Picture | null>(null);
+  const [opening, setOpening] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const photoButton = useRef<HTMLButtonElement>(null);
+  const shownPhoto = photoChange === "remove" ? null : photoChange ? photoChange.url : (profile?.photo ?? null);
+  // A new photo's preview lives until another replaces it or the editor closes.
+  const previewUrl = photoChange && photoChange !== "remove" ? photoChange.url : null;
+  useEffect(() => () => void (previewUrl && URL.revokeObjectURL(previewUrl)), [previewUrl]);
   const [isKids, setIsKids] = useState(profile?.isKids ?? false);
   const [maturity, setMaturity] = useState<MaturityLevel>(profile?.maturity ?? "adult");
   const [showAnime, setShowAnime] = useState(profile?.showAnime ?? true);
@@ -128,7 +140,7 @@ export function ProfileEditor({
   const [pinMode, setPinMode] = useState<PinMode>("keep");
   const [pin, setPin] = useState("");
   const [currentPin, setCurrentPin] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; pin?: string; currentPin?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; photo?: string; pin?: string; currentPin?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const kids = profile ? profile.isKids : isKids;
@@ -153,18 +165,38 @@ export function ProfileEditor({
     try {
       let p: Profile;
       if (profile) {
-        // The PIN first: it is what can be refused (a wrong current PIN), and then nothing else has changed yet.
+        // The photo first, then the PIN: they are what can be refused (an unreadable picture, a wrong current PIN), and
+        // then nothing else has changed yet; sending the photo again with the next Save only replaces it.
+        if (photoChange) {
+          try {
+            await savePhoto(profile.id, photoChange);
+          } catch {
+            setErrors({ photo: t("photoSaveFailed") });
+            return;
+          }
+        }
         if (hasPin && pinMode !== "keep") await api(`/api/profiles/${profile.id}/pin`, { method: "PUT", json: { pin: pinMode === "change" ? pin : null, currentPin } });
         if (!hasPin && pin) await api(`/api/profiles/${profile.id}/pin`, { method: "PUT", json: { pin } });
-        p = await api<Profile>(`/api/profiles/${profile.id}`, { method: "PATCH", json: { name: name.trim(), avatar, maturity: level, showAnime, ...locales } });
+        p = await api<Profile>(`/api/profiles/${profile.id}`, { method: "PATCH", json: { name: name.trim(), avatar: color, maturity: level, showAnime, ...locales } });
         p = { ...p, hasPin: hasPin ? pinMode !== "remove" : pin.length > 0 };
         onSaved(p, "saved");
       } else {
-        p = await api<Profile>("/api/profiles", { method: "POST", json: { name: name.trim(), avatar, isKids, maturity: level, showAnime } });
+        p = await api<Profile>("/api/profiles", { method: "POST", json: { name: name.trim(), avatar: color, isKids, maturity: level, showAnime } });
         if (uiLocale || metadataLocale || region) p = await api<Profile>(`/api/profiles/${p.id}`, { method: "PATCH", json: locales });
         if (pin) {
           await api(`/api/profiles/${p.id}/pin`, { method: "PUT", json: { pin } });
           p = { ...p, hasPin: true };
+        }
+        // The profile exists now: a photo that doesn't go through is said, and the profile is kept with its letter.
+        if (photoChange && photoChange !== "remove") {
+          const before = p;
+          p = await savePhoto(p.id, photoChange).then(
+            (q) => ({ ...q, hasPin: before.hasPin }),
+            () => {
+              toast.error(t("photoSaveFailed"));
+              return before;
+            },
+          );
         }
         onSaved(p, "created");
       }
@@ -179,8 +211,8 @@ export function ProfileEditor({
   return (
     <>
       <Dialog
-        open={!deleting}
-        onOpenChange={(o) => !o && !deleting && onClose()}
+        open={!deleting && !cropping}
+        onOpenChange={(o) => !o && !deleting && !cropping && onClose()}
         title={profile ? t("editNamed", { name: profile.name }) : t("add")}
         size="md"
         initialFocus={focusPin && profile && !hasPin ? pinField : undefined}
@@ -197,45 +229,74 @@ export function ProfileEditor({
 
           <fieldset className="flex flex-col gap-4">
             <legend className="mb-2 text-body-s font-semibold text-text-1">{t("avatar")}</legend>
-            {/* The colour, then the mark on it (7.17): two radio groups, each a Tab stop. */}
-            <fieldset>
-              <legend className="mb-2 text-caption font-semibold text-text-2">{t("avatarColor")}</legend>
-              <div className="grid grid-cols-6 gap-2">
-                {AVATAR_COLORS.map((c, i) => (
-                  <AvatarOption
-                    key={c}
-                    group={`${ids}-color`}
-                    value={c}
-                    checked={color === c}
-                    onChange={() => setColor(c)}
-                    // "Colour 3 · used by another profile", not the palette name ("aurora", X-21).
-                    label={others.some((o) => o.color === c) && c !== ownColor ? t("avatarOptionTaken", { n: i + 1 }) : t("avatarOption", { n: i + 1 })}
-                    avatar={avatarOf(c, mark)}
-                    name={name}
-                  />
-                ))}
+            {/* The photo (7.17): chosen, framed in a circle, changed or removed; the colour with the letter without one. */}
+            <div className="flex items-center gap-4">
+              <ProfileAvatar avatar={color} photo={shownPhoto} name={name} size={88} />
+              <div className="flex flex-wrap gap-2">
+                <Button ref={photoButton} variant="secondary" size="sm" loading={opening} onClick={() => photoInput.current?.click()}>
+                  {shownPhoto ? t("photoChange") : t("photoAdd")}
+                </Button>
+                {shownPhoto && (
+                  <Button
+                    variant="tertiary"
+                    size="sm"
+                    onClick={() => {
+                      setPhotoChange(profile?.photo ? "remove" : null);
+                      setErrors((x) => ({ ...x, photo: undefined }));
+                      photoButton.current?.focus();
+                    }}
+                  >
+                    {t("photoRemove")}
+                  </Button>
+                )}
               </div>
-            </fieldset>
-            <fieldset>
-              <legend className="mb-2 text-caption font-semibold text-text-2">{t("avatarMark")}</legend>
-              <div className="grid grid-cols-6 gap-2">
-                {/* The letter: the name's initial — "A" before a name is typed, so the option isn't a bare colour. */}
-                <AvatarOption group={`${ids}-mark`} value="" checked={mark === null} onChange={() => setMark(null)} label={t("markLetter")} avatar={color} name={name.trim() || "A"} />
-                {AVATAR_MARK_IDS.map((m) => (
-                  <AvatarOption
-                    key={m}
-                    group={`${ids}-mark`}
-                    value={m}
-                    checked={mark === m}
-                    onChange={() => setMark(m)}
-                    label={t("markOption", { mark: t(`mark_${m}`) })}
-                    avatar={avatarOf(color, m)}
-                    name={name}
-                  />
-                ))}
-              </div>
-            </fieldset>
-            <p className="text-caption font-medium text-text-3">{t("avatarHint")}</p>
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/*"
+                tabIndex={-1}
+                aria-hidden
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  // The same file can be chosen again after Cancel.
+                  e.target.value = "";
+                  if (!file) return;
+                  setOpening(true);
+                  setErrors((x) => ({ ...x, photo: undefined }));
+                  loadPicture(file)
+                    .then(setCropping, () => setErrors((x) => ({ ...x, photo: t("photoUnreadable") })))
+                    .finally(() => setOpening(false));
+                }}
+              />
+            </div>
+            {errors.photo && (
+              <p role="alert" className="flex items-start gap-1 text-caption font-medium text-danger">
+                <CircleAlert aria-hidden className="size-4 shrink-0" />
+                {errors.photo}
+              </p>
+            )}
+            {!shownPhoto && (
+              <fieldset>
+                <legend className="mb-2 text-caption font-semibold text-text-2">{t("avatarColor")}</legend>
+                <div className="grid grid-cols-6 gap-2">
+                  {AVATAR_COLORS.map((c, i) => (
+                    <AvatarOption
+                      key={c}
+                      group={`${ids}-color`}
+                      value={c}
+                      checked={color === c}
+                      onChange={() => setColor(c)}
+                      // "Colour 3 · used by another profile", not the palette name ("aurora", X-21).
+                      label={others.includes(c) && c !== ownColor ? t("avatarOptionTaken", { n: i + 1 }) : t("avatarOption", { n: i + 1 })}
+                      avatar={c}
+                      // The letter: the name's initial — "A" before a name is typed, so a swatch isn't a bare colour.
+                      name={name.trim() || "A"}
+                    />
+                  ))}
+                </div>
+              </fieldset>
+            )}
           </fieldset>
 
           <div className="flex flex-col gap-4">
@@ -369,6 +430,22 @@ export function ProfileEditor({
           </DialogActions>
         </form>
       </Dialog>
+      {cropping && (
+        <PhotoCrop
+          picture={cropping}
+          color={color}
+          onCancel={() => {
+            URL.revokeObjectURL(cropping.url);
+            setCropping(null);
+          }}
+          onDone={(image) => {
+            URL.revokeObjectURL(cropping.url);
+            setCropping(null);
+            if (image) setPhotoChange({ image, url: URL.createObjectURL(image) });
+            setErrors((x) => ({ ...x, photo: image ? undefined : t("photoUnreadable") }));
+          }}
+        />
+      )}
       {profile && deleting && (
         <DeleteProfile
           profile={profile}

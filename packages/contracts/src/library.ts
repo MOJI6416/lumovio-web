@@ -65,7 +65,8 @@ export interface ListItem {
 export interface ListDetails extends ListSummary {
   /** One page of the list's titles, in its order (`?offset=`, LIB-24). */
   items: ListItem[];
-  members: { profileId: string; name: string; avatar: string; role: ListRole }[];
+  /** `photo`: the member profile's photo or null, as `Profile.photo`. */
+  members: { profileId: string; name: string; avatar: string; photo: string | null; role: ListRole }[];
   /** Where the next page of `items` starts (`?offset=`), or null when this page is the last (LIB-24). */
   nextOffset?: number | null;
 }

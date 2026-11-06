@@ -34,6 +34,8 @@ export const API_ERROR_CODES = [
   "tv_restricted",
   /** The admin's request without a live admin session: confirm with the second factor first (admin handoff A0). */
   "step_up_required",
+  /** An uploaded profile photo isn't a picture the server can read (JPEG, PNG, WebP, AVIF, GIF). */
+  "unreadable_image",
   "maturity_blocked",
   /** The title is hidden at a rights holder's request (Admin → Catalog): its pages answer this for everyone. */
   "title_unavailable",

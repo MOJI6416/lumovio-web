@@ -29,7 +29,8 @@ function newProfile(name, isKids) {
   return {
     id: randomUUID(),
     name,
-    avatar: isKids ? "bloom.owl" : "aurora.projector",
+    avatar: isKids ? "bloom" : "aurora",
+    photo: null,
     isKids,
     maturity: isKids ? "kids" : "adult",
     hasPin: false,
@@ -325,7 +326,7 @@ function listDetails(profile, l) {
         addedAt,
         addedBy: { profileId: profile.id, name: profile.name },
       })),
-    members: [{ profileId: profile.id, name: profile.name, avatar: profile.avatar, role: "owner" }],
+    members: [{ profileId: profile.id, name: profile.name, avatar: profile.avatar, photo: profile.photo, role: "owner" }],
   };
 }
 function systemList(profile, kind) {
@@ -593,7 +594,7 @@ on("GET", "/api/sessions", async ({ c, req }) => {
 // Profiles
 on("POST", "/api/profiles", async ({ c, body }) => {
   const u = needUser(c);
-  const p = { ...newProfile(body.name ?? "Profile", Boolean(body.isKids)), avatar: body.avatar ?? "aurora.projector" };
+  const p = { ...newProfile(body.name ?? "Profile", Boolean(body.isKids)), avatar: (body.avatar ?? "aurora").split(".")[0] };
   u.profiles.push(p);
   return p;
 });

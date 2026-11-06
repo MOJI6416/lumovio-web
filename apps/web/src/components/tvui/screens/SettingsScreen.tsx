@@ -61,7 +61,7 @@ export function SettingsScreen({ me, servers, appVersion }: { me: Me; servers: C
         <Section title={t("setProfile")}>
           <div data-zone="profile" data-zone-axis="y" className="flex flex-col gap-3">
             <TvButton look="row" data-key="profile" data-tv-initial onClick={() => window.location.assign(`${locale === "en" ? "" : `/${locale}`}/profiles?switch=1`)}>
-              <ProfileAvatar avatar={profile.avatar} name={profile.name} size="2.25rem" />
+              <ProfileAvatar avatar={profile.avatar} photo={profile.photo} name={profile.name} size="2.25rem" />
               <span className="flex-1">{profile.name}</span>
               <span className="opacity-75">{tn("profiles")}</span>
             </TvButton>

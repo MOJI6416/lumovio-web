@@ -228,7 +228,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
           <ul className="flex -space-x-2">
             {l.members.slice(0, 6).map((m) => (
               <li key={m.profileId}>
-                <ProfileAvatar avatar={m.avatar} name={m.name} size={28} className="ring-2 ring-bg" />
+                <ProfileAvatar avatar={m.avatar} photo={m.photo} name={m.name} size={28} className="ring-2 ring-bg" />
               </li>
             ))}
           </ul>

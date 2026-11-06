@@ -43,6 +43,7 @@ export function AccountMenu() {
       ref={light}
       id={ACCOUNT_TRIGGER_ID}
       avatar={p?.avatar ?? "aurora"}
+      photo={p?.photo}
       name={name}
       before={kids && <Tag>{ts("kidsTag")}</Tag>}
       aria-haspopup="menu"

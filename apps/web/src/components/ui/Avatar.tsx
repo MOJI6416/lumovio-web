@@ -1,16 +1,16 @@
-import type { AvatarColor, AvatarId, AvatarMark } from "@lumovio/contracts";
+import type { AvatarColor } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
-import { AVATAR_MARK_IDS, avatarMarkHref } from "./avatar-marks";
+import { AvatarPhoto } from "./AvatarPhoto";
 import { cn } from "./cn";
 import { groupFocusRing } from "./styles";
 
 /**
- * Designed avatars (no user-uploaded images → nothing to moderate, nothing to leak): a colour with a white mark or the
- * name's initial (design-system 7.17, the owner's choice of 2026-11-01). The colours are the avatar palette `--avatar-*`
- * in globals.css (3.6): twelve hues far enough apart to tell profiles apart at 32 px (PRF-20); the marks are
- * ./avatar-marks (one sprite file, drawn by `<use>`). Keyed by every contracts `AvatarColor` (the type checks none is missing), so the picker takes its
- * list from here: importing the `AVATARS` value from @lumovio/contracts would bring zod into the page (≈ 30 KB gzip).
+ * Profile avatars (design-system 7.17, the owner's choice of 2026-11-06): the profile's own photo, or one of twelve
+ * colours with the name's first letter. The colours are the avatar palette `--avatar-*` in globals.css (3.6): hues far
+ * enough apart to tell profiles apart at 32 px (PRF-20); the photo lies on its colour, which shows while it loads.
+ * Keyed by every contracts `AvatarColor` (the type checks none is missing), so the editor takes its list from here:
+ * importing the `AVATARS` value from @lumovio/contracts would bring zod into the page (≈ 30 KB gzip).
  */
 const AVATAR_BACKGROUND: Record<AvatarColor, string> = {
   ember: "var(--avatar-ember)",
@@ -27,62 +27,55 @@ const AVATAR_BACKGROUND: Record<AvatarColor, string> = {
   coral: "var(--avatar-coral)",
 };
 
-/** Every colour, in the picker's order (around the colour wheel). */
+/** Every colour, in the editor's order (around the colour wheel). */
 export const AVATAR_COLORS = Object.keys(AVATAR_BACKGROUND) as AvatarColor[];
 
 /**
- * An avatar's colour and mark (null: the initial). An unknown colour falls back to the default one and an unknown mark
- * to the initial, so a value from a newer server still draws.
+ * An avatar value's colour. A value with a drawn mark after a dot (saved before 2026-11-06) reads as its colour, and an
+ * unknown one as the default colour, so any value still draws.
  */
-export function avatarParts(avatar: string): { color: AvatarColor; mark: AvatarMark | null } {
-  const [c, m] = avatar.split(".");
-  const color = c && c in AVATAR_BACKGROUND ? (c as AvatarColor) : "aurora";
-  return { color, mark: m && AVATAR_MARK_IDS.includes(m as AvatarMark) ? (m as AvatarMark) : null };
+export function avatarColor(avatar: string): AvatarColor {
+  const c = avatar.split(".")[0];
+  return c && c in AVATAR_BACKGROUND ? (c as AvatarColor) : "aurora";
 }
 
-/** The value saved for a colour and a mark (null: the initial). */
-export const avatarOf = (color: AvatarColor, mark: AvatarMark | null): AvatarId => (mark ? `${color}.${mark}` : color);
-
 /**
- * A profile's squircle with its white mark, or its initial. Without a mark and a name (an editor before anything is
- * typed) it is the colour alone, never a "?" (PRF-09, PRF-20). Decorative: the name always stands next to it. `size` in
- * px, or a CSS length (the TV shell's are in rem, 10.3). The mark is 54 % of the side; its line is heavier up to 40 px,
- * so it holds in the header (7.17).
+ * A profile's circle: its photo, or its colour with the name's first letter. Without a photo and a name (an editor
+ * before anything is typed) it is the colour alone, never a "?" (PRF-09, PRF-20). Decorative: the name always stands
+ * next to it. `size` in px, or a CSS length (the TV shell's are in rem, 10.3).
  */
-export function ProfileAvatar({ avatar, name, size = 40, className }: { avatar: string; name: string; size?: number | string; className?: string }) {
-  const { color, mark } = avatarParts(avatar);
+export function ProfileAvatar({
+  avatar,
+  photo,
+  name,
+  size = 40,
+  className,
+}: {
+  avatar: string;
+  /** The profile's photo (`Profile.photo`); null or left out — the letter. */
+  photo?: string | null;
+  name: string;
+  size?: number | string;
+  className?: string;
+}) {
   const initial = [...name.trim()][0]?.toUpperCase();
   const scaled = (k: number) => (typeof size === "number" ? size * k : `calc(${size} * ${k})`);
-  const line = typeof size === "number" && size <= 40 ? 2.2 : 1.8;
+  const letter = initial ? <span className="drop-shadow-sm/35">{initial}</span> : null;
   return (
     <span
       aria-hidden
-      className={clsx("inline-grid shrink-0 place-items-center rounded-avatar font-extrabold text-white shadow-inner", className)}
-      style={{ width: size, height: size, background: AVATAR_BACKGROUND[color], fontSize: scaled(0.42) }}
+      // Top-aligned in a line: a photo has no text baseline, and its circle would stand a descender higher than a letter's.
+      className={clsx("relative inline-grid shrink-0 place-items-center overflow-hidden rounded-avatar align-top font-extrabold text-white shadow-inner", className)}
+      style={{ width: size, height: size, background: AVATAR_BACKGROUND[avatarColor(avatar)], fontSize: scaled(0.42) }}
     >
-      {mark ? (
-        <svg
-          aria-hidden
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={line}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="drop-shadow-sm/25"
-          style={{ width: "54%", height: "54%" }}
-        >
-          <use href={avatarMarkHref(mark)} />
-        </svg>
-      ) : (
-        initial && <span className="drop-shadow-sm/35">{initial}</span>
-      )}
+      {photo ? <AvatarPhoto src={photo} fallback={letter} /> : letter}
     </span>
   );
 }
 
 export interface AvatarButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   avatar: string;
+  photo?: string | null;
   name: string;
   /** Before the avatar: the kids profile's Tag (8.10). */
   before?: ReactNode;
@@ -96,7 +89,7 @@ export interface AvatarButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
  * end; 48 on a TV). The accessible name comes with `aria-label`.
  */
 export const AvatarButton = forwardRef<HTMLButtonElement, AvatarButtonProps>(function AvatarButton(
-  { avatar, name, before, className, type = "button", ...rest },
+  { avatar, photo, name, before, className, type = "button", ...rest },
   ref,
 ) {
   return (
@@ -112,6 +105,7 @@ export const AvatarButton = forwardRef<HTMLButtonElement, AvatarButtonProps>(fun
       {before}
       <ProfileAvatar
         avatar={avatar}
+        photo={photo}
         name={name}
         size={32}
         className={cn(
