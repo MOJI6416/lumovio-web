@@ -2287,8 +2287,6 @@
     "releaseAddFailed": "Nie udało się dodać wydania: {error}",
     "releaseAddFailedTitle": "Nie udało się dodać wydania",
     "rateTitle": "Oceń „{title}”",
-    "rateNote": "Wybierz ocenę – zapisuje się od razu",
-    "ratedNote": "Twoja ocena: {value} na 10",
     "showMarked": "Serial oznaczony jako obejrzany",
     "markShow": "Oznacz cały serial jako obejrzany",
     "follow": "Powiadamiaj o nowych odcinkach",

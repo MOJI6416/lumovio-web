@@ -2639,8 +2639,6 @@
     "releaseAddFailed": "Couldn't add the release: {error}",
     "releaseAddFailedTitle": "Couldn't add the release",
     "rateTitle": "Rate “{title}”",
-    "rateNote": "Pick a score — it's saved at once",
-    "ratedNote": "Your rating: {value} out of 10",
     "showMarked": "Series marked as watched",
     "markShow": "Mark the whole series watched",
     "follow": "Notify me about new episodes",

@@ -2287,8 +2287,6 @@
     "releaseAddFailed": "Impossible d’ajouter la release : {error}",
     "releaseAddFailedTitle": "Impossible d’ajouter la release",
     "rateTitle": "Noter « {title} »",
-    "rateNote": "Choisissez une note – elle est enregistrée aussitôt",
-    "ratedNote": "Votre note : {value} sur 10",
     "showMarked": "Série marquée comme vue",
     "markShow": "Marquer toute la série comme vue",
     "follow": "Me prévenir des nouveaux épisodes",

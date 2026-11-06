@@ -2287,8 +2287,6 @@
     "releaseAddFailed": "Release konnte nicht hinzugefügt werden: {error}",
     "releaseAddFailedTitle": "Release konnte nicht hinzugefügt werden",
     "rateTitle": "„{title}“ bewerten",
-    "rateNote": "Wähle eine Bewertung – sie wird sofort gespeichert",
-    "ratedNote": "Deine Bewertung: {value} von 10",
     "showMarked": "Serie als gesehen markiert",
     "markShow": "Ganze Serie als gesehen markieren",
     "follow": "Über neue Folgen benachrichtigen",

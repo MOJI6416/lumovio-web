@@ -2287,8 +2287,6 @@
     "releaseAddFailed": "Impossibile aggiungere la release: {error}",
     "releaseAddFailedTitle": "Impossibile aggiungere la release",
     "rateTitle": "Valuta «{title}»",
-    "rateNote": "Scegli un voto – viene salvato subito",
-    "ratedNote": "Il tuo voto: {value} su 10",
     "showMarked": "Serie segnata come vista",
     "markShow": "Segna tutta la serie come vista",
     "follow": "Avvisami dei nuovi episodi",

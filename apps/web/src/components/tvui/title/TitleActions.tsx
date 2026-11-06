@@ -1,8 +1,7 @@
 "use client";
 
 import {
-  Bookmark,
-  BookmarkCheck,
+  Check,
   CircleAlert,
   CircleCheck,
   Clapperboard,
@@ -12,6 +11,7 @@ import {
   ListPlus,
   Magnet,
   Play,
+  Plus,
   RefreshCw,
   Search,
   Server,
@@ -147,7 +147,6 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const primary = plan.primary;
   const main = cn(tvButtonClass(), "min-w-56");
   const on = actions.inWatchlist;
-  const rating = actions.state?.rating ?? null;
   // The sources screen: every copy, release and a new search, also when a source is already chosen (TV document §4).
   const showSources =
     !kids && primary?.kind !== "sources" && (avail.state.kind === "playable" || Boolean(manual));
@@ -209,23 +208,17 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             {t("trailer")}
           </TvButton>
         )}
+        {/* "Watchlist" and "More" are circles beside the labelled actions, as on the site (redesign-2026-11.md 2):
+            + off, a check on; "Rate" is the first line of "More". */}
         <TvButton
-          icon={on ? BookmarkCheck : Bookmark}
+          look="round"
+          icon={on ? Check : Plus}
+          label={t("watchlist")}
           aria-pressed={on}
           data-tv-initial={primary === null || undefined}
           disabled={actions.busy === "wl"}
           onClick={() => void actions.setWatchlist(!on)}
-        >
-          {t("watchlist")}
-        </TvButton>
-        <TvButton
-          icon={Star}
-          aria-haspopup="dialog"
-          onClick={() => setLayer("rate")}
-          className={cn(rating && "[&_svg]:fill-current")}
-        >
-          {rating ? t("ratedLabel", { value: rating }) : t("rate")}
-        </TvButton>
+        />
         <TvButton
           look="round"
           icon={Ellipsis}
@@ -245,6 +238,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
           onClose={() => setLayer(null)}
           onLists={() => setLayer("lists")}
           onPhone={() => setLayer("phone")}
+          onRate={() => setLayer("rate")}
         />
       )}
       {layer === "lists" && <ListsLayer title={d} onClose={() => setLayer(null)} />}
@@ -378,9 +372,6 @@ function RateLayer({ title: d, onClose }: { title: TitleCore; onClose: () => voi
               </TvButton>
             ))}
           </div>
-          <p className="text-body-l text-text-2">
-            {rating ? t("ratedNote", { value: rating }) : t("rateNote")}
-          </p>
           {rating && (
             <div data-zone="rate-clear" data-zone-axis="x">
               <TvButton onClick={() => set(null, close)}>{tv("removeRating")}</TvButton>
@@ -397,11 +388,13 @@ function MoreLayer({
   onClose,
   onLists,
   onPhone,
+  onRate,
 }: {
   title: TitleCore;
   onClose: () => void;
   onLists: () => void;
   onPhone: () => void;
+  onRate: () => void;
 }) {
   const t = useTranslations("titlePage");
   const tc = useTranslations("card");
@@ -431,10 +424,14 @@ function MoreLayer({
         <>
           <h2 className="text-h2 text-text-1">{d.title}</h2>
           <div data-zone="more" data-zone-axis="y" className="flex flex-col gap-3">
+            {/* The rating opens its own layer over this one (the hero's row has no "Rate" since the 2026-11 redesign). */}
+            <TvButton look="row" aria-haspopup="dialog" data-tv-initial onClick={onRate}>
+              <Star aria-hidden className={cn(a.state?.rating && "fill-current")} />
+              {a.state?.rating ? t("ratedLabel", { value: a.state.rating }) : t("rate")}
+            </TvButton>
             <TvButton
               look="row"
               aria-pressed={a.isFavorite}
-              data-tv-initial
               onClick={() => void a.setFavorite(!a.isFavorite)}
             >
               {mark(a.isFavorite, Heart)}

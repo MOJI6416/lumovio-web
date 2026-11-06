@@ -2287,8 +2287,6 @@
     "releaseAddFailed": "Sürüm eklenemedi: {error}",
     "releaseAddFailedTitle": "Sürüm eklenemedi",
     "rateTitle": "Puan verin: “{title}”",
-    "rateNote": "Bir puan seçin – hemen kaydedilir",
-    "ratedNote": "Puanınız: 10 üzerinden {value}",
     "showMarked": "Dizi izlendi olarak işaretlendi",
     "markShow": "Dizinin tamamını izlendi olarak işaretle",
     "follow": "Yeni bölümleri bildir",
