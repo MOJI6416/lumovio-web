@@ -37,7 +37,8 @@ export function Announcements() {
     }
   };
   return (
-    <div className="page-x space-y-2 bg-bg py-2">
+    // On the header's and the pages' gutter and width (5.3), so it starts where the logo does.
+    <div className="page-x mx-auto max-w-media space-y-2 bg-bg py-2">
       {shown.map((a) => (
         <InlineAlert
           key={a.id}

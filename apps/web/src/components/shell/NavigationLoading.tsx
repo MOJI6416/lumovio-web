@@ -87,8 +87,9 @@ export function NavigationLoading({ tv }: { tv?: boolean }) {
       aria-label={t("loading")}
       className={clsx(
         "fixed z-sticky grid animate-fade-in place-items-center bg-bg",
-        // The TV shell: the screen's place beside the menu rail (64 and more, 6.3.1); the site: under the header.
-        tv ? "inset-y-0 start-(--tv-rail) end-0" : "inset-x-0 top-(--header-h) bottom-0",
+        // The TV shell: the screen's place beside the menu rail (64 and more, 6.3.1); the site: under the header — on a
+        // phone from the top, as its header may have scrolled away (where it is still there, it lies over this).
+        tv ? "inset-y-0 start-(--tv-rail) end-0" : "inset-x-0 top-0 bottom-0 md:top-(--header-h)",
       )}
     >
       <BrandLoader size={tv ? "lg" : "md"} />

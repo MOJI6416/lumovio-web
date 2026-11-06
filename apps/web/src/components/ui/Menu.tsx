@@ -105,18 +105,20 @@ export function Menu({
 
 function ItemContent({
   icon: Icon,
+  lead,
   danger,
   children,
   end,
 }: {
   icon?: LucideIcon;
+  lead?: ReactNode;
   danger?: boolean;
   children: ReactNode;
   end?: ReactNode;
 }) {
   return (
     <>
-      {Icon && <Icon aria-hidden className={cn("size-5 shrink-0", danger ? "text-danger" : "text-text-2")} />}
+      {lead ?? (Icon && <Icon aria-hidden className={cn("size-5 shrink-0", danger ? "text-danger" : "text-text-2")} />)}
       <span className="min-w-0 flex-1">{children}</span>
       {end}
     </>
@@ -126,7 +128,11 @@ function ItemContent({
 export interface MenuItemProps {
   /** A 6.4 icon (20 px). */
   icon?: LucideIcon;
+  /** In the icon's place, something that is not an icon: a profile's avatar (the account menu, 7.19). */
+  lead?: ReactNode;
   children: ReactNode;
+  /** After the label, at the row's end: a tag, a lock. */
+  end?: ReactNode;
   /** What the item does; the menu closes first. */
   onSelect?: () => void;
   /** A link item: goes to this address instead of running `onSelect`. */
@@ -136,11 +142,11 @@ export interface MenuItemProps {
   disabled?: boolean;
 }
 
-export function MenuItem({ icon, children, onSelect, href, tone, disabled }: MenuItemProps) {
+export function MenuItem({ icon, lead, children, end, onSelect, href, tone, disabled }: MenuItemProps) {
   const mode = useContext(MenuMode);
   const danger = tone === "danger";
   const content = (
-    <ItemContent icon={icon} danger={danger}>
+    <ItemContent icon={icon} lead={lead} danger={danger} end={end}>
       {children}
     </ItemContent>
   );

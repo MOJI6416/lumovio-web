@@ -17,12 +17,13 @@ import { useNavigationLoading } from "./NavigationLoading";
 import { PrefsMenu } from "./PrefsMenu";
 import { Wordmark } from "./Wordmark";
 
+/** The sections, the same for everyone and on every device (the TV shell's menu has them in this order too). */
 const NAV = [
   { href: "/", key: "home" },
   { href: "/browse/movie", key: "movies" },
   { href: "/browse/tv", key: "series" },
   { href: "/anime", key: "anime" },
-  { href: "/library", key: "library", account: true },
+  { href: "/library", key: "library" },
 ] as const;
 
 /** After "Sign out" the page reloads; the next page says it happened (SH-09). */
@@ -43,10 +44,11 @@ function useSignedOutNotice() {
 const ROOTS = new Set(["/", "/browse/movie", "/browse/tv", "/anime", "/search", "/library"]);
 
 /**
- * The header (design-system 7.19): 64 high on the page gutter, so the logo starts where the page does (5.3).
- * From `md`: logo, the sections, a search field that opens the search page, the account. On a phone: logo and
- * account only (search and the sections are tabs of the bottom bar). The account's avatar stands on the end edge, as the
- * logo on the start one; without an account there are "Language and theme" and "Sign in" instead.
+ * The header (design-system 7.19): 64 high on the page gutter, three zones — the logo at the start, the sections in the
+ * middle as plain words (the one in view in --text-1, the others in --text-2: not pills, which are the buttons' and the
+ * filters' shape), search and the account at the end. From md to lg the logo is its mark alone, so the five sections
+ * fit in every language. On a phone: the logo and the account only (the sections and search are the bottom bar's tabs),
+ * and the header scrolls away with the page — the bar stays; in a home-screen app it stays too, as it carries Back.
  *
  * Over a page's artwork (`data-hero`: a billboard, a title's hero, a system page's stage) it is transparent on a scrim
  * and takes the stage's dark values; after scrolling, or on a page without artwork, it is --bg 94 % + blur + a line —
@@ -59,6 +61,7 @@ export function Header({ overlay }: { overlay: boolean }) {
   const { me, apiDown } = useSession();
   const pathname = usePathname();
   const signIn = useSignInLinks().signIn;
+  const library = useSignInLinks("/library").signIn;
   const [hero, setHero] = useState(overlay);
   const [scrolled, setScrolled] = useState(false);
   useSignedOutNotice();
@@ -93,7 +96,8 @@ export function Header({ overlay }: { overlay: boolean }) {
     };
   }, []);
 
-  // Sections that don't fit (768–1023) scroll; while more of them is past the end edge, that edge fades (as a shelf's).
+  // Sections that still don't fit (a narrow window, a long language and a kids profile's tag together) scroll; while
+  // more of them is past the end edge, that edge fades (as a shelf's). Search and the account keep their place.
   const navList = useRef<HTMLUListElement>(null);
   const [navCut, setNavCut] = useState(false);
   useEffect(() => {
@@ -113,15 +117,18 @@ export function Header({ overlay }: { overlay: boolean }) {
   // While another page loads in this one's place (NavigationLoading), the old page's artwork is gone from under it.
   const loading = useNavigationLoading();
   const clear = hero && !scrolled && !loading;
-  const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  // While the API is down the visitor may well be signed in (SH-03): their sections stay, "Sign in" isn't offered.
-  const account = Boolean(me) || apiDown;
+  // A list is part of the library, as on the bottom bar.
+  const active = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href) || (href === "/library" && pathname.startsWith("/lists"));
+  // While the API is down the visitor may well be signed in (SH-03): "Sign in" isn't offered then.
+  const guest = !me && !apiDown;
 
   return (
     <header
       className={cn(
-        // Under a home-screen app's status bar (iOS) the header starts below it, its colour behind it.
-        "sticky top-0 z-header h-(--header-h) pt-[env(safe-area-inset-top)] transition-[background-color,box-shadow] duration-base ease-base",
+        // Under a home-screen app's status bar (iOS) the header starts below it, its colour behind it. A phone's scrolls
+        // away in a browser (the bottom bar is the way around); from md, and in a home-screen app, it stays.
+        "relative top-0 z-header h-(--header-h) pt-[env(safe-area-inset-top)] transition-[background-color,box-shadow] duration-base ease-base standalone:sticky md:sticky",
         clear
           ? "stage bg-linear-to-b from-stage/80 to-transparent"
           : "bg-bg/94 shadow-[0_1px_0_var(--line)] backdrop-blur-xl in-data-[tv=1]:bg-bg in-data-[tv=1]:backdrop-blur-none",
@@ -133,8 +140,10 @@ export function Header({ overlay }: { overlay: boolean }) {
       >
         {tc("skipToContent")}
       </a>
-      <div className="page-x mx-auto flex h-full max-w-media items-center gap-4 lg:gap-8">
-        <div className="flex shrink-0 items-center gap-1">
+      {/* From md three columns: the sections stay in the middle of the bar while both sides fit, and give way (scroll)
+          before the logo or the account would leave the screen. A phone has the two ends only. */}
+      <div className="page-x mx-auto flex h-full max-w-media items-center justify-between gap-4 md:grid md:grid-cols-[minmax(max-content,1fr)_minmax(0,auto)_minmax(max-content,1fr)] lg:gap-6">
+        <div className="flex items-center gap-1">
           {/* A home-screen app has no browser Back (7.19): where it came from, else the home page; not on a tab's root. */}
           {!ROOTS.has(pathname) && (
             <IconButton
@@ -149,11 +158,9 @@ export function Header({ overlay }: { overlay: boolean }) {
             />
           )}
           <Link href="/" className="flex h-11 items-center rounded-xs text-text-1" aria-label={`Lumovio — ${t("home")}`}>
-            <Wordmark />
+            <Wordmark compact />
           </Link>
         </div>
-        {/* From md to lg the sections are as wide as the header allows: when they don't fit (a kids profile's tag, a
-            longer language) they scroll sideways instead of pushing the search and the account off the screen. */}
         <nav
           aria-label={t("mainMenu")}
           // Under the header's open search where it reaches them (HeaderSearchPanel): faded out, and back as it closes.
@@ -162,20 +169,22 @@ export function Header({ overlay }: { overlay: boolean }) {
           <ul
             ref={navList}
             style={{ maskImage: navFade, WebkitMaskImage: navFade }}
-            className="scroll-row -my-1 flex items-center gap-1 overflow-x-auto py-1 lg:gap-2"
+            className="scroll-row -my-1 flex items-center gap-1 overflow-x-auto py-1"
           >
             {/* Anime only while the profile has it on (8.14). */}
-            {NAV.filter((n) => (!("account" in n) || account) && (n.key !== "anime" || showsAnime(me))).map((n) => {
+            {NAV.filter((n) => n.key !== "anime" || showsAnime(me)).map((n) => {
               const on = active(n.href);
               return (
                 <li key={n.href}>
                   <Link
-                    href={n.href}
+                    // A guest's library is behind sign-in, which brings them back to it.
+                    href={n.key === "library" && guest ? library : n.href}
                     aria-current={on ? "page" : undefined}
-                    // The active section is a pill on a light fill (redesign-2026-11.md 4); the rest are its text.
+                    // The section in view in the text's own colour, the others a step quieter (two on light, where
+                    // --text-2 is nearly as dark); one weight, so nothing moves as the section changes.
                     className={cn(
-                      "flex h-9 items-center whitespace-nowrap rounded-full px-3 text-body font-medium transition-colors duration-fast ease-fast lg:px-3.5",
-                      on ? "bg-text-1/14 text-text-1" : "text-text-2 hover:bg-text-1/8 hover:text-text-1",
+                      "flex h-9 items-center whitespace-nowrap rounded-sm px-2 text-body font-semibold transition-colors duration-fast ease-fast lg:px-3",
+                      on ? "text-text-1" : "text-text-2 hover:text-text-1 in-data-[theme=light]:text-text-3 in-data-[theme=light]:hover:text-text-1",
                     )}
                   >
                     {t(n.key)}
@@ -185,7 +194,7 @@ export function Header({ overlay }: { overlay: boolean }) {
             })}
           </ul>
         </nav>
-        <div className="ms-auto flex shrink-0 items-center gap-2 lg:gap-3">
+        <div className="flex items-center justify-end gap-2 lg:gap-3">
           {/* A round search button that opens its field and results right here (HeaderSearch); not on the search page. */}
           {!pathname.startsWith("/search") && <HeaderSearch />}
           {me ? (
@@ -194,9 +203,9 @@ export function Header({ overlay }: { overlay: boolean }) {
             <>
               {/* Language and theme for whoever isn't signed in, on a desktop and a phone (SH-07). */}
               <PrefsMenu />
-              {!account && (
-                // A phone has "Sign in" as a tab of the bottom bar.
-                <Link href={signIn} className={buttonClass("primary", "sm", "max-md:hidden")}>
+              {guest && (
+                // Where a signed-in visitor has the avatar; a quiet pill, so the page's own main button stays the one.
+                <Link href={signIn} className={buttonClass("secondary", "sm")}>
                   {tc("signIn")}
                 </Link>
               )}

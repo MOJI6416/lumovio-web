@@ -1,17 +1,22 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, DoorOpen, Globe, LogOut, Settings, Shield, Users } from "lucide-react";
+import type { Profile } from "@lumovio/contracts";
+import { ChevronLeft, ChevronRight, DoorOpen, Globe, Lock, LogOut, Settings, Shield, Users } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DropdownMenu as DM } from "radix-ui";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { AvatarButton, ProfileAvatar } from "@/components/ui/Avatar";
 import { Tag } from "@/components/ui/Badge";
+import { BrandLoader } from "@/components/ui/BrandMotion";
 import { IconButton } from "@/components/ui/IconButton";
 import { usePhoneLayout } from "@/components/ui/layers";
 import { Menu, MenuCheckboxItem, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Menu";
 import { usePortalContainer } from "@/components/ui/portal";
 import { toast } from "@/components/ui/Toast";
+import { LOCALE_CODES } from "@/i18n/locales";
 import { usePathname } from "@/i18n/navigation";
+import { ApiRequestError, api } from "@/lib/api";
 import type { ThemePref } from "@/lib/prefs";
 import { useSession } from "../providers/Providers";
 import { LanguageField, THEMES, ThemeSwitch, themeKey, useInterfaceLanguage, useThemePref } from "./Preferences";
@@ -155,17 +160,45 @@ export function PrefsMenu({ initialOpen = false, focusTrigger = false }: { initi
     return () => cancelAnimationFrame(id);
   }, [focusTrigger, initialOpen]);
   return (
-    <Menu open={open} onOpenChange={setOpen} label={t("prefs")} trigger={<IconButton id={PREFS_TRIGGER_ID} icon={Globe} label={t("prefs")} />}>
+    <Menu open={open} onOpenChange={setOpen} label={t("prefs")} trigger={<IconButton id={PREFS_TRIGGER_ID} icon={Globe} label={t("prefs")} size="sm" />}>
       <PrefsItems phone={phone} />
     </Menu>
   );
 }
 
 /**
- * The account menu (redesign-2026-11.md 5, audit SH-08): the current profile on top, "Switch profile" (the profile
- * screen, not every profile listed here), settings and sign out — nothing else. Theme, site language and TV mode are
- * this device's settings (Settings → Devices), support is in the settings' navigation, calendar and stats are in the
- * library. On a phone it is a sheet.
+ * Another profile of the account (7.19): a menu row with its avatar where the other rows have an icon (24, 32 in a
+ * phone's sheet), the tag of a kids profile and a lock where it asks for a PIN.
+ */
+function ProfileRow({ profile: p, phone, onPick }: { profile: Profile; phone: boolean; onPick: () => void }) {
+  const ts = useTranslations("shell");
+  return (
+    <MenuItem
+      // Centred on the icons' 20 px column, so the names start where the other rows' labels do.
+      lead={
+        <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size={phone ? 32 : 24} className={phone ? "-mx-1.5" : "-mx-0.5"} />
+      }
+      end={
+        (p.isKids || p.hasPin) && (
+          <>
+            {p.isKids && <Tag>{ts("kidsTag")}</Tag>}
+            {p.hasPin && <Lock aria-hidden className="size-4 shrink-0 text-text-3" />}
+          </>
+        )
+      }
+      onSelect={onPick}
+    >
+      <span className="block truncate">{p.name}</span>
+    </MenuItem>
+  );
+}
+
+/**
+ * The account menu (design-system 7.19): the current profile on top, then the account's other profiles — one press and
+ * the same page opens as theirs (one behind a PIN asks for it on "Who's watching?" and comes back) — "Manage profiles",
+ * the settings, the admin for an admin, sign out. A kids profile has "Leave the kids profile" in place of the others.
+ * Theme, site language and TV mode are this device's settings (Settings → Devices), support is in the settings'
+ * navigation, calendar and stats are in the library. On a phone it is a sheet.
  */
 /** The full menu; ./AccountMenu draws a light trigger until this module arrives, then hands over (open, if pressed). */
 export function AccountMenu({ initialOpen = false, focusTrigger = false }: { initialOpen?: boolean; focusTrigger?: boolean }) {
@@ -176,7 +209,9 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const { me, locale } = useSession();
   const phone = usePhoneLayout();
   const pathname = usePathname();
+  const query = useSearchParams().toString();
   const [open, setOpen] = useState(initialOpen);
+  const [switching, setSwitching] = useState<Profile | null>(null);
   const head = useRef<HTMLDivElement>(null);
 
   // Taking over from the light trigger that had the focus: keep it on the (now real) trigger, or — opened from the
@@ -205,7 +240,30 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const p = me.activeProfile;
   const name = p?.name ?? me.user.name;
   const kids = Boolean(p?.isKids);
-  const back = encodeURIComponent(pathname);
+  const here = query ? `${pathname}?${query}` : pathname;
+  const back = encodeURIComponent(here);
+  const others = kids ? [] : me.profiles.filter((x) => x.id !== p?.id);
+  const at = (path: string, lang = locale) => (lang === "en" ? path : `/${lang}${path === "/" ? "" : path}`);
+
+  // One press: the session takes the profile and this page opens again as theirs, in the profile's own interface
+  // language when it has one (L10N-06). A profile behind a PIN asks for it on "Who's watching?", which comes back here.
+  const pick = async (x: Profile) => {
+    setOpen(false);
+    setSwitching(x);
+    try {
+      await api("/api/profiles/select", { method: "POST", json: { profileId: x.id } });
+    } catch (e) {
+      if (e instanceof ApiRequestError && (e.code === "pin_required" || e.code === "password_required")) {
+        window.location.href = at(`/profiles?switch=${x.id}&next=${back}`);
+        return;
+      }
+      setSwitching(null);
+      toast.error(te("network"));
+      return;
+    }
+    const lang = x.uiLocale && (LOCALE_CODES as readonly string[]).includes(x.uiLocale) ? x.uiLocale : locale;
+    window.location.href = at(here, lang);
+  };
 
   // The auth client (better-auth) loads only for sign-out, not with the header on every page.
   const signOut = async () => {
@@ -228,53 +286,70 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   };
 
   return (
-    <Menu
-      open={open}
-      onOpenChange={setOpen}
-      label={t("account")}
-      trigger={
-        // A kids profile says so next to its avatar, always (8.10).
-        <AvatarButton
-          id={ACCOUNT_TRIGGER_ID}
-          avatar={p?.avatar ?? "aurora"}
-          photo={p?.photo}
-          name={name}
-          before={kids && <Tag>{ts("kidsTag")}</Tag>}
-          aria-label={kids ? `${t("account")}: ${name}, ${ts("kidsTag")}` : `${t("account")}: ${name}`}
-        />
-      }
-    >
-      <div ref={head} className="flex items-center gap-3 px-3 pt-2 pb-3">
-        <ProfileAvatar avatar={p?.avatar ?? "aurora"} photo={p?.photo} name={name} size={40} />
-        <div className="min-w-0">
-          <p className="truncate text-title text-text-1">{name}</p>
-          {/* A kids profile is marked as one; the parent's e-mail isn't shown there (PRF-01). */}
-          {kids ? <Tag className="mt-1">{ts("kidsTag")}</Tag> : <p className="truncate text-body-s text-text-2">{me.user.email}</p>}
+    <>
+      <Menu
+        open={open}
+        onOpenChange={setOpen}
+        label={t("account")}
+        trigger={
+          // A kids profile says so next to its avatar, always (8.10).
+          <AvatarButton
+            id={ACCOUNT_TRIGGER_ID}
+            avatar={p?.avatar ?? "aurora"}
+            photo={p?.photo}
+            name={name}
+            before={kids && <Tag>{ts("kidsTag")}</Tag>}
+            aria-label={kids ? `${t("account")}: ${name}, ${ts("kidsTag")}` : `${t("account")}: ${name}`}
+          />
+        }
+      >
+        <div ref={head} className="flex items-center gap-3 px-3 pt-2 pb-3">
+          <ProfileAvatar avatar={p?.avatar ?? "aurora"} photo={p?.photo} name={name} size={40} />
+          <div className="min-w-0">
+            <p className="truncate text-title text-text-1">{name}</p>
+            {/* A kids profile is marked as one; the parent's e-mail isn't shown there (PRF-01). */}
+            {kids ? <Tag className="mt-1">{ts("kidsTag")}</Tag> : <p className="truncate text-body-s text-text-2">{me.user.email}</p>}
+          </div>
         </div>
-      </div>
-      {kids ? (
-        <MenuItem icon={DoorOpen} href={`/profiles?next=${back}`}>
-          {t("leaveKids")}
+        <MenuSeparator />
+        {kids ? (
+          <MenuItem icon={DoorOpen} href={`/profiles?next=${back}`}>
+            {t("leaveKids")}
+          </MenuItem>
+        ) : (
+          <>
+            {others.map((x) => (
+              <ProfileRow key={x.id} profile={x} phone={phone} onPick={() => void pick(x)} />
+            ))}
+            <MenuItem icon={Users} href={`/profiles?manage=1&next=${back}`}>
+              {t("manageProfiles")}
+            </MenuItem>
+          </>
+        )}
+        <MenuSeparator />
+        <MenuItem icon={Settings} href="/settings">
+          {t("settings")}
         </MenuItem>
-      ) : (
-        <MenuItem icon={Users} href={`/profiles?next=${back}`}>
-          {t("profiles")}
+        {me.user.role === "admin" && !kids && (
+          // The admin is another app on this origin (apps/admin at /admin): a full page load, not the site's router.
+          <MenuItem icon={Shield} onSelect={() => window.location.assign("/admin")}>
+            {t("admin")}
+          </MenuItem>
+        )}
+        <MenuSeparator />
+        <MenuItem icon={LogOut} onSelect={() => void signOut()}>
+          {tc("signOut")}
         </MenuItem>
+      </Menu>
+      {switching && (
+        // While the session changes hands and the page opens again: the chosen profile on the stage, over everything.
+        <div role="status" aria-label={tc("loading")} className="stage fixed inset-0 z-scrim grid animate-fade-in place-items-center bg-stage">
+          <div className="flex flex-col items-center gap-8">
+            <ProfileAvatar avatar={switching.avatar} photo={switching.photo} name={switching.name} size={96} />
+            <BrandLoader size="md" />
+          </div>
+        </div>
       )}
-      <MenuSeparator />
-      <MenuItem icon={Settings} href="/settings">
-        {t("settings")}
-      </MenuItem>
-      {me.user.role === "admin" && !kids && (
-        // The admin is another app on this origin (apps/admin at /admin): a full page load, not the site's router.
-        <MenuItem icon={Shield} onSelect={() => window.location.assign("/admin")}>
-          {t("admin")}
-        </MenuItem>
-      )}
-      <MenuSeparator />
-      <MenuItem icon={LogOut} onSelect={() => void signOut()}>
-        {tc("signOut")}
-      </MenuItem>
-    </Menu>
+    </>
   );
 }
