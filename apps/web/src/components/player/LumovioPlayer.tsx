@@ -563,6 +563,16 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const layer = tvNav.openLayer(() => setPanel("none"));
     return () => layer.dismiss();
   }, [tvNav, layerOpen]);
+  // On a TV an open panel stands at the right and the picture moves aside into a rounded window on the left, in view
+  // (redesign-2026-11.md 5, as YouTube's TV app): `data-panel-open` on the player (globals.css); the controls step back.
+  const tvPanel = Boolean(tvNav) && layerOpen;
+  useEffect(() => {
+    if (!(container instanceof HTMLElement) || !tvPanel) return;
+    container.dataset.panelOpen = "";
+    return () => {
+      delete container.dataset.panelOpen;
+    };
+  }, [container, tvPanel]);
   // The controls the remote is in (the focus on a control) are a step of the history too: Back of a TV browser that
   // keeps Back to itself hides them — the focus back on the picture — before it leaves the player (TV3). Hidden by a
   // key or by themselves, they take their entry back.
@@ -764,7 +774,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const r = buffered.find(([s, e]) => currentTime >= s - 0.5 && currentTime <= e + 0.5);
     return r ? Math.max(0, r[1] - currentTime) : 0;
   })();
-  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown;
+  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown && !tvPanel;
   // Text subtitles move up above the controls while they show, and back down when they fade (readable either way) —
   // to the bottom, or two lines higher when the profile puts them "Higher".
   const raised = props.look.style.position === "raised";
