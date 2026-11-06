@@ -6,6 +6,7 @@ import { Check, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
+import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Dialog } from "@/components/ui/Dialog";
@@ -37,6 +38,8 @@ const thumb = (a: ArtImage) => (a.source === "tmdb" ? tmdbImage(a.path, "w300") 
 export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: MediaKind; tmdbId: number; title: string; open: boolean; onOpenChange: (o: boolean) => void }) {
   const t = useTranslations("art");
   const router = useRouter();
+  // The key is the account's: a kids profile can't set it, the API refuses it there (requireAccountDevice).
+  const kids = Boolean(useSession().me?.activeProfile?.isKids);
   const qc = useQueryClient();
   const key = ["title-art", kind, tmdbId] as const;
   const q = useQuery({ queryKey: key, queryFn: () => api<Choices>(`/api/catalog/title/${kind}/${tmdbId}/art`), enabled: open });
@@ -114,7 +117,7 @@ export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: 
           )}
         </QueryState>
         {q.data && list.length === 0 && <p className="text-body-s text-text-2">{t("empty")}</p>}
-        {q.data && <FanartKey set={q.data.ownKey} onChanged={() => void qc.invalidateQueries({ queryKey: key })} />}
+        {q.data && !kids && <FanartKey set={q.data.ownKey} onChanged={() => void qc.invalidateQueries({ queryKey: key })} />}
       </div>
     </Dialog>
   );

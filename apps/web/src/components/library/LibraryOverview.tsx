@@ -4,6 +4,7 @@ import type { CalendarEvent, ConnectionSummary, ContinueWatchingItem, HistoryEnt
 import { useQuery } from "@tanstack/react-query";
 import { Library, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { ContinueRow } from "@/components/media/ContinueRow";
 import { LandscapeCard } from "@/components/media/LandscapeCard";
 import { ListCard } from "@/components/media/ListCard";
@@ -90,8 +91,15 @@ export function LibraryOverview() {
     queryFn: () => api<{ events: CalendarEvent[] }>(`/api/calendar?from=${day(-7)}&to=${today}`),
   });
   const servers = useQuery({ queryKey: ["on-servers"], queryFn: () => api<{ items: TitleSummary[] }>("/api/library/on-servers") });
+  // The week's new episodes are waited for a moment only: a cold calendar of a profile with many shows took 17 s, and
+  // the whole overview waited for it (stand QA, 2026-11-06). Later, its shelf comes in where it belongs.
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaited(true), 2500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
-  if (start.loading || servers.isLoading || recent.isLoading) return <OverviewSkeleton />;
+  if (start.loading || servers.isLoading || (recent.isLoading && !waited)) return <OverviewSkeleton />;
   if (start.allFailed) return <ErrorState error={start.error} title={t("loadError")} onRetry={start.retry} retrying={start.retrying} />;
 
   if (start.isNew) {

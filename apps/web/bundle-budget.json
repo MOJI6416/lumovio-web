@@ -2,9 +2,9 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 234359,
-      "cssGzip": 20624,
-      "jsChunks": 16
+      "jsGzip": 241482,
+      "cssGzip": 22620,
+      "jsChunks": 17
     },
     "/[locale]/android-tv": {
       "jsGzip": 184635,
@@ -52,8 +52,8 @@
       "jsChunks": 14
     },
     "/[locale]/dev/player-check": {
-      "jsGzip": 203427,
-      "cssGzip": 20624,
+      "jsGzip": 209629,
+      "cssGzip": 22620,
       "jsChunks": 14
     },
     "/[locale]/dev/ui": {
@@ -257,8 +257,8 @@
       "jsChunks": 21
     },
     "/[locale]/u/[handle]": {
-      "jsGzip": 198194,
-      "cssGzip": 20624,
+      "jsGzip": 204154,
+      "cssGzip": 22620,
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {

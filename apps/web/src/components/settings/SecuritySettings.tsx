@@ -139,6 +139,15 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
   const [setup, setSetup] = useState<Setup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // What this form just did, until the session says the same: the status at the top follows at once (it said "Off"
+  // beside "Two-step verification is on" while the backup codes were shown).
+  const [changed, setChanged] = useState<boolean | null>(null);
+  const [seen, setSeen] = useState(enabled);
+  if (seen !== enabled) {
+    setSeen(enabled);
+    setChanged(null);
+  }
+  const on = changed ?? enabled;
   useUnsavedChanges(mode === "scan");
 
   const reset = () => {
@@ -179,6 +188,7 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
     setBusy(false);
     if (r.error) return setError(tr(authErrorKey(r.error)));
     setCode("");
+    setChanged(true);
     setMode("codes");
     // The status at the top follows at once; the codes stay on screen until "I've saved the codes".
     router.refresh();
@@ -196,12 +206,13 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
       return setError(key === "auth.invalidCredentials" ? ta("errWrongPassword") : tr(key));
     }
     toast.success(t("twoFactorDisabled"));
+    setChanged(false);
     reset();
     router.refresh();
   };
 
   const steps = [t("twoFactorStep1"), t("twoFactorStep2"), t("twoFactorStep3"), t("twoFactorStep4")];
-  const status = enabled ? (
+  const status = on ? (
     <StatusBadge status="success">{t("twoFactorOn")}</StatusBadge>
   ) : (
     <StatusBadge status="neutral">{t("twoFactorOff")}</StatusBadge>
@@ -211,13 +222,13 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
     <SettingsSection title={t("twoFactor")} description={t("twoFactorIntro")}>
       <SettingsRow label={t("twoFactorState")} description={!hasPassword ? t("twoFactorNeedsPassword") : undefined}>
         {status}
-        {hasPassword && mode === "idle" && !enabled && (
+        {hasPassword && mode === "idle" && !on && (
           <Button variant="secondary" icon={ShieldCheck} onClick={() => setMode("password")}>
             {t("enable2fa")}
           </Button>
         )}
         {/* Turning protection off is the risky way: red words, not a filled button (7.1). */}
-        {hasPassword && mode === "idle" && enabled && (
+        {hasPassword && mode === "idle" && on && (
           <Button variant="danger-tertiary" onClick={() => setMode("disable")}>
             {t("disable2fa")}
           </Button>
@@ -263,7 +274,7 @@ function TwoFactorSection({ enabled, hasPassword }: { enabled: boolean; hasPassw
               <div className="flex flex-col gap-2 md:max-w-xl">
                 <p className="text-body-s font-semibold text-text-1">{t("setupKey")}</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="min-w-0 flex-1 select-all break-all rounded-md bg-surface-2 px-3 py-2 text-body tabular-nums tracking-wide text-text-1 [font-variant-ligatures:none]">
+                  <p className="min-w-0 flex-1 select-all break-words rounded-md bg-surface-2 px-3 py-2 text-body tabular-nums tracking-wide text-text-1 [font-variant-ligatures:none]">
                     {groupKey(setup.key)}
                   </p>
                   <Button

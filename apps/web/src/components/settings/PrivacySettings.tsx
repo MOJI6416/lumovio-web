@@ -227,7 +227,7 @@ function DangerZone() {
       confirmLabel: t("deleteAccount"),
       confirmWord: t("deleteWord"),
       action: async () => {
-        const r = await authCall(() => authClient.deleteUser({ callbackURL: "/" }));
+        const r = await authCall(() => authClient.deleteUser({ callbackURL: "/?account=deleted" }));
         if (r.error) throw new Error(tr(authErrorKey(r.error)));
       },
       error: (e) => (e instanceof Error ? e.message : tr("errors.generic")),

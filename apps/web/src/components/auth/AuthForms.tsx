@@ -514,7 +514,8 @@ export function TwoFactorForm({ started }: { started: boolean }) {
     setBusy(false);
     const key = authErrorKey(res.error);
     if (key === "auth.errCodeExpired") return setExpired(true);
-    setError(tr(key));
+    // A backup code is gone once used, so a refused one may be a typo or one already spent: say both.
+    setError(tr(backup && key === "auth.errCode" ? "auth.errBackupCode" : key));
   };
   return (
     <Card icon={ShieldCheck} title={t("twoFactorTitle")} subtitle={backup ? t("backupCodeText") : t("twoFactorText")}>

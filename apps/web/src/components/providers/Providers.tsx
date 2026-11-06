@@ -3,11 +3,12 @@
 import type { Me } from "@lumovio/contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { createContext, type ReactNode, useContext, useEffect, useState, useSyncExternalStore } from "react";
 import { ApiRequestError, setClientLocale } from "@/lib/api";
 import { shareStore } from "../share/share";
 import { BackCover } from "../shell/BackCover";
-import { Toaster } from "../ui/Toast";
+import { Toaster, toast } from "../ui/Toast";
 
 // The share window (fields, QR) loads only once something is shared, not with every page (bundle budget).
 const ShareHost = dynamic(() => import("../share/ShareDialog").then((m) => m.ShareHost), { ssr: false });
@@ -47,6 +48,22 @@ function PerfGate({ tv }: { tv: boolean }) {
     setOn(false);
   };
   return on ? <PerfMeter tv={tv} onOff={off} /> : null;
+}
+
+/**
+ * The e-mailed link that deletes the account lands on home with `?account=deleted` (PrivacySettings): said once, then
+ * the address is cleaned — the person came as a guest with no word of it (stand QA, 2026-11-06).
+ */
+function AccountDeletedNotice() {
+  const t = useTranslations("settings");
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("account") !== "deleted") return;
+    url.searchParams.delete("account");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    toast.success(t("accountDeleted"));
+  }, [t]);
+  return null;
 }
 
 interface Session {
@@ -94,6 +111,7 @@ export function Providers({ children, me, apiDown = false, locale, tv }: { child
         <Toaster />
         {!tv && <LazyShareHost />}
         <PerfGate tv={tv} />
+        {!tv && <AccountDeletedNotice />}
         {!tv && <BackCover />}
       </QueryClientProvider>
     </SessionContext.Provider>

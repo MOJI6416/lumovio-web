@@ -10,6 +10,7 @@ import { TitleGrid } from "@/components/media/Row";
 import { GuestGatePanel } from "@/components/shell/GuestGate";
 import { Button } from "@/components/ui/Button";
 import { InputChip } from "@/components/ui/Chip";
+import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Textarea } from "@/components/ui/Input";
@@ -183,7 +184,8 @@ export function AiSearch({ signedIn, text, onTextChange }: { signedIn: boolean; 
           }}
         />
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p id="ai-hint" className="text-body-s text-text-2">
+          {/* Said before the first search; on a phone, once there are results, it gives its lines to them (R3). */}
+          <p id="ai-hint" className={cn("text-body-s text-text-2", f && data && "max-sm:hidden")}>
             {t("aiHint")}
           </p>
           <Button type="submit" icon={Sparkles} loading={run.isPending} disabled={text.trim().length < 3} className="shrink-0">
@@ -252,7 +254,11 @@ export function AiSearch({ signedIn, text, onTextChange }: { signedIn: boolean; 
  * The conditions the search applies (SRCH-09): the hard ones — Selects for the kind, a series' type and status, the
  * length and the sort, InputChips for genres, years, rating and language — and, apart, the wishes that only order or
  * widen the result ("Like …", keywords, "shorter first"). One look, always shown; each change re-queries the catalog.
+ * On a phone each row is one line that scrolls sideways, so the first results are on the first screen (R3).
  */
+const ROW =
+  "scroll-row flex items-center gap-2 *:shrink-0 max-sm:-mx-(--gutter) max-sm:-my-1 max-sm:overflow-x-auto max-sm:px-(--gutter) max-sm:py-1 sm:flex-wrap";
+
 function Conditions({
   f,
   data,
@@ -282,7 +288,7 @@ function Conditions({
       <h2 id="ai-conditions" className="text-title text-text-1">
         {t("aiInterpretation")}
       </h2>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={ROW}>
         <Select
           aria-label={t("aiKind")}
           size="sm"
@@ -374,7 +380,7 @@ function Conditions({
         />
       </div>
       {(f.keywords.length > 0 || f.similarTo.length > 0 || f.preferShort) && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={ROW}>
           <span className="text-body-s text-text-2">{t("aiPreferences")}</span>
           {f.similarTo.map((s) => (
             <InputChip key={`s${s}`} label={t("aiSimilar", { title: s })} onRemove={() => edit({ similarTo: f.similarTo.filter((x) => x !== s) })} />

@@ -260,11 +260,17 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
             <li key={p.id}>
               <button /* ui-lint-ignore raw-button: a profile tile (avatar + name), 7.17 */
                 type="button"
-                disabled={busy}
+                // Not `disabled` while a choice is in flight: a disabled button drops the focus, and the PIN or
+                // password dialog that follows would have nowhere to give it back on Escape (C27).
+                aria-disabled={busy || undefined}
                 aria-current={current && !manage ? "true" : undefined}
                 aria-label={manage ? t("editNamed", { name: p.name }) : undefined}
                 aria-describedby={openToKids ? `no-pin-${p.id}` : undefined}
-                onClick={() => (manage ? edit(p) : void select(p))}
+                onClick={() => {
+                  if (busy) return;
+                  if (manage) edit(p);
+                  else void select(p);
+                }}
                 className="group/pp flex w-36 flex-col items-center gap-3 rounded-md p-2 outline-offset-4"
               >
                 <span

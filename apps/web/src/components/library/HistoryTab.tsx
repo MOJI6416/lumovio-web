@@ -39,6 +39,13 @@ export const SOURCE_NAMES: Record<string, string> = {
 };
 
 /**
+ * An imported watch that came with a date and no time (Letterboxd, IMDb) is kept at that day's noon UTC — at midnight
+ * before 2026-11-06 — and says no time: it read "03:00" (stand QA, 2026-11-06).
+ */
+const untimed = (e: { source: string; watchedAt: string }) =>
+  e.source.startsWith("import:") && /T(00|12):00:00\.000Z$/.test(new Date(e.watchedAt).toISOString());
+
+/**
  * History (S09, LIB-05, LIB-11): days, newest first; in a day one row per title — a film watched twice says "2 times",
  * a show's episodes are one row ("Season 1 · episodes 4–6"). Every row has "More" on every screen: "More info" and
  * "Remove from history", gone at once with "Undo" in the toast (8.3).
@@ -137,7 +144,7 @@ export function HistoryTab() {
               ? tc("episodes", { count: eps.count })
               : t("historyWholeShow");
     const sources = new Set(g.entries.map((e) => sourceLabel(e.source)));
-    return [what, time.format(new Date(last.watchedAt)), sources.size === 1 ? [...sources][0] : null]
+    return [what, untimed(last) ? null : time.format(new Date(last.watchedAt)), sources.size === 1 ? [...sources][0] : null]
       .filter(Boolean)
       .join(" · ");
   };

@@ -17,6 +17,7 @@ import { WatchNowToggle } from "@/components/media/WatchNowToggle";
 import { GuestGateLinks } from "@/components/shell/GuestGate";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
 import { Link as UiLink } from "@/components/ui/Link";
+import { meFailure } from "@/lib/me-state";
 import { optional } from "@/lib/optional";
 import { pageSeo } from "@/lib/seo";
 import { getMeState, serverApi } from "@/lib/server-api";
@@ -56,7 +57,11 @@ export default async function HomePage({ params, searchParams }: { params: Promi
   const { watch } = await searchParams;
   const empty = { items: [] as TitleSummary[], wanted: [] as TitleSummary[] };
   const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
-    serverApi<CatalogPage>(`/api/catalog/home${watch === "now" && profile ? "?watch=now" : ""}`),
+    // A guest has no session to tell an outage by (getMeState): the home's own data not coming is the same screen.
+    serverApi<CatalogPage>(`/api/catalog/home${watch === "now" && profile ? "?watch=now" : ""}`).catch((e) => {
+      if (meFailure(e) === "unavailable") return null;
+      throw e;
+    }),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/movie").catch(() => ({ genres: [] })),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/tv").catch(() => ({ genres: [] })),
     profile ? serverApi<{ items: ContinueWatchingItem[] }>("/api/continue").catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
@@ -67,6 +72,13 @@ export default async function HomePage({ params, searchParams }: { params: Promi
     // Shelves of the profile's own Watchlist (short films, finished series); none in "watch now".
     profile && watch !== "now" ? optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] }) : Promise.resolve({ rows: [] as CatalogRow[] }),
   ]);
+  if (!home) {
+    return (
+      <div className="page-x pt-8">
+        <ServiceUnavailable />
+      </div>
+    );
+  }
   // "Watch now": every shelf keeps only titles with a copy on the profile's servers (the API decides).
   const now = home.mode === "now";
   // The Top 10 is the week's trend blended with Lumovio's own week (API catalog/top.ts); other lead shelves (kids profiles) render as normal shelves,
