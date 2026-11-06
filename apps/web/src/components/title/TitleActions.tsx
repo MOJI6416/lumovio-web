@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, RefreshCw, Search, Server, Star, Tv } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, Plus, RefreshCw, Search, Server, Tv } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
@@ -20,25 +20,24 @@ import { api } from "@/lib/api";
 import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { isOngoing, resumable, sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
-import { HeroAction } from "./HeroAction";
 import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-plan";
 import { serviceOf } from "./services";
 import { scrollToTabs, useOpenTab } from "./tab-link";
 import type { ProbeResult } from "./TorrentProbe";
 import { TrailerDialog } from "./TrailerDialog";
 
-// The rarely opened parts load when they are approached (ui/lazy-swap); the search for a release only where it runs.
-const rateModule = lazyControl(() => import("./TitleRate"));
+// The rarely opened parts load when they are approached (ui/lazy-swap) or opened; the search for a release only where
+// it runs.
 const moreModule = lazyControl(() => import("./TitleMore"));
+const TitleRate = dynamic(() => import("./TitleRate").then((m) => m.TitleRate), { ssr: false });
 const TorrentProbe = dynamic(() => import("./TorrentProbe").then((m) => m.TorrentProbe), { ssr: false });
 
 /**
- * The title hero's actions (design-system 7.14 items 6–7, 8.1, 8.2): one main button by the table of 8.2 —
- * "Continue", "Watch" (own copy, or the recommended TorrServer release), the trailer, or none (then "Watchlist" is the
- * main one); the labelled "Watchlist" and "Rate"; "More" with the rest (Favourites, Watched, Not interested, Add to
- * list…, new-episode alerts, Share). A label says what the button does and stays the same when it is on; "on" is
- * one look: the filled icon. Under them one line of where it plays from, with the way to "Where to watch".
- * On a phone: the main button across, then "Watchlist", "Rate" and "More" in a row of three with captions (10.1).
+ * The title hero's actions (design-system 7.14 items 6–7, 8.2; redesign-2026-11.md 2): one main button by the table of
+ * 8.2 — "Continue", "Watch" (own copy, or the recommended TorrServer release), the trailer, or none (then "Watchlist" is
+ * the main one); beside it two circles: "Watchlist" (+, ✓ when on) and "More" with the rest (Rate, Favourites, Watched,
+ * Not interested, Add to list…, new-episode alerts, Share). Under them one line of where it plays from, with the way to
+ * "Where to watch". The same row on a phone, the main button taking the width the circles leave.
  */
 export function TitleActions({ title: d }: { title: TitleCore }) {
   const t = useTranslations("titlePage");
@@ -54,10 +53,8 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [playing, setPlaying] = useState(false);
   const tabs = useOpenTab();
+  const [rateOpen, setRateOpen] = useState(false);
 
-  const rateLight = useRef<HTMLButtonElement>(null);
-  const rate = useLazySwap(rateModule, rateLight);
-  const rateIn = useStandIn(rate);
   const moreLight = useRef<HTMLButtonElement>(null);
   const more = useLazySwap(moreModule, moreLight);
   const moreIn = useStandIn(more);
@@ -70,7 +67,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     replayed.current = true;
     const action = takeGuestIntent(d.id);
     if (!action || actions.replay(action)) return;
-    if (action === "rate") rate.activate(true);
+    if (action === "rate") setRateOpen(true);
     else if (action === "follow" && isOngoing(d)) {
       void api("/api/follow", { method: "POST", json: { titleId: d.id, on: true } }).then(
         () => toast.success(tg("doneFollow")),
@@ -130,68 +127,47 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const inWatchlist = actions.inWatchlist;
   // No main button: "Watchlist" is the main one (8.2).
   const watchlistMain = plan.primary === null;
-  const watchlistIcon = inWatchlist ? <BookmarkCheck aria-hidden className="fill-current [&>path:last-child]:text-bg" /> : <Bookmark aria-hidden />;
+  const toggleWatchlist = () => void actions.setWatchlist(!inWatchlist);
   const watchlist = watchlistMain ? (
-    <Button size="lg" aria-pressed={signedIn ? inWatchlist : undefined} disabled={actions.busy === "wl"} onClick={() => void actions.setWatchlist(!inWatchlist)} className="max-md:w-full md:min-w-48">
-      {watchlistIcon}
+    <Button size="lg" aria-pressed={signedIn ? inWatchlist : undefined} disabled={actions.busy === "wl"} onClick={toggleWatchlist} className="max-md:flex-1 md:min-w-48">
+      {inWatchlist ? <BookmarkCheck aria-hidden className="fill-current [&>path:last-child]:text-bg" /> : <Bookmark aria-hidden />}
       {t("watchlist")}
     </Button>
   ) : (
-    <HeroAction aria-pressed={signedIn ? inWatchlist : undefined} disabled={actions.busy === "wl"} onClick={() => void actions.setWatchlist(!inWatchlist)}>
-      {watchlistIcon}
-      {t("watchlist")}
-    </HeroAction>
+    // The label stays "Watchlist"; on is the check (aria-pressed), off the plus.
+    <IconButton
+      icon={inWatchlist ? Check : Plus}
+      variant="secondary"
+      size="lg"
+      label={t("watchlist")}
+      aria-pressed={signedIn ? inWatchlist : undefined}
+      disabled={actions.busy === "wl"}
+      onClick={toggleWatchlist}
+    />
   );
 
   const rating = state?.rating ?? null;
-  const rateLabel = rating ? t("ratedLabel", { value: rating }) : t("rate");
-  const rateStandIn = (
-    <HeroAction ref={rateLight} aria-label={rateLabel} aria-haspopup="dialog" aria-expanded={false} {...rateIn.handlers}>
-      <Star aria-hidden className={cn(rating && "fill-current")} />
-      {rating ?? t("rate")}
-    </HeroAction>
-  );
+  // A guest gets the sign-in sheet for it, and the dialog after signing in (8.6).
+  const onRate = () => (signedIn ? setRateOpen(true) : actions.requireAuth("rate", "rate"));
   const moreLabel = t("more");
-  const moreStandIn = (
-    <>
-      <HeroAction aria-haspopup="menu" aria-expanded={false} className="md:hidden" {...moreIn.handlers}>
-        <Ellipsis aria-hidden />
-        {moreLabel}
-      </HeroAction>
-      <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" size="lg" label={moreLabel} aria-haspopup="menu" aria-expanded={false} className="max-md:hidden" {...moreIn.handlers} />
-    </>
-  );
 
   return (
     <div>
-      <div className="flex flex-wrap items-start gap-3 max-md:flex-col max-md:items-stretch">
+      <div className="flex items-start gap-3">
         {plan.primary && (
-          <div className="flex flex-col gap-1.5 max-md:w-full">
+          <div className="flex min-w-0 flex-col gap-1.5 max-md:flex-1">
             <PrimaryButton primary={plan.primary} href={playHref} busy={playing} onTrailer={() => setTrailerOpen(true)} onRelease={() => void playRelease()} />
             {sub && <p className="text-body-s text-text-2 tabular-nums max-md:text-center">{sub}</p>}
           </div>
         )}
-        {watchlistMain && watchlist}
-        <div className="flex items-start gap-3 max-md:w-full max-md:justify-between max-md:gap-2">
-          {!watchlistMain && watchlist}
-          {!signedIn ? (
-            // A guest gets the sign-in sheet for it, and the picker after signing in (8.6).
-            <HeroAction onClick={() => actions.requireAuth("rate", "rate")}>
-              <Star aria-hidden />
-              {t("rate")}
-            </HeroAction>
-          ) : rateIn.full ? (
-            <rateIn.full.TitleRate title={d} actions={actions} initialOpen={rate.start.open} focusTrigger={rate.start.focus} label={rateLabel} />
-          ) : (
-            rateStandIn
-          )}
-          {moreIn.full ? (
-            <moreIn.full.TitleMore title={d} initialOpen={more.start.open} focusTrigger={more.start.focus} label={moreLabel} />
-          ) : (
-            moreStandIn
-          )}
-        </div>
+        {watchlist}
+        {moreIn.full ? (
+          <moreIn.full.TitleMore title={d} initialOpen={more.start.open} focusTrigger={more.start.focus} label={moreLabel} rating={rating} onRate={onRate} />
+        ) : (
+          <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" size="lg" label={moreLabel} aria-haspopup="menu" aria-expanded={false} {...moreIn.handlers} />
+        )}
       </div>
+      {signedIn && rateOpen && <TitleRate title={d} actions={actions} open={rateOpen} onOpenChange={setRateOpen} />}
       {/* While availability loads, the line it brings is held (7.11), so the hero doesn't grow when it arrives. */}
       {plan.primary?.kind === "loading" && (
         <div aria-hidden className="mt-4 flex h-8 items-center max-sm:h-11">
@@ -212,7 +188,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
 function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary: NonNullable<Primary>; href: string; busy: boolean; onTrailer: () => void; onRelease: () => void }) {
   const t = useTranslations("titlePage");
   const tt = useTranslations("title");
-  const cls = buttonClass("primary", "lg", "max-md:w-full md:min-w-44");
+  const cls = buttonClass("primary", "lg", "w-full md:min-w-44");
   if (primary.kind === "loading")
     return (
       <span className={cn(cls, "pointer-events-none opacity-80")} role="status">
@@ -229,7 +205,7 @@ function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary:
     );
   if (primary.kind === "watchRelease")
     return (
-      <Button size="lg" loading={busy} onClick={onRelease} className="max-md:w-full md:min-w-44">
+      <Button size="lg" loading={busy} onClick={onRelease} className="w-full md:min-w-44">
         <Play aria-hidden className="fill-current" />
         {tt("play")}
       </Button>
@@ -242,7 +218,7 @@ function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary:
       </Link>
     );
   return (
-    <Button size="lg" icon={Clapperboard} onClick={onTrailer} className="max-md:w-full md:min-w-44">
+    <Button size="lg" icon={Clapperboard} onClick={onTrailer} className="w-full md:min-w-44">
       {t("trailer")}
     </Button>
   );

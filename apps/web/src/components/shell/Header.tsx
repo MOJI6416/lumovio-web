@@ -144,14 +144,13 @@ export function Header({ overlay }: { overlay: boolean }) {
                   <Link
                     href={n.href}
                     aria-current={on ? "page" : undefined}
+                    // The active section is a pill on a light fill (redesign-2026-11.md 4); the rest are its text.
                     className={cn(
-                      "relative flex h-10 items-center rounded-sm px-2 text-body font-semibold transition-colors duration-fast ease-fast",
-                      on ? "text-text-1" : "text-text-2 hover:text-text-1",
+                      "flex h-9 items-center rounded-full px-3.5 text-body font-medium transition-colors duration-fast ease-fast",
+                      on ? "bg-text-1/14 text-text-1" : "text-text-2 hover:bg-text-1/8 hover:text-text-1",
                     )}
                   >
                     {t(n.key)}
-                    {/* The active section: a 2 px indicator on the header's lower edge (7.19). */}
-                    {on && <span aria-hidden className="absolute inset-x-2 -bottom-3 h-0.5 rounded-t-xs bg-tab-indicator" />}
                   </Link>
                 </li>
               );
