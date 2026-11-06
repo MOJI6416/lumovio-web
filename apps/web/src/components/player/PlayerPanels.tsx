@@ -105,7 +105,7 @@ export function PlayerPanels({
         {back}
       </SidePanel>
       <SidePanel open={panel === "settings"} onOpenChange={close} title={t("qualityAndSpeed")}>
-        <SettingsBody canSwitch={Boolean(sources)} onInfo={() => onPanel("info")} onHelp={() => onPanel("help")} />
+        <SettingsBody onInfo={() => onPanel("info")} onHelp={() => onPanel("help")} />
         {back}
       </SidePanel>
       <SidePanel open={panel === "info"} onOpenChange={close} title={t("playbackInfo")}>
@@ -202,7 +202,7 @@ function TracksBody({
             }}
             options={audio.map((a) => ({ value: a.value, label: a.label, description: a.description, disabled: !canSwitch && !a.checked }))}
           />
-          {audio.length === 1 ? <Note>{t("audioOne")}</Note> : !canSwitch && <Note>{t("audioNoSwitch")}</Note>}
+          {audio.length > 1 && !canSwitch && <Note>{t("audioNoSwitch")}</Note>}
         </div>
       )}
       {subtitleTracks.length === 0 ? (
@@ -252,7 +252,6 @@ function SubtitleLookBody({ look }: { look: SubtitleLook }) {
   const t = useTranslations("player");
   const ts = useTranslations("subtitles");
   const signed = useSignedSeconds();
-  const one = new Intl.NumberFormat(useLocale(), { maximumFractionDigits: 1 });
   const timing = useId();
   const later = useRef<HTMLButtonElement>(null);
   return (
@@ -264,7 +263,7 @@ function SubtitleLookBody({ look }: { look: SubtitleLook }) {
           onValueChange={look.setSize}
           options={(["s", "m", "l", "xl"] as const).map((v) => ({ value: v, label: ts(`size_${v}`) }))}
         />
-        <Note>{look.sizeFailed ? ts("sizeFailed") : ts("playerNote")}</Note>
+        {look.sizeFailed && <Note>{ts("sizeFailed")}</Note>}
       </div>
       <section aria-labelledby={timing} className="flex flex-col gap-2">
         <h3 id={timing} className="text-body-s font-semibold text-text-1">
@@ -294,7 +293,6 @@ function SubtitleLookBody({ look }: { look: SubtitleLook }) {
             </Button>
           )}
         </div>
-        <Note>{ts("timingNote", { step: one.format(OFFSET_STEP) })}</Note>
       </section>
     </>
   );
@@ -316,7 +314,7 @@ function useTrackWords(originalLanguage: string | null) {
 }
 
 /** Quality and speed: the stream's real versions (one file is one quality, said so), the speed, playback info, the keys. */
-function SettingsBody({ canSwitch, onInfo, onHelp }: { canSwitch: boolean; onInfo: () => void; onHelp: () => void }) {
+function SettingsBody({ onInfo, onHelp }: { onInfo: () => void; onHelp: () => void }) {
   const t = useTranslations("player");
   const number = new Intl.NumberFormat(useLocale(), { maximumFractionDigits: 2 });
   const store = usePlayer();
@@ -345,7 +343,6 @@ function SettingsBody({ canSwitch, onInfo, onHelp }: { canSwitch: boolean; onInf
         <section className="flex flex-col gap-2">
           <h3 className="text-body-s font-semibold text-text-1">{t("quality")}</h3>
           <Note>{height ? t("qualityOne", { height }) : t("qualityOneUnknown")}</Note>
-          {canSwitch && <Note>{t("qualityOtherVersion")}</Note>}
         </section>
       )}
       <RadioGroup

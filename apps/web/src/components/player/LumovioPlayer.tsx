@@ -882,10 +882,18 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
           </div>
         )}
 
-        {/* Touch screens: back, play and forward in the middle, like streaming apps; the bar then has no second set (PLR-12). */}
-        <div className={clsx("pointer-events-none absolute inset-0 hidden items-center justify-center gap-10 transition-opacity duration-slow pointer-coarse:flex", showChrome ? "opacity-100" : "opacity-0")}>
+        {/* Touch screens: back, play and forward in the middle, like streaming apps; the bar then has no second set (PLR-12).
+            Play is the large one (72 against 48, redesign-2026-11.md: the main action shows by its size). */}
+        <div className={clsx("pointer-events-none absolute inset-0 hidden items-center justify-center gap-12 transition-opacity duration-slow pointer-coarse:flex", showChrome ? "opacity-100" : "opacity-0")}>
           <IconButton icon={RotateCcw} label={t("back10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(Math.max(0, currentTime - 10))} />
-          <IconButton icon={paused ? Play : Pause} label={paused ? t("play") : t("pause")} variant="stage" size="lg" className={clsx(hit, "[&_svg]:fill-current")} onClick={() => void togglePlay()} />
+          <IconButton
+            icon={paused ? Play : Pause}
+            label={paused ? t("play") : t("pause")}
+            variant="stage"
+            size="lg"
+            className={clsx(hit, "size-18 [&_svg]:size-9 [&_svg]:fill-current [&>span]:size-18")}
+            onClick={() => void togglePlay()}
+          />
           <IconButton icon={RotateCw} label={t("forward10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(currentTime + 10)} />
         </div>
 
