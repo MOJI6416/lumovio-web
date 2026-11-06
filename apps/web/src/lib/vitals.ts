@@ -37,7 +37,8 @@ let started = false;
 
 /** Starts measuring this page load (once). */
 export function startVitals(tv: boolean) {
-  if (started || optedOut() || typeof PerformanceObserver === "undefined") return;
+  // Automation (headless checks, crawlers driving a browser) isn't a person's visit: it would skew the field numbers.
+  if (started || optedOut() || navigator.webdriver || typeof PerformanceObserver === "undefined") return;
   started = true;
   const group = pageGroup(location.pathname, tv);
   const device = deviceOf(tv);

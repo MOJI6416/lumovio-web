@@ -1,4 +1,5 @@
 import type { ArtImage } from "@lumovio/contracts";
+import { preload } from "react-dom";
 
 /**
  * TMDB image CDN helpers. Images load straight from image.tmdb.org in the size each slot needs,
@@ -43,4 +44,20 @@ export function backdropSrcSet(path: string | null | undefined): string | undefi
   return (["w780", "w1280", "w1920", "original"] as const)
     .map((s) => `${BASE}/${s}${path} ${s === "original" ? "3840" : s.slice(1)}w`)
     .join(", ");
+}
+
+/**
+ * The width a full-bleed backdrop is drawn at, for its srcSet: the window's, but no more than 1280 px below 1600 px
+ * windows. The art sits under a dark scrim (3.5), where TMDB's 1280 copy is as sharp to the eye as the 1920 one and a
+ * third of its weight (631 → ~250 KB on a 1440 laptop: the billboard is the home page's largest paint, 2026-11-06).
+ */
+export const BACKDROP_SIZES = "(min-width: 1600px) 100vw, min(100vw, 1280px)";
+
+/**
+ * Asks for the page's first backdrop from the document's head (React's preload), so the browser fetches it with the
+ * styles and fonts instead of when its <img> comes up in the HTML — the largest paint of home, a section and a title.
+ */
+export function preloadBackdrop(path: string | null | undefined) {
+  const href = tmdbImage(path, "w1280");
+  if (href) preload(href, { as: "image", imageSrcSet: backdropSrcSet(path), imageSizes: BACKDROP_SIZES, fetchPriority: "high" });
 }

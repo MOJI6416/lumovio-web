@@ -8,7 +8,7 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "re
 import { IconButton } from "@/components/ui/IconButton";
 import { usePlayable } from "@/hooks/useAvailability";
 import { capitalize } from "@/lib/format";
-import { backdropSrcSet, tmdbImage } from "@/lib/images";
+import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
 import { afterPageLoad } from "@/lib/page-load";
 import { rotates, SlideClock } from "@/lib/rotation";
 import { CardRating } from "./CardRating";
@@ -118,6 +118,8 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   const hero = under === "header";
   const section = under === "section";
 
+  // The first slide's art is the page's largest paint: fetched from the head, not when its <img> is reached.
+  preloadBackdrop(items[0]?.backdropPath);
   return (
     <section
       ref={root}
@@ -150,7 +152,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                 <img
                   src={tmdbImage(f.backdropPath, "w1280") ?? undefined}
                   srcSet={backdropSrcSet(f.backdropPath)}
-                  sizes="100vw"
+                  sizes={BACKDROP_SIZES}
                   alt=""
                   fetchPriority={i === 0 ? "high" : "low"}
                   className="size-full object-cover object-[50%_30%] md:object-[50%_22%]"

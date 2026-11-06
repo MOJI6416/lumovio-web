@@ -7,7 +7,7 @@ import { FanartBackdrop } from "@/components/title/FanartBackdrop";
 import { AgeRating } from "@/components/ui/Badge";
 import { Link } from "@/components/ui/Link";
 import { capitalize, formatRuntime } from "@/lib/format";
-import { backdropSrcSet, tmdbImage } from "@/lib/images";
+import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
 import { personHref } from "@/lib/slug";
 import { ExpandableText } from "./ExpandableText";
 import { HeroRatings } from "./HeroRatings";
@@ -35,6 +35,8 @@ export async function TitleHero({ details: d, children }: { details: TitleDetail
   const kind = d.isAnime ? t("common.anime") : d.kind === "movie" ? t("common.movie") : t("common.series");
   // A Fanart.tv background stands in when TMDB has no backdrop (with the poster layout underneath).
   const wide = Boolean(d.backdropPath || d.altBackdrop);
+  // The backdrop is the title page's largest paint: fetched from the head.
+  preloadBackdrop(d.backdropPath);
   const art = Boolean(wide || d.posterPath);
   const original = d.originalTitle && d.originalTitle !== d.title ? d.originalTitle : null;
   const meta = [kind, d.year, runtime, d.kind === "tv" && d.numberOfSeasons ? t("common.seasons", { count: d.numberOfSeasons }) : null].filter((x) => x !== null && x !== undefined && x !== "");
@@ -51,7 +53,7 @@ export async function TitleHero({ details: d, children }: { details: TitleDetail
               <img
                 src={tmdbImage(d.backdropPath, "w1280") ?? undefined}
                 srcSet={backdropSrcSet(d.backdropPath)}
-                sizes="100vw"
+                sizes={BACKDROP_SIZES}
                 alt=""
                 fetchPriority="high"
                 className="size-full object-cover object-[50%_30%] md:object-[50%_20%]"
