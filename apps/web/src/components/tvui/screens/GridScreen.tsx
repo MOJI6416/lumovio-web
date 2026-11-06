@@ -17,7 +17,7 @@ import { TvState } from "../shell/TvState";
 
 /*
  * A section's whole list on a TV (S02, S03 TV; TV document §4 "Каталог/подборки"): the filters as one row of buttons —
- * the sort, the genre, films or series for anime, "Reset" — each opening a side panel; then the grid of posters, which
+ * the sort, the genre, films or series for anime, "Reset" — each opening a card; then the grid of posters, which
  * loads the next part by itself as the focus nears the end (no "Show more" to reach), keeping the focused card. The
  * filters live in the address (replaced, not pushed), so Back from a title comes back to the same grid, card and filters.
  */

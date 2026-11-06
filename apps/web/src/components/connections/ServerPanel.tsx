@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { RadioGroup } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/Chip";
-import { SidePanel } from "@/components/ui/Dialog";
+import { Dialog } from "@/components/ui/Dialog";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { SaveError, SaveStatus } from "@/components/ui/Settings";
 import { Switch } from "@/components/ui/Switch";
@@ -60,9 +60,10 @@ function PanelSwitch({ label, description, checked, onCheckedChange }: { label: 
 }
 
 /**
- * The server's panel (design-system 7.9 SidePanel, 7.16; audit SRV-03, SRV-06): its state and the actions that need
- * the profile's access (check, scan or added releases), its settings and who may use it — applied at once with
- * "Saved" — the address and sign-in, changed without removing the server, and the danger zone at the end.
+ * The server's window (design-system 7.9 Dialog, 7.16; audit SRV-03, SRV-06), centred, a bottom sheet on a phone: its
+ * state and the actions that need the profile's access (check, scan or added releases), its settings and who may use
+ * it — applied at once with "Saved" — the address and sign-in, changed without removing the server, and the danger
+ * zone at the end.
  */
 export function ServerPanel({
   conn: c,
@@ -102,7 +103,7 @@ export function ServerPanel({
 
   return (
     <>
-      <SidePanel open={!editing} onOpenChange={(o) => !o && !editing && onClose()} title={c.name} description={`${t(`kind_${c.kind}`)} · ${c.baseUrl}`}>
+      <Dialog open={!editing} onOpenChange={(o) => !o && !editing && onClose()} title={c.name} description={`${t(`kind_${c.kind}`)} · ${c.baseUrl}`}>
         <div className="flex flex-col gap-6 pb-2">
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -175,7 +176,7 @@ export function ServerPanel({
             </Button>
           </Block>
         </div>
-      </SidePanel>
+      </Dialog>
       {editing && (
         <AddConnectionDialog
           edit={c}

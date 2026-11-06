@@ -27,10 +27,10 @@ import {
 /*
  * The modal layers themselves, loaded the first time one opens (./Dialog draws nothing until then, or only the
  * trigger; bundle budget). Modal layers (design-system 7.9): Dialog — centred on a tablet and desktop, a bottom sheet
- * on a phone; Sheet — a bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover); SidePanel — a
- * panel on the right from `lg`, a bottom sheet below. All three: focus trapped inside and given back to the control
- * that opened the layer (SRC-17), Escape and a TV remote's Back close it, a close button that stays when the title is
- * hidden (X-18), the 6.3 entrance (--dur-slow; none with reduced motion, globals.css).
+ * on a phone; Sheet — a bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover). No layer comes in
+ * from a side of the screen (owner, 2026-11-06). Both: focus trapped inside and given back to the control that opened
+ * the layer (SRC-17), Escape and a TV remote's Back close it, a close button that stays when the title is hidden
+ * (X-18), the 6.3 entrance (--dur-slow; none with reduced motion, globals.css).
  *
  * Floating layers opened inside one (a Select list, a menu, a tooltip) are portalled into it, so they sit above it:
  * z-popover is under z-dialog in the page (5.5).
@@ -53,7 +53,7 @@ function firstFocusable(root: HTMLElement | null) {
   return null;
 }
 
-export type Kind = "dialog" | "sheet" | "side";
+export type Kind = "dialog" | "sheet";
 
 const WIDTH: Record<DialogSize, string> = {
   sm: "md:max-w-120",
@@ -84,15 +84,6 @@ const KIND: Record<
     x: "px-4 sm:px-6",
     top: "pt-3",
     bottom: "pb-4",
-  },
-  side: {
-    overlay: "items-end lg:items-stretch lg:justify-end",
-    content:
-      "max-lg:max-h-[92dvh] max-lg:rounded-t-lg max-lg:border-b-0 max-lg:pb-[env(safe-area-inset-bottom)] max-lg:starting:translate-y-full lg:h-full lg:max-w-120 lg:border-y-0 lg:border-e-0 lg:starting:translate-x-full rtl:lg:starting:-translate-x-full",
-    handle: "lg:hidden",
-    x: "px-4 lg:px-6",
-    top: "pt-3 lg:pt-6",
-    bottom: "pb-4 lg:pb-6",
   },
 };
 
@@ -172,6 +163,15 @@ export function LayerFrame({
               onCloseAutoFocus={(e) => {
                 e.preventDefault();
                 restoreFocus(origin.current);
+              }}
+              // Opened from a menu item that was gone before the layer could read it ("Copy details" in "More"): the
+              // menu then gives the focus back to its own button, and the layer takes it back — that button is the
+              // one to return to.
+              onBlur={(e) => {
+                const to = e.relatedTarget;
+                if (origin.current?.el || origin.current?.trigger || !(to instanceof HTMLElement)) return;
+                // A list or menu opened from inside sits in the overlay, not in the content: not where the layer came from.
+                if (!e.currentTarget.contains(to) && !layer?.contains(to)) origin.current = { el: to, trigger: null };
               }}
               // "Undo" in a toast is not a press outside: the dialog stays open (found in H2).
               onPointerDownOutside={(e) => {

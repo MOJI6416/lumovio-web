@@ -7,24 +7,24 @@ import { isUsable, itemsIn } from "./engine";
 import { useTvNav } from "./TvNav";
 
 /*
- * A layer of the TV shell (design-system 10.3 "Слои", TV document TV3): a dialog, a side panel (sources, tracks,
- * episodes) or a whole-screen step (PIN). Mounted means open: it adds an entry to the history, so Back — the remote's,
- * or the TV browser's own — closes this layer and only it; the focus stays inside and returns to what opened it.
+ * A layer of the TV shell (design-system 10.3 "Слои", TV document TV3): a card in the middle over the screen (a choice,
+ * "More", details, the query) or a whole-screen step (PIN) — nothing comes in from a side (owner, 2026-11-06). Mounted
+ * means open: it adds an entry to the history, so Back — the remote's, or the TV browser's own — closes this layer and
+ * only it; the focus stays inside and returns to what opened it.
  * Close it from inside with the `close` it renders with (never by unmounting it from the parent while it is open).
  */
 
-export type TvLayerLook = "dialog" | "panel" | "screen";
+export type TvLayerLook = "dialog" | "screen";
 
 const LOOKS: Record<TvLayerLook, string> = {
-  dialog: "fixed inset-0 z-dialog grid place-items-center bg-scrim p-16",
-  panel: "fixed inset-0 z-dialog flex justify-end bg-scrim",
+  // 60 px from the edges (the TV's safe area is ~54): room for the tallest card, the query's keyboard.
+  dialog: "fixed inset-0 z-dialog grid place-items-center bg-scrim p-10",
   screen: "fixed inset-0 z-dialog bg-bg",
 };
 
 const BOX: Record<TvLayerLook, string> = {
   dialog:
     "flex max-h-full w-full max-w-160 flex-col gap-6 overflow-hidden rounded-lg bg-surface-1 p-10 shadow-float",
-  panel: "flex h-full w-full max-w-160 flex-col gap-6 overflow-hidden bg-surface-1 px-10 py-12 shadow-float",
   screen: "flex h-full w-full flex-col",
 };
 

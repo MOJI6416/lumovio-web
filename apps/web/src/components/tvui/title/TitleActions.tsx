@@ -434,7 +434,7 @@ function MoreLayer({
   const mark = (on: boolean, Icon: typeof Heart) =>
     on ? <Icon aria-hidden className="fill-current" /> : <Icon aria-hidden />;
   return (
-    <TvLayer look="panel" label={d.title} onClose={onClose}>
+    <TvLayer label={d.title} onClose={onClose}>
       {(close) => (
         <>
           <h2 className="text-h2 text-text-1">{d.title}</h2>
@@ -504,7 +504,7 @@ function ListsLayer({ title: d, onClose }: { title: TitleCore; onClose: () => vo
   const lists = useEditableLists(true);
   const inLists = new Set(a.state?.listIds ?? []);
   return (
-    <TvLayer look="panel" label={tc("addToList")} onClose={onClose}>
+    <TvLayer label={tc("addToList")} onClose={onClose}>
       {() => (
         <>
           <h2 className="text-h2 text-text-1">{tc("addToList")}</h2>

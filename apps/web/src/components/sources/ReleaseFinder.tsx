@@ -9,7 +9,6 @@ import { CardMark, PickItem, PickPill, WatchCard } from "@/components/title/Watc
 import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/Chip";
-import { SidePanel } from "@/components/ui/Dialog";
 import { IconButton } from "@/components/ui/IconButton";
 import { SearchInput } from "@/components/ui/Input";
 import { Menu, MenuCheckboxItem, MenuSeparator } from "@/components/ui/Menu";
@@ -21,8 +20,9 @@ import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
 import type { RankedRelease } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
+import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
-import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseFacts, useReleaseText } from "./release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "./release-text";
 
 const CARD = "finder-card-h";
 
@@ -203,10 +203,9 @@ export function ReleaseFinder(props: FinderProps) {
         </section>
       )}
       <ReleaseDetails
-        r={f.detailed}
-        x={f.detailed ? f.view?.byLink.get(f.detailed.link) : undefined}
-        linked={f.detailed ? f.isLinked(f.detailed) : false}
-        server={server}
+        result={f.detailed}
+        release={f.detailed ? f.view?.byLink.get(f.detailed.link) : undefined}
+        note={f.detailed && f.isLinked(f.detailed) ? t("playsFrom", { server }) : t("addsTo", { server })}
         tv={tv}
         onClose={() => f.setDetailed(null)}
         onWatch={() => {
@@ -528,34 +527,4 @@ function editionWord(tt: ReturnType<typeof useTranslations>, name: string, cuts:
   if (cuts === "chosen") return null;
   const e = editionOf(name) ?? (cuts === "several" ? "theatrical" : null);
   return e ? tt(`edition_${e}`) : null;
-}
-
-/** A release's details (7.15): its marks and audio, every fact its name and the indexer give, and "Watch". */
-function ReleaseDetails({ r, x, linked, server, tv, onClose, onWatch }: { r: TsSearchResult | null; x: RankedRelease | undefined; linked: boolean; server: string; tv: boolean; onClose: () => void; onWatch: () => void }) {
-  const t = useTranslations("player");
-  const tt = useTranslations("title");
-  const tp = useTranslations("titlePage");
-  const text = useReleaseText();
-  const facts = useReleaseFacts();
-  const rows = r ? facts(r, x, tv) : [];
-  return (
-    <SidePanel open={r !== null} onOpenChange={(o) => !o && onClose()} title={tp("releaseDetails")} description={x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : undefined}>
-      {r && !x && <p className="mb-4 text-body-s text-text-2">{t("detailOtherTitle")}</p>}
-      <dl className="flex flex-col gap-4">
-        {rows.map(([k, v]) => (
-          <div key={k}>
-            <dt className="text-body-s text-text-2">{k}</dt>
-            <dd className="mt-0.5 text-body break-words whitespace-pre-line text-text-1">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mt-6 flex flex-col gap-2">
-        <Button onClick={onWatch}>
-          <Play aria-hidden className="fill-current" />
-          {tt("tsWatch")}
-        </Button>
-        <p className="sr-only">{linked ? t("playsFrom", { server }) : t("addsTo", { server })}</p>
-      </div>
-    </SidePanel>
-  );
 }

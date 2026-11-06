@@ -5,7 +5,7 @@ import { usePlayer } from "@videojs/react/video";
 import { clsx } from "clsx";
 import { ArrowLeft, Captions, FastForward, Layers, ListVideo, Pause, Play, RotateCcw, RotateCw, Settings2, SkipBack, SkipForward, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type PointerEvent, type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -15,7 +15,7 @@ import { tmdbImage } from "@/lib/images";
 import type { MediaSegment, TrickplayInfo } from "@/lib/media/types";
 import { titleHref } from "@/lib/slug";
 import { type EndInfo, Marked } from "./EndScreen";
-import { PlayerPanels } from "./PlayerPanels";
+import { PlayerPanels, type TvAnchors } from "./PlayerPanels";
 import type { PlayerProps, TorrentStats } from "./LumovioPlayer";
 import { type PlayerPanel, useSignedSeconds } from "./player-parts";
 
@@ -48,15 +48,15 @@ export interface TvChromeProps {
   onPanel: (p: PlayerPanel) => void;
   onReplay: () => void;
   Thumb: (p: { tp: TrickplayInfo; time: number }) => ReactNode;
-  /** The TV's panels (SidePanel at the right, the picture aside). */
-  panels: Parameters<typeof PlayerPanels>[0];
+  /** The TV's menus, each over its button in the bar (the picture stays as it is). */
+  panels: Omit<Parameters<typeof PlayerPanels>[0], "anchors">;
 }
 
 /**
  * The player in the TV shell (tvui, TV document §6), drawn as it was before the site's redesign of 2026-11-06: "←" and
  * the title on top, a bar of play, ±10, the time (elapsed or remaining by a press) and the panels' buttons, the next
- * episode's card and the end screen. The remote's model (OK, arrows, Back, the panel at the right with the picture
- * aside) is LumovioPlayer's.
+ * episode's card and the end screen; the panels' buttons open their menus over themselves (PlayerPanels). The remote's
+ * model (OK, arrows, Back) is LumovioPlayer's.
  */
 export function TvChrome(v: TvChromeProps) {
   const t = useTranslations("player");
@@ -91,6 +91,10 @@ export function TvChrome(v: TvChromeProps) {
   const known = duration > 0;
   const timeText = !known ? "--:--" : remaining ? `−${formatClock(Math.max(0, duration - currentTime))}` : `${formatClock(currentTime)} / ${formatClock(duration)}`;
   const tp = v.tp;
+  const anchors: TvAnchors = { tracks: useRef<HTMLButtonElement>(null), settings: useRef<HTMLButtonElement>(null), episodes: useRef<HTMLButtonElement>(null), source: useRef<HTMLButtonElement>(null) };
+  const panel = v.panels.panel;
+  // An open menu stands over the bar's end: the corner's buttons and the next episode's card make way for it.
+  const menu = panel !== "none";
   return (
     <>
       {/* Scrims for the title and the controls, in the stage colour (3.5). */}
@@ -188,14 +192,14 @@ export function TvChrome(v: TvChromeProps) {
 
             <div className="ms-auto flex items-center gap-1 md:gap-2">
               {props.next && <Control icon={SkipForward} label={t("nextEpisode")} onClick={props.next.go} />}
-              {props.episodes && <Control icon={ListVideo} label={t("episodes")} onClick={() => v.onPanel("episodes")} />}
+              {props.episodes && <Control ref={anchors.episodes} icon={ListVideo} label={t("episodes")} pressed={panel === "episodes"} onClick={() => v.onPanel("episodes")} />}
               {/* Always there, with one track or none too: the panel says what the file has (PLR-07). */}
               <span className="relative inline-flex">
-                <Control icon={Captions} label={t("audioAndSubtitles")} onClick={() => v.onPanel("tracks")} />
+                <Control ref={anchors.tracks} icon={Captions} label={t("audioAndSubtitles")} pressed={panel === "tracks"} onClick={() => v.onPanel("tracks")} />
                 {subtitlesShowing && <span aria-hidden className="pointer-events-none absolute end-2 top-2 size-2 rounded-full bg-accent" />}
               </span>
-              <Control icon={Settings2} label={t("qualityAndSpeed")} onClick={() => v.onPanel("settings")} />
-              {props.sources && <Control icon={Layers} label={t("source")} onClick={() => v.onPanel("source")} />}
+              <Control ref={anchors.settings} icon={Settings2} label={t("qualityAndSpeed")} pressed={panel === "settings" || panel === "info"} onClick={() => v.onPanel("settings")} />
+              {props.sources && <Control ref={anchors.source} icon={Layers} label={t("source")} pressed={panel === "source"} onClick={() => v.onPanel("source")} />}
             </div>
           </div>
         </Controls.Group>
@@ -221,19 +225,19 @@ export function TvChrome(v: TvChromeProps) {
         </div>
       )}
 
-      {v.showSkip && segment && !v.endShown && (
+      {v.showSkip && segment && !v.endShown && !menu && (
         <Button variant="secondary" size="lg" icon={FastForward} onClick={v.skip} className={CORNER}>
           {segment.kind === "intro" ? t("skipIntro") : segment.kind === "recap" ? t("skipRecap") : segment.kind === "outro" && props.next ? t("nextEpisode") : t("skipCredits")}
         </Button>
       )}
 
-      {v.startOver === "show" && !v.showSkip && v.nextCountdown === null && (
+      {v.startOver === "show" && !v.showSkip && v.nextCountdown === null && !menu && (
         <Button variant="secondary" size="lg" icon={SkipBack} onClick={v.onStartOver} className={CORNER}>
           {t("startOver")}
         </Button>
       )}
 
-      {props.next && v.nextCountdown !== null && (
+      {props.next && v.nextCountdown !== null && !menu && (
         <section aria-label={t("nextEpisode")} className="pointer-events-auto absolute bottom-36 end-4 z-10 w-80 animate-fade-up rounded-md border border-line bg-stage/85 p-4 backdrop-blur in-data-[tv=1]:backdrop-blur-none md:end-8">
           <p className="text-body-s font-semibold text-text-2" aria-live="polite">
             {t("nextIn", { seconds: v.nextCountdown })}
@@ -250,7 +254,7 @@ export function TvChrome(v: TvChromeProps) {
 
       {v.endShown && props.end && <TvEndScreen end={props.end} title={props.title} onReplay={v.onReplay} />}
 
-      <PlayerPanels {...v.panels} />
+      <PlayerPanels {...v.panels} anchors={anchors} />
     </>
   );
 }
@@ -258,9 +262,12 @@ export function TvChrome(v: TvChromeProps) {
 /** The skip / start-over buttons above the controls. */
 const CORNER = "pointer-events-auto absolute bottom-36 end-4 z-10 animate-fade-up md:end-8";
 
-/** A control of the bar (11.1): IconButton `stage` 48, the play icon filled (6.4). `tvPlay`: where the remote's up/down put the focus. */
-function Control({ icon, label, onClick, filled, tvPlay }: { icon: typeof Play; label: string; onClick: () => unknown; filled?: boolean; tvPlay?: boolean }) {
-  return <IconButton icon={icon} label={label} variant="stage" size="lg" onClick={() => void onClick()} data-tv-play={tvPlay || undefined} className={filled ? "[&_svg]:fill-current" : undefined} />;
+/**
+ * A control of the bar (11.1): IconButton `stage` 48, the play icon filled (6.4). `tvPlay`: where the remote's up/down
+ * put the focus; `pressed`: its menu is open (the menu stands over it and gives the focus back to it).
+ */
+function Control({ icon, label, onClick, filled, tvPlay, pressed, ref }: { icon: typeof Play; label: string; onClick: () => unknown; filled?: boolean; tvPlay?: boolean; pressed?: boolean; ref?: RefObject<HTMLButtonElement | null> }) {
+  return <IconButton ref={ref} icon={icon} label={label} variant="stage" size="lg" aria-expanded={pressed} onClick={() => void onClick()} data-tv-play={tvPlay || undefined} className={filled ? "[&_svg]:fill-current" : undefined} />;
 }
 
 /**

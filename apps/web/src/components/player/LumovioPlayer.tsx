@@ -577,8 +577,8 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     setNextTotal(n);
     setNextCountdown(n);
   }, [left, ended, inCredits, props.next, nextCountdown, hidden, tvNav, nextDismissed]);
-  // A menu open on the site holds the countdown (its card steps aside meanwhile).
-  const menuHolds = !tvNav && panel !== "none";
+  // An open menu holds the countdown (its card steps aside meanwhile), on the site and on a TV.
+  const menuHolds = panel !== "none";
   useEffect(() => {
     if (nextCountdown === null || !props.next || hidden || menuHolds) return;
     if (nextCountdown <= 0) {
@@ -615,16 +615,6 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const layer = tvNav.openLayer(() => setPanel("none"));
     return () => layer.dismiss();
   }, [tvNav, layerOpen]);
-  // On a TV an open panel stands at the right and the picture moves aside into a rounded window on the left, in view
-  // (redesign-2026-11.md 5, as YouTube's TV app): `data-panel-open` on the player (globals.css); the controls step back.
-  const tvPanel = Boolean(tvNav) && layerOpen;
-  useEffect(() => {
-    if (!(container instanceof HTMLElement) || !tvPanel) return;
-    container.dataset.panelOpen = "";
-    return () => {
-      delete container.dataset.panelOpen;
-    };
-  }, [container, tvPanel]);
   // The controls the remote is in (the focus on a control) are a step of the history too: Back of a TV browser that
   // keeps Back to itself hides them — the focus back on the picture — before it leaves the player (TV3). Hidden by a
   // key or by themselves, they take their entry back.
@@ -899,7 +889,8 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const r = buffered.find(([s, e]) => currentTime >= s - 0.5 && currentTime <= e + 0.5);
     return r ? Math.max(0, r[1] - currentTime) : 0;
   })();
-  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown && !tvPanel;
+  // An open menu stands over its button in the bar (on a TV too, 11.1): the bar stays while it is open.
+  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown;
   // Text subtitles move up above the controls while they show, and back down when they fade (readable either way) —
   // to the bottom, or two lines higher when the profile puts them "Higher". On the site the block of controls is taller
   // (the title, the timeline, the buttons; the pause's logo): the cues stand as many lines up as it takes.

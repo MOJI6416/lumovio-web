@@ -152,7 +152,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   // The site's cut (null: any) and the audio the title page sent, until the person chooses one here.
   const [edition, setEdition] = useState<string | null>(() => (start?.edition && EDITIONS.includes(start.edition as Edition) ? start.edition : null));
   const startVoice = useRef(modeInSort ? null : (start?.voice ?? null));
-  // The release whose details are open (a side panel, a sheet on a phone).
+  // The release whose details are open (a dialog, a sheet on a phone; a card in the middle on a TV).
   const [detailed, setDetailed] = useState<TsSearchResult | null>(null);
   const run = useRef<AbortController | null>(null);
   const shownFor = useRef(connId);

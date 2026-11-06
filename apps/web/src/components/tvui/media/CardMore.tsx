@@ -112,7 +112,6 @@ export function CardMoreLayer({
   const undo = useAction({ run: r.undo, error: t("common.undoFailed") });
   return (
     <TvLayer
-      look="panel"
       label={x.title}
       onClose={() => {
         if (changed.current) sync();

@@ -686,23 +686,6 @@
 :root[data-tv="1"] [data-player] video::cue {
   font-size: calc(5.4vh * var(--sub-scale, 1));
 }
-/* A TV's player panel (LumovioPlayer `data-panel-open`, redesign-2026-11.md 5): the picture moves aside into a rounded
- * window on the left, in view beside the panel, and no scrim darkens it. A transform only — cheap on the TV's GPU. */
-[data-player] > video {
-  transition: transform var(--dur-slow) cubic-bezier(0.22, 1, 0.36, 1), border-radius var(--dur-slow) ease;
-}
-[data-player][data-panel-open] > video {
-  transform: translateX(-18%) scale(0.58);
-  border-radius: 2.5rem;
-}
-[data-player][data-panel-open] .bg-scrim {
-  background-color: transparent;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-player] > video {
-    transition: none;
-  }
-}
 /* The next episode's countdown on the site (LumovioPlayer NextCard): "Play now" fills as it runs, over its own
  * `animation-duration`; with reduced motion the fill steps once a second (its inline width). */
 @keyframes player-countdown {

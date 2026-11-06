@@ -22,6 +22,7 @@ import { type FinderProps, PAGE, SORTS, type Sort, useTorrentFinder } from "@/co
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize, isPack, packWords, ReleaseLine, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { AccentBadge } from "@/components/ui/Badge";
+import { cn } from "@/components/ui/cn";
 import { TvButton } from "@/components/ui/tv/TvButton";
 import { formatDate } from "@/lib/format";
 import type { RankedRelease } from "@/lib/media/releases";
@@ -35,7 +36,7 @@ import { TvState } from "../shell/TvState";
 /*
  * "Through TorrServer" on the TV's sources screen (design-system 10.3 «Экран источников», 7.15 TV, TS1–TS6): the same
  * search as the site's (components/player/finder) in the TV's composition — a line of the server, the query and
- * Refresh / Cancel; the filters as buttons that say their value, each opening a side panel; the releases as rows, one
+ * Refresh / Cancel; the filters as buttons that say their value, each opening a card; the releases as rows, one
  * stop each (OK is "Watch"), "i" beside for the details. The next part of the list appears as the focus nears its end;
  * nothing reorders under the focus (the answer changes on Refresh only).
  */
@@ -415,7 +416,12 @@ function TvReleaseRow({
   );
 }
 
-/** A release's details on a TV (7.15): every fact the name and the indexer give, and "Watch" with what it will do. */
+/**
+ * A release's details on a TV (7.9, 7.15): the same as the site's dialog — the marks and the audio under the heading,
+ * every fact the name and the indexer give, "Watch" — in a wide card in the middle: "Watch" beside the heading, the
+ * short facts two to a row and the long ones (the audio, this device, the name) across, so all of it is read without a
+ * stop of its own. What "Watch" does is said to a screen reader, as on the site.
+ */
 function DetailsLayer({
   r,
   x,
@@ -438,34 +444,36 @@ function DetailsLayer({
   const facts = useReleaseFacts();
   // Started once the layer's history entry is gone (a change of the address before that would land in it).
   const watchIt = useRef(false);
+  const wide = (v: string) => v.length > 28 || v.includes("\n");
+  const rows = facts(r, x, series);
   return (
-    <TvLayer look="panel" label={tp("releaseDetails")} onClose={() => onClose(watchIt.current)}>
+    <TvLayer label={tp("releaseDetails")} onClose={() => onClose(watchIt.current)} className="max-w-240">
       {(close) => (
         <>
-          <div className="flex flex-col gap-2">
-            <h2 className="text-h2 text-text-1">{tp("releaseDetails")}</h2>
-            <p className="text-body-l text-text-2">{x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : t("detailOtherTitle")}</p>
+          <div className="flex items-start gap-8">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <h2 className="text-h2 text-text-1">{tp("releaseDetails")}</h2>
+              <p className="text-body-l text-text-2">{x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : t("detailOtherTitle")}</p>
+            </div>
+            <div data-zone="release-watch" className="shrink-0">
+              <TvButton
+                icon={Play}
+                data-tv-initial
+                onClick={() => {
+                  watchIt.current = true;
+                  close();
+                }}
+              >
+                {tt("tsWatch")}
+              </TvButton>
+              <p className="sr-only">{linked ? t("playsFrom", { server }) : t("addsTo", { server })}</p>
+            </div>
           </div>
-          <div data-zone="release-watch" className="flex flex-col gap-2">
-            <TvButton
-              icon={Play}
-              data-tv-initial
-              className="self-start"
-              onClick={() => {
-                watchIt.current = true;
-                close();
-              }}
-            >
-              {tt("tsWatch")}
-            </TvButton>
-            <p className="text-body text-text-2">{linked ? t("playsFrom", { server }) : t("addsTo", { server })}</p>
-          </div>
-          {/* Read, not chosen: label and value side by side, so the facts fit the panel without a stop of their own. */}
-          <dl className="grid min-h-0 grid-cols-[auto_1fr] content-start gap-x-6 gap-y-3 overflow-hidden text-body">
-            {facts(r, x, series).map(([k, v]) => (
+          <dl className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] content-start gap-x-6 gap-y-3 overflow-hidden text-body">
+            {[...rows.filter(([, v]) => !wide(v)), ...rows.filter(([, v]) => wide(v))].map(([k, v]) => (
               <div key={k} className="contents">
-                <dt className="text-text-2">{k}</dt>
-                <dd className="line-clamp-4 whitespace-pre-line break-words text-text-1">{v}</dd>
+                <dt className={cn("text-text-2", wide(v) && "col-start-1")}>{k}</dt>
+                <dd className={cn("line-clamp-3 whitespace-pre-line break-words text-text-1", wide(v) && "col-span-3")}>{v}</dd>
               </div>
             ))}
           </dl>
@@ -475,13 +483,13 @@ function DetailsLayer({
   );
 }
 
-/** The query in a side panel: the TV's keyboard (and the phone remote's text), "Search" — Back leaves it as it was. */
+/** The query in a card: the TV's keyboard (and the phone remote's text), "Search" — Back leaves it as it was. */
 function QueryLayer({ draft, onDraft, onClose }: { draft: string; onDraft: (v: string) => void; onClose: (submit: boolean) => void }) {
   const t = useTranslations("player");
   const tc = useTranslations("common");
   const submit = useRef(false);
   return (
-    <TvLayer look="panel" label={t("editQuery")} onClose={() => onClose(submit.current)}>
+    <TvLayer label={t("editQuery")} onClose={() => onClose(submit.current)}>
       {(close) => {
         const go = () => {
           submit.current = true;

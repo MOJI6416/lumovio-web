@@ -4,27 +4,38 @@ import type { SubtitleStyle } from "@lumovio/contracts";
 import { usePlayer } from "@videojs/react/video";
 import { Info, Keyboard, Play, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { SourceRow } from "@/components/sources/SourceRow";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RadioGroup } from "@/components/ui/Checkbox";
-import { Dialog, SidePanel } from "@/components/ui/Dialog";
+import { Dialog } from "@/components/ui/Dialog";
 import { OFFSET_STEP, stepOffset } from "@/lib/media/subs/view";
 import type { PreparedPlayback } from "@/lib/media/types";
 import type { SubtitleLook, SubtitleMeta } from "./LumovioPlayer";
-import { type EpisodesInfo, EpisodesBody, FORMAT_NAME, InfoBody, type PlayerPanel, ShortcutRows, type SourcesInfo, useSignedSeconds, useTrackWords } from "./player-parts";
+import { type EpisodesInfo, EpisodesBody, FORMAT_NAME, InfoBody, type PlayerPanel, ShortcutRows, type SourcesInfo, Surface, useSignedSeconds, useTrackWords } from "./player-parts";
+
+/** The TV bar's buttons the menus stand over (and give the focus back to). */
+export interface TvAnchors {
+  tracks: RefObject<HTMLButtonElement | null>;
+  settings: RefObject<HTMLButtonElement | null>;
+  episodes: RefObject<HTMLButtonElement | null>;
+  source: RefObject<HTMLButtonElement | null>;
+}
 
 /**
- * The TV's panels (TV document §6; drawn by TvChrome — the site has PlayerMenus), each opened by its button in the bar and closed by Escape, Back on a TV, the close button or a
- * tap outside — with the focus trapped inside and given back to that button (PLR-11): audio and subtitles (always
- * there, tracks in words, PLR-07), quality and speed, playback info (how the stream reaches the screen, PLR-06), the
- * episodes of every season, the source (other copies; the search). Keyboard shortcuts — only what this video has.
+ * The TV's menus (TV document §6; drawn by TvChrome — the site has PlayerMenus), each opened by its button in the bar:
+ * a surface over the picture above that button, as on the site (player-parts' Surface, 11.1) — the picture neither
+ * moves aside nor darkens. Back (a layer of the shell's history), Escape or a press outside closes it and the focus goes
+ * back to the button (PLR-11): audio and subtitles side by side (tracks in words, PLR-07), quality and speed, playback
+ * info (how the stream reaches the screen, PLR-06), the episodes of every season, the source (other copies; the
+ * search). Keyboard shortcuts — only what this video has — in a dialog.
  */
 export function PlayerPanels({
   panel,
   onPanel,
+  anchors,
   prepared,
   onAudioChange,
   currentTime,
@@ -40,6 +51,7 @@ export function PlayerPanels({
 }: {
   panel: PlayerPanel;
   onPanel: (p: PlayerPanel) => void;
+  anchors: TvAnchors;
   prepared: PreparedPlayback;
   onAudioChange?: (index: number, positionSec: number) => void;
   currentTime: number;
@@ -54,53 +66,50 @@ export function PlayerPanels({
   look?: SubtitleLook;
 }) {
   const t = useTranslations("player");
-  const close = (o: boolean) => !o && onPanel("none");
+  const close = () => onPanel("none");
   // A TV remote's OK (Enter) chooses in the lists: ui/RadioGroup does it (C19).
-  const back = (
-    <Button variant="secondary" onClick={() => onPanel("none")} className="mt-6 w-full">
-      <Play aria-hidden className="fill-current" />
-      {t("backToWatching")}
-    </Button>
-  );
   return (
     <>
-      <SidePanel open={panel === "tracks"} onOpenChange={close} title={t("audioAndSubtitles")}>
-        <TracksBody prepared={prepared} onAudioChange={onAudioChange} currentTime={currentTime} originalLanguage={originalLanguage} subtitleMeta={subtitleMeta} look={look} />
-        {back}
-      </SidePanel>
-      <SidePanel open={panel === "settings"} onOpenChange={close} title={t("qualityAndSpeed")}>
-        <SettingsBody onInfo={() => onPanel("info")} onHelp={() => onPanel("help")} />
-        {back}
-      </SidePanel>
-      <SidePanel open={panel === "info"} onOpenChange={close} title={t("playbackInfo")}>
-        {panel === "info" && <InfoBody prepared={prepared} info={info} bufferedAhead={bufferedAhead} />}
-        {back}
-      </SidePanel>
-      {episodes && (
-        <SidePanel open={panel === "episodes"} onOpenChange={close} title={t("episodes")}>
-          {panel === "episodes" && <EpisodesBody episodes={episodes} onPick={() => onPanel("none")} />}
-        </SidePanel>
+      {panel === "tracks" && (
+        <Surface anchor={anchors.tracks} label={t("audioAndSubtitles")} onClose={close} over="bar" className="w-200 p-6">
+          <TracksBody prepared={prepared} onAudioChange={onAudioChange} currentTime={currentTime} originalLanguage={originalLanguage} subtitleMeta={subtitleMeta} look={look} />
+        </Surface>
       )}
-      {sources && (
-        <SidePanel open={panel === "source"} onOpenChange={close} title={t("source")} description={t("sourcePanelText")}>
+      {panel === "settings" && (
+        <Surface anchor={anchors.settings} label={t("qualityAndSpeed")} onClose={close} over="bar" className="w-100 p-6">
+          <SettingsBody onInfo={() => onPanel("info")} onHelp={() => onPanel("help")} />
+        </Surface>
+      )}
+      {panel === "info" && (
+        <Surface anchor={anchors.settings} label={t("playbackInfo")} onClose={close} over="bar" className="w-120 p-6">
+          <InfoBody prepared={prepared} info={info} bufferedAhead={bufferedAhead} />
+        </Surface>
+      )}
+      {episodes && panel === "episodes" && (
+        <Surface anchor={anchors.episodes} label={t("episodes")} onClose={close} over="bar" className="w-120 p-6">
+          <EpisodesBody episodes={episodes} onPick={close} />
+        </Surface>
+      )}
+      {sources && panel === "source" && (
+        <Surface anchor={anchors.source} label={t("source")} onClose={close} over="bar" className="w-160 p-6">
+          <p className="sr-only">{t("sourcePanelText")}</p>
           <SourceBody
             sources={sources}
             onPick={(key) => {
-              onPanel("none");
+              close();
               sources.onPick(key, currentTime);
             }}
             onSearch={
               sources.onSearch &&
               (() => {
-                onPanel("none");
+                close();
                 sources.onSearch?.(currentTime);
               })
             }
           />
-          {back}
-        </SidePanel>
+        </Surface>
       )}
-      <Dialog open={panel === "help"} onOpenChange={close} title={t("shortcuts")} size="sm">
+      <Dialog open={panel === "help"} onOpenChange={(o) => !o && close()} title={t("shortcuts")} size="sm">
         <ShortcutRows subtitles={prepared.subtitles.length > 0 || Boolean(subtitleMeta?.size)} next={hasNext} segments={hasSegments} />
       </Dialog>
     </>
@@ -148,54 +157,60 @@ function TracksBody({
     : prepared.audio.map((a, i) => ({ value: String(a.index), label: words(a.label, a.lang, i + 1), description: a.codec?.toUpperCase(), checked: a.isDefault }));
   const canSwitch = hls || Boolean(onAudioChange);
   const shownSub = subtitleTracks.find((tr) => tr.mode === "showing");
+  // Side by side, as the site's menu (11.1): the audio, then the subtitles with their size and timing — short enough to
+  // stand over the button.
   return (
-    <div className="flex flex-col gap-6">
-      {audio.length === 0 ? (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-body-s font-semibold text-text-1">{t("audio")}</h3>
-          <Note>{t("audioUnknown")}</Note>
-        </section>
-      ) : (
-        <div className="flex flex-col gap-2">
+    <div className="grid grid-cols-2 gap-10">
+      <div className="flex min-w-0 flex-col gap-6">
+        {audio.length === 0 ? (
+          <section className="flex flex-col gap-2">
+            <h3 className="text-body-s font-semibold text-text-1">{t("audio")}</h3>
+            <Note>{t("audioUnknown")}</Note>
+          </section>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <RadioGroup
+              legend={t("audio")}
+              value={audio.find((a) => a.checked)?.value ?? null}
+              onValueChange={(v) => {
+                if (hls) store.selectAudioTrack(v);
+                else onAudioChange?.(Number(v), currentTime);
+              }}
+              options={audio.map((a) => ({ value: a.value, label: a.label, description: a.description, disabled: !canSwitch && !a.checked }))}
+            />
+            {audio.length > 1 && !canSwitch && <Note>{t("audioNoSwitch")}</Note>}
+          </div>
+        )}
+      </div>
+      <div className="flex min-w-0 flex-col gap-6">
+        {subtitleTracks.length === 0 ? (
+          <section className="flex flex-col gap-2">
+            <h3 className="text-body-s font-semibold text-text-1">{t("subtitles")}</h3>
+            <Note>{t("subtitlesNone")}</Note>
+          </section>
+        ) : (
           <RadioGroup
-            legend={t("audio")}
-            value={audio.find((a) => a.checked)?.value ?? null}
-            onValueChange={(v) => {
-              if (hls) store.selectAudioTrack(v);
-              else onAudioChange?.(Number(v), currentTime);
-            }}
-            options={audio.map((a) => ({ value: a.value, label: a.label, description: a.description, disabled: !canSwitch && !a.checked }))}
+            legend={t("subtitles")}
+            value={subtitlesShowing && shownSub ? shownSub.id : "off"}
+            onValueChange={(v) => store.selectSubtitlesTrack(v === "off" ? null : v)}
+            options={[
+              { value: "off", label: t("subtitlesOff") },
+              ...subtitleTracks.map((tr, i) => {
+                // The file's own tracks and the torrent's files (PLR-14): forced ones said so, the format underneath.
+                const m = subtitleMeta?.get(tr.id);
+                const words = subWords(tr.label || null, tr.language || null, i + 1);
+                return {
+                  value: tr.id,
+                  // "Forced" said once: not again after a track already named "Надписи".
+                  label: m?.forced && !words.toLowerCase().includes(t("subtitlesForced").toLowerCase()) ? `${words} · ${t("subtitlesForced")}` : words,
+                  description: m ? [FORMAT_NAME[m.format], m.file ? t("subtitlesFile") : null].filter(Boolean).join(" · ") : undefined,
+                };
+              }),
+            ]}
           />
-          {audio.length > 1 && !canSwitch && <Note>{t("audioNoSwitch")}</Note>}
-        </div>
-      )}
-      {subtitleTracks.length === 0 ? (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-body-s font-semibold text-text-1">{t("subtitles")}</h3>
-          <Note>{t("subtitlesNone")}</Note>
-        </section>
-      ) : (
-        <RadioGroup
-          legend={t("subtitles")}
-          value={subtitlesShowing && shownSub ? shownSub.id : "off"}
-          onValueChange={(v) => store.selectSubtitlesTrack(v === "off" ? null : v)}
-          options={[
-            { value: "off", label: t("subtitlesOff") },
-            ...subtitleTracks.map((tr, i) => {
-              // The file's own tracks and the torrent's files (PLR-14): forced ones said so, the format underneath.
-              const m = subtitleMeta?.get(tr.id);
-              const words = subWords(tr.label || null, tr.language || null, i + 1);
-              return {
-                value: tr.id,
-                // "Forced" said once: not again after a track already named "Надписи".
-                label: m?.forced && !words.toLowerCase().includes(t("subtitlesForced").toLowerCase()) ? `${words} · ${t("subtitlesForced")}` : words,
-                description: m ? [FORMAT_NAME[m.format], m.file ? t("subtitlesFile") : null].filter(Boolean).join(" · ") : undefined,
-              };
-            }),
-          ]}
-        />
-      )}
-      {subtitleTracks.length > 0 && look && <SubtitleLookBody look={look} />}
+        )}
+        {subtitleTracks.length > 0 && look && <SubtitleLookBody look={look} />}
+      </div>
     </div>
   );
 }

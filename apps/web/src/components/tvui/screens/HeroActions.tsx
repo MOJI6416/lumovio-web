@@ -69,7 +69,7 @@ export function HeroActions({
         </TvButton>
       )}
       {picking && genres && genreBase && (
-        <TvLayer look="panel" label={tb("genres")} onClose={() => setPicking(false)}>
+        <TvLayer label={tb("genres")} onClose={() => setPicking(false)}>
           {() => (
             <>
               <h2 className="text-h2 text-text-1">{tb("genres")}</h2>

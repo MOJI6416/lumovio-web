@@ -332,7 +332,6 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
 
       {more && (
         <TvLayer
-          look="panel"
           label={tp("copyMore", { server: more.server.connectionName })}
           onClose={() => {
             setMore(null);
@@ -395,13 +394,13 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
   );
 }
 
-/** A copy's details on a TV (7.15): the known facts, read in a side panel; Back closes it. */
+/** A copy's details on a TV (7.15): the known facts, read in a card in the middle; Back closes it. */
 function CopyDetailsLayer({ copy, all, onClose }: { copy: Availability; all: Availability[]; onClose: () => void }) {
   const tp = useTranslations("titlePage");
   const tc = useTranslations("common");
   const facts = useCopyFacts();
   return (
-    <TvLayer look="panel" label={tp("copyDetails")} onClose={onClose}>
+    <TvLayer label={tp("copyDetails")} onClose={onClose}>
       {(close) => (
         <>
           <h2 className="text-h2 text-text-1">{tp("copyDetails")}</h2>

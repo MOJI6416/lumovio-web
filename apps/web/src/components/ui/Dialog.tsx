@@ -22,9 +22,9 @@ import { lazyControl, useIdlePrefetch } from "./lazy-swap";
 
 /*
  * Modal layers (design-system 7.9): Dialog — centred on a tablet and desktop, a bottom sheet on a phone; Sheet — a
- * bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover); SidePanel — a panel on the right from
- * `lg`, a bottom sheet below. What they do — the focus trap and its return, Escape and Back, the stage, the default
- * focus — is in ./DialogFrame.
+ * bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover). Nothing slides in from a side of the
+ * screen (owner, 2026-11-06): details are a dialog too. What they do — the focus trap and its return, Escape and Back,
+ * the stage, the default focus — is in ./DialogFrame.
  *
  * This module is the light part every screen imports: a closed layer draws nothing (or only its trigger), and the
  * layer itself (Radix Dialog with its focus scope and scroll lock) is fetched when the page is idle or when it opens,
@@ -75,7 +75,7 @@ function LazyLayer({
   onOpenChange,
   trigger,
   ...rest
-}: LayerProps & { kind: "dialog" | "sheet" | "side"; size?: DialogSize }) {
+}: LayerProps & { kind: "dialog" | "sheet"; size?: DialogSize }) {
   const [open, setOpen] = useOpenState(openProp, onOpenChange);
   const anchor = useRef<HTMLElement | null>(null);
   // Fetched once the page is idle, so even the first open is quick.
@@ -148,11 +148,6 @@ export function Dialog(props: LayerProps & { size?: DialogSize }) {
 /** A bottom sheet with a handle (phones; menus and popovers use it there). */
 export function Sheet(props: LayerProps) {
   return <LazyLayer kind="sheet" {...props} />;
-}
-
-/** Details next to a list (a release, a server): a 480 panel on the right from `lg`, a bottom sheet below. */
-export function SidePanel(props: LayerProps) {
-  return <LazyLayer kind="side" {...props} />;
 }
 
 /**

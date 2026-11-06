@@ -2,14 +2,16 @@
 
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
-import { SidePanel } from "@/components/ui/Dialog";
+import { Dialog } from "@/components/ui/Dialog";
 import { useCopyText } from "./copy-text";
+import { Facts } from "./Facts";
 import { QualityLine } from "./QualityBadges";
 import { formatSize } from "./release-text";
 
 /**
- * A copy's details (7.15): its marks and what is heard, its release's full name, the server, picture, audio and size — in a side
- * panel, a sheet on a phone. The sources screen's "Copy details"; the same rows as the title page's.
+ * A copy's details (7.9, 7.15): its marks and what is heard, its release's full name, the server, picture, audio and
+ * size — the same dialog as "Release details" (centred, a bottom sheet on a phone). The title page's and the sources
+ * screen's "Copy details"; a TV reads the same rows (tvui/sources/TvSources).
  */
 export function CopyDetails({ copy: s, all, originalLanguage, onClose }: { copy: Availability | null; all: Availability[]; originalLanguage: string | null; onClose: () => void }) {
   const tp = useTranslations("titlePage");
@@ -19,16 +21,9 @@ export function CopyDetails({ copy: s, all, originalLanguage, onClose }: { copy:
   // Under the heading: the copy's marks and what is heard (QualityLine); the facts below say everything in words.
   const q = s ? text.quality(s, all, originalLanguage) : null;
   return (
-    <SidePanel open={s !== null} onOpenChange={(o) => !o && onClose()} title={tp("copyDetails")} description={q ? <QualityLine marks={q.marks} words={q.words} /> : undefined}>
-      <dl className="flex flex-col gap-4">
-        {rows.map(([k, v]) => (
-          <div key={k}>
-            <dt className="text-body-s text-text-2">{k}</dt>
-            <dd className="mt-0.5 break-words text-body text-text-1">{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </SidePanel>
+    <Dialog size="lg" open={s !== null} onOpenChange={(o) => !o && onClose()} title={tp("copyDetails")} description={q ? <QualityLine marks={q.marks} words={q.words} /> : undefined}>
+      <Facts rows={rows} />
+    </Dialog>
   );
 }
 

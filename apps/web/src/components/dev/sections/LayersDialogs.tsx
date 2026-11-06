@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { type FormEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog, useConfirm, usePrompt } from "@/components/ui/ConfirmDialog";
-import { Dialog, DialogActions, type DialogSize, Sheet, SidePanel } from "@/components/ui/Dialog";
+import { Facts } from "@/components/sources/Facts";
+import { Dialog, DialogActions, type DialogSize, Sheet } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
 import { IconButton } from "@/components/ui/IconButton";
 import { Input } from "@/components/ui/Input";
@@ -76,27 +77,24 @@ function LayerKindsDemo() {
         <CreateListDemo size="lg" width={640} />
         <CreateListDemo size="xl" width={880} />
       </Demo>
-      <Demo title={t("sheetAndPanel")} note={t("sheetNote")}>
+      <Demo title={t("sheetAndDetails")} note={t("sheetNote")}>
         <Sheet title={t("sheetTitle")} trigger={<Button variant="secondary">{t("openSheet")}</Button>}>
           <p className="text-body text-text-2">{t("sheetText")}</p>
         </Sheet>
-        <SidePanel
-          title={t("sideTitle")}
-          description={t("sideDesc")}
-          trigger={<Button variant="secondary">{t("openSide")}</Button>}
+        <Dialog
+          size="lg"
+          title={t("detailsTitle")}
+          description={t("detailsDesc")}
+          trigger={<Button variant="secondary">{t("openDetails")}</Button>}
         >
-          <dl className="flex flex-col gap-4 text-body">
-            <div>
-              <dt className="text-body-s text-text-2">{t("sideQuality")}</dt>
-              <dd className="text-title">{t("sideLine1")}</dd>
-            </div>
-            <div>
-              <dt className="text-body-s text-text-2">{t("sideSource")}</dt>
-              <dd>{t("sideLine2")}</dd>
-            </div>
-          </dl>
+          <Facts
+            rows={[
+              [t("detailsQuality"), t("detailsLine1")],
+              [t("detailsSource"), t("detailsLine2")],
+            ]}
+          />
           <ToastInLayer />
-        </SidePanel>
+        </Dialog>
         <Button variant="secondary" onClick={() => setHidden(true)}>
           {t("openHidden")}
         </Button>

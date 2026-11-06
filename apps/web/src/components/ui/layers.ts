@@ -3,8 +3,7 @@
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useState, useSyncExternalStore } from "react";
 
 /*
- * Shared behaviour of the floating layers (design-system 7.8–7.10): menus, popovers, dialogs, sheets, side panels
- * and toasts. Where a layer is portalled lives in ./portal (part 1 of Ф1); this file holds the rest.
+ * Shared behaviour of the floating layers (design-system 7.8–7.10): menus, popovers, dialogs, sheets and toasts. Where a layer is portalled lives in ./portal (part 1 of Ф1); this file holds the rest.
  */
 
 /** Phones (< md, where the bottom tab bar is): menus and popovers open as a bottom sheet (7.8, 7.9, 10.1). */

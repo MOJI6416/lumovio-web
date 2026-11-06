@@ -4,17 +4,17 @@ import type { SubtitleStyle } from "@lumovio/contracts";
 import { usePlayer } from "@videojs/react/video";
 import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
-import { SidePanel } from "@/components/ui/Dialog";
+import { Sheet } from "@/components/ui/Dialog";
 import { usePhoneLayout } from "@/components/ui/layers";
 import { OFFSET_STEP, stepOffset } from "@/lib/media/subs/view";
 import type { PreparedPlayback } from "@/lib/media/types";
 import type { SubtitleLook, SubtitleMeta } from "./LumovioPlayer";
-import { type EpisodesInfo, EpisodesBody, FORMAT_NAME, InfoBody, type PlayerPanel, ShortcutRows, type SourcesInfo, useSignedSeconds, useTrackWords } from "./player-parts";
+import { type EpisodesInfo, EpisodesBody, FORMAT_NAME, focusChoice, InfoBody, type PlayerPanel, ShortcutRows, type SourcesInfo, Surface, useSignedSeconds, useTrackWords } from "./player-parts";
 
 /** The buttons the menus stand over (and give the focus back to). */
 export interface MenuAnchors {
@@ -30,8 +30,8 @@ const LEVEL_OF: Partial<Record<PlayerPanel, Level>> = { settings: "root", info: 
  * The site's player menus (design-system 11.1): "Audio and subtitles" — the most frequent, one press, the two lists side
  * by side — "Settings" — one root with each setting's current value, a level per setting ("‹" back) — and the episodes.
  * On a computer a surface over the picture above its button, no veil: the film stays in view and plays on; closed by
- * Escape, a press outside or the button again. On a phone a bottom sheet, as every menu of the site (7.9). The TV keeps
- * its own panels (PlayerPanels, TV document §6).
+ * Escape, a press outside or the button again (the surface is player-parts' Surface, the TV's menus stand on it too).
+ * On a phone a bottom sheet, as every menu of the site (7.9). The TV keeps its own lists (PlayerPanels, TV document §6).
  */
 export function PlayerMenus({
   panel,
@@ -77,9 +77,9 @@ export function PlayerMenus({
   }, [settingsLevel]);
   const layer = (open: boolean, title: string, anchor: RefObject<HTMLButtonElement | null>, width: string, body: ReactNode) =>
     phone ? (
-      <SidePanel open={open} onOpenChange={(o) => !o && close()} title={title}>
+      <Sheet open={open} onOpenChange={(o) => !o && close()} title={title}>
         {body}
-      </SidePanel>
+      </Sheet>
     ) : open ? (
       <Surface anchor={anchor} label={title} onClose={close} className={width}>
         {body}
@@ -128,11 +128,6 @@ export function PlayerMenus({
   );
 }
 
-const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), [tabindex="0"]';
-
-/** The focus on the chosen row of a menu (or its first control): on open, and as a level replaces the list. */
-const focusChoice = (el: HTMLElement | null) => (el?.querySelector<HTMLElement>('[aria-checked="true"]') ?? el?.querySelector<HTMLElement>(FOCUSABLE))?.focus({ preventScroll: true });
-
 /** Moves the focus into a level when it replaces the list (`key`: the level); the surface focuses on open itself. */
 function useLevelFocus(ref: RefObject<HTMLElement | null>, key: unknown) {
   const first = useRef(true);
@@ -144,87 +139,6 @@ function useLevelFocus(ref: RefObject<HTMLElement | null>, key: unknown) {
     }
     focusChoice(ref.current);
   }, [key]);
-}
-
-/**
- * The surface over the picture: above its button, aligned to the button's end, as tall as the room above it; the
- * chosen row (else the first control) takes the focus, which goes back to the button when the surface closes.
- */
-function Surface({ anchor, label, onClose, className, children }: { anchor: RefObject<HTMLButtonElement | null>; label: string; onClose: () => void; className: string; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  const [box, setBox] = useState<{ end: number; bottom: number; max: number } | null>(null);
-  useLayoutEffect(() => {
-    const place = () => {
-      const a = anchor.current;
-      const root = ref.current?.offsetParent;
-      if (!a || !(root instanceof HTMLElement)) return;
-      const r = a.getBoundingClientRect();
-      const c = root.getBoundingClientRect();
-      const rtl = getComputedStyle(root).direction === "rtl";
-      // No taller than 70 % of the player: the picture stays the larger part of the screen.
-      setBox({ end: Math.max(16, rtl ? r.left - c.left : c.right - r.right), bottom: c.bottom - r.top + 8, max: Math.min(r.top - c.top - 24, c.height * 0.7) });
-    };
-    place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, [anchor]);
-  // Focused once it is placed (hidden until then, it couldn't take the focus).
-  const placed = box !== null;
-  useEffect(() => {
-    if (placed) focusChoice(ref.current);
-  }, [placed]);
-  useEffect(() => {
-    const el = ref.current;
-    const a = anchor.current;
-    // A press outside closes it; the button itself toggles it.
-    const down = (e: PointerEvent) => {
-      const target = e.target as Node;
-      // A list opened from inside (the season's Select) is portalled out of it, and isn't outside.
-      if (target instanceof Element && target.closest('[role="listbox"], [data-radix-popper-content-wrapper]')) return;
-      if (!el?.contains(target) && !a?.contains(target)) closeRef.current();
-    };
-    document.addEventListener("pointerdown", down, true);
-    return () => {
-      document.removeEventListener("pointerdown", down, true);
-      const now = document.activeElement;
-      if (a?.isConnected && (!now || now === document.body || el?.contains(now))) a.focus({ preventScroll: true });
-    };
-  }, [anchor]);
-  // Up and down move between the rows of one list (the lists are menus: arrows don't choose, Enter and Space do).
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
-      return;
-    }
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    const list = (e.target as HTMLElement).closest('[role="menu"]');
-    if (!list) return;
-    const rows = [...list.querySelectorAll<HTMLElement>("[data-menu-row]:not([disabled])")];
-    const i = rows.indexOf(e.target as HTMLElement);
-    if (i < 0) return;
-    e.preventDefault();
-    rows[(i + (e.key === "ArrowDown" ? 1 : -1) + rows.length) % rows.length]?.focus();
-  };
-  return (
-    <div
-      ref={ref}
-      role="dialog"
-      aria-label={label}
-      data-player-menu
-      onKeyDown={onKeyDown}
-      style={box ? { insetInlineEnd: box.end, bottom: box.bottom, maxHeight: box.max } : { visibility: "hidden" }}
-      className={cn(
-        "pointer-events-auto absolute z-10 max-w-[calc(100%-2rem)] animate-fade-up overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface-1/95 p-2 text-text-1 shadow-float",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
 }
 
 /** A note in a menu: what the file has, or why something can't be chosen here. */
@@ -583,7 +497,7 @@ function SettingsLevel({
       <>
         {back(t("playbackInfo"))}
         <div className="px-3 pt-1 pb-2">
-          <InfoBody prepared={prepared} info={info} bufferedAhead={bufferedAhead} dense />
+          <InfoBody prepared={prepared} info={info} bufferedAhead={bufferedAhead} />
         </div>
       </>
     );

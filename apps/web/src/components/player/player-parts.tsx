@@ -3,7 +3,7 @@
 import type { Availability, SeasonDetails } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReleaseText } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -23,12 +23,12 @@ import { episodesOpen } from "@/lib/spoilers";
 import { useWhy } from "./use-why";
 
 /*
- * What the site's player menus (PlayerMenus) and the TV's panels (PlayerPanels) share: the layers' names, a series'
- * episodes and a title's copies as the player gets them, tracks and formats in words, the timing's numbers, playback
- * info, the episode list and the keys.
+ * What the site's player menus (PlayerMenus) and the TV's (PlayerPanels) share: the layers' names, the menu's surface
+ * over its button, a series' episodes and a title's copies as the player gets them, tracks and formats in words, the
+ * timing's numbers, playback info, the episode list and the keys.
  */
 
-/** The player's layers (design-system 11.1): a panel on the right on a PC and a TV, a sheet on a phone; keys in a dialog. */
+/** The player's layers (design-system 11.1): a menu over its button on a PC and a TV, a sheet on a phone; keys in a dialog. */
 export type PlayerPanel = "none" | "tracks" | "settings" | "info" | "episodes" | "source" | "help";
 
 /** Every season of a series, for the in-player episode list (PLR-11: not only the current season). */
@@ -76,7 +76,7 @@ export function useTrackWords(originalLanguage: string | null) {
 }
 
 /** "Stats for nerds" (PLR-06): what plays, how the stream reaches this device and why, in words; refreshed every second. */
-export function InfoBody({ prepared, info, bufferedAhead, dense }: { prepared: PreparedPlayback; info: { version: string; server: string }; bufferedAhead: number; dense?: boolean }) {
+export function InfoBody({ prepared, info, bufferedAhead }: { prepared: PreparedPlayback; info: { version: string; server: string }; bufferedAhead: number }) {
   const t = useTranslations("player");
   const one = new Intl.NumberFormat(useLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const [live, setLive] = useState<{ w: number; h: number; dropped: number | null; total: number | null }>({ w: 0, h: 0, dropped: null, total: null });
@@ -105,13 +105,13 @@ export function InfoBody({ prepared, info, bufferedAhead, dense }: { prepared: P
     [t("infoBuffer"), t("seconds", { value: one.format(bufferedAhead) })],
     [t("infoDropped"), live.dropped !== null && live.total ? `${live.dropped} / ${live.total}` : "—"],
   ];
-  // `dense`: the site's settings menu, a fact a line (name, value); the TV's panel one under the other.
+  // A fact a line (name, value), short enough for a menu over the picture — the site's settings and the TV's menu.
   return (
-    <dl className={dense ? "grid grid-cols-[auto_1fr] gap-x-4 gap-y-2" : "flex flex-col gap-4"} aria-live="off">
+    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2" aria-live="off">
       {rows.map(([k, v]) => (
-        <div key={k} className={dense ? "contents" : undefined}>
+        <div key={k} className="contents">
           <dt className="text-body-s text-text-2">{k}</dt>
-          <dd className={dense ? "break-words text-body-s text-text-1 tabular-nums" : "mt-0.5 break-words text-body text-text-1 tabular-nums"}>{v}</dd>
+          <dd className="break-words text-body-s text-text-1 tabular-nums">{v}</dd>
         </div>
       ))}
     </dl>
@@ -228,5 +228,101 @@ export function ShortcutRows({ subtitles, next, segments }: { subtitles: boolean
         </div>
       ))}
     </dl>
+  );
+}
+
+const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), [tabindex="0"]';
+
+/**
+ * The focus on the chosen row of a menu (a checked row or radio), else its first control, else the menu itself (a list
+ * only read, as the playback info): on open, and as a level replaces the list.
+ */
+export const focusChoice = (el: HTMLElement | null) => (el?.querySelector<HTMLElement>('[aria-checked="true"], input:checked') ?? el?.querySelector<HTMLElement>(FOCUSABLE) ?? el)?.focus({ preventScroll: true });
+
+/**
+ * A menu of the player over the picture (11.1), the site's (PlayerMenus) and the TV's (PlayerPanels): above its button,
+ * aligned to the button's end, as tall as the room above it — no veil, nothing moves aside: the film stays in view and
+ * plays on. The chosen row (else the first control) takes the focus, which goes back to the button when the surface
+ * closes; a row the keys or a remote move to is scrolled into view. `over="bar"` (a TV): over the whole block of
+ * controls, the timeline in view, rather than over the button alone.
+ */
+export function Surface({ anchor, label, onClose, className, over = "button", children }: { anchor: RefObject<HTMLButtonElement | null>; label: string; onClose: () => void; className: string; over?: "button" | "bar"; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const [box, setBox] = useState<{ end: number; bottom: number; max: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const a = anchor.current;
+      const root = ref.current?.offsetParent;
+      if (!a || !(root instanceof HTMLElement)) return;
+      const r = a.getBoundingClientRect();
+      const c = root.getBoundingClientRect();
+      const rtl = getComputedStyle(root).direction === "rtl";
+      const top = over === "bar" ? (a.closest("[data-player-bar]")?.getBoundingClientRect().top ?? r.top) : r.top;
+      // No taller than 70 % of the player: the picture stays the larger part of the screen.
+      setBox({ end: Math.max(16, rtl ? r.left - c.left : c.right - r.right), bottom: c.bottom - top + 8, max: Math.min(top - c.top - 24, c.height * 0.7) });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [anchor, over]);
+  // Focused once it is placed (hidden until then, it couldn't take the focus).
+  const placed = box !== null;
+  useEffect(() => {
+    if (placed) focusChoice(ref.current);
+  }, [placed]);
+  useEffect(() => {
+    const el = ref.current;
+    const a = anchor.current;
+    // A press outside closes it; the button itself toggles it.
+    const down = (e: PointerEvent) => {
+      const target = e.target as Node;
+      // A list opened from inside (the season's Select) is portalled out of it, and isn't outside.
+      if (target instanceof Element && target.closest('[role="listbox"], [data-radix-popper-content-wrapper]')) return;
+      if (!el?.contains(target) && !a?.contains(target)) closeRef.current();
+    };
+    document.addEventListener("pointerdown", down, true);
+    return () => {
+      document.removeEventListener("pointerdown", down, true);
+      const now = document.activeElement;
+      if (a?.isConnected && (!now || now === document.body || el?.contains(now))) a.focus({ preventScroll: true });
+    };
+  }, [anchor]);
+  // Up and down move between the rows of one list (the lists are menus: arrows don't choose, Enter and Space do).
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const list = (e.target as HTMLElement).closest('[role="menu"]');
+    if (!list) return;
+    const rows = [...list.querySelectorAll<HTMLElement>("[data-menu-row]:not([disabled])")];
+    const i = rows.indexOf(e.target as HTMLElement);
+    if (i < 0) return;
+    e.preventDefault();
+    rows[(i + (e.key === "ArrowDown" ? 1 : -1) + rows.length) % rows.length]?.focus();
+  };
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label={label}
+      tabIndex={-1}
+      data-player-menu
+      onKeyDown={onKeyDown}
+      // A TV's remote focuses without scrolling (tvui/nav): the row it lands on is brought into view here.
+      onFocus={(e) => (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" })}
+      style={box ? { insetInlineEnd: box.end, bottom: box.bottom, maxHeight: box.max } : { visibility: "hidden" }}
+      className={cn(
+        "pointer-events-auto absolute z-10 max-w-[calc(100%-2rem)] animate-fade-up overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface-1/95 p-2 text-text-1 shadow-float outline-none",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }

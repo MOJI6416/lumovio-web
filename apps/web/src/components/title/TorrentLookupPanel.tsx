@@ -5,11 +5,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Info, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { SidePanel } from "@/components/ui/Dialog";
 import { IconButton } from "@/components/ui/IconButton";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Link as ActionLink } from "@/components/ui/Link";
@@ -248,28 +248,19 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
             {tp("allReleases", { count: lookup.data?.ranked.length ?? 0 })}
           </ActionLink>
         </div>
-        <ReleaseDetails release={details} tv={d.kind === "tv"} onClose={() => setDetails(null)} />
+        <ReleaseDetails
+          result={details?.result ?? null}
+          release={details ?? undefined}
+          tv={d.kind === "tv"}
+          note={tpl("addsTo", { server: source.name })}
+          loading={adding}
+          onClose={() => setDetails(null)}
+          onWatch={() => {
+            setDetails(null);
+            if (details) void play(details, option?.studio ? option.key : null);
+          }}
+        />
       </WatchCard>
     </>
-  );
-}
-
-/** A release's details (7.15): its marks and audio, then every fact its name and the indexer give — the sources screen's own. */
-function ReleaseDetails({ release: x, tv, onClose }: { release: RankedRelease | null; tv: boolean; onClose: () => void }) {
-  const tp = useTranslations("titlePage");
-  const text = useReleaseText();
-  const facts = useReleaseFacts();
-  return (
-    <SidePanel open={x !== null} onOpenChange={(o) => !o && onClose()} title={tp("releaseDetails")} description={x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : undefined}>
-      <dl className="flex flex-col gap-4">
-        {x &&
-          facts(x.result, x, tv).map(([k, v]) => (
-            <div key={k}>
-              <dt className="text-body-s text-text-2">{k}</dt>
-              <dd className="mt-0.5 text-body break-words whitespace-pre-line text-text-1">{v}</dd>
-            </div>
-          ))}
-      </dl>
-    </SidePanel>
   );
 }
