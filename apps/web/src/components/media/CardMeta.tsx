@@ -36,7 +36,7 @@ export function MetaLine({ parts, wide = [], lead, className }: { parts: ReactNo
  * and one line of metadata (`body-s`, --text-2) — "IMDb 7,8 · 2021 · Film", or what the shelf chose it by ("Added
  * 22 Oct", "Season 3 · episode 16 · 22 min left"). `meta` parts are joined with " · " (2.2), empty ones left out, and
  * one that doesn't fit is left out whole (MetaLine); `wide` parts follow from a tablet up. A fact (`wrap`) too long for a
- * narrow card takes a second line rather than being cut ("Added 22 O…" says nothing, X-38). `align="center"` under a
+ * narrow card takes up to three lines rather than being cut ("Added 22 O…" says nothing, X-38). `align="center"` under a
  * person's round photo. `titleLang` marks a name in another language than the page's (a video's own title, 8.11).
  */
 export function CardMeta({
@@ -67,7 +67,8 @@ export function CardMeta({
       </p>
       {wrap ? (
         parts.length > 0 && (
-          <p className={cn(line, "line-clamp-2")}>
+          // Up to three lines under the art: a phone's 112 px card needs them for "Director: Christopher Nolan".
+          <p className={cn(line, "line-clamp-3")}>
             {parts.map((p, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
               <Fragment key={i}>

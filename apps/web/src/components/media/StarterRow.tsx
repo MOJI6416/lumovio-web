@@ -10,13 +10,12 @@ import { ActionMark } from "@/components/ui/BrandMotion";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Link } from "@/components/ui/Link";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 import { useRecommendationFeedback } from "./ForYouRow";
-import { PosterCard } from "./PosterCard";
+import { PosterCard, PosterCardSkeleton } from "./PosterCard";
 import { Row } from "./Row";
 
 // Opened rarely: loaded on the first press, not with the home page (bundle budget).
@@ -146,7 +145,7 @@ export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
       {titles.data
         ? titles.data.map((title) => <StarterCard key={title.id} title={title} onChange={(on) => setLiked((n) => n + (on ? 1 : -1))} />)
         : // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
-          Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="aspect-2/3 w-full" />)}
+          Array.from({ length: 8 }, (_, i) => <PosterCardSkeleton key={i} />)}
     </Row>
   );
 }

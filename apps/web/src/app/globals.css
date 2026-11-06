@@ -462,13 +462,13 @@
   /* 7.13 A shelf off the screen isn't drawn until it comes near (performance-handoff §3, P2): a long home page or
    * landing paints and composites only what is on screen, so scrolling keeps its frame rate on a slow phone, and the
    * posters of far shelves wait until they are approached. Until it is first drawn it holds the height of a shelf of its
-   * cards (the heading — the "All" link is the heading itself — and cards of media/card-sizes.ts with their names on the
-   * art, a person's under the circle; measured 2026-11-06 at 390, 768, 1440 and 1920 px; a Top 10 shelf is a poster
-   * shelf's height since its posters are a poster card's), so the page's height — and where Back returns — stays; then
-   * its own. The clip margin keeps a focus ring at its edge.
+   * cards (the heading — the "All" link is the heading itself — and cards of media/card-sizes.ts: a frame's name on it,
+   * a poster's and a person's under the art in two lines; measured 2026-11-06 at 390, 768, 1440 and 1920 px; a Top 10
+   * shelf is a poster shelf's height since its posters are a poster card's), so the page's height — and where Back
+   * returns — stays; then its own. The clip margin keeps a focus ring at its edge.
    * The TV mode draws every shelf: its remote navigation measures the cards on each press (10.3; the TV shell decides). */
   .shelf {
-    --shelf-h: 12.8rem;
+    --shelf-h: 17.1rem;
     content-visibility: auto;
     contain-intrinsic-block-size: auto var(--shelf-h);
     overflow-clip-margin: 0.75rem;
@@ -481,7 +481,7 @@
   }
   @media (width >= 48rem) {
     .shelf {
-      --shelf-h: 16.4rem;
+      --shelf-h: 20.65rem;
     }
     .shelf[data-shelf="landscape"] {
       --shelf-h: 12.7rem;
@@ -492,7 +492,7 @@
   }
   @media (width >= 80rem) {
     .shelf {
-      --shelf-h: 18.6rem;
+      --shelf-h: 22.9rem;
     }
     .shelf[data-shelf="landscape"] {
       --shelf-h: 13.55rem;
@@ -503,7 +503,7 @@
   }
   @media (width >= 96rem) {
     .shelf {
-      --shelf-h: 20.1rem;
+      --shelf-h: 24.4rem;
     }
     .shelf[data-shelf="landscape"] {
       --shelf-h: 14.7rem;

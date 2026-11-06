@@ -6,13 +6,13 @@ import { MetaLine } from "./CardMeta";
 const real = (p: ReactNode) => p !== null && p !== undefined && p !== false && p !== "";
 
 /**
- * A card's name and one line on the foot of its art, on a scrim (owner, 2026-11-06: one look for every card of a
- * shelf — poster, landscape, Top 10 — instead of a caption under it; design-system 7.12). Small type for a phone's
- * poster (112 px wide), room for "More" only where a mouse shows it, and the layer rises with the art on hover and
- * focus (Artwork's 1.04), or the scrim would stay behind the picture. Over a progress bar it leaves the bar in view.
- * The line never cuts a part: what doesn't fit is left out whole (MetaLine), a shelf's fact takes two lines. `lead`
- * stands before the line (the ▶ of a card that plays at once). The site's TV mode keeps the caption under the art.
- * Decorative: the card's link carries its whole name.
+ * A frame's name and one line on its foot, on a scrim (design-system 7.12, 2026-11-06): a landscape card's backdrop has
+ * no lettering of its own, so its name stands on it, as Apple TV's "Up next" does — a poster, which carries its title,
+ * keeps its name under the art (PosterCard). Room for "More" only where a mouse shows it, and the layer rises with the
+ * art on hover and focus (Artwork's 1.04), or the scrim would stay behind the picture. Over a progress bar it leaves the
+ * bar in view. The line never cuts a part: what doesn't fit is left out whole (MetaLine), a shelf's fact takes two
+ * lines. `lead` stands before the line (the ▶ of a card that plays at once). Decorative: the card's link carries its
+ * whole name.
  */
 export function ArtCaption({
   shape,

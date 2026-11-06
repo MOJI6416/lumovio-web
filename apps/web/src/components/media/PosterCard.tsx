@@ -12,13 +12,12 @@ import { latinLang } from "@/lib/format";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 import { Artwork, artBox, type PersonalMark } from "./Artwork";
-import { ArtCaption } from "./ArtCaption";
 import { CardMeta } from "./CardMeta";
 import { CardMore, type MoreVisibility, useLongPress } from "./CardMore";
 import type { CardMenuExtra } from "./CardMenu";
 import { CardRating, ratingText } from "./CardRating";
 import { POSTER_SIZES } from "./card-sizes";
-import { useDismissed, useShelf } from "./shelf-context";
+import { useDismissed } from "./shelf-context";
 
 /** The card's one personal mark (7.12): "Watched" outranks "Watchlist". */
 export function useCardMark(title: Pick<TitleSummary, "id" | "kind">, enabled = true) {
@@ -36,8 +35,8 @@ export function useRatingText() {
 
 /**
  * Poster card (design-system 7.12, sizes 5.4): the poster with at most one badge ("On your server") and one personal
- * mark, the name in up to two lines and one line of metadata — on the poster's foot in a shelf, under it in a grid
- * (catalog, search, lists, filmographies). The metadata is what the shelf chose it by ("Added 22 Oct", "In digital
+ * mark, the name in up to two lines and one line of metadata under it — the same in shelves, catalog grids, search,
+ * lists and filmographies. The metadata is what the shelf chose it by ("Added 22 Oct", "In digital
  * since 13 Oct"), or the card's one rating, the year and the type. "More" (8.1) on the artwork; a long press on a touch
  * screen opens it too. The width comes from the shelf or grid around it (./card-sizes).
  */
@@ -90,11 +89,9 @@ export function PosterCard({
   const shelfFact = useCardFact(title);
   const fact = factProp ?? shelfFact;
   const press = useLongPress();
-  // One look for a poster in a shelf (owner, 2026-11-06): no caption under it — its name and one line (the shelf's fact,
-  // the card's subtitle, else year and score) stand on the poster's foot, on a scrim, always, so every shelf is the same
-  // row of posters and every name can be read, whatever the poster's script. A card without a poster, a grid and the
-  // site's TV mode keep the caption under the art; the link's name is whole either way.
-  const bare = Boolean(useShelf()) && Boolean(title.posterPath);
+  // The name and line under the poster, in a shelf as in a grid (2026-11-06, decided anew): a poster carries its own
+  // title lettering, and text laid over it read as text on text and hid up to half of a phone's poster; under it the
+  // name is legible in any script and theme and the art is whole.
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38). Else the
@@ -107,7 +104,6 @@ export function PosterCard({
       meta={meta}
       wide={subtitle || fact ? [] : [kindLabel]}
       wrap={Boolean(subtitle || fact)}
-      className={bare ? "hidden in-data-[tv=1]:block" : undefined}
     />
   );
 
@@ -145,9 +141,6 @@ export function PosterCard({
         />
         {/* A name the catalog has only in Latin letters on a ru/uk page is marked as such (8.11, L10N-11). */}
         {caption}
-        {bare && (
-          <ArtCaption shape="poster" title={title.title} titleLang={latinLang(title.title, locale)} meta={meta} wrap={Boolean(subtitle || fact)} aboveBar={fraction != null} />
-        )}
       </Link>
       {(more || children) && (
         // The artwork's box over it, for what sits on the artwork but is not part of the link.

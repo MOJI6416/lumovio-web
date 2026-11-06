@@ -26,6 +26,8 @@ export const SHELF_COLS: Record<CardShape, string> = {
 
 /** A Top 10 card's two columns: the rank's numeral and the poster, a poster card's width. */
 export const TOP10_COLS = "grid-cols-[4rem_7rem] md:grid-cols-[5rem_9rem] xl:grid-cols-[5.75rem_10.5rem] 2xl:grid-cols-[6.25rem_11.5rem]";
+/** The numeral's column is as tall as the poster beside it (its width × 1.5), so the numeral stands on the poster's foot. */
+export const TOP10_RANK_H = "h-42 md:h-54 xl:h-63 2xl:h-69";
 
 /** Gaps between cards (5.1): 8 phone · 12 tablet · 16 desktop. */
 export const CARD_GAP_X = "gap-x-2 md:gap-x-3 xl:gap-x-4";

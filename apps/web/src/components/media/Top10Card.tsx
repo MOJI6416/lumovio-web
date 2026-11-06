@@ -7,18 +7,17 @@ import { Link } from "@/i18n/navigation";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 import { Artwork, artBox } from "./Artwork";
-import { ArtCaption } from "./ArtCaption";
 import { CardMeta } from "./CardMeta";
 import { CardMore, useLongPress } from "./CardMore";
 import { CardRating } from "./CardRating";
-import { POSTER_SIZES, TOP10_COLS } from "./card-sizes";
+import { POSTER_SIZES, TOP10_COLS, TOP10_RANK_H } from "./card-sizes";
 import { useCardMark, useRatingText } from "./PosterCard";
 import { useDismissed } from "./shelf-context";
 
 /**
  * Top 10 card (design-system 7.12, sizes 5.4): the rank as an outlined numeral standing on the poster's foot line, beside
- * a poster of a poster card's width with the same name and line on it (ArtCaption), so the shelf is the same row of
- * posters as every other. One Top 10 shelf per page (HOME-14).
+ * a poster of a poster card's width with the same name and line under it as a PosterCard, so the shelf is the same row
+ * of posters as every other. One Top 10 shelf per page (HOME-14).
  */
 export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank: number; priority?: boolean }) {
   const t = useTranslations("rows");
@@ -33,8 +32,9 @@ export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank
   // The rating first, as every card's line (PosterCard).
   const meta = [rating, title.year];
   return (
-    <div className={cn("group/card relative grid w-full min-w-0 select-none items-end", TOP10_COLS)} {...press.handlers}>
-      <svg aria-hidden viewBox="0 0 120 180" preserveAspectRatio="xMaxYMax meet" className="aspect-2/3 w-full self-end">
+    <div className={cn("group/card relative grid w-full min-w-0 select-none items-start", TOP10_COLS)} {...press.handlers}>
+      {/* As tall as the poster beside it, the numeral at its foot: it stands on the poster's line, not the caption's. */}
+      <svg aria-hidden viewBox="0 0 120 180" preserveAspectRatio="xMaxYMax meet" className={cn("w-full", TOP10_RANK_H)}>
         <text
           x="118"
           y="172"
@@ -78,10 +78,8 @@ export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank
             badge={title.onServer ? t("onServerBadge") : null}
             mark={mark}
           />
-          {/* As every card of a shelf: the name and line on the poster (ArtCaption), the caption only in the site's TV mode. */}
-          {/* Without a poster the name stands under the placeholder, as a PosterCard's does. */}
-          <CardMeta title={title.title} meta={meta} wide={[kindLabel]} className={title.posterPath ? "hidden in-data-[tv=1]:block" : undefined} />
-          {title.posterPath && <ArtCaption shape="poster" title={title.title} meta={meta} />}
+          {/* The name and line under the poster, as a PosterCard's. */}
+          <CardMeta title={title.title} meta={meta} wide={[kindLabel]} />
         </Link>
         <div className={cn("pointer-events-none absolute inset-x-0 top-0", artBox("poster"))}>
           <CardMore title={title} openSignal={press.signal} className="absolute end-1.5 bottom-2.5 max-sm:end-0 max-sm:bottom-1" />

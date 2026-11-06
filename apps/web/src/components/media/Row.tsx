@@ -202,9 +202,9 @@ export function Row({
   // The edge with more cards fades over the page's gutter (7.13); the other edge stays sharp.
   const side = (more: boolean) => (more ? "transparent" : "black");
   const mask = `linear-gradient(to right, ${side(!edges.start)} 0, black var(--gutter), black calc(100% - var(--gutter)), ${side(!edges.end)} 100%)`;
-  // Arrows over the artwork, with a mouse, on hover. Every card of a shelf has its name on its art since the 2026-11
-  // redesign (ArtCaption): the card's centre is the art's. A person's name is under the circle (pb-12 lifts them there).
-  const arrow = `absolute inset-y-0 z-10 flex items-center ${kind === "person" ? "pb-12" : ""} opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden`;
+  // Arrows over the artwork, with a mouse, on hover: a frame has its name on it (the card's centre is the art's); a
+  // poster's, a Top 10's and a person's name is under the art, and pb-16 lifts them from the card's centre to the art's.
+  const arrow = `absolute inset-y-0 z-10 flex items-center ${kind === "landscape" ? "" : "pb-16"} opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden`;
 
   return (
     // `.shelf`: drawn only when it comes near the screen, holding the height of its kind of cards until then (globals.css);
