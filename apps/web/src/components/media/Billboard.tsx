@@ -254,7 +254,8 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
               </h2>
             ) : (
               <h2 className="text-balance text-display">
-                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto rounded-sm">
+                {/* At least 44 tall without moving the line (5.6: padding, then the same negative margin). */}
+                <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto -my-1 inline-block rounded-sm py-1">
                   {item.title}
                 </Link>
               </h2>
