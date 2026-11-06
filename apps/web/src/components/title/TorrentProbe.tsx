@@ -9,9 +9,10 @@ import { useSession } from "@/components/providers/Providers";
 import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
-import { useTorrentLookup } from "@/hooks/useTorrentLookup";
+import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
-import { bestOf, type RankedRelease, voiceOptions } from "@/lib/media/releases";
+import { pickRelease } from "@/lib/media/release-pick";
+import { bestOf } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
@@ -40,12 +41,11 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const text = useReleaseText();
   const lookup = useTorrentLookup(d, source, true);
   const { data: lib } = useLibraryState(d.id);
+  const prefs = useReleasePrefs();
   const ranked = lookup.data?.ranked;
-  const options = useMemo(() => voiceOptions(ranked ?? []), [ranked]);
-
-  // What "Where to watch" recommends first: the first audio option in its best picture version.
-  const option = options[0];
-  const chosen: RankedRelease | undefined = option ? (option.versions.find((v) => v.key === option.best.picture)?.best ?? option.best) : ranked ? bestOf(ranked) : undefined;
+  // What "Where to watch" recommends with nothing chosen: the profile's first audio option, its best release's cut,
+  // the mode's picture (lib/media/release-pick, the same function).
+  const { option, chosen } = useMemo(() => pickRelease(ranked ?? [], prefs), [ranked, prefs]);
   const voice = option?.studio ? option.key : null;
 
   // A search for a watchlist title counts for the profile's other devices too (and spares them one for 12 hours).
@@ -64,7 +64,12 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
   const marks = chosen ? releaseMarks(chosen.info) : [];
   const summary = chosen
-    ? [marks.length ? (chosen.info.resolution === 720 ? RESOLUTION[720] : null) : chosen.info.resolution ? RESOLUTION[chosen.info.resolution] : null, text.audio(chosen, option?.studio)].filter(Boolean).join(" · ")
+    ? [
+        marks.length ? (chosen.info.resolution === 720 ? RESOLUTION[720] : null) : chosen.info.resolution ? RESOLUTION[chosen.info.resolution] : null,
+        text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio),
+      ]
+        .filter(Boolean)
+        .join(" · ")
     : "";
   const status = lookup.isError ? "failed" : lookup.isLoading || !lookup.data ? "searching" : chosen ? "found" : "nothing";
 

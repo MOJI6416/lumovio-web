@@ -19,6 +19,7 @@ import {
   type ReleaseTrack,
   type VoiceOption,
 } from "@/lib/media/releases";
+import { editionOf } from "@/lib/media/release-pick";
 import type { TsSearchResult } from "@/lib/media/torrserver";
 
 /*
@@ -204,7 +205,7 @@ export function ReleaseTag({ x, linked, season }: { x: RankedRelease; linked: bo
  * Everything the release name and the indexer say about one release (7.15 details), each fact on its own and "not
  * stated" where the name says nothing — nothing is filled in; every audio track under its language. What this device
  * can do is its own reading; the file itself is checked when it is prepared. `tv`: a series — its pack's seasons, and
- * a pack's size said as the whole pack's.
+ * a pack's size said as the whole pack's. The cut of the film ("Extended") when the name says it.
  */
 export function useReleaseFacts() {
   const t = useTranslations("player");
@@ -234,6 +235,9 @@ export function useReleaseFacts() {
       [t("detailTracker"), r.origins ? r.origins.map((o) => `${o.tracker ?? "?"} (${o.seeders ?? "?"}/${o.peers ?? "?"})`).join(", ") : (r.tracker ?? none)],
       [t("detailPublished"), formatDate(r.published, locale) ?? none],
     );
+    // The cut, only when the name says it (theatrical, extended, the director's — lib/media/release-pick).
+    const cut = editionOf(r.title);
+    if (cut) rows.splice(x ? 4 : 0, 0, [t("detailEdition"), tt(`edition_${cut}`)]);
     if (x) rows.push([t("detailDevice"), x.fit === "poor" ? tt(x.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv") : x.fit === "unknown" ? tt("tsFitUnknown") : t("fitOk")]);
     rows.push([t("detailName"), r.title]);
     return rows;

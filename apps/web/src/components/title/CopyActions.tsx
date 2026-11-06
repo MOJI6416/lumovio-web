@@ -62,6 +62,7 @@ export function CopyActions({
   manage,
   onRemove,
   onDetails,
+  size = "md",
 }: {
   title: TitleCore;
   copy: Availability;
@@ -70,6 +71,8 @@ export function CopyActions({
   manage: boolean;
   onRemove: (target: RemovalTarget) => void;
   onDetails: () => void;
+  /** lg beside the card's large "Watch", md in a row. */
+  size?: "md" | "lg";
 }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
@@ -156,7 +159,7 @@ export function CopyActions({
   return (
     <>
       <Menu
-        trigger={<IconButton icon={Ellipsis} label={tp("copyMore", { server })} variant="secondary" size="md" disabled={loading} aria-busy={loading || undefined} />}
+        trigger={<IconButton icon={Ellipsis} label={tp("copyMore", { server })} variant="secondary" size={size} disabled={loading} aria-busy={loading || undefined} />}
         label={tp("copyMore", { server })}
         title={server}
       >

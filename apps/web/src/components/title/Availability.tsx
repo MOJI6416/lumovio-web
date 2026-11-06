@@ -1,6 +1,6 @@
 "use client";
 
-import type { Availability as Copy, WatchProvider } from "@lumovio/contracts";
+import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
 import { ExternalLink, Play, Server, Tv } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
@@ -9,19 +9,16 @@ import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
-import { useReleaseText } from "@/components/sources/release-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
 import { formatSize } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
-import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Link as ActionLink } from "@/components/ui/Link";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useLibraryState } from "@/hooks/useLibraryState";
+import { autoSearchSource } from "@/hooks/useTorrentLookup";
 import { Link } from "@/i18n/navigation";
 import { regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
@@ -32,16 +29,24 @@ import { sourcesHref, type TitleCore, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
+import { CardMark, ServerMarks, WatchCard, WatchCardLoading } from "./WatchCard";
 
-const OFFER_KINDS: WatchProvider["kind"][] = ["flatrate", "free", "ads", "rent", "buy"];
 const OFFER_LABEL = { flatrate: "offerFlatrate", free: "offerFree", ads: "offerAds", rent: "offerRent", buy: "offerBuy" } as const;
+/** Streaming by what it costs, as JustWatch groups it: in a subscription, free, for money. */
+const OFFER_GROUPS: { key: "offerFlatrate" | "offerFree" | "offersPaid"; kinds: WatchProvider["kind"][] }[] = [
+  { key: "offerFlatrate", kinds: ["flatrate"] },
+  { key: "offerFree", kinds: ["free", "ads"] },
+  { key: "offersPaid", kinds: ["rent", "buy"] },
+];
+const reachable = (s: SourceState) => s.status !== "unreachable" && s.status !== "unauthorized";
 
 /**
- * "Where to watch" (design-system 7.15, S06, C14; SRC-01, SRC-09, SRC-14, TTL-12, TTL-14): every way to start it in
- * rows of one kind (SourceRow) and one word for the button, "Watch" — the profile's copies on its servers (the first is
- * the one the main button starts), the TorrServer's recommended release when there is no copy, and the legal streaming
- * services of the region with their names, each opening the service itself. Sources of data and legal notes are in the
- * sections' "i". A guest is invited to sign in rather than told to connect a server to an account they don't have.
+ * "Where to watch" (design-system 7.15, S06, C14; SRC-01, SRC-09, SRC-14, TTL-12, TTL-14; redrawn 2026-11-06): the one
+ * way to start now in a card — the copy the main button starts, else the release the profile's TorrServer finds, with
+ * the choices that lead to another — then the other copies, and beside them (under them on a phone) the legal
+ * streaming of the region by what it costs. Every state of the way is the same card: loading, an error, a server out of
+ * reach or still indexing, nothing on the servers, a TorrServer without its own search, the guest's sign-in, a profile
+ * without servers. No sentence explains it: the card's heading says the state, its one button the way on.
  */
 export function Availability({ title: d }: { title: TitleCore }) {
   const t = useTranslations("title");
@@ -61,137 +66,192 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
   const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
-  const torrServers = (raw?.sources ?? []).filter((s) => s.kind === "torrserver");
   const manage = signedIn && !kids;
+  const torrServers = manage ? (raw?.sources ?? []).filter((s) => s.kind === "torrserver") : [];
+  // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
+  const search = manage ? autoSearchSource(raw?.sources, kids) : null;
+  const manual = search ? undefined : torrServers.find(reachable);
   // A torrent's files bound to episodes of this series (they are not copies of their own).
   const hashOf = (s: { externalId: string }) => s.externalId.split(":")[0]!.toLowerCase();
   const episodeFilesOf = (copy: Copy) =>
     (raw?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.episode !== null && x.connectionId === copy.connectionId && hashOf(x) === hashOf(copy));
   const resume = watchHref(d, lib?.progress);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
-
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
   const copyText = useCopyText();
-  const releaseText = useReleaseText();
+  const all = raw?.servers ?? [];
+  // Servers out of reach or still indexing: said once, quietly when another way is shown, as the card when none is.
+  const down = state.kind === "unreachable" ? t("serversDown", { names: state.names.join(", ") }) : state.kind === "indexing" ? t("serversIndexing", { names: state.names.join(", ") }) : null;
 
-  let servers: ReactNode;
+  /** A copy as it is heard, its marks with the size, and where it is. */
+  const copyFace = (s: Copy) => {
+    const q = copyText.quality(s, all, d.originalLanguage);
+    const heard = copyText.sound(s, all, d.originalLanguage);
+    const size = formatSize(s.quality?.sizeBytes ?? null, locale);
+    // Two copies of one version differ in their sound and size: the audio format, when the server read it, says which.
+    const codec = copies.length > 1 ? (s.quality?.audioCodecs?.find((c) => c !== "atmos")?.toUpperCase() ?? null) : null;
+    return {
+      heard: heard ?? q.words[0] ?? s.connectionName,
+      // The marks and what they don't say; without marks, the version in words unless the heading already says it.
+      quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
+      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      match: copyText.audioMatch(s, all, d.originalLanguage),
+    };
+  };
+  const more = (s: Copy, size: "md" | "lg") => (
+    <CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
+  );
+
+  let main: ReactNode = null;
   if (!signedIn) {
-    servers = (
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body text-text-2">
-        {tp("guestServers")}
-        {/* The one sign-in sheet (8.6), back to this tab afterwards. */}
-        <GuestGate
-          reason="watch"
-          trigger={
-            <Button variant="secondary" size="sm">
-              {t("signInToWatch")}
-            </Button>
-          }
-        />
-      </p>
+    main = (
+      <WatchCard
+        id="servers-h"
+        mark={<ServerMarks />}
+        heading={tp("guest")}
+        actions={
+          // The one sign-in sheet (8.6), back to this tab afterwards.
+          <GuestGate
+            reason="watch"
+            trigger={
+              <Button variant="secondary" size="lg">
+                {t("signInToWatch")}
+              </Button>
+            }
+          />
+        }
+      />
     );
   } else if (!hydrated || avail.isPending) {
-    servers = <Skeleton className="h-20 w-full" />;
+    main = <WatchCardLoading id="servers-h" />;
   } else if (state.kind === "error") {
-    servers = <ErrorState error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />;
+    main = (
+      <section aria-label={t("yourServers")} className="rounded-lg bg-surface-1 p-4 sm:p-6">
+        <ErrorState error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />
+      </section>
+    );
   } else if (copies.length > 0) {
-    servers = copies.map((s, i) => {
-      // What its audio has to do with the profile: the same label a release's row has (7.4; Jellyfin's tracks too).
-      const match = copyText.audioMatch(s, raw?.servers ?? [], d.originalLanguage);
-      const first = i === 0 && copies.length > 1;
-      // Under the server's name: its marks (4K, Dolby Vision, Dolby Atmos — QualityBadges), what is heard and how big.
-      const q = copyText.quality(s, raw?.servers ?? [], d.originalLanguage);
-      return (
-          <SourceRow
-            key={`${s.connectionId}-${s.externalId}`}
-            selected={i === 0}
-            icon={<ServerMark kind={s.kind} />}
-            badges={
-              first || match ? (
-                <>
-                  {first && <Tag>{t("startsFirst")}</Tag>}
-                  {match && <Tag>{match.kind === "studio" ? t("tsYourVoice", { studio: match.studio }) : t("tsYourLanguage", { language: releaseText.cap(releaseText.language(match.language)) })}</Tag>}
-                </>
-              ) : undefined
-            }
-            title={s.connectionName}
-            meta={<QualityLine marks={q.marks} words={[...q.words, formatSize(s.quality?.sizeBytes ?? null, locale)]} />}
-            action={
-              <Link href={playOf(s)} className={buttonClass(i === 0 ? "primary" : "secondary", "md")}>
+    const [first, ...rest] = copies as [Copy, ...Copy[]];
+    const f = copyFace(first);
+    main = (
+      <>
+        <WatchCard
+          id="servers-h"
+          mark={<CardMark kind={first.kind} />}
+          tag={f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: f.match.studio })}</Tag> : undefined}
+          heading={f.heard}
+          quality={f.quality}
+          where={f.where}
+          actions={
+            <>
+              <Link href={playOf(first)} className={buttonClass("primary", "lg")}>
                 <Play aria-hidden className="fill-current" />
                 {t("tsWatch")}
               </Link>
-            }
-            more={<CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} />}
-          />
-      );
-    });
-  } else if (state.kind === "unreachable" || state.kind === "indexing") {
-    servers = (
-      <p className="text-body text-text-2">
-        {state.kind === "unreachable" ? t("statusUnreachable", { names: state.names.join(", ") }) : t("statusIndexing", { names: state.names.join(", ") })}
-      </p>
+              {more(first, "lg")}
+            </>
+          }
+        />
+        {rest.length > 0 && (
+          <section aria-labelledby="copies-h" className="flex flex-col gap-2">
+            <h4 id="copies-h" className="text-body-s font-semibold text-text-2">
+              {t("otherCopies")}
+            </h4>
+            <ul className="divide-y divide-line overflow-hidden rounded-lg bg-surface-1">
+              {rest.map((s) => {
+                const c = copyFace(s);
+                return (
+                  <li key={`${s.connectionId}-${s.externalId}`} className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+                    <div className="flex min-w-0 flex-1 basis-60 items-start gap-3">
+                      <span aria-hidden className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2">
+                        <ServerMark kind={s.kind} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-title break-words text-text-1">{c.heard}</p>
+                        <p className="mt-0.5 text-body-s break-words text-text-2">
+                          {c.quality}
+                          <span className="block">{c.where}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:[&>*:first-child]:flex-1">
+                      <Link href={playOf(s)} className={buttonClass("secondary", "md")}>
+                        <Play aria-hidden className="fill-current" />
+                        {t("tsWatch")}
+                      </Link>
+                      {more(s, "md")}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+        {torrServers.length > 0 && (
+          <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
+            {tp("allSources")}
+          </ActionLink>
+        )}
+      </>
     );
+  } else if (search) {
+    // No copy yet: the profile's TorrServer is searched from this device.
+    main = <TorrentLookupPanel title={d} source={search} />;
+  } else if (manual) {
+    main = (
+      <WatchCard
+        id="torrserver-h"
+        mark={<CardMark kind="torrserver" />}
+        heading={manual.name}
+        where="TorrServer"
+        actions={
+          <Link id={FIND_SOURCE_ID} href={sourcesHref(resume)} className={buttonClass("secondary", "lg")}>
+            {tp("findSource")}
+          </Link>
+        }
+      />
+    );
+  } else if (down) {
+    main = <WatchCard id="servers-h" mark={<CardMark>{<Server />}</CardMark>} heading={down} />;
   } else if ((data?.connections ?? 0) > 0) {
-    servers = <p className="text-body text-text-2">{tp("notOnServers")}</p>;
+    main = <WatchCard id="servers-h" mark={<CardMark>{<Server />}</CardMark>} heading={tp("notOnServers")} />;
   } else if (!kids) {
-    servers = (
-      <EmptyState
-        icon={Server}
-        title={tp("noServersTitle")}
-        text={t("noServers")}
-        action={
-          <Link href="/settings/connections" className={buttonClass("secondary")}>
+    main = (
+      <WatchCard
+        id="servers-h"
+        mark={<ServerMarks />}
+        heading={tp("noServers")}
+        actions={
+          <Link href="/settings/connections" className={buttonClass("secondary", "lg")}>
             {t("connectServer")}
           </Link>
         }
-        className="items-start px-0 py-2 text-start"
       />
     );
   }
+  // A server out of reach, said under the way that is shown (and only once: not when it is the card itself).
+  const quiet = main && down && (copies.length > 0 || search || manual) ? <p className="text-body-s text-text-3">{down}</p> : null;
 
-  const auto = torrServers.find((s) => s.autoSearch);
-  const manual = !auto ? torrServers[0] : undefined;
   return (
-    <div className="flex max-w-5xl flex-col gap-10">
-      {servers && (
-        <SourceSection
-          id="servers-h"
-          title={t("yourServers")}
-          footer={
-            manage &&
-            torrServers.length > 0 &&
-            copies.length > 0 && (
-              <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
-                {tp("allSources")}
-              </ActionLink>
-            )
-          }
-        >
-          {servers}
-        </SourceSection>
-      )}
-      {/* No copy yet: the profile's TorrServer, when it may, is searched from this device. */}
-      {manage && copies.length === 0 && auto && raw && <TorrentLookupPanel title={d} sources={raw.sources} />}
-      {manage && copies.length === 0 && manual && (
-        <SourceSection id="torrserver-h" title={tp("viaTorrServer", { name: manual.name })}>
-          <p className="text-body text-text-2">{tp("manualText", { name: manual.name })}</p>
-          <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
-            {tp("findSource")}
-          </ActionLink>
-        </SourceSection>
+    <div data-where className={main ? "grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : "max-w-3xl"}>
+      {main && (
+        <div className="flex min-w-0 flex-col gap-4">
+          {main}
+          {quiet}
+        </div>
       )}
       <Streaming title={d} locale={locale} />
       {removal && <CopyRemovalDialog target={removal} onClose={() => setRemoval(null)} />}
-      <CopyDetails copy={details} all={raw?.servers ?? []} originalLanguage={d.originalLanguage} onClose={() => setDetails(null)} />
+      <CopyDetails copy={details} all={all} originalLanguage={d.originalLanguage} onClose={() => setDetails(null)} />
     </div>
   );
 }
 
 /**
- * Legal streaming for the profile's region: each service by name, opening its own search for the title (TTL-12, TTL-14).
- * Nothing in the region is said in words, with the way to change the region (not "Streaming: —").
+ * Legal streaming for the profile's region (TTL-12, TTL-14): each service by its logo and name, opening its own search
+ * for the title, grouped by what it costs — in a subscription, free, rent or buy (JustWatch's groups); a service in two
+ * groups is in both. Nothing in the region is said in words, with the way to change the region.
  */
 function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
   const t = useTranslations("title");
@@ -199,31 +259,17 @@ function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
   const { me } = useSession();
   const wp = d.watchProviders;
   const region = regionName(wp?.region ?? me?.activeProfile?.region ?? null, locale);
-  // One row per service — its plan with ads folded in (TTL-26) — with its kinds of offer on one line ("Rent · Buy").
-  const rows = serviceOffers(wp?.providers ?? [], OFFER_KINDS).slice(0, 10);
   const title = region ? tp("streamingIn", { region }) : tp("streaming");
   // The region is the profile's to change; a kids profile's is set by an adult (8.10).
   const canChange = Boolean(me?.activeProfile && !me.activeProfile.isKids);
+  // One row per service in a group — its plan with ads folded in (TTL-26) — with its kinds of offer there ("Rent · Buy").
+  const groups = OFFER_GROUPS.map((g) => ({ ...g, rows: serviceOffers(wp?.providers ?? [], g.kinds).slice(0, 8) })).filter((g) => g.rows.length > 0);
   return (
-    <SourceSection
-      id="streaming-h"
-      title={title}
-      footer={
-        rows.length > 0 && (
-          // The data's source in a quiet line (it was in the "i", 2026-11-06), and TMDB's page of every offer.
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-3">
-            {t("streamingAttribution")}
-            {wp?.link && (
-              <a href={wp.link} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-6 items-center gap-1 underline underline-offset-3 hover:text-text-1 max-sm:min-h-11">
-                {tp("allOffersTmdb")}
-                <ExternalLink aria-hidden className="size-3.5" />
-              </a>
-            )}
-          </p>
-        )
-      }
-    >
-      {rows.length === 0 ? (
+    <section aria-labelledby="streaming-h" className="flex min-w-0 flex-col gap-4">
+      <h3 id="streaming-h" className="text-h3 text-text-1">
+        {title}
+      </h3>
+      {groups.length === 0 ? (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-text-2">
           {region ? tp("noStreaming", { region }) : tp("noStreamingHere")}
           {canChange && (
@@ -233,37 +279,61 @@ function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
           )}
         </p>
       ) : (
-        // Services as tiles, as Apple TV's channels (owner, 2026-11-06): the logo, the name, the kind of offer; the tile
-        // opens the service's own search for the title.
-        <ul className="grid grid-cols-3 gap-x-4 gap-y-6 sm:grid-cols-5 lg:grid-cols-7">
-          {rows.map(({ provider: p, name, kinds, withAds, ids }) => {
-            const query = (id: number) => (d.originalTitle && id !== 117 ? d.originalTitle : d.title);
-            const href = ids.map((id) => providerSearch(id, query(id))).find(Boolean) ?? null;
-            // "With ads" in TMDB's own kinds is a free offer; a paid plan with ads is said as such.
-            const meta = [...kinds.map((k) => t(OFFER_LABEL[k])), withAds && !kinds.includes("ads") ? tp("planWithAds") : null].filter(Boolean).join(" · ");
-            const tile = (
-              <>
-                <span aria-hidden className="grid size-16 place-items-center overflow-hidden rounded-md bg-surface-2 text-text-2 transition-[scale] duration-fast ease-fast group-hover/tile:scale-105 [&>svg]:size-7">
-                  {p.logoPath ? <img src={tmdbImage(p.logoPath, "w92") ?? undefined} alt="" className="size-full object-cover" loading="lazy" /> : <Tv />}
-                </span>
-                <span className="mt-2 line-clamp-2 text-center text-body-s font-semibold text-text-1">{name}</span>
-                <span className="mt-0.5 line-clamp-2 text-center text-caption text-text-3">{meta}</span>
-              </>
-            );
-            return (
-              <li key={p.id}>
-                {href ? (
-                  <a href={href} target="_blank" rel="noreferrer noopener" aria-label={tp("watchOn", { service: name })} className="group/tile flex flex-col items-center rounded-md">
-                    {tile}
-                  </a>
-                ) : (
-                  <div className="flex flex-col items-center">{tile}</div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          {groups.map((g) => (
+            <section key={g.key} aria-labelledby={`streaming-${g.key}`}>
+              <h4 id={`streaming-${g.key}`} className="mb-2 text-body-s font-semibold text-text-2">
+                {t(g.key)}
+              </h4>
+              {/* Tiles, as Apple TV's channels: a row that scrolls sideways on a phone, wrapped beside the card on a PC. */}
+              <ul className="scroll-row -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:gap-y-3 sm:overflow-x-visible">
+                {g.rows.map(({ provider: p, name, kinds, withAds, ids }) => {
+                  const query = (id: number) => (d.originalTitle && id !== 117 ? d.originalTitle : d.title);
+                  const href = ids.map((id) => providerSearch(id, query(id))).find(Boolean) ?? null;
+                  // In its group a tile says only what the group doesn't: "Rent · Buy", a plan with ads.
+                  const meta = (
+                    g.key === "offersPaid"
+                      ? kinds.map((k) => t(OFFER_LABEL[k]))
+                      : [kinds.includes("ads") || (g.key === "offerFlatrate" && withAds) ? (g.key === "offerFree" ? t("offerAdsShort") : tp("planWithAds")) : null]
+                  )
+                    .filter(Boolean)
+                    .join(" · ");
+                  const face = (
+                    <>
+                      <span aria-hidden className="grid size-14 place-items-center overflow-hidden rounded-md bg-surface-2 text-text-2 transition-[scale] duration-fast ease-fast group-hover/svc:scale-105 [&>svg]:size-6">
+                        {p.logoPath ? <img src={tmdbImage(p.logoPath, "w92") ?? undefined} alt="" className="size-full object-cover" loading="lazy" /> : <Tv />}
+                      </span>
+                      <span className="mt-2 line-clamp-2 text-center text-body-s font-semibold text-text-1">{name}</span>
+                      {meta && <span className="mt-0.5 line-clamp-2 text-center text-caption text-text-2">{meta}</span>}
+                    </>
+                  );
+                  return (
+                    <li key={p.id} className="w-24 shrink-0 snap-start">
+                      {href ? (
+                        <a href={href} target="_blank" rel="noreferrer noopener" aria-label={tp("watchOn", { service: name })} className="group/svc flex flex-col items-center rounded-md py-1">
+                          {face}
+                        </a>
+                      ) : (
+                        <div className="flex flex-col items-center py-1">{face}</div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+          {/* The data's source in a quiet line, and TMDB's page of every offer. */}
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-3">
+            {t("streamingAttribution")}
+            {wp?.link && (
+              <a href={wp.link} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-6 items-center gap-1 underline underline-offset-3 hover:text-text-1 max-sm:min-h-11">
+                {tp("allOffersTmdb")}
+                <ExternalLink aria-hidden className="size-3.5" />
+              </a>
+            )}
+          </p>
+        </>
       )}
-    </SourceSection>
+    </section>
   );
 }
