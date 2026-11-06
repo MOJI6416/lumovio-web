@@ -87,9 +87,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /**
  * A title's page (design-system 9, Title; 2026-11-06 from scratch): one page to scroll, as Apple TV's and the TV's —
- * no tabs to guess at. The hero decides and starts; under it what starting needs (a series' episodes), then the trailer
- * and the videos, every way to watch it, what is like it, who made it and who is in it, and the reference at the foot:
- * the ratings in full, the details, the soundtrack. Sections without anything to show aren't there.
+ * no tabs to guess at. The hero decides and starts; under it what starting needs — a series' episodes, then where to
+ * watch it (the main button's own choices: the audio, the cut, the quality) — then the trailer and the videos, what is
+ * like it, who made it and who is in it, and the reference at the foot: the ratings in full, the details, the
+ * soundtrack. Sections without anything to show aren't there.
  */
 export default async function TitlePage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { locale, kind, slug } = await params;
@@ -157,17 +158,17 @@ export default async function TitlePage({ params, searchParams }: { params: Para
       <SectionArrival />
       <div className="mx-auto flex max-w-media flex-col gap-8 pt-8 pb-10 md:gap-12 md:pt-10">
         {d.kind === "tv" && d.seasons.length > 0 && <SeasonBrowser title={core} />}
-        {d.videos.length > 0 && (
-          <div id="videos" className={SECTION}>
-            <VideoShelf videos={d.videos} title={d.title} />
-          </div>
-        )}
         <section id="watch" aria-labelledby="watch-h" className={`page-x ${SECTION}`}>
           <h2 id="watch-h" className="mb-3 text-h2 text-text-1 md:mb-4">
             {t("availability")}
           </h2>
           <Availability title={core} />
         </section>
+        {d.videos.length > 0 && (
+          <div id="videos" className={SECTION}>
+            <VideoShelf videos={d.videos} title={d.title} />
+          </div>
+        )}
         {anyRelated && (
           <div id="related" className={SECTION}>
             <RelatedShelves collection={collection} related={related} relatedOther={relatedOther} moreBy={moreBy} />

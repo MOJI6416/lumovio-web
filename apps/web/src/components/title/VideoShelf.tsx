@@ -19,8 +19,8 @@ const ORDER = (type: string) => {
 };
 
 /**
- * "Videos" on the title page (design-system 7.12, 7.13, C13; 2026-11-06 a shelf, right under the hero of a film and the
- * episodes of a series: the trailer is what deciding needs next): 16:9 cards of the shelf with the name and "Trailer ·
+ * "Videos" on the title page (design-system 7.12, 7.13, C13; 2026-11-06 a shelf, right after what starting needs — the
+ * episodes, "Where to watch"): 16:9 cards of the shelf with the name and "Trailer ·
  * Russian" on the frame's foot (ArtCaption, ▶ before it: a press plays), as every card of a shelf — trailers first, the
  * interface language's first among them. A card is a link to the video's page; a press plays it here, in the
  * privacy-enhanced player, only once asked for.
