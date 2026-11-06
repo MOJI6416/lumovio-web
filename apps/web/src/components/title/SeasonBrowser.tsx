@@ -2,9 +2,9 @@
 
 import type { EpisodeSummary, SeasonDetails, TitleLibraryState } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, Eye, SkipForward } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleCheck, Eye, SkipForward } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { Artwork } from "@/components/media/Artwork";
 import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +13,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { QueryState } from "@/components/ui/QueryState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Spoiler } from "@/components/ui/Spoiler";
-import { PillTabs, pillTabId } from "@/components/ui/Tabs";
+import { Select } from "@/components/ui/Select";
 import { toast } from "@/components/ui/Toast";
 import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useLibraryState, useSetLibraryState } from "@/hooks/useLibraryState";
@@ -33,8 +33,6 @@ const key = (e: Ep) => `s${e.season}e${e.episode}`;
 type SpoilerPart = "still" | "name" | "overview";
 /** Per part of an episode: hidden, shown on press (false), or nothing to hide (null). */
 type Spoilers = Record<SpoilerPart, boolean | null>;
-/** The episodes' panel, which the season pills choose for. */
-const PANEL = "season-episodes";
 
 /**
  * The "Episodes" tab (design-system 7.12 EpisodeRow, S07, C12): the seasons as a row of pills (ui/PillTabs, owner
@@ -114,7 +112,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
       return;
     }
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    row.scrollIntoView({ block: "center", behavior: smooth ? "smooth" : "auto" });
+    row.scrollIntoView({ block: "nearest", inline: "start", behavior: smooth ? "smooth" : "auto" });
     row.querySelector<HTMLElement>("a,button")?.focus({ preventScroll: true });
   }, [jump, data, season, nextHere, tp]);
   const goNext = () => {
@@ -191,9 +189,12 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
       <h2 id="seasons-h" className="sr-only">
         {t("episodesTitle")}
       </h2>
-      {/* A series of one season has nothing to choose: its facts and actions only. */}
-      {tabs.length > 1 && <PillTabs tabs={tabs} value={String(season)} onValueChange={(v) => setSeason(Number(v))} label={t("seasons")} panelId={PANEL} className="mb-3" />}
-      <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* The season is one control showing its value (redesign-2026-11.md 5); a series of one season has nothing to
+            choose: its facts and actions only. */}
+        {tabs.length > 1 && (
+          <Select value={String(season)} onValueChange={(v) => setSeason(Number(v))} options={tabs} aria-label={t("seasons")} className="w-auto min-w-36 rounded-full font-semibold" />
+        )}
         {facts && <p className="text-body-s text-text-2 tabular-nums in-data-[tv=1]:text-body">{facts}</p>}
         <div className="flex flex-wrap items-center gap-x-1 gap-y-1 sm:ms-auto">
           {signedIn && watchedSet.size > 0 && (
@@ -227,26 +228,23 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
           )}
         </div>
       </div>
-      <div id={PANEL} role="tabpanel" aria-labelledby={tabs.length > 1 ? pillTabId(PANEL, String(season)) : "seasons-h"}>
+      <div>
         <QueryState
         query={seasonQ}
         loading={
-          <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex gap-4 py-2">
-                <Skeleton className="aspect-video w-36 shrink-0 sm:w-48 md:w-56" />
-                <div className="flex-1 space-y-2 py-1">
-                  <Skeleton shape="xs" className="h-4 w-1/2" />
-                  <Skeleton shape="xs" className="h-3 w-full" />
-                  <Skeleton shape="xs" className="h-3 w-4/5" />
-                </div>
+          <div className="flex gap-4 overflow-hidden">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={cn(CARD_W, "space-y-2")}>
+                <Skeleton className="aspect-video w-full" />
+                <Skeleton shape="xs" className="h-3 w-1/3" />
+                <Skeleton shape="xs" className="h-4 w-2/3" />
               </div>
             ))}
           </div>
         }
       >
         {(data) => (
-          <ol ref={list} className="flex flex-col gap-1">
+          <EpisodeStrip listRef={list}>
             {data.episodes.map((e) => (
               <EpisodeRow
                 key={e.id}
@@ -264,7 +262,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
                 onToggle={(w) => void toggle(e, w)}
               />
             ))}
-          </ol>
+          </EpisodeStrip>
         )}
         </QueryState>
       </div>
@@ -272,9 +270,65 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   );
 }
 
+/** One episode card's width: the strip shows about four on a desktop, and the next one peeks in on a phone. */
+const CARD_W = "w-64 shrink-0 sm:w-72 md:w-80";
+
 /**
- * One episode (7.12 EpisodeRow): the still, "4 episode · 17 Feb 2008 · 49 min", the name, two lines, "Watched". A part
- * that could spoil the plot is a Spoiler (7.21) — the still, the name, the description each shown by its own press.
+ * A season's episodes as one horizontal strip (redesign-2026-11.md 5), across the page's gutter: it scrolls with a swipe
+ * and snaps; with a mouse, arrows at the edges on hover (as a shelf, media/Row). The cards' own links and buttons take
+ * the focus in order, and the strip follows it.
+ */
+function EpisodeStrip({ listRef, children }: { listRef: RefObject<HTMLOListElement | null>; children: ReactNode }) {
+  const t = useTranslations("rows");
+  const [edges, setEdges] = useState({ start: true, end: true });
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const measure = () => {
+      const x = Math.abs(el.scrollLeft);
+      setEdges({ start: x < 4, end: x + el.clientWidth >= el.scrollWidth - 4 });
+    };
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+    return () => {
+      el.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+    };
+  }, [listRef]);
+  const scroll = (dir: 1 | -1) => {
+    const el = listRef.current;
+    if (!el) return;
+    const rtl = getComputedStyle(el).direction === "rtl";
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollBy({ left: dir * (rtl ? -1 : 1) * el.clientWidth * 0.85, behavior: smooth ? "smooth" : "auto" });
+  };
+  // Over the still (pb-24 lifts them from the card's centre), with a mouse, on hover.
+  const arrow =
+    "absolute inset-y-0 z-10 flex items-center pb-24 opacity-0 transition-opacity duration-base ease-base group-hover/row:opacity-100 group-focus-within/row:opacity-100 max-md:hidden pointer-coarse:hidden in-data-[tv=1]:hidden";
+  return (
+    <div className="group/row relative">
+      <ol ref={listRef} className="scroll-row -mx-(--gutter) flex gap-4 overflow-x-auto px-(--gutter) py-1 scroll-px-(--gutter) *:snap-start">
+        {children}
+      </ol>
+      {!edges.start && (
+        <div className={cn(arrow, "-start-2")}>
+          <IconButton icon={ChevronLeft} variant="stage" size="lg" tabIndex={-1} label={t("scrollLeft")} onClick={() => scroll(-1)} />
+        </div>
+      )}
+      {!edges.end && (
+        <div className={cn(arrow, "-end-2")}>
+          <IconButton icon={ChevronRight} variant="stage" size="lg" tabIndex={-1} label={t("scrollRight")} onClick={() => scroll(1)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One episode (7.12; a card of the strip since redesign-2026-11.md 5): the still, "4 episode · 17 Feb 2008 · 49 min" with
+ * "Watched", the name, two lines. A part that could spoil the plot is a Spoiler (7.21) — the still, the name, the
+ * description each shown by its own press.
  */
 function EpisodeRow({
   episode: e,
@@ -314,8 +368,8 @@ function EpisodeRow({
   const name = <h3 className="mt-0.5 line-clamp-2 text-title text-text-1">{e.name}</h3>;
   const overview = e.overview && <p className="line-clamp-2 text-body-s text-text-2">{e.overview}</p>;
   return (
-    <li data-episode={e.episodeNumber} className="group/card flex gap-3 rounded-md p-2 transition-colors duration-fast ease-fast hover:bg-surface-1 sm:gap-4 md:p-3">
-      <Spoiler variant="image" hidden={spoilers.still === true} onReveal={() => onShow("still")} label={ts("showStill", { episode: label })} className="w-36 shrink-0 self-start sm:w-48 md:w-56">
+    <li data-episode={e.episodeNumber} className={cn("group/card flex flex-col gap-2.5", CARD_W)}>
+      <Spoiler variant="image" hidden={spoilers.still === true} onReveal={() => onShow("still")} label={ts("showStill", { episode: label })} className="w-full">
         {aired && canPlay ? (
           <Link
             href={`/watch/tv/${tmdbId}?s=${e.seasonNumber}&e=${e.episodeNumber}`}
