@@ -28,6 +28,16 @@ const JOBS = [
   "Animation",
   "Sound",
   "Voice",
+  "Theme Song Performance",
+  "Songs",
+  "Associate Producer",
+  "Co-Executive Producer",
+  "Series Director",
+  "Author",
+  "Book",
+  "Original Story",
+  "Camera Operator",
+  "Idea",
 ] as const;
 
 export type KnownJob = (typeof JOBS)[number];

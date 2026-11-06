@@ -331,20 +331,33 @@ export interface SeasonDetails extends SeasonSummary {
   episodes: EpisodeSummary[];
 }
 
+/** A person's page on another site (TMDB's external ids, their own site). */
+export type PersonSite = "tmdb" | "imdb" | "wikidata" | "homepage" | "instagram" | "x" | "tiktok" | "youtube" | "facebook";
+
 export interface PersonDetails extends PersonSummary {
   biography: string | null;
   birthday: string | null;
   deathday: string | null;
   placeOfBirth: string | null;
   knownForDepartment: string | null;
+  /** As TMDB has it, for the words that change with it ("Actor" / "Actress"); null when not given. */
+  gender?: "female" | "male" | null;
+  /** The person on other sites, in the order the page lists them. */
+  links?: { site: PersonSite; url: string }[];
   credits: (TitleSummary & {
     role: string | null;
     /** How the person took part (any of): a character, themselves (talk shows, documentaries), a crew job. */
     as?: ("acting" | "self" | "crew")[];
     /** TMDB's English crew jobs ("Director", "Producer"), which the client translates. */
     jobs?: string[];
+    /** TMDB's English department of each of those jobs ({ Director: "Directing", Producer: "Production" }). */
+    departments?: Record<string, string>;
     /** The characters played, as TMDB gives them. */
     characters?: string[];
+    /** A series: how many of its episodes the person is in (TMDB's count, the largest of their roles in it). */
+    episodes?: number | null;
+    /** A film's cast: the place in its billing, 0 first (TMDB's `order`), to tell a lead from a bit part. */
+    billing?: number | null;
   })[];
 }
 

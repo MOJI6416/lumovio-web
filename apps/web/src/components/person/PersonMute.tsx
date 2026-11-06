@@ -14,7 +14,8 @@ const KEY = ["recommendation-settings"];
 /**
  * "Don't show in recommendations" on a person's page (owner, 2026-10-25): the same list as Settings → Recommendations
  * → "Don't show" → People, so titles with this person stay out of the profile's picks. Changes at once, with "Undo";
- * shown only to a signed-in profile (a guest has no picks).
+ * shown only to a signed-in profile (a guest has no picks). One quiet button under the biography whose words say the
+ * state (2026-11-06, the page from scratch): "Don't show in recommendations", once pressed "Show in recommendations".
  */
 export function PersonMute({ id, name }: { id: number; name: string }) {
   const t = useTranslations("person");
@@ -44,18 +45,9 @@ export function PersonMute({ id, name }: { id: number; name: string }) {
     },
   });
   if (!signedIn || !prefs.data) return null;
-  return muted ? (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 max-md:justify-center">
-      <p className="text-body-s text-text-2">{t("muted", { name })}</p>
-      <Button variant="tertiary" size="sm" icon={Eye} loading={toggle.pending} onClick={() => void toggle.run(false)}>
-        {t("unmute")}
-      </Button>
-    </div>
-  ) : (
-    <div className="mt-4 flex max-md:justify-center">
-      <Button variant="tertiary" size="sm" icon={EyeOff} loading={toggle.pending} onClick={() => void toggle.run(true)}>
-        {t("mute")}
-      </Button>
-    </div>
+  return (
+    <Button variant="tertiary" size="sm" icon={muted ? Eye : EyeOff} loading={toggle.pending} onClick={() => void toggle.run(!muted)} className="-ms-3">
+      {muted ? t("unmute") : t("mute")}
+    </Button>
   );
 }

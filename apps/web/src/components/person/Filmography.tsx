@@ -1,116 +1,100 @@
 "use client";
 
-import type { PersonDetails } from "@lumovio/contracts";
+import { BookmarkCheck, CircleCheck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { PosterCard } from "@/components/media/PosterCard";
-import { TitleGrid } from "@/components/media/Row";
+import { useLocale, useTranslations } from "next-intl";
+import { Fragment, type ReactNode, useMemo, useState } from "react";
+import { CardRating } from "@/components/media/CardRating";
+import { Poster } from "@/components/media/Poster";
+import { useCardMark, useRatingText } from "@/components/media/PosterCard";
+import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/Chip";
-import { useSession } from "@/components/providers/Providers";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Link } from "@/i18n/navigation";
+import { latinLang } from "@/lib/format";
+import { titleHref } from "@/lib/slug";
+import { byYear, character, countGroups, GROUPS, type Group, groupsOf, jobsIn, type RowCredit } from "./credits";
+import { jobKey } from "./jobs";
 import { useJobText } from "./job-label";
 
-type Credit = PersonDetails["credits"][number];
-type Group = "acting" | "crew" | "self";
-type Sort = "year" | "popularity";
-const GROUPS: Group[] = ["acting", "crew", "self"];
-const PAGE = 36;
+const PAGE = 40;
+/** A group's own job says nothing in its rows ("Director" under "Director"); the others do ("Screenplay", "Executive Producer"). */
+const BASE: Partial<Record<Group, string>> = { directing: "Director", writing: "Writer", production: "Producer" };
 
-/** The groups a credit belongs to (older API answers without `as` count as acting with a character, else crew). */
-const groupsOf = (c: Credit): Group[] => c.as ?? [c.role ? "acting" : "crew"];
+const rank = (g: Group, main: Group | null) => (g === main ? 0 : g === "crew" ? 2 : g === "self" ? 3 : 1);
+
+const CREW_WORK: Group[] = ["directing", "writing", "production", "crew"];
+/** A group in the address: "Other" is `other`, since an older link's `crew` meant all the crew work (before 2026-11-06). */
+const param = (g: Group) => (g === "crew" ? "other" : g);
+
+/** The group an address asks for; an older `?credits=crew` opens the crew work they are known for, else the first. */
+function fromParam(v: string | null, present: Group[], main: Group | null): Group | null {
+  if (v === "crew") return main && main !== "acting" && main !== "self" && present.includes(main) ? main : (CREW_WORK.find((g) => present.includes(g)) ?? null);
+  return present.find((g) => param(g) === v) ?? null;
+}
 
 /**
- * A person's filmography (S08, PER-01, PER-02): PosterCards in a grid of the shelf's width, filtered by how they took
- * part — "Actor", "Crew", "Appearances" (talk shows, documentaries as themselves) — and sorted by year or by
- * popularity; the year and the role under each card, jobs in the interface language. The choice is kept in the
- * address (`?credits=…&sort=…`), so Back and a shared link keep it. "Show more" past 36.
+ * A person's filmography (S08, design-system 9 "Person", PER-01): one profession at a time — "Actor · 94", "Director · 9",
+ * "Writer", "Producer", "Other", "As themselves" (FilterChip, as Search's types; IMDb, Letterboxd and Kinopoisk split it the
+ * same way) — opening on what they are known for, and under it the years, newest first (titles without a date last):
+ * one row per title with the year, the poster, the name, the role there, then the rating, film or series and the
+ * episodes they are in; "Watched" or "Watchlist" before the rating. A row is the title's link. The choice stays in the
+ * address (`?credits=directing`), so Back and a shared link keep it; 40 rows, then "Show more".
  */
-export function Filmography({ credits, main }: { credits: Credit[]; main: Group }) {
-  const t = useTranslations("personPage");
+export function Filmography({ credits, main, gender }: { credits: RowCredit[]; main: Group | null; gender: "female" | "male" | null }) {
+  const t = useTranslations("person");
+  const tp = useTranslations("personPage");
   const tc = useTranslations("common");
-  const job = useJobText();
   const params = useSearchParams();
   const { me } = useSession();
-  const counts = Object.fromEntries(GROUPS.map((g) => [g, credits.filter((c) => groupsOf(c).includes(g)).length])) as Record<Group, number>;
-  const present = GROUPS.filter((g) => counts[g] > 0);
-  const asked = params.get("credits") as Group | null;
-  const [group, setGroup] = useState<Group | null>(asked && present.includes(asked) ? asked : present.includes(main) && present.length > 1 ? main : null);
-  const [sort, setSort] = useState<Sort>(params.get("sort") === "popularity" ? "popularity" : "year");
+  const counts = useMemo(() => countGroups(credits), [credits]);
+  // What they are known for first, then the most; "Other" and "As themselves" last (IMDb's order).
+  const present = GROUPS.filter((g) => counts[g] > 0).sort((a, b) => rank(a, main) - rank(b, main) || counts[b] - counts[a]);
+  const [group, setGroup] = useState<Group | null>(() => fromParam(params.get("credits"), present, main) ?? (main && present.includes(main) ? main : (present[0] ?? null)));
   const [shown, setShown] = useState(PAGE);
-  const remember = (g: Group | null, s: Sort) => {
+  const list = useMemo(() => (group ? credits.filter((c) => groupsOf(c).includes(group)).sort(byYear) : []), [credits, group]);
+  const choose = (g: Group) => {
+    setGroup(g);
+    setShown(PAGE);
     const q = new URLSearchParams(window.location.search);
-    if (g) q.set("credits", g);
-    else q.delete("credits");
-    if (s === "popularity") q.set("sort", s);
-    else q.delete("sort");
+    if (g === main) q.delete("credits");
+    else q.set("credits", param(g));
+    q.delete("sort");
     const qs = q.toString();
-    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
   };
-
-  const list = credits
-    .filter((c) => !group || groupsOf(c).includes(group))
-    .sort((a, b) => (sort === "year" ? (b.releaseDate ?? "").localeCompare(a.releaseDate ?? "") : (b.tmdbVotes ?? 0) - (a.tmdbVotes ?? 0)));
-  const role = (c: Credit) => {
-    const as = group ?? groupsOf(c)[0];
-    if (as === "self") return t("asSelf");
-    if (as === "crew") return (c.jobs ?? []).map(job).join(", ") || null;
-    return (c.characters ?? []).join(", ") || (c.as ? null : c.role);
-  };
+  const rows = list.slice(0, shown);
   return (
     <section aria-labelledby="filmography-h" className="page-x">
-      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
-        <h2 id="filmography-h" className="text-h2 text-text-1">
-          {t("filmography")}
-        </h2>
-        {present.length > 1 && (
-          // biome-ignore lint/a11y/useSemanticElements: a row of filter chips, not a form's fieldset
-          <div role="group" aria-label={t("filterLabel")} className="flex flex-wrap gap-2">
-            {present.map((g) => (
-              <FilterChip
-                key={g}
-                selected={group === g}
-                count={counts[g]}
-                onClick={() => {
-                  const next = group === g ? null : g;
-                  setGroup(next);
-                  setShown(PAGE);
-                  remember(next, sort);
-                }}
-              >
-                {t(`group_${g}`)}
-              </FilterChip>
-            ))}
-          </div>
-        )}
-        {credits.length > 0 && (
-        <SegmentedControl
-          label={t("sortLabel")}
-          value={sort}
-          onValueChange={(s) => {
-            setSort(s);
-            remember(group, s);
-          }}
-          options={[
-            { value: "year", label: t("sortYear") },
-            { value: "popularity", label: t("sortPopularity") },
-          ]}
-          className="sm:ms-auto"
-        />
-        )}
-      </div>
+      <h2 id="filmography-h" className="text-h2 text-text-1">
+        {tp("filmography")}
+      </h2>
+      {present.length > 1 && (
+        // One row of choices that scrolls sideways on a phone, as Search's types (9, Search).
+        // biome-ignore lint/a11y/useSemanticElements: a row of filter chips, not a form's fieldset
+        <div role="group" aria-label={tp("filterLabel")} className="scroll-row -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) py-1 md:mt-4 md:flex-wrap">
+          {present.map((g) => (
+            <FilterChip key={g} selected={group === g} count={counts[g]} onClick={() => choose(g)} className="shrink-0">
+              {t(`as_${g}`, { gender: gender ?? "other" })}
+            </FilterChip>
+          ))}
+        </div>
+      )}
       {list.length === 0 ? (
         // A kids profile sees only the titles it may open (8.10): said so, rather than "nothing here".
-        <EmptyState title={me?.activeProfile?.isKids && credits.length === 0 ? t("noCreditsKids") : t("noCredits")} />
+        <div className="mt-6">
+          <EmptyState title={me?.activeProfile?.isKids ? tp("noCreditsKids") : tp("noCredits")} />
+        </div>
       ) : (
         <>
-          <TitleGrid>
-            {list.slice(0, shown).map((c) => (
-              <PosterCard key={c.id} title={c} subtitle={[c.year ?? "—", role(c)].filter(Boolean).join(" · ")} />
+          {/* Rows across the page's width, as History's (owner, 2026-10-25) and an artist's songs on Apple Music: one column
+              on a phone and a tablet, two from xl, three from 2xl, a hairline under each. */}
+          <ol className="mt-3 grid gap-x-8 md:mt-4 xl:grid-cols-2 2xl:grid-cols-3">
+            {rows.map((c) => (
+              <CreditRow key={c.id} credit={c} group={group!} />
             ))}
-          </TitleGrid>
+          </ol>
           {list.length > shown && (
             <div className="mt-8 flex justify-center">
               <Button variant="secondary" onClick={() => setShown((n) => n + PAGE)}>
@@ -121,5 +105,88 @@ export function Filmography({ credits, main }: { credits: Credit[]; main: Group 
         </>
       )}
     </section>
+  );
+}
+
+/** What the person was there: the characters (a voice role said so), or the jobs in this group in the interface language. */
+function useRole(c: RowCredit, group: Group): { text: string; node: ReactNode } | null {
+  const t = useTranslations("person");
+  const job = useJobText();
+  const locale = useLocale();
+  if (group === "acting") {
+    const roles = (c.characters?.length ? c.characters : c.as ? [] : c.role ? [c.role] : []).map(character).filter((r) => r.name);
+    if (roles.length === 0) return null;
+    const said = roles.map((r) => (r.voice ? t("voiceRole", { name: r.name }) : r.name));
+    return {
+      text: said.join(", "),
+      node: roles.map((r, i) => (
+        <Fragment key={r.name}>
+          {i > 0 && ", "}
+          {/* TMDB writes the characters in English: a Latin name on a ru/uk page is marked so (8.11). */}
+          <span lang={latinLang(r.name, locale)}>{said[i]}</span>
+        </Fragment>
+      )),
+    };
+  }
+  if (group === "self") return null;
+  const jobs = jobsIn(c, group);
+  if (jobs.length === 0 || (jobs.length === 1 && jobs[0] === BASE[group])) return null;
+  return {
+    text: jobs.map(job).join(", "),
+    node: jobs.map((j, i) => (
+      <Fragment key={j}>
+        {i > 0 && ", "}
+        {/* A job without a translation is as TMDB writes it, in English (8.11). */}
+        <span lang={jobKey(j) ? undefined : "en"}>{job(j)}</span>
+      </Fragment>
+    )),
+  };
+}
+
+function CreditRow({ credit: c, group }: { credit: RowCredit; group: Group }) {
+  const tc = useTranslations("common");
+  const tl = useTranslations("title");
+  const locale = useLocale();
+  const { mark } = useCardMark(c);
+  const ratingText = useRatingText();
+  const role = useRole(c, group);
+  const kind = c.isAnime ? tc("anime") : c.kind === "movie" ? tc("movie") : tc("series");
+  const facts = [kind, c.kind === "tv" && c.episodes ? tc("episodes", { count: c.episodes }) : null].filter(Boolean).join(" · ");
+  const Mark = mark === "watched" ? CircleCheck : mark === "watchlist" ? BookmarkCheck : null;
+  return (
+    <li className="border-b border-line">
+      <Link
+        href={titleHref(c.kind, c.tmdbId, c.title)}
+        aria-label={[
+          `${c.title}${c.year ? ` (${c.year})` : ""}`,
+          facts,
+          role?.text,
+          ratingText(c),
+          mark === "watched" ? tl("watched") : mark === "watchlist" ? tl("watchlistRemove") : null,
+        ]
+          .filter(Boolean)
+          .join(", ")}
+        className="group/row -mx-2 my-1 grid grid-cols-[2.5rem_2.5rem_minmax(0,1fr)] items-center gap-x-3 rounded-sm px-2 py-2 hover:bg-surface-1 md:grid-cols-[3rem_2.5rem_minmax(0,1fr)]"
+      >
+        <span aria-hidden className="text-body-s font-semibold tabular-nums text-text-2">
+          {c.year ?? "—"}
+        </span>
+        <span aria-hidden className="w-10 overflow-hidden rounded-xs">
+          <Poster path={c.posterPath} title="" kind={c.kind} sizes="40px" />
+        </span>
+        {/* The name, the role there, then the rating, film or series and the episodes they are in. */}
+        <span aria-hidden className="min-w-0">
+          <span className="line-clamp-2 text-title text-text-1 group-hover/row:underline" lang={latinLang(c.title, locale)}>
+            {c.title}
+          </span>
+          {role && <span className="mt-0.5 line-clamp-2 text-body-s text-text-2">{role.node}</span>}
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-body-s text-text-2">
+            {Mark && <Mark className="size-4 shrink-0 text-text-1" />}
+            <CardRating title={c} className="text-text-1" />
+            {facts}
+          </span>
+        </span>
+      </Link>
+    </li>
   );
 }
