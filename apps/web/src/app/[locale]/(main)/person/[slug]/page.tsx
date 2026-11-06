@@ -159,15 +159,16 @@ export default async function PersonPage({ params }: { params: Params }) {
             <p className="mt-2 flex flex-wrap gap-x-2 text-body-s text-text-2 md:text-body">
               {(p.birthday || p.deathday) && (
                 <span className={years !== null || p.placeOfBirth ? "after:ms-2 after:content-['·']" : undefined}>
+                  {/* Each date whole on its line: "22 January / 2008" broke on a phone. */}
                   {p.birthday && (
-                    <span>
+                    <span className="whitespace-nowrap">
                       <span className="sr-only">{t("person.bornLabel")}: </span>
                       {date(p.birthday)}
                     </span>
                   )}
                   {p.birthday && p.deathday && " – "}
                   {p.deathday && (
-                    <span>
+                    <span className="whitespace-nowrap">
                       <span className="sr-only">{t("person.diedLabel")}: </span>
                       {date(p.deathday)}
                     </span>
