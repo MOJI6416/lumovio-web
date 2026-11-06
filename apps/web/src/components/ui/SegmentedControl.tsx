@@ -55,7 +55,7 @@ export function SegmentedControl<V extends string>({
       aria-label={label}
       onKeyDown={onKeyDown}
       className={cn(
-        "inline-grid h-9 max-w-full auto-cols-[minmax(max-content,1fr)] grid-flow-col items-center rounded-sm bg-surface-2 p-0.5 max-sm:h-10",
+        "inline-grid h-9 max-w-full auto-cols-[minmax(max-content,1fr)] grid-flow-col items-center rounded-full bg-surface-2 p-0.5 max-sm:h-10",
         className,
       )}
     >
@@ -78,10 +78,13 @@ export function SegmentedControl<V extends string>({
           >
             <span
               className={cn(
-                "flex h-full w-full items-center justify-center whitespace-nowrap rounded-xs px-3 text-body-s font-bold transition-colors duration-base ease-base max-sm:h-9",
+                "flex h-full w-full items-center justify-center whitespace-nowrap rounded-full px-3.5 text-body-s font-semibold transition-colors duration-base ease-base max-sm:h-9",
                 groupFocusRing,
-                // The 1 px --line-2 edge keeps the chosen segment visible where surface-2 and surface-3 are close (light).
-                on ? "bg-surface-3 text-text-1 inset-ring inset-ring-line-2" : "text-text-2 group-hover:group-enabled:text-text-1",
+                // A pill like the header's sections and the buttons (redesign-2026-11.md 4): a light fill on dark, a white
+                // segment with a shadow on light.
+                on
+                  ? "bg-text-1/14 text-text-1 in-data-[theme=light]:bg-surface-1 in-data-[theme=light]:shadow-float"
+                  : "text-text-2 group-hover:group-enabled:text-text-1",
               )}
             >
               {o.label}

@@ -28,7 +28,7 @@ const ITEM =
 const PANEL =
   "z-popover max-h-(--radix-dropdown-menu-content-available-height) min-w-48 overflow-y-auto rounded-md border border-line bg-surface-2 p-1 text-text-1 shadow-float";
 const SEGMENT =
-  "flex min-w-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-xs px-2 text-body-s font-bold text-text-2 transition-colors duration-base ease-base focus-visible:-outline-offset-2 data-highlighted:bg-surface-3 data-highlighted:text-text-1 data-[state=checked]:bg-surface-3 data-[state=checked]:text-text-1 data-[state=checked]:inset-ring data-[state=checked]:inset-ring-line-2";
+  "flex min-w-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full px-2 text-body-s font-semibold text-text-2 transition-colors duration-base ease-base focus-visible:-outline-offset-2 data-highlighted:text-text-1 data-[state=checked]:bg-text-1/14 data-[state=checked]:text-text-1";
 
 /** Theme as a segmented row of menu radio items: ↑/↓ reach it like any item, ←/→ move along it. */
 function ThemeSegments() {
@@ -50,7 +50,7 @@ function ThemeSegments() {
       aria-label={t("theme")}
       // The segments fill the row inside the border and padding: at SegmentedControl's 32 px they stood 2 px out of it,
       // the chosen one's edge on the row's own.
-      className="mx-2 mb-1 grid h-9 grid-cols-3 rounded-sm border border-line bg-surface-2 p-0.5"
+      className="mx-2 mb-1 grid h-9 grid-cols-3 rounded-full bg-surface-3 p-0.5"
     >
       {THEMES.map((m) => (
         // Choosing keeps the menu open: the page changes behind it, and another theme is one press away.
