@@ -140,8 +140,9 @@ export function useReleaseText() {
   };
 }
 
-/** A release's marks (QualityBadges, 7.15): its resolution, one HDR format, Dolby Atmos, as its name says them. */
-export const releaseMarks = (info: Pick<ReleaseInfo, "resolution" | "hdrFormats" | "atmos">) => qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
+/** A release's marks (QualityBadges, 7.15): its resolution, one HDR format, Dolby Atmos, CC, as its name says them. */
+export const releaseMarks = (info: Pick<ReleaseInfo, "resolution" | "hdrFormats" | "atmos" | "subtitles">) =>
+  qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos, cc: info.subtitles });
 
 /**
  * A release as its marks, then in words what they don't say ("720p", the source) and `rest` — what is heard, or where

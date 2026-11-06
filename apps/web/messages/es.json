@@ -475,6 +475,7 @@
     "voice_avo": "un narrador",
     "voice_vo": "voz en off amateur",
     "tsNoResolution": "calidad no indicada",
+    "markSubtitles": "Subtítulos",
     "tsVoiceUnnamed": "Audio no indicado",
     "tsYourVoice": "Tu doblaje · {studio}",
     "tsYourLanguage": "Tu idioma · {language}",

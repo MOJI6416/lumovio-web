@@ -475,6 +475,7 @@
     "voice_avo": "авторский",
     "voice_vo": "одноголосый",
     "tsNoResolution": "качество не указано",
+    "markSubtitles": "Субтитры",
     "tsVoiceUnnamed": "Озвучка не указана",
     "tsYourVoice": "Ваша озвучка · {studio}",
     "tsYourLanguage": "Ваш язык · {language}",

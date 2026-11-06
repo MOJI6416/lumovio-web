@@ -7,7 +7,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate, takeGuestIntent } from "@/components/shell/GuestGate";
-import { QualityBadges, QualityLine, qualityMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
+import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
@@ -105,7 +105,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             server: first.connectionName,
             resolution: first.quality?.resolution ?? null,
             // Its marks by its server's data (a TorrServer copy's release name is read only in "Where to watch").
-            marks: first.quality ? qualityMarks({ resolution: first.quality.resolution, hdr: first.quality.hdr, atmos: first.quality.audioCodecs?.includes("atmos") }) : [],
+            marks: first.quality ? copyMarks(first.quality) : [],
             others: avail.state.copies - 1,
           }
         : null,
@@ -273,7 +273,7 @@ function AvailabilityLine({
       // "On «Home» [4K] [Dolby Vision] · 2 more copies": the marks say the resolution, never the words too.
       text = s.marks?.length ? (
         <>
-          {t("onServer", { server: s.server })}
+          {[t("onServer", { server: s.server }), resolutionBesideMarks(s.resolution)].filter(Boolean).join(" · ")}
           <QualityBadges className="ms-2 me-1.5" marks={s.marks} />
           {others && `· ${others}`}
         </>

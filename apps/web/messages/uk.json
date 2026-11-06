@@ -475,6 +475,7 @@
     "voice_avo": "авторський",
     "voice_vo": "одноголосий",
     "tsNoResolution": "якість не вказано",
+    "markSubtitles": "Субтитри",
     "tsVoiceUnnamed": "Озвучення не вказано",
     "tsYourVoice": "Ваше озвучення · {studio}",
     "tsYourLanguage": "Ваша мова · {language}",

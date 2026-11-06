@@ -475,6 +475,7 @@
     "voice_avo": "lektor jednogłosowy",
     "voice_vo": "lektor amatorski",
     "tsNoResolution": "jakość nieznana",
+    "markSubtitles": "Napisy",
     "tsVoiceUnnamed": "Dźwięk nieopisany",
     "tsYourVoice": "Twoje studio · {studio}",
     "tsYourLanguage": "Twój język · {language}",

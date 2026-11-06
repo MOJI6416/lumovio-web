@@ -4,8 +4,8 @@ import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
 import { creditsStudio, parseRelease } from "@/lib/media/releases";
-import { type QualityMark, qualityMarks } from "./QualityBadges";
-import { formatSize, useReleaseText } from "./release-text";
+import { copyMarks, type QualityMark, resolutionBesideMarks } from "./QualityBadges";
+import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 
 const KIND_LABEL: Record<Availability["kind"], string> = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" };
 
@@ -69,12 +69,11 @@ export function useCopyText() {
    */
   const marks = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): QualityMark[] => {
     const q = s.quality;
-    // Jellyfin's scan adds "atmos" to the codecs when a track says Dolby Atmos (lib/media/jellyfin).
-    if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos") });
+    if (q?.resolution || q?.hdr) return copyMarks(q);
     const name = releaseName(s, all);
     if (!name) return [];
     const info = parseRelease(name, null, originalLanguage);
-    return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
+    return releaseMarks(info);
   };
   /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
   const sound = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
@@ -97,7 +96,7 @@ export function useCopyText() {
       if (m.length === 0) return { marks: m, words: [version(s, all, originalLanguage)] };
       const q = s.quality;
       const name = q?.resolution || q?.hdr ? null : releaseName(s, all);
-      const beside = name ? text.besideMarks(parseRelease(name, null, originalLanguage)) : /^720/.test(q?.resolution ?? "") ? "720p" : null;
+      const beside = name ? text.besideMarks(parseRelease(name, null, originalLanguage)) : resolutionBesideMarks(q?.resolution);
       return { marks: m, words: [beside, sound(s, all, originalLanguage)] };
     },
     /** Where it is and how big: "On «torr» · TorrServer · 9.6 GB". */

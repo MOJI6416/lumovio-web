@@ -25,7 +25,7 @@ import { type ReactNode, useCallback, useState } from "react";
 import type { TitleLibraryState } from "@lumovio/contracts";
 import { useEditableLists, usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
-import { QualityBadges, QualityLine, qualityMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
+import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { type TitleCore, resumable, sourcesHref, startEpisode, watchHref } from "@/components/title/core";
 import { heroPlan, type Summary, type TorrentState } from "@/components/title/hero-plan";
 import { serviceOf } from "@/components/title/services";
@@ -117,13 +117,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             server: first.connectionName,
             resolution: first.quality?.resolution ?? null,
             // Its quality marks by its server's data, as the web hero's line.
-            marks: first.quality
-              ? qualityMarks({
-                  resolution: first.quality.resolution,
-                  hdr: first.quality.hdr,
-                  atmos: first.quality.audioCodecs?.includes("atmos"),
-                })
-              : [],
+            marks: first.quality ? copyMarks(first.quality) : [],
             others: avail.state.copies - 1,
           }
         : null,
@@ -282,7 +276,7 @@ function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kid
       // The quality as marks (QualityBadges, 7.15), never also in words.
       text = s.marks?.length ? (
         <>
-          {t("onServer", { server: s.server })}
+          {[t("onServer", { server: s.server }), resolutionBesideMarks(s.resolution)].filter(Boolean).join(" · ")}
           <QualityBadges className="ms-3 me-2" marks={s.marks} />
           {others && `· ${others}`}
         </>

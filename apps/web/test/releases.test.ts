@@ -195,6 +195,17 @@ describe("picture versions and quality modes (TS1–TS3)", () => {
     expect(parseRelease("Dune.2021.2160p.WEB-DL.DDP5.1.HDR.H.265", null).atmos).toBe(false);
   });
 
+  it("reads subtitles that can be turned on, in the trackers' spellings, never burnt-in ones or a title's word", () => {
+    expect(parseRelease("Интерстеллар / Interstellar (2014) BDRip 1080p | Dub + Original Eng + Sub (Rus, Eng)", "RuTracker.org").subtitles).toBe(true);
+    expect(parseRelease("Dune.2021.1080p.BluRay.x264 Eng Subs", null).subtitles).toBe(true);
+    expect(parseRelease("Дюна (2021) WEB-DL 1080p | Субтитры: укр, англ", "Toloka.to").subtitles).toBe(true);
+    expect(parseRelease("Frieren [TV-1] [1080p] [SUB]", null).subtitles).toBe(true);
+    expect(parseRelease("Oppenheimer.2023.2160p.UHD.BluRay.REMUX.HDR.HEVC.Atmos-SDH", null).subtitles).toBe(true);
+    expect(parseRelease("Naruto [Hardsub] 720p", null).subtitles).toBe(false);
+    expect(parseRelease("Subway Surfers (2012) 1080p", null).subtitles).toBe(false);
+    expect(parseRelease("Дюна / Dune (2021) BDRip 1080p | D, P, A", "RuTracker.org").subtitles).toBe(false);
+  });
+
   it("keeps every quality of one studio: 1080p, 4K SDR and 4K HDR are versions, not one release", () => {
     const options = voiceOptions(rankReleases(hdrezka, film, prefsOf({ hevc: true })));
     expect(options).toHaveLength(1);

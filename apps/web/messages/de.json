@@ -475,6 +475,7 @@
     "voice_avo": "einstimmiges Voice-over",
     "voice_vo": "Amateur-Voice-over",
     "tsNoResolution": "Qualität nicht angegeben",
+    "markSubtitles": "Untertitel",
     "tsVoiceUnnamed": "Ton nicht angegeben",
     "tsYourVoice": "Deine Synchronisation · {studio}",
     "tsYourLanguage": "Deine Sprache · {language}",

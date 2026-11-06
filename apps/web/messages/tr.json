@@ -475,6 +475,7 @@
     "voice_avo": "tek sesli seslendirme",
     "voice_vo": "amatör seslendirme",
     "tsNoResolution": "kalite belirtilmemiş",
+    "markSubtitles": "Altyazı",
     "tsVoiceUnnamed": "Ses belirtilmemiş",
     "tsYourVoice": "Stüdyonuz · {studio}",
     "tsYourLanguage": "Diliniz · {language}",

@@ -239,6 +239,8 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
                   ...(src.MediaStreams.some((s) => s.Type === "Audio" && /atmos/i.test(`${s.Profile ?? ""} ${s.DisplayTitle ?? ""}`)) ? ["atmos"] : []),
                 ].slice(0, 8),
                 audioLanguages: audioLanguages(src.MediaStreams.filter((s) => s.Type === "Audio").map((s) => s.Language)),
+                // Embedded and external subtitle tracks, for the CC mark.
+                subtitleTracks: src.MediaStreams.filter((s) => s.Type === "Subtitle").length,
                 // The HDR format by name (DOVI, HDR10Plus, HDR10, HLG) for the quality marks; the range alone otherwise.
                 hdr: v?.VideoRangeType && v.VideoRangeType !== "SDR" ? v.VideoRangeType : v?.VideoRange && v.VideoRange !== "SDR" ? v.VideoRange : null,
                 container: src.Container ?? null,
@@ -268,8 +270,8 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
           if (tid) entries.push({ titleId: tid as LibraryIndexEntry["titleId"], externalId: p.externalId, season: null, episode: null, label: p.label, quality: p.quality });
         }
       }
-      // A series has no file of its own: the audio languages of its first few episodes stand for it (four series at a
-      // time). One that doesn't answer keeps none; the scan goes on.
+      // A series has no file of its own: the audio languages and subtitles of its first few episodes stand for it (four
+      // series at a time). One that doesn't answer keeps none; the scan goes on.
       const shows = entries.filter((e) => e.titleId.startsWith("tv:"));
       for (let i = 0; i < shows.length; i += 4) {
         await Promise.all(
@@ -280,6 +282,8 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
             );
             const langs = audioLanguages((eps?.Items ?? []).flatMap((x) => (x.MediaStreams ?? []).filter((s) => s.Type === "Audio").map((s) => s.Language)));
             if (langs.length > 0) e.quality = { ...(e.quality ?? {}), audioLanguages: langs };
+            // Subtitles in its first episodes stand for it too (the CC mark).
+            if (eps) e.quality = { ...(e.quality ?? {}), subtitleTracks: Math.max(0, ...eps.Items.map((x) => (x.MediaStreams ?? []).filter((s) => s.Type === "Subtitle").length)) };
           }),
         );
       }

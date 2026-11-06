@@ -475,6 +475,7 @@
     "voice_avo": "single narrator",
     "voice_vo": "amateur voice-over",
     "tsNoResolution": "quality not stated",
+    "markSubtitles": "Subtitles",
     "tsVoiceUnnamed": "Audio not stated",
     "tsYourVoice": "Your dubbing · {studio}",
     "tsYourLanguage": "Your language · {language}",

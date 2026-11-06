@@ -475,6 +475,7 @@
     "voice_avo": "um narrador",
     "voice_vo": "voice-over amador",
     "tsNoResolution": "qualidade não informada",
+    "markSubtitles": "Legendas",
     "tsVoiceUnnamed": "Áudio não informado",
     "tsYourVoice": "Sua dublagem · {studio}",
     "tsYourLanguage": "Seu idioma · {language}",

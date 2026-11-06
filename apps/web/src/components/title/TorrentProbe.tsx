@@ -63,9 +63,10 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
 
   // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
   const marks = chosen ? releaseMarks(chosen.info) : [];
+  // The resolution in words only where no mark says it: 720p (under HD), SD.
   const summary = chosen
     ? [
-        marks.length ? (chosen.info.resolution === 720 ? RESOLUTION[720] : null) : chosen.info.resolution ? RESOLUTION[chosen.info.resolution] : null,
+        chosen.info.resolution === 720 || chosen.info.resolution === 480 ? RESOLUTION[chosen.info.resolution] : null,
         text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio),
       ]
         .filter(Boolean)

@@ -29,6 +29,8 @@ export interface ReleaseInfo {
   sdr: boolean;
   /** The sound is Dolby Atmos by the name ("TrueHD 7.1 Atmos", "DDP5.1 Atmos", "DDPA5.1"). */
   atmos: boolean;
+  /** The name lists subtitles that can be turned on ("Sub (Rus, Eng)", "Eng Subs", "Субтитры: укр"; not "Hardsub"). */
+  subtitles: boolean;
   hevc: boolean;
   codec: "hevc" | "avc" | "av1" | null;
   source: PictureSource | null;
@@ -441,6 +443,7 @@ export function parseRelease(title: string, tracker: string | null = null, origi
     sdr: W("sdr").test(t),
     // "Atmos" as a word (never "Atmosphere"), or DD+ Atmos as some groups shorten it: "DDPA5.1".
     atmos: W("atmos").test(t) || /(?<![\p{L}\d])ddpa\s?\d/iu.test(t),
+    subtitles: W("subs?|subtitles?|softsubs?|sdh|субтитр\\p{L}*|субтитри|сабы").test(t),
     hevc: codec === "hevc",
     codec,
     source,

@@ -118,6 +118,11 @@ export const LibraryIndexEntry = z.object({
        * series' from a few of its first episodes. TorrServer copies have none — their release name tells.
        */
       audioLanguages: z.array(z.string().min(2).max(3)).max(16),
+      /**
+       * How many subtitle tracks the server's scan saw (embedded and external; a series': a few of its first episodes'),
+       * for the CC mark. Absent from copies scanned before 2026-11-06, and for TorrServer copies — their release name tells.
+       */
+      subtitleTracks: z.number().int().min(0).max(999),
       hdr: z.string().max(24).nullable(),
       container: z.string().max(24).nullable(),
       sizeBytes: z.number().int().min(0).nullable(),

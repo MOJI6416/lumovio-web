@@ -174,6 +174,8 @@ export function plexClient(serverUrl: string, serverToken: string, opts: { syncP
             );
             const langs = audioLanguages(streams.filter((s) => s.streamType === 2).map((s) => s.languageCode ?? s.languageTag ?? null));
             if (langs.length > 0) e.quality = { ...(e.quality ?? {}), audioLanguages: langs };
+            // Plex's subtitle streams (type 3), for the CC mark; none read when the item didn't answer.
+            if (streams.length > 0) e.quality = { ...(e.quality ?? {}), subtitleTracks: streams.filter((s) => s.streamType === 3).length };
           }),
         );
       }
