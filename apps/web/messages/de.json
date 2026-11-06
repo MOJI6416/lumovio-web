@@ -1303,7 +1303,13 @@
     "episodesFailed": "Die Folgen dieser Staffel ließen sich nicht laden.",
     "otherResults": "{count, plural, one {# weiterer Treffer für die Suche} other {# weitere Treffer für die Suche}}",
     "seekBack": "−{seconds} s",
-    "seekForward": "+{seconds} s"
+    "seekForward": "+{seconds} s",
+    "pauseLeft": "Noch {left} · endet um {at}",
+    "watchCredits": "Abspann ansehen",
+    "volumeHint": "Lautstärke {value}",
+    "mutedHint": "Ton aus",
+    "subtitlesOnHint": "Untertitel an",
+    "subtitlesOffHint": "Untertitel aus"
   },
   "connections": {
     "checkAndSave": "Prüfen und speichern",

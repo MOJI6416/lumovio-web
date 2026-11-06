@@ -1303,7 +1303,13 @@
     "episodesFailed": "Não foi possível carregar os episódios desta temporada.",
     "otherResults": "{count, plural, one {Mais # resultado para a busca} many {Mais # de resultados para a busca} other {Mais # resultados para a busca}}",
     "seekBack": "−{seconds} s",
-    "seekForward": "+{seconds} s"
+    "seekForward": "+{seconds} s",
+    "pauseLeft": "Faltam {left} · termina às {at}",
+    "watchCredits": "Assistir aos créditos",
+    "volumeHint": "Volume {value}",
+    "mutedHint": "Som desativado",
+    "subtitlesOnHint": "Legendas ativadas",
+    "subtitlesOffHint": "Legendas desativadas"
   },
   "connections": {
     "checkAndSave": "Verificar e salvar",

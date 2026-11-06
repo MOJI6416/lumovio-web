@@ -3,6 +3,7 @@
 import type { Availability, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Server, Settings2, X } from "lucide-react";
+import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -20,6 +21,7 @@ import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } fr
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
 import { AccentBadge, StatusBadge, Tag } from "@/components/ui/Badge";
+import { BrandLoader } from "@/components/ui/BrandMotion";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -103,6 +105,8 @@ type Phase =
       prepared?: PreparedPlayback;
       gone?: { connectionId: string; hash: string };
       auth?: boolean;
+      /** Started from the sources screen: the failure is shown there; otherwise on the player's stage. */
+      fromScreen?: boolean;
     };
 
 const KIND_LABEL = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" } as const;
@@ -459,7 +463,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         if (!live()) return;
         failed.current.add(c.key);
         const failedAt = c;
-        const base = { kind: "error" as const, candidate: c, label: labelOf(c), prep: { ...prep, facts: { ...prep.facts } } };
+        const base = { kind: "error" as const, candidate: c, label: labelOf(c), prep: { ...prep, facts: { ...prep.facts } }, fromScreen: Boolean(opts.fromScreen) };
         // A torrent the server answers 404 for may be gone from it: its full list decides (SRC-03, TS7).
         if (c.provider === "torrserver" && e instanceof MediaNetError && e.code === "http" && e.status === 404) {
           const hash = hashOf(c.server.externalId).toLowerCase();
@@ -479,7 +483,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           message: errorText(e),
           auth: auth || blocked,
           // Repeating can't bring back a file the torrent doesn't have, or fix a refused sign-in.
-          retry: auth || blocked || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false, fromScreen: true }),
+          retry: auth || blocked || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false }),
         });
       } finally {
         if (live()) preparing.current = false;
@@ -534,7 +538,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         } catch (e) {
           if (attempt.current !== my) return;
           const message = e instanceof ShownError ? e.message : e instanceof MediaNetError && e.code === "http" && e.status ? t("addFailedStatus", { status: e.status }) : mediaError(e);
-          setPhase({ kind: "error", candidate: null, label: `${pick.version} — ${server}`, message, prep, retry: () => void addAndPlay(pick) });
+          setPhase({ kind: "error", candidate: null, label: `${pick.version} — ${server}`, message, prep, retry: () => void addAndPlay(pick), fromScreen: true });
           return;
         } finally {
           if (attempt.current === my) preparing.current = false;
@@ -666,13 +670,20 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     enabled: nextEp !== null,
     staleTime: 30 * 60_000,
   });
-  // A profile that hides the names of unwatched episodes (8.12) gets the number only.
+  // A profile that hides the names (or stills) of unwatched episodes (8.12) gets the number only (the still blurred).
   const spoilers = useSpoilerPrefs();
   const watched = useLibraryState(d.id).data?.watchedEpisodes;
-  const nextName =
-    nextEp && !(spoilers.names && !episodesOpen(watched)(nextEp.season, nextEp.episode))
-      ? nextSeason.data?.episodes.find((e) => e.episodeNumber === nextEp.episode)?.name
-      : undefined;
+  const nextOpen = nextEp ? episodesOpen(watched)(nextEp.season, nextEp.episode) : false;
+  const nextData = nextEp ? nextSeason.data?.episodes.find((e) => e.episodeNumber === nextEp.episode) : undefined;
+  const nextName = nextEp && !(spoilers.names && !nextOpen) ? nextData?.name : undefined;
+  // The episode playing, named under the title (the same season query, usually cached by the title page).
+  const thisSeason = useQuery({
+    queryKey: ["season", d.tmdbId, season ?? 0, locale],
+    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
+    enabled: season !== null,
+    staleTime: 30 * 60_000,
+  });
+  const episodeName = season !== null ? thisSeason.data?.episodes.find((e) => e.episodeNumber === episode)?.name : undefined;
   /** A progress report in the background: the next beat carries the position again. */
   const send = (...args: Parameters<typeof report>) => {
     const p = report(...args);
@@ -692,7 +703,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         })
       : t("pickMovieFile");
   const episodeLabel = d.kind === "tv" && season !== null && episode !== null ? t("episodeLabel", { season, episode }) : null;
-  const subtitle = episodeLabel ?? (d.year ? String(d.year) : null);
+  const subtitle = episodeLabel ? [episodeLabel, episodeName].filter(Boolean).join(" · ") : d.year ? String(d.year) : null;
   const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
   const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}`;
   // Why there is nothing to play, in the same words as the title page.
@@ -831,6 +842,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       resumed={resumeOverride.current === null && resumeAt > 0}
       onBack={toTitle}
       originalLanguage={d.originalLanguage}
+      logo={d.logo}
       titleId={d.id}
       onAudioChange={
         active.prepared.selectAudio
@@ -840,7 +852,16 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             }
           : undefined
       }
-      next={nextEp ? { label: [t("episodeLabel", nextEp), nextName].filter(Boolean).join(" · "), go: () => router.replace(epHref(nextEp.season, nextEp.episode)) } : null}
+      next={
+        nextEp
+          ? {
+              label: [t("episodeLabel", nextEp), nextName].filter(Boolean).join(" · "),
+              go: () => router.replace(epHref(nextEp.season, nextEp.episode)),
+              still: tmdbImage(nextData?.stillPath, "w300"),
+              blur: spoilers.stills && !nextOpen,
+            }
+          : null
+      }
       episodes={
         d.kind === "tv" && season !== null && episode !== null
           ? { titleId: d.id, tmdbId: d.tmdbId, seasons: d.seasons.filter((s) => s.episodeCount > 0), season, episode, href: epHref }
@@ -920,7 +941,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
                 : t("errorUnknown"),
           prepared,
-          retry: () => void prepare(c, { auto: false, fromScreen: true }),
+          retry: () => void prepare(c, { auto: false }),
         });
       }}
     />
@@ -1076,12 +1097,111 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     );
   }
 
+  // After "Watch" the way to the picture stays on the player's stage (11.1): the start, its failure, another app. What
+  // was started from the sources screen keeps its stages and failures there (the screen's own place, SRC-18/19).
+  const onStage = (phase.kind === "loading" && !picking) || (phase.kind === "preparing" && !phase.fromScreen) || (phase.kind === "error" && !phase.fromScreen) || phase.kind === "external";
+  const alternatives = candidates.length > 1 || finderShown;
+  const errorActions = (p: Extract<Phase, { kind: "error" }>, primaryRetry: boolean) => (
+    <>
+      {primaryRetry && p.retry && (
+        <Button icon={RefreshCw} onClick={p.retry}>
+          {tc("retry")}
+        </Button>
+      )}
+      {p.gone && (
+        <Button variant={p.retry ? "secondary" : "primary"} icon={Link2Off} loading={forget.pending} onClick={() => void forget.run(p.gone!)}>
+          {t("forgetCopy")}
+        </Button>
+      )}
+      {p.auth && (
+        <Link href="/settings/connections" className={buttonClass("secondary")}>
+          <Settings2 aria-hidden />
+          {tt("checkConnection")}
+        </Link>
+      )}
+      {alternatives && (
+        <Button variant="secondary" onClick={anotherSource}>
+          {t("anotherSource")}
+        </Button>
+      )}
+      {active && (
+        <Button variant="secondary" icon={Play} onClick={backToPlayer}>
+          {t("backToWatching")}
+        </Button>
+      )}
+      {/* The source that played before this one is still there to go back to, at the same position. */}
+      {!active && lastGood.current && lastGood.current.candidate.key !== p.candidate?.key && (
+        <Button variant="secondary" onClick={() => choose(lastGood.current!.candidate, lastGood.current!.voice)}>
+          {t("backToSource", { source: versionOf(lastGood.current.candidate) })}
+        </Button>
+      )}
+      {p.candidate && p.prepared?.externalUrl && (
+        <Button variant="secondary" icon={ExternalLink} onClick={() => setPhase({ kind: "external", candidate: p.candidate!, prepared: p.prepared!, reason: reasonText(p.prepared!.methodNote) })}>
+          {t("openExternal")}
+        </Button>
+      )}
+    </>
+  );
+  const stage = onStage ? (
+    <StartStage art={tmdbImage(d.backdropPath, "w1280")} title={d.title} subtitle={subtitle} backLabel={t("backToTitle", { title: d.title })} onBack={toTitle}>
+      {(phase.kind === "loading" || phase.kind === "preparing") && (
+        <>
+          <div role="status" aria-live="polite" className="flex flex-col items-center gap-3">
+            <BrandLoader size="lg" />
+            <p className="text-body font-semibold text-text-1">
+              {phase.kind === "preparing" ? (steps(phase.prep, false).find((x) => x.state === "current")?.label ?? t("preparingTitle")) : t("loading")}
+            </p>
+            {phase.kind === "preparing" && <p className="max-w-120 break-words text-body-s text-text-2">{phase.label}</p>}
+          </div>
+          {phase.kind === "preparing" && (alternatives || active) && (
+            <div className="flex flex-wrap justify-center gap-3">
+              {active && (
+                <Button variant="secondary" icon={Play} onClick={() => toWatching.current()}>
+                  {t("backToWatching")}
+                </Button>
+              )}
+              {alternatives && (
+                <Button variant="secondary" onClick={cancel}>
+                  {t("anotherSource")}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
+      {phase.kind === "error" && (
+        <section id="prep-error" aria-label={t("errorTitle")} className="w-full max-w-120">
+          <ErrorState
+            title={t(phase.gone ? "errorGoneTitle" : "errorTitle")}
+            text={phase.message}
+            details={null}
+            headingLevel={2}
+            className="[&>div]:py-0"
+            action={<div className="flex flex-wrap items-center justify-center gap-3">{errorActions(phase, true)}</div>}
+          />
+          <p className="mt-4 break-words text-body-s text-text-3">{phase.label}</p>
+        </section>
+      )}
+      {phase.kind === "external" && (
+        <div className="flex w-full max-w-xl flex-col gap-4 text-start">
+          {external}
+          {alternatives && (
+            <Button variant="secondary" className="self-center" onClick={anotherSource}>
+              {t("anotherSource")}
+            </Button>
+          )}
+        </div>
+      )}
+    </StartStage>
+  ) : null;
 
   return (
     <>
       {player}
-      {/* The sources screen is a stage (3.5, SRC-02): dark roles in either theme; its lists and dialogs open inside it. */}
-      <main ref={setStageEl} className="stage min-h-dvh bg-stage text-text-1">
+      {stage}
+      {/* The sources screen is a stage (3.5, SRC-02): dark roles in either theme; its lists and dialogs open inside it.
+          Kept under the player's stage (its search, filters and place stay for "Another source"). */}
+      <main ref={setStageEl} hidden={onStage} className="stage min-h-dvh bg-stage text-text-1">
         <PortalContainerContext.Provider value={stageEl}>
           {/* Immersive (9): "←" and the title, no poster circle (SRC-13). Opened from the player, the way back is to it. */}
           <header className="sticky top-0 z-sticky border-b border-line bg-stage pt-[env(safe-area-inset-top)]">
@@ -1107,7 +1227,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               </div>
             )}
 
-            {phase.kind === "preparing" && (
+            {phase.kind === "preparing" && phase.fromScreen && (
               <section aria-labelledby="prep-h" className="flex flex-col gap-4 rounded-md border border-line bg-surface-1 p-4 md:p-6">
                 <div>
                   <h2 id="prep-h" className="text-h3">
@@ -1127,7 +1247,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               </section>
             )}
 
-            {phase.kind === "error" && (
+            {phase.kind === "error" && phase.fromScreen && (
               <section id="prep-error" aria-label={t("errorTitle")} className="flex flex-col gap-4 rounded-md border border-line bg-surface-1 p-4 md:p-6">
                 <p className="break-words text-body-s text-text-2">{phase.label}</p>
                 <Steps steps={steps(phase.prep, true)} label={t("errorTitle")} />
@@ -1137,46 +1257,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                   text={phase.message}
                   onRetry={phase.retry ?? undefined}
                   details={null}
-                  action={
-                    <>
-                      {phase.gone && (
-                        <Button variant={phase.retry ? "secondary" : "primary"} icon={Link2Off} loading={forget.pending} onClick={() => void forget.run(phase.gone!)}>
-                          {t("forgetCopy")}
-                        </Button>
-                      )}
-                      {phase.auth && (
-                        <Link href="/settings/connections" className={buttonClass("secondary")}>
-                          <Settings2 aria-hidden />
-                          {tt("checkConnection")}
-                        </Link>
-                      )}
-                      {(candidates.length > 1 || finderShown) && (
-                        <Button variant="secondary" onClick={anotherSource}>
-                          {t("anotherSource")}
-                        </Button>
-                      )}
-                      {active && (
-                        <Button variant="secondary" icon={Play} onClick={backToPlayer}>
-                          {t("backToWatching")}
-                        </Button>
-                      )}
-                      {/* The source that played before this one is still there to go back to, at the same position. */}
-                      {!active && lastGood.current && lastGood.current.candidate.key !== phase.candidate?.key && (
-                        <Button variant="secondary" onClick={() => choose(lastGood.current!.candidate, lastGood.current!.voice)}>
-                          {t("backToSource", { source: versionOf(lastGood.current.candidate) })}
-                        </Button>
-                      )}
-                      {phase.candidate && phase.prepared?.externalUrl && (
-                        <Button
-                          variant="secondary"
-                          icon={ExternalLink}
-                          onClick={() => setPhase({ kind: "external", candidate: phase.candidate!, prepared: phase.prepared!, reason: reasonText(phase.prepared!.methodNote) })}
-                        >
-                          {t("openExternal")}
-                        </Button>
-                      )}
-                    </>
-                  }
+                  action={errorActions(phase, false)}
                 />
               </section>
             )}
@@ -1239,8 +1320,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 </Button>
               </SourceSection>
             )}
-
-            {external}
 
             {(phase.kind === "choose" || phase.kind === "error" || phase.kind === "external") && (
               <div id="sources" className="scroll-mt-24">
@@ -1349,5 +1428,29 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         </PortalContainerContext.Provider>
       </main>
     </>
+  );
+}
+
+/**
+ * The way to the picture after "Watch" on the site (design-system 11.1): the player's stage — the title's art dimmed,
+ * "←" to the title, the title and episode where the player shows them — while the source starts, when it fails, and
+ * when it needs another app. So "Watch" leads to the picture, not to a screen of sources nobody asked for.
+ */
+function StartStage({ art, title, subtitle, backLabel, onBack, children }: { art: string | null; title: string; subtitle: string | null; backLabel: string; onBack: () => void; children: ReactNode }) {
+  return (
+    <div className="stage fixed inset-0 z-player overflow-y-auto bg-stage text-text-1">
+      {art && <img src={art} alt="" className="fixed inset-0 size-full object-cover opacity-35" />}
+      <div aria-hidden className="fixed inset-0 bg-linear-to-t from-stage via-stage/70 to-stage/30" />
+      <div className="fixed start-4 top-[max(1rem,env(safe-area-inset-top))] z-10 md:start-8 md:top-8">
+        <IconButton icon={ArrowLeft} label={backLabel} variant="stage" size="lg" onClick={onBack} className="[&_svg]:rtl:-scale-x-100" />
+      </div>
+      <main className="relative flex min-h-dvh flex-col px-4 pt-24 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-10 md:pb-8">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">{children}</div>
+        <div className="min-w-0">
+          <h1 className="truncate text-title text-text-1 md:text-h3">{title}</h1>
+          {subtitle && <p className="truncate text-body-s font-medium text-text-2 md:text-body">{subtitle}</p>}
+        </div>
+      </main>
+    </div>
   );
 }

@@ -1303,7 +1303,13 @@
     "episodesFailed": "Couldn't load this season's episodes.",
     "otherResults": "{count, plural, one {# more result for the query} other {# more results for the query}}",
     "seekBack": "−{seconds} s",
-    "seekForward": "+{seconds} s"
+    "seekForward": "+{seconds} s",
+    "pauseLeft": "{left} left · ends at {at}",
+    "watchCredits": "Watch credits",
+    "volumeHint": "Volume {value}",
+    "mutedHint": "Sound off",
+    "subtitlesOnHint": "Subtitles on",
+    "subtitlesOffHint": "Subtitles off"
   },
   "connections": {
     "checkAndSave": "Check and save",

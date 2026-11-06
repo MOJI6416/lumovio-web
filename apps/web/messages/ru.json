@@ -1303,7 +1303,13 @@
     "episodesFailed": "Не удалось загрузить серии этого сезона.",
     "otherResults": "{count, plural, one {ещё # результат по запросу} few {ещё # результата по запросу} many {ещё # результатов по запросу} other {ещё # результата по запросу}}",
     "seekBack": "−{seconds} с",
-    "seekForward": "+{seconds} с"
+    "seekForward": "+{seconds} с",
+    "pauseLeft": "Осталось {left} · закончится в {at}",
+    "watchCredits": "Смотреть титры",
+    "volumeHint": "Громкость {value}",
+    "mutedHint": "Звук выключен",
+    "subtitlesOnHint": "Субтитры включены",
+    "subtitlesOffHint": "Субтитры выключены"
   },
   "connections": {
     "checkAndSave": "Проверить и сохранить",

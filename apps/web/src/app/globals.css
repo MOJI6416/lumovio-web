@@ -703,6 +703,23 @@
     transition: none;
   }
 }
+/* The next episode's countdown on the site (LumovioPlayer NextCard): "Play now" fills as it runs, over its own
+ * `animation-duration`; with reduced motion the fill steps once a second (its inline width). */
+@keyframes player-countdown {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-player] [data-countdown] {
+    animation-name: player-countdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+}
 /* The settings' preview: a frame of the picture's proportions, the line as large against it as in the player (but
  * never under 12 px), as high as "Higher" puts it. */
 .subtitle-sample {

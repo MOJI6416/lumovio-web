@@ -1303,7 +1303,13 @@
     "episodesFailed": "Bu sezonun bölümleri yüklenemedi.",
     "otherResults": "{count, plural, one {Sorgu için # sonuç daha} other {Sorgu için # sonuç daha}}",
     "seekBack": "−{seconds} sn",
-    "seekForward": "+{seconds} sn"
+    "seekForward": "+{seconds} sn",
+    "pauseLeft": "{left} kaldı · bitiş {at}",
+    "watchCredits": "Jeneriği izle",
+    "volumeHint": "Ses düzeyi {value}",
+    "mutedHint": "Ses kapalı",
+    "subtitlesOnHint": "Altyazı açık",
+    "subtitlesOffHint": "Altyazı kapalı"
   },
   "connections": {
     "checkAndSave": "Kontrol et ve kaydet",

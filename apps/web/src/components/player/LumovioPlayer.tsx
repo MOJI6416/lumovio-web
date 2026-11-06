@@ -1,6 +1,6 @@
 "use client";
 
-import type { SubtitleStyle } from "@lumovio/contracts";
+import type { SubtitleStyle, TitleLogoArt } from "@lumovio/contracts";
 import { Container, Controls, Gesture, Hotkey, TimeSlider, useContainer } from "@videojs/react";
 import { I18nProvider } from "@videojs/react/i18n";
 import { HlsJsVideo } from "@videojs/react/media/hlsjs-video";
@@ -9,10 +9,11 @@ import { clsx } from "clsx";
 import {
   ArrowLeft,
   Captions,
+  CaptionsOff,
   Cast,
   FastForward,
-  Layers,
   ListVideo,
+  type LucideIcon,
   Maximize,
   Minimize,
   Pause,
@@ -20,25 +21,26 @@ import {
   Play,
   RotateCcw,
   RotateCw,
-  Settings2,
+  Settings,
   SkipBack,
   SkipForward,
   Volume1,
   Volume2,
   VolumeX,
-  X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type PointerEvent, type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type PointerEvent, type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
+import { TitleLogo } from "@/components/media/TitleLogo";
 import { useSession } from "@/components/providers/Providers";
 import { isBackKey, useTvNavOptional } from "@/components/tvui/nav/context";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
 import { PortalContainerContext } from "@/components/ui/portal";
 import { Slider } from "@/components/ui/Slider";
 import { api } from "@/lib/api";
-import { formatClock, formatSize } from "@/lib/format";
+import { formatClock, formatRuntime, formatSize } from "@/lib/format";
 import { detectCapabilities } from "@/lib/media/capabilities";
 import { loadOffset, saveOffset } from "@/lib/media/subs/choice";
 import type { SubtitleFormat } from "@/lib/media/subs/engine";
@@ -47,7 +49,11 @@ import { background } from "@/lib/optional";
 import type { RemuxHandle } from "@/lib/media/remux";
 import type { MediaSegment, PreparedPlayback, TrickplayInfo } from "@/lib/media/types";
 import { EndScreen, type EndInfo } from "./EndScreen";
-import { type EpisodesInfo, PlayerPanels, type PlayerPanel, type SourcesInfo, useSignedSeconds } from "./PlayerPanels";
+import { PlayerMenus } from "./PlayerMenus";
+import { type EpisodesInfo, type PlayerPanel, type SourcesInfo, useSignedSeconds } from "./player-parts";
+// The TV shell's view of the player and its panels (TV document §6). Static: a chunk of its own measured +1.7 KB gzip
+// for the site (Turbopack regroups the page's chunks) and +6.7 KB more on the TV (2026-11-06).
+import { TvChrome } from "./TvChrome";
 
 export interface PlayerEvents {
   onTime: (positionSec: number, durationSec: number | null, paused: boolean) => void;
@@ -73,8 +79,8 @@ export interface PlayerProps extends PlayerEvents {
   onBack: () => void;
   /** Another audio track, from this position. */
   onAudioChange?: (index: number, positionSec: number) => void;
-  /** "Season 1, episode 5 · Pilot" and the way there. */
-  next: { label: string; go: () => void } | null;
+  /** "Season 1, episode 5 · Pilot", its still (blurred when the profile hides unwatched ones, 8.12) and the way there. */
+  next: { label: string; go: () => void; still?: string | null; blur?: boolean } | null;
   /** Every season's episodes, for the in-player list. */
   episodes?: EpisodesInfo | null;
   /** This title's copies and the search for another (the "Source" panel). */
@@ -83,6 +89,8 @@ export interface PlayerProps extends PlayerEvents {
   info: { version: string; server: string };
   /** What the end of a film offers (PLR-04); null for an episode with a next one. */
   end?: EndInfo | null;
+  /** The title's logo art: the pause and the end screen show it in place of the name (7.14). */
+  logo?: TitleLogoArt | null;
   /** The title's own language, for naming the original audio track. */
   originalLanguage: string | null;
   /** The title ("movie:603"): the subtitles chosen for it are remembered per profile on this device. */
@@ -91,7 +99,6 @@ export interface PlayerProps extends PlayerEvents {
 }
 
 const VOLUME_KEY = "lumovio.player.volume";
-const TIME_KEY = "lumovio.player.remaining";
 
 export function LumovioPlayer(props: PlayerProps) {
   const { prepared } = props;
@@ -338,13 +345,13 @@ function useSubtitles(ref: RefObject<HTMLVideoElement | null>, prepared: Prepare
   return meta;
 }
 
-/** One timeline thumbnail cut out of a trickplay sprite sheet. */
-function TrickplayThumb({ tp, time }: { tp: TrickplayInfo; time: number }) {
+/** One timeline thumbnail cut out of a trickplay sprite sheet, `width` CSS px wide (192 on a TV, 240 on the site). */
+function TrickplayThumb({ tp, time, width = 192 }: { tp: TrickplayInfo; time: number; width?: number }) {
   const n = Math.max(0, Math.min(tp.count - 1, Math.floor((time * 1000) / tp.intervalMs)));
   const perSheet = tp.cols * tp.rows;
   const sheet = Math.floor(n / perSheet);
   const i = n % perSheet;
-  const scale = 192 / tp.width;
+  const scale = width / tp.width;
   return (
     <div
       aria-hidden
@@ -360,9 +367,27 @@ function TrickplayThumb({ tp, time }: { tp: TrickplayInfo; time: number }) {
   );
 }
 
+/** What a torrent's server reports while it buffers (peers, speed, loaded), null when it says nothing. */
+export type TorrentStats = Awaited<ReturnType<NonNullable<PreparedPlayback["stats"]>>>;
+
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [role="slider"], [tabindex]:not([tabindex="-1"])';
 const EDITABLE = /INPUT|TEXTAREA|SELECT/;
+/** The next episode's countdown on the site: from the credits (or the last 15 s), 10 s; 5 s once the file has ended. */
+const NEXT_IN = 10;
+const NEXT_AFTER_END = 5;
 
+/**
+ * The player's controls (design-system 11.1). The state and the keys are one for the site and the TV; the TV shell draws
+ * them as it always has (TvChrome, TV document §6), the site as below:
+ * - the frame first: "←" alone at the top, everything else in one block at the bottom over one scrim — the title and
+ *   episode, the timeline with the time gone at its start and the time left ("−42:10") at its end, the buttons;
+ * - paused for a moment, the frame dims and the title's logo, the episode and "42 min left · ends at 22:41" take the
+ *   title's place: what this is and how long it still is, for the one who comes back to the screen;
+ * - two buttons for the settings of a viewing: "Audio and subtitles" (the most frequent, one press) and "Settings"
+ *   (quality, speed, source, playback info, keys — each with its value), menus over the picture (PlayerMenus);
+ * - before the first frame only the poster, the loader and the way out; with autoplay refused, one large Play;
+ * - every seek, volume step, mute and the subtitles' key said in the middle of the frame for a moment.
+ */
 function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: SubtitleLook }) {
   const t = useTranslations("player");
   const tc = useTranslations("common");
@@ -374,11 +399,13 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   const ended = usePlayer((s) => s.ended);
   const waiting = usePlayer((s) => s.waiting);
   const started = usePlayer((s) => s.started);
+  const canPlay = usePlayer((s) => s.canPlay);
   const currentTime = usePlayer((s) => s.currentTime);
   const duration = usePlayer((s) => s.duration);
   const buffered = usePlayer((s) => s.buffered);
   const volume = usePlayer((s) => s.volume);
   const muted = usePlayer((s) => s.muted);
+  const rate = usePlayer((s) => s.playbackRate);
   const isFullscreen = usePlayer((s) => s.isFullscreen);
   const error = usePlayer((s) => s.error);
   const controlsVisible = usePlayer((s) => s.controlsVisible);
@@ -387,21 +414,18 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   const castAvail = usePlayer((s) => s.remotePlaybackAvailability);
   const subtitlesShowing = usePlayer((s) => s.subtitlesShowing);
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
+  // "Watch the credits" (or ×): no countdown again until the file ends.
+  const [nextDismissed, setNextDismissed] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [panel, setPanel] = useState<PlayerPanel>("none");
-  const [remaining, setRemaining] = useState(() => {
-    try {
-      return localStorage.getItem(TIME_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
   const { tv } = useSession();
   // In the TV shell (tvui): the remote's own model of the player — see the keys below (TV document §6).
   const tvNav = useTvNavOptional();
   const [seekHint, setSeekHint] = useState<{ delta: number; at: number } | null>(null);
   // G / H moved the subtitles: the new offset, said where the eye is for a moment.
   const [offsetHint, setOffsetHint] = useState<number | null>(null);
+  // The site's other keys said the same way: a volume step, mute, the subtitles on or off.
+  const [noteHint, setNoteHint] = useState<{ icon: LucideIcon; text: string; at: number } | null>(null);
   const hasSubtitles = props.prepared.subtitles.length > 0 || props.subtitleMeta.size > 0;
   const container = useContainer();
   const startedRef = useRef(false);
@@ -409,6 +433,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   const segments = props.prepared.segments ?? [];
   const outro = segments.find((s) => s.kind === "outro");
   const hidden = Boolean(props.hidden);
+  const anchors = { tracks: useRef<HTMLButtonElement>(null), settings: useRef<HTMLButtonElement>(null), episodes: useRef<HTMLButtonElement>(null) };
 
   // The keys work at once (PLR-01): the player takes the focus when it opens and when it is shown again; kept out
   // of sight it pauses, and plays on when it is back.
@@ -443,7 +468,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   }, [startOver, started, currentTime, props.startAt]);
 
   // While a torrent buffers, what its server reports (peers, speed, loaded) — asked every 2 s only then.
-  const [torrent, setTorrent] = useState<Awaited<ReturnType<NonNullable<PreparedPlayback["stats"]>>>>(null);
+  const [torrent, setTorrent] = useState<TorrentStats>(null);
   const stats = props.prepared.stats;
   const buffering = (waiting || !started) && !error && !hidden;
   useEffect(() => {
@@ -457,6 +482,18 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
       window.clearInterval(id);
     };
   }, [stats, buffering]);
+
+  // Autoplay refused by the browser: the file is ready, nothing plays. After a moment one large Play instead of the
+  // loader (the controls appear with the first frame).
+  const [refused, setRefused] = useState(false);
+  useEffect(() => {
+    if (started || !canPlay || !paused || hidden) {
+      setRefused(false);
+      return;
+    }
+    const id = window.setTimeout(() => setRefused(true), 1500);
+    return () => window.clearTimeout(id);
+  }, [started, canPlay, paused, hidden]);
 
   // A plain stream that never gets as far as its metadata while the torrent already holds plenty (a browser that takes
   // the file and then neither plays nor fails, as Firefox did with HEVC through the service worker): after 30 s it
@@ -524,26 +561,41 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     if (error) props.onFatal(error.message, error.code);
   }, [error, props]);
 
-  // "Next episode" card from the credits marker, or the last 25 s; auto-advance after a countdown.
+  // The next episode's card from the credits marker, or near the end; auto-advance after a countdown. The TV keeps its
+  // timing (from the last 25 s, 15 s); on the site from the credits or the last 15 s, 10 s — 5 s once the file ended.
   const left = duration > 0 ? duration - currentTime : Number.POSITIVE_INFINITY;
   const inCredits = Boolean(outro && currentTime >= outro.start);
+  const [nextTotal, setNextTotal] = useState(NEXT_IN);
   useEffect(() => {
-    if (!props.next || hidden) return;
-    if ((left < 25 || ended || inCredits) && nextCountdown === null) setNextCountdown(ended ? 8 : 15);
-  }, [left, ended, inCredits, props.next, nextCountdown, hidden]);
+    if (!props.next || hidden || nextCountdown !== null) return;
+    if (tvNav) {
+      if (ended || (!nextDismissed && (left < 25 || inCredits))) setNextCountdown(ended ? 8 : 15);
+      return;
+    }
+    const n = ended ? NEXT_AFTER_END : !nextDismissed && (left < 15 || inCredits) ? NEXT_IN : null;
+    if (n === null) return;
+    setNextTotal(n);
+    setNextCountdown(n);
+  }, [left, ended, inCredits, props.next, nextCountdown, hidden, tvNav, nextDismissed]);
+  // A menu open on the site holds the countdown (its card steps aside meanwhile).
+  const menuHolds = !tvNav && panel !== "none";
   useEffect(() => {
-    if (nextCountdown === null || !props.next || hidden) return;
+    if (nextCountdown === null || !props.next || hidden || menuHolds) return;
     if (nextCountdown <= 0) {
       props.next.go();
       return;
     }
     const id = setTimeout(() => setNextCountdown((n) => (n === null ? null : n - 1)), 1000);
     return () => clearTimeout(id);
-  }, [nextCountdown, props.next, hidden]);
+  }, [nextCountdown, props.next, hidden, menuHolds]);
+  const dismissNext = () => {
+    setNextDismissed(true);
+    setNextCountdown(null);
+  };
 
   // Skip button for the segment we're in (not for previews / ads, and not when the next-episode card shows).
   const segment: MediaSegment | undefined = segments.find((s) => s.kind !== "preview" && currentTime >= s.start && currentTime < s.end - 1);
-  const showSkip = segment && !(segment.kind === "outro" && props.next && nextCountdown !== null);
+  const showSkip = Boolean(segment) && !(segment?.kind === "outro" && props.next && nextCountdown !== null);
   const skip = () => {
     if (!segment) return;
     if (segment.kind === "outro" && props.next) props.next.go();
@@ -616,7 +668,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     app.keepScreenOn(started && !paused && !ended);
     return () => app.keepScreenOn?.(false);
   }, [tvNav, started, paused, ended]);
-  // The seek hint of the remote's arrows fades after a second.
+  // The hints fade: a seek after a second, the rest a little later.
   useEffect(() => {
     if (!seekHint) return;
     const id = window.setTimeout(() => setSeekHint(null), 1200);
@@ -627,6 +679,43 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const id = window.setTimeout(() => setOffsetHint(null), 1500);
     return () => window.clearTimeout(id);
   }, [offsetHint]);
+  useEffect(() => {
+    if (!noteHint) return;
+    const id = window.setTimeout(() => setNoteHint(null), 1200);
+    return () => window.clearTimeout(id);
+  }, [noteHint]);
+
+  // The site's seeks said in the middle: ±10 by a key, a double tap or the bar's buttons, a few presses summed (the
+  // TV's remote sets its own hint below). The timeline's own drag says nothing (its preview shows the time).
+  const scrubbing = useRef(false);
+  useEffect(() => {
+    const v = container?.querySelector("video");
+    if (tvNav || !v) return;
+    let last = v.currentTime;
+    const onTime = () => {
+      if (!v.seeking) last = v.currentTime;
+    };
+    const onSeeking = () => {
+      const delta = v.currentTime - last;
+      last = v.currentTime;
+      if (scrubbing.current || Math.abs(Math.abs(delta) - 10) > 0.75) return;
+      const step = delta < 0 ? -10 : 10;
+      setSeekHint((h) => ({ delta: (h && Date.now() - h.at < 1200 && Math.sign(h.delta) === Math.sign(step) ? h.delta : 0) + step, at: Date.now() }));
+    };
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("seeking", onSeeking);
+    return () => {
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("seeking", onSeeking);
+    };
+  }, [tvNav, container]);
+  useEffect(() => {
+    if (tvNav) return;
+    const up = () => window.setTimeout(() => (scrubbing.current = false), 300);
+    window.addEventListener("pointerup", up);
+    return () => window.removeEventListener("pointerup", up);
+  }, [tvNav]);
+
   // A control keeps the remote's focus only while it can be seen: after 6 s without a key (playing, no panel) the bar
   // goes and the focus is back on the picture, where the arrows seek again.
   const lastKey = useRef(0);
@@ -655,12 +744,32 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     return () => clearTimeout(id);
   }, [layerOpen, hidden, endShown]);
 
+  // Paused for a moment (not in a menu, not at the end): the pause's own look on the site.
+  const [resting, setResting] = useState(false);
+  const restingNow = paused && started && !ended && !layerOpen && !hidden && !tvNav;
+  useEffect(() => {
+    if (!restingNow) {
+      setResting(false);
+      return;
+    }
+    const id = window.setTimeout(() => setResting(true), 2000);
+    return () => window.clearTimeout(id);
+  }, [restingNow]);
+
   const togglePlay = () => (paused || ended ? store.play() : store.pause());
+  const percent = new Intl.NumberFormat(locale, { style: "percent" });
+  const volumeTo = (v: number) => {
+    const to = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
+    store.setVolume(to);
+    if (muted && to > 0) store.setMuted(false);
+    setNoteHint({ icon: to === 0 ? VolumeX : to < 0.5 ? Volume1 : Volume2, text: t("volumeHint", { value: percent.format(to) }), at: Date.now() });
+  };
 
   // On the way down, before Radix, the TV navigation and the focused button see it:
   // - Escape (a TV remote's Back) closes one layer and nothing else;
   // - Space always plays or pauses (PLR-02) — never "presses" the last button used;
-  // - Tab stays inside the player (PLR-09);
+  // - Tab stays inside the player (PLR-09), inside a menu while one is open;
+  // - on the site ↑ / ↓ volume, M mute and C subtitles with a hint where the eye is;
   // - S skip · N next episode · I playback info · ? shortcuts · G / H subtitles earlier / later.
   useEffect(() => {
     if (hidden) return;
@@ -669,6 +778,14 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const stop = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
+    };
+    const cycle = (e: KeyboardEvent, scope: Element) => {
+      const items = [...scope.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0 && !x.closest("[aria-hidden=true],[inert]"));
+      if (items.length === 0) return;
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : i < 0 || i >= items.length - 1 ? 0 : i + 1;
+      e.preventDefault();
+      items[next]!.focus();
     };
     const down = (e: KeyboardEvent) => {
       lastKey.current = Date.now();
@@ -721,6 +838,9 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
           store.toggleControls(true);
         }
       }
+      // A site menu keeps Tab inside itself; its own rows take the arrows, Space and Enter.
+      const menu = !tvNav && layerOpen ? container?.querySelector("[data-player-menu]") : null;
+      if (menu && e.key === "Tab") return cycle(e, menu);
       if (layerOpen || endShown) return;
       const el = e.target as HTMLElement | null;
       if (el && EDITABLE.test(el.tagName)) return;
@@ -733,17 +853,22 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
         return;
       }
       if (e.key === "Tab" && container) {
-        const items = [...container.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0 && !x.closest("[aria-hidden=true],[inert]"));
-        if (items.length === 0) return;
         store.toggleControls(true);
-        const i = items.indexOf(document.activeElement as HTMLElement);
-        const next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : i < 0 || i >= items.length - 1 ? 0 : i + 1;
-        e.preventDefault();
-        items[next]!.focus();
+        cycle(e, container);
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === "s" || e.key === "S") skip();
+      // The site's volume, mute and subtitles keys (a TV's are the remote's and the Hotkeys below); a slider in focus
+      // keeps its own arrows.
+      if (!tvNav && (e.key === "ArrowUp" || e.key === "ArrowDown") && !el?.closest('[role="slider"]')) volumeTo((muted ? 0 : volume) + (e.key === "ArrowUp" ? 0.05 : -0.05));
+      else if (!tvNav && (e.key === "m" || e.key === "M")) {
+        store.setMuted(!muted);
+        if (muted) volumeTo(volume || 0.5);
+        else setNoteHint({ icon: VolumeX, text: t("mutedHint"), at: Date.now() });
+      } else if (!tvNav && (e.key === "c" || e.key === "C") && hasSubtitles) {
+        const on = store.toggleSubtitles();
+        setNoteHint({ icon: on ? Captions : CaptionsOff, text: t(on ? "subtitlesOnHint" : "subtitlesOffHint"), at: Date.now() });
+      } else if (e.key === "s" || e.key === "S") skip();
       else if ((e.key === "n" || e.key === "N") && props.next) props.next.go();
       else if (e.key === "i" || e.key === "I") setPanel("info");
       else if (e.key === "?") setPanel("help");
@@ -776,12 +901,19 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   })();
   const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown && !tvPanel;
   // Text subtitles move up above the controls while they show, and back down when they fade (readable either way) —
-  // to the bottom, or two lines higher when the profile puts them "Higher".
+  // to the bottom, or two lines higher when the profile puts them "Higher". On the site the block of controls is taller
+  // (the title, the timeline, the buttons; the pause's logo): the cues stand as many lines up as it takes.
   const raised = props.look.style.position === "raised";
+  const subScale = SUB_SCALE[props.look.style.size] ?? 1;
+  const barHeight = useBarHeight(container instanceof HTMLElement ? container : null);
   useEffect(() => {
     const v = container?.querySelector("video");
     if (!v) return;
-    const line = showChrome ? -4 : raised ? -3 : "auto";
+    // A cue's line is ~4.4 % of the player's height × the profile's size × 1.25 (globals.css `::cue`); line −n stands
+    // n − 1 lines above the bottom.
+    const lineH = (container instanceof HTMLElement ? container.clientHeight : window.innerHeight) * 0.044 * subScale * 1.25;
+    const above = -Math.max(4, Math.ceil((barHeight + 12) / lineH) + 1);
+    const line = showChrome ? (tvNav ? -4 : above) : raised ? -3 : "auto";
     // Subtitles drawn on a canvas over the picture — ASS by libass, PGS pictures — keep their own layout: the layer
     // moves up just as far as the picture's lower edge is under the controls, and back down (PLR-18).
     const liftCanvases = () => {
@@ -819,10 +951,9 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
       v.textTracks.removeEventListener("addtrack", lift);
       window.clearInterval(id);
     };
-  }, [showChrome, raised, container]);
+  }, [showChrome, raised, container, tvNav, subScale, barHeight]);
   // Faded-out controls take no taps: the first tap on a phone shows them instead of pressing an unseen button.
   const hit = showChrome ? "pointer-events-auto" : "pointer-events-none";
-  const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
   const tp = props.prepared.trickplay ?? null;
   const onSliderMove = (e: PointerEvent<HTMLElement>) => {
     if (duration <= 0) return;
@@ -831,54 +962,121 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     if (getComputedStyle(e.currentTarget).direction === "rtl") f = 1 - f;
     setHoverTime(Math.max(0, Math.min(1, f)) * duration);
   };
-  const toggleTime = () => {
-    setRemaining((v) => {
-      try {
-        localStorage.setItem(TIME_KEY, v ? "0" : "1");
-      } catch {
-        /* storage unavailable */
-      }
-      return !v;
-    });
-  };
-  const known = duration > 0;
-  const timeText = !known ? "--:--" : remaining ? `−${formatClock(Math.max(0, duration - currentTime))}` : `${formatClock(currentTime)} / ${formatClock(duration)}`;
   const off = inputOff;
+  const replay = () => {
+    void store.seek(0);
+    void store.play();
+  };
+  const panels = {
+    panel,
+    onPanel: setPanel,
+    prepared: props.prepared,
+    onAudioChange: props.onAudioChange,
+    currentTime,
+    episodes: props.episodes ?? null,
+    sources: props.sources ?? null,
+    info: props.info,
+    bufferedAhead,
+    originalLanguage: props.originalLanguage,
+    hasNext: Boolean(props.next),
+    hasSegments: segments.length > 0,
+    subtitleMeta: props.subtitleMeta,
+    look: props.look,
+  };
+
+  const hotkeys = (
+    <>
+      {/* Space is the handler above (PLR-02); the others listen on the page, so they work before any click (PLR-01). */}
+      <Hotkey keys="k" action="togglePaused" target="document" disabled={off} />
+      {/* On TV the remote's arrows are handled by spatial navigation (seek only when no control is focused). */}
+      {!tv && <Hotkey keys="ArrowLeft" action="seekStep" value={-10} target="document" disabled={off} />}
+      {!tv && <Hotkey keys="ArrowRight" action="seekStep" value={10} target="document" disabled={off} />}
+      <Hotkey keys="j" action="seekStep" value={-10} target="document" disabled={off} />
+      <Hotkey keys="l" action="seekStep" value={10} target="document" disabled={off} />
+      {/* The site's ↑ / ↓, M and C are the handler above (with their hints); a TV's M and C stay the Hotkeys. */}
+      {tvNav && <Hotkey keys="m" action="toggleMuted" target="document" disabled={off} />}
+      <Hotkey keys="f" action="toggleFullscreen" target="document" disabled={off} />
+      {tvNav && <Hotkey keys="c" action="toggleSubtitles" target="document" disabled={off || !hasSubtitles} />}
+      <Hotkey keys="0-9" action="seekToPercent" target="document" disabled={off} />
+      <Gesture type="tap" action="togglePaused" pointer="mouse" disabled={off} />
+      <Gesture type="doubletap" action="toggleFullscreen" pointer="mouse" region="center" disabled={off} />
+      <Gesture type="doubletap" action="seekStep" value={-10} pointer="touch" region="left" disabled={off} />
+      <Gesture type="doubletap" action="seekStep" value={10} pointer="touch" region="right" disabled={off} />
+    </>
+  );
+
+  if (tvNav)
+    return (
+      <PortalContainerContext.Provider value={container}>
+        <Controls.Root>
+          {hotkeys}
+          <TvChrome
+            props={props}
+            showChrome={showChrome}
+            hit={hit}
+            buffering={buffering}
+            bufferedAhead={bufferedAhead}
+            torrent={torrent}
+            tp={tp}
+            hoverTime={hoverTime}
+            onSliderMove={onSliderMove}
+            onSliderLeave={() => setHoverTime(null)}
+            segments={segments}
+            segment={segment}
+            showSkip={showSkip}
+            skip={skip}
+            endShown={endShown}
+            startOver={startOver}
+            onStartOver={() => {
+              setStartOver("gone");
+              void store.seek(0);
+            }}
+            nextCountdown={nextCountdown}
+            onNextCancel={dismissNext}
+            seekHint={seekHint}
+            offsetHint={offsetHint}
+            togglePlay={togglePlay}
+            onPanel={setPanel}
+            onReplay={replay}
+            Thumb={TrickplayThumb}
+            panels={panels}
+          />
+        </Controls.Root>
+      </PortalContainerContext.Provider>
+    );
+
+  // The site.
+  const loading = buffering && !refused && !started;
+  const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const known = duration > 0;
+  const hint = seekHint
+    ? { icon: seekHint.delta < 0 ? RotateCcw : RotateCw, text: t(seekHint.delta < 0 ? "seekBack" : "seekForward", { seconds: Math.abs(seekHint.delta) }) }
+    : offsetHint !== null
+      ? { icon: Captions, text: ts("timingHint", { value: t("seconds", { value: signedSeconds.format(offsetHint) }) }) }
+      : noteHint;
+  const corner = cornerBottom(showChrome);
+  const leftSec = known ? Math.max(0, duration - currentTime) : 0;
 
   return (
-    // Menus, panels and hints open inside the player: in fullscreen only the player is shown.
+    // Menus and hints open inside the player: in fullscreen only the player is shown.
     <PortalContainerContext.Provider value={container}>
       <Controls.Root>
-        {/* Space is the handler above (PLR-02); the others listen on the page, so they work before any click (PLR-01). */}
-        <Hotkey keys="k" action="togglePaused" target="document" disabled={off} />
-        {/* On TV the remote's arrows are handled by spatial navigation (seek only when no control is focused). */}
-        {!tv && <Hotkey keys="ArrowLeft" action="seekStep" value={-10} target="document" disabled={off} />}
-        {!tv && <Hotkey keys="ArrowRight" action="seekStep" value={10} target="document" disabled={off} />}
-        <Hotkey keys="j" action="seekStep" value={-10} target="document" disabled={off} />
-        <Hotkey keys="l" action="seekStep" value={10} target="document" disabled={off} />
-        {!tv && <Hotkey keys="ArrowUp" action="volumeStep" value={0.05} target="document" disabled={off} />}
-        {!tv && <Hotkey keys="ArrowDown" action="volumeStep" value={-0.05} target="document" disabled={off} />}
-        <Hotkey keys="m" action="toggleMuted" target="document" disabled={off} />
-        <Hotkey keys="f" action="toggleFullscreen" target="document" disabled={off} />
-        <Hotkey keys="c" action="toggleSubtitles" target="document" disabled={off || !hasSubtitles} />
-        <Hotkey keys="0-9" action="seekToPercent" target="document" disabled={off} />
-        <Gesture type="tap" action="togglePaused" pointer="mouse" disabled={off} />
-        <Gesture type="doubletap" action="toggleFullscreen" pointer="mouse" region="center" disabled={off} />
-        <Gesture type="doubletap" action="seekStep" value={-10} pointer="touch" region="left" disabled={off} />
-        <Gesture type="doubletap" action="seekStep" value={10} pointer="touch" region="right" disabled={off} />
-        {/* Scrims for the title and the controls, in the stage colour (3.5). */}
+        {hotkeys}
+        {/* One scrim, at the bottom, under the block of controls; a light one at the top for "←" (3.5). */}
         <Controls.Backdrop className={clsx("pointer-events-none absolute inset-0 transition-opacity duration-slow", showChrome ? "opacity-100" : "opacity-0")}>
-          <div className="absolute inset-x-0 top-0 h-1/4 bg-linear-to-b from-stage/70 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-stage/90 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-stage/45 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-stage/90 via-stage/40 to-transparent" />
         </Controls.Backdrop>
+        {/* Paused for a moment, or not yet playing: the whole frame steps back. */}
+        <div aria-hidden className={clsx("pointer-events-none absolute inset-0 bg-stage/50 transition-opacity duration-slower ease-slow", resting || !started ? "opacity-100" : "opacity-0")} />
 
-        {buffering && (
+        {(loading || (buffering && started)) && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center" role="status" aria-live="polite">
-            <div className="flex flex-col items-center gap-3 rounded-md bg-stage/50 px-5 py-4 backdrop-blur in-data-[tv=1]:backdrop-blur-none">
+            <div className="flex flex-col items-center gap-3 text-center">
               <BrandLoader size="lg" />
-              <p className="text-body-s font-semibold text-text-1">{started ? t("buffering", { percent: Math.min(99, Math.round((bufferedAhead / 10) * 100)) }) : t("loading")}</p>
+              <p className="text-body font-semibold text-text-1">{started ? t("buffering", { percent: Math.min(99, Math.round((bufferedAhead / 10) * 100)) }) : t("loading")}</p>
               {torrent && (torrent.peers !== null || torrent.speedBps !== null) && (
-                <p className="text-caption text-text-2">
+                <p className="text-body-s text-text-2 tabular-nums">
                   {[
                     torrent.peers !== null ? t("torrentPeers", { count: torrent.peers }) : null,
                     torrent.speedBps !== null ? t("torrentSpeed", { speed: formatSize(torrent.speedBps, locale) ?? "0" }) : null,
@@ -892,144 +1090,140 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
           </div>
         )}
 
-        {/* Touch screens: back, play and forward in the middle, like streaming apps; the bar then has no second set (PLR-12).
-            Play is the large one (72 against 48, redesign-2026-11.md: the main action shows by its size). */}
-        <div className={clsx("pointer-events-none absolute inset-0 hidden items-center justify-center gap-12 transition-opacity duration-slow pointer-coarse:flex", showChrome ? "opacity-100" : "opacity-0")}>
-          <IconButton icon={RotateCcw} label={t("back10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(Math.max(0, currentTime - 10))} />
-          <IconButton
-            icon={paused ? Play : Pause}
-            label={paused ? t("play") : t("pause")}
-            variant="stage"
-            size="lg"
-            className={clsx(hit, "size-18 [&_svg]:size-9 [&_svg]:fill-current [&>span]:size-18")}
-            onClick={() => void togglePlay()}
-          />
-          <IconButton icon={RotateCw} label={t("forward10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(currentTime + 10)} />
-        </div>
+        {/* Autoplay refused: the one thing to do, large, in the middle. */}
+        {refused && !started && (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center">
+            <IconButton icon={Play} label={t("play")} variant="stage" size="lg" className={clsx("pointer-events-auto", BIG_PLAY)} onClick={() => void store.play()} />
+          </div>
+        )}
 
-        <Controls.Content className={clsx("pointer-events-none absolute inset-0 flex flex-col justify-between transition-opacity duration-slow", showChrome ? "opacity-100" : "opacity-0")}>
-          <Controls.Group className={clsx(hit, "flex items-start gap-3 p-4 pt-[max(16px,env(safe-area-inset-top))] md:p-8")}>
+        {/* Touch screens: back, play and forward in the middle, as streaming apps (PLR-12); Play the large one. */}
+        {started && (
+          <div className={clsx("pointer-events-none absolute inset-0 hidden items-center justify-center gap-12 transition-opacity duration-slow pointer-coarse:flex", showChrome ? "opacity-100" : "opacity-0")}>
+            <IconButton icon={RotateCcw} label={t("back10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(Math.max(0, currentTime - 10))} />
+            <IconButton icon={paused ? Play : Pause} label={paused ? t("play") : t("pause")} variant="stage" size="lg" className={clsx(hit, BIG_PLAY)} onClick={() => void togglePlay()} />
+            <IconButton icon={RotateCw} label={t("forward10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(currentTime + 10)} />
+          </div>
+        )}
+
+        <Controls.Content className={clsx("pointer-events-none absolute inset-0 transition-opacity duration-slow", showChrome ? "opacity-100" : "opacity-0")}>
+          <Controls.Group className={clsx(hit, "absolute start-4 top-[max(1rem,env(safe-area-inset-top))] md:start-8 md:top-8")}>
             <IconButton icon={ArrowLeft} label={tc("back")} variant="stage" size="lg" onClick={props.onBack} className="[&_svg]:rtl:-scale-x-100" />
-            <div className="min-w-0 flex-1 pt-1">
-              <p className="truncate text-h3 md:text-h2">{props.title}</p>
-              {props.subtitle && <p className="truncate text-body-s font-medium text-text-2 md:text-body">{props.subtitle}</p>}
-            </div>
           </Controls.Group>
 
-          <Controls.Group data-player-bar className={clsx(hit, "flex flex-col gap-2 p-4 pb-[max(16px,env(safe-area-inset-bottom))] md:px-8 md:pb-6")}>
+          <Controls.Group data-player-bar className={clsx(hit, "absolute inset-x-0 bottom-0 flex flex-col gap-1 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:gap-2 md:px-10 md:pb-6")}>
             {props.footerNote}
-            <TimeSlider.Root
-              className="group/ts relative flex h-8 w-full cursor-pointer touch-none items-center rounded-full focus-visible:outline-none"
-              data-nav-native
-              label={t("timeline")}
-              onPointerMove={onSliderMove}
-              onPointerLeave={() => setHoverTime(null)}
-            >
-              <TimeSlider.Track className="relative h-1 w-full overflow-hidden rounded-full bg-text-1/25 transition-[height] duration-fast ease-fast group-hover/ts:h-1.5 group-focus-within/ts:h-1.5">
-                <TimeSlider.Buffer className="absolute inset-y-0 start-0 w-(--media-slider-buffer) bg-text-1/35" />
-                <TimeSlider.Fill className="absolute inset-y-0 start-0 w-(--media-slider-fill) bg-progress" />
-              </TimeSlider.Track>
-              {/* Intro / credits ranges marked on the timeline. */}
-              {known &&
-                segments.map((s) => (
-                  <span
-                    key={`${s.kind}-${s.start}`}
-                    aria-hidden
-                    className="pointer-events-none absolute top-1/2 h-1 -translate-y-1/2 bg-text-1/45"
-                    style={{ insetInlineStart: `${(s.start / duration) * 100}%`, width: `${((s.end - s.start) / duration) * 100}%` }}
-                  />
-                ))}
-              {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus (PLR-09). */}
-              <TimeSlider.Thumb className="absolute start-(--media-slider-fill) size-4 -translate-x-1/2 scale-0 rounded-full bg-text-1 transition-transform duration-fast ease-fast group-hover/ts:scale-100 focus-visible:scale-125 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:shadow-(--focus-halo) rtl:translate-x-1/2" />
-              <TimeSlider.Preview className="pointer-events-none absolute bottom-9 start-(--media-slider-pointer) flex -translate-x-1/2 flex-col items-center opacity-0 group-hover/ts:opacity-100 rtl:translate-x-1/2">
-                {tp && hoverTime !== null && <TrickplayThumb tp={tp} time={hoverTime} />}
-                <span className="rounded-xs bg-stage/85 px-2 py-1 text-caption font-bold tabular-nums">
-                  <TimeSlider.Value type="pointer" />
+            <TitleLine
+              title={props.title}
+              subtitle={props.subtitle}
+              logo={props.logo ?? null}
+              resting={resting}
+              left={known && resting ? t("pauseLeft", { left: formatRuntime(Math.max(1, Math.ceil(leftSec / 60)), (k, v) => tc(k.replace("common.", "") as "minutes", v)) ?? "", at: new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(Date.now() + (leftSec * 1000) / (rate || 1)) }) : null}
+            />
+            {started && (
+              <div className="flex items-center gap-3 md:gap-4">
+                <span className="min-w-10 text-body-s font-semibold text-text-1 tabular-nums">{known ? formatClock(currentTime) : "--:--"}</span>
+                <TimeSlider.Root
+                  className="group/ts relative flex h-8 min-w-0 flex-1 cursor-pointer touch-none items-center rounded-full focus-visible:outline-none"
+                  label={t("timeline")}
+                  onPointerDown={() => (scrubbing.current = true)}
+                  onPointerMove={onSliderMove}
+                  onPointerLeave={() => setHoverTime(null)}
+                >
+                  <TimeSlider.Track className="relative h-1 w-full overflow-hidden rounded-full bg-text-1/25 transition-[height] duration-fast ease-fast group-hover/ts:h-1.5 group-focus-within/ts:h-1.5">
+                    <TimeSlider.Buffer className="absolute inset-y-0 start-0 w-(--media-slider-buffer) bg-text-1/35" />
+                    <TimeSlider.Fill className="absolute inset-y-0 start-0 w-(--media-slider-fill) bg-progress" />
+                  </TimeSlider.Track>
+                  {/* The intro and the credits as cuts in the line (where they start and end), not as another fill. */}
+                  {known &&
+                    segments
+                      .filter((s) => s.kind !== "preview")
+                      .flatMap((s) => [s.start, s.end])
+                      .filter((at) => at > 1 && at < duration - 1)
+                      .map((at) => <span key={at} aria-hidden className="pointer-events-none absolute top-1/2 h-2 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-stage rtl:translate-x-1/2" style={{ insetInlineStart: `${(at / duration) * 100}%` }} />)}
+                  {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus (PLR-09). */}
+                  <TimeSlider.Thumb className="absolute start-(--media-slider-fill) size-4 -translate-x-1/2 scale-0 rounded-full bg-text-1 transition-transform duration-fast ease-fast group-hover/ts:scale-100 focus-visible:scale-125 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:shadow-(--focus-halo) rtl:translate-x-1/2" />
+                  <TimeSlider.Preview className="pointer-events-none absolute bottom-10 start-(--media-slider-pointer) flex -translate-x-1/2 flex-col items-center opacity-0 group-hover/ts:opacity-100 rtl:translate-x-1/2">
+                    {tp && hoverTime !== null && <TrickplayThumb tp={tp} time={hoverTime} width={240} />}
+                    <span className="rounded-xs bg-stage/85 px-2 py-1 text-body-s font-semibold tabular-nums">
+                      <TimeSlider.Value type="pointer" />
+                    </span>
+                  </TimeSlider.Preview>
+                </TimeSlider.Root>
+                <span className="min-w-10 text-end text-body-s font-semibold text-text-2 tabular-nums">{known ? `−${formatClock(leftSec)}` : ""}</span>
+              </div>
+            )}
+            {started && (
+              <div className="flex items-center gap-1 md:gap-2">
+                <span className="contents pointer-coarse:hidden">
+                  <Control icon={paused ? Play : Pause} filled label={paused ? t("play") : t("pause")} onClick={togglePlay} />
+                  <Control icon={RotateCcw} label={t("back10")} onClick={() => store.seek(Math.max(0, currentTime - 10))} />
+                  <Control icon={RotateCw} label={t("forward10")} onClick={() => store.seek(currentTime + 10)} />
                 </span>
-              </TimeSlider.Preview>
-            </TimeSlider.Root>
+                {/* Volume with a mouse: the button always, its slider on a wide screen, by focus or hover below (PLR-10).
+                    On touch screens the device's own buttons set it. */}
+                <div className="group/vol hidden items-center gap-1 pointer-fine:flex">
+                  <Control icon={VolIcon} label={muted ? t("unmute") : t("mute")} onClick={() => store.setMuted(!muted)} />
+                  <div className="w-0 overflow-hidden opacity-0 transition-[width,opacity] duration-base ease-base group-hover/vol:w-24 group-hover/vol:opacity-100 focus-within:w-24 focus-within:opacity-100 lg:w-24 lg:opacity-100">
+                    <Slider
+                      variant="player"
+                      label={tc("volume")}
+                      valueText={percent.format(muted ? 0 : volume)}
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={muted ? 0 : volume}
+                      onValueChange={(v) => {
+                        store.setVolume(v);
+                        if (muted) store.setMuted(false);
+                      }}
+                      className="px-2"
+                    />
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-1 md:gap-2">
-              <span className="contents pointer-coarse:hidden">
-                <Control icon={paused ? Play : Pause} filled label={paused ? t("play") : t("pause")} onClick={togglePlay} tvPlay />
-                <Control icon={RotateCcw} label={t("back10")} onClick={() => store.seek(Math.max(0, currentTime - 10))} />
-                <Control icon={RotateCw} label={t("forward10")} onClick={() => store.seek(currentTime + 10)} />
-              </span>
-              {/* Volume with a mouse: the button always, its slider always on a wide screen, by focus or hover below (PLR-10).
-                  On touch screens and TVs the device's own buttons set it (on a TV the slider would keep the remote's arrows). */}
-              <div className="group/vol hidden items-center gap-1 pointer-fine:flex in-data-[tv=1]:hidden!">
-                <Control icon={VolIcon} label={muted ? t("unmute") : t("mute")} onClick={() => store.setMuted(!muted)} />
-                {/* Arrows belong to the slider, not the TV's spatial navigation. */}
-                <div data-nav-native className="w-0 overflow-hidden opacity-0 transition-[width,opacity] duration-base ease-base group-hover/vol:w-24 group-hover/vol:opacity-100 focus-within:w-24 focus-within:opacity-100 lg:w-24 lg:opacity-100">
-                  <Slider
-                    variant="player"
-                    label={tc("volume")}
-                    valueText={`${Math.round((muted ? 0 : volume) * 100)} %`}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={muted ? 0 : volume}
-                    onValueChange={(v) => {
-                      store.setVolume(v);
-                      if (muted) store.setMuted(false);
-                    }}
-                    className="px-2"
+                <div className="ms-auto flex items-center gap-1 md:gap-2">
+                  {props.next && <Control icon={SkipForward} label={t("nextEpisode")} onClick={props.next.go} />}
+                  {props.episodes && <Control ref={anchors.episodes} icon={ListVideo} label={t("episodes")} pressed={panel === "episodes"} onClick={() => setPanel((p) => (p === "episodes" ? "none" : "episodes"))} />}
+                  {/* Always there, with one track or none too: the menu says what the file has (PLR-07); a dot while subtitles show. */}
+                  <span className="relative inline-flex">
+                    <Control ref={anchors.tracks} icon={Captions} label={t("audioAndSubtitles")} pressed={panel === "tracks"} onClick={() => setPanel((p) => (p === "tracks" ? "none" : "tracks"))} />
+                    {subtitlesShowing && panel !== "tracks" && <span aria-hidden className="pointer-events-none absolute end-2 top-2 size-2 rounded-full bg-accent" />}
+                  </span>
+                  <Control
+                    ref={anchors.settings}
+                    icon={Settings}
+                    label={t("settings")}
+                    pressed={panel === "settings" || panel === "info" || panel === "source" || panel === "help"}
+                    onClick={() => setPanel((p) => (p === "none" || p === "tracks" || p === "episodes" ? "settings" : "none"))}
                   />
+                  {pipAvail === "available" && <Control icon={PictureInPicture2} label={isPip ? t("exitPip") : t("pip")} onClick={() => (isPip ? store.exitPictureInPicture() : store.requestPictureInPicture())} />}
+                  {castAvail === "available" && <Control icon={Cast} label={t("cast")} onClick={() => store.promptRemotePlayback()} />}
+                  <Control icon={isFullscreen ? Minimize : Maximize} label={isFullscreen ? t("exitFullscreen") : t("fullscreen")} onClick={() => (isFullscreen ? store.exitFullscreen() : fullscreen(() => store.requestFullscreen()))} />
                 </div>
               </div>
-              {/* One time, elapsed or remaining by a press (PLR-12). */}
-              <Button variant="tertiary" size="sm" onClick={toggleTime} aria-label={remaining ? t("showElapsed") : t("showRemaining")} className="ms-1">
-                <span className="tabular-nums">{timeText}</span>
-              </Button>
-
-              <div className="ms-auto flex items-center gap-1 md:gap-2">
-                {props.next && <Control icon={SkipForward} label={t("nextEpisode")} onClick={props.next.go} />}
-                {props.episodes && <Control icon={ListVideo} label={t("episodes")} onClick={() => setPanel("episodes")} />}
-                {/* Always there, with one track or none too: the panel says what the file has (PLR-07). */}
-                <span className="relative inline-flex">
-                  <Control icon={Captions} label={t("audioAndSubtitles")} onClick={() => setPanel("tracks")} />
-                  {subtitlesShowing && <span aria-hidden className="pointer-events-none absolute end-2 top-2 size-2 rounded-full bg-accent" />}
-                </span>
-                <Control icon={Settings2} label={t("qualityAndSpeed")} onClick={() => setPanel("settings")} />
-                {props.sources && <Control icon={Layers} label={t("source")} onClick={() => setPanel("source")} />}
-                {/* A TV shows the player on the whole screen anyway, and has no window to keep a picture in (TV-06). */}
-                {!tvNav && pipAvail === "available" && <Control icon={PictureInPicture2} label={isPip ? t("exitPip") : t("pip")} onClick={() => (isPip ? store.exitPictureInPicture() : store.requestPictureInPicture())} />}
-                {!tvNav && castAvail === "available" && <Control icon={Cast} label={t("cast")} onClick={() => store.promptRemotePlayback()} />}
-                {!tvNav && (
-                  <Control icon={isFullscreen ? Minimize : Maximize} label={isFullscreen ? t("exitFullscreen") : t("fullscreen")} onClick={() => (isFullscreen ? store.exitFullscreen() : store.requestFullscreen())} />
-                )}
-              </div>
-            </div>
+            )}
           </Controls.Group>
         </Controls.Content>
 
-        {seekHint && (
-          // The remote's seek, said where the eye is (TV document §6: clear feedback of seeking).
-          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2 place-items-center">
-            <span className="flex items-center gap-3 rounded-full bg-stage/80 px-6 py-3 text-h2 font-bold text-text-1 tabular-nums">
-              {seekHint.delta < 0 ? <RotateCcw aria-hidden className="size-8" /> : <RotateCw aria-hidden className="size-8" />}
-              {t(seekHint.delta < 0 ? "seekBack" : "seekForward", { seconds: Math.abs(seekHint.delta) })}
+        {hint && (
+          // A key's or a double tap's result, said where the eye is.
+          // (On a touch screen above the middle, where back / play / forward stand.)
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2 place-items-center pointer-coarse:top-1/4">
+            <span className="flex items-center gap-2 rounded-full bg-stage/80 px-5 py-2.5 text-h3 font-semibold text-text-1 tabular-nums md:gap-3 md:px-6 md:py-3 md:text-h2">
+              <hint.icon aria-hidden className="size-6 md:size-8" />
+              {hint.text}
             </span>
           </div>
         )}
 
-        {offsetHint !== null && !seekHint && (
-          // G / H: where the subtitles are now, in the same place as the remote's seek.
-          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2 place-items-center">
-            <span className="flex items-center gap-3 rounded-full bg-stage/80 px-6 py-3 text-h2 font-bold text-text-1 tabular-nums">
-              <Captions aria-hidden className="size-8" />
-              {ts("timingHint", { value: t("seconds", { value: signedSeconds.format(offsetHint) }) })}
-            </span>
-          </div>
-        )}
-
-        {showSkip && segment && !endShown && (
-          <Button variant="secondary" size="lg" icon={FastForward} onClick={skip} className={CORNER}>
+        {showSkip && segment && !endShown && !layerOpen && (
+          <Button variant="secondary" size="lg" icon={FastForward} onClick={skip} className={CORNER} style={corner}>
             {segment.kind === "intro" ? t("skipIntro") : segment.kind === "recap" ? t("skipRecap") : segment.kind === "outro" && props.next ? t("nextEpisode") : t("skipCredits")}
           </Button>
         )}
 
-        {startOver === "show" && !showSkip && nextCountdown === null && (
+        {startOver === "show" && !showSkip && nextCountdown === null && !layerOpen && (
           <Button
             variant="secondary"
             size="lg"
@@ -1039,56 +1233,153 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
               void store.seek(0);
             }}
             className={CORNER}
+            style={corner}
           >
             {t("startOver")}
           </Button>
         )}
 
-        {props.next && nextCountdown !== null && (
-          <section aria-label={t("nextEpisode")} className="pointer-events-auto absolute bottom-36 end-4 z-10 w-80 animate-fade-up rounded-md border border-line bg-stage/85 p-4 backdrop-blur in-data-[tv=1]:backdrop-blur-none md:end-8">
-            <p className="text-body-s font-semibold text-text-2" aria-live="polite">
-              {t("nextIn", { seconds: nextCountdown })}
-            </p>
-            <p className="mt-1 line-clamp-2 text-title text-text-1">{props.next.label}</p>
-            <div className="mt-3 flex items-center gap-2">
-              <Button size="sm" icon={FastForward} onClick={props.next.go} className="flex-1">
-                {t("playNow")}
-              </Button>
-              <IconButton icon={X} label={t("nextCancel")} size="sm" onClick={() => setNextCountdown(null)} />
-            </div>
-          </section>
+        {props.next && nextCountdown !== null && !hidden && !layerOpen && (
+          <NextCard next={props.next} seconds={nextCountdown} total={nextTotal} ended={ended} onDismiss={dismissNext} style={corner} />
         )}
 
-        {endShown && props.end && <EndScreen end={props.end} title={props.title} onReplay={() => {
-              void store.seek(0);
-              void store.play();
-            }} />}
+        {endShown && props.end && <EndScreen end={props.end} title={props.title} logo={props.logo ?? null} backdrop={props.poster} onReplay={replay} onBack={props.onBack} />}
 
-        <PlayerPanels
-          panel={panel}
-          onPanel={setPanel}
-          prepared={props.prepared}
-          onAudioChange={props.onAudioChange}
-          currentTime={currentTime}
-          episodes={props.episodes ?? null}
-          sources={props.sources ?? null}
-          info={props.info}
-          bufferedAhead={bufferedAhead}
-          originalLanguage={props.originalLanguage}
-          hasNext={Boolean(props.next)}
-          hasSegments={segments.length > 0}
-          subtitleMeta={props.subtitleMeta}
-          look={props.look}
-        />
+        <PlayerMenus {...panels} anchors={anchors} />
       </Controls.Root>
     </PortalContainerContext.Provider>
   );
 }
 
-/** The skip / start-over buttons above the controls. */
-const CORNER = "pointer-events-auto absolute bottom-36 end-4 z-10 animate-fade-up md:end-8";
+/** The profile's subtitle sizes as globals.css scales them (`--sub-scale`). */
+const SUB_SCALE: Record<string, number> = { s: 0.8, m: 1, l: 1.25, xl: 1.5 };
 
-/** A control of the bar (11.1): IconButton `stage` 48, the play icon filled (6.4). `tvPlay`: where a TV's up/down put the focus. */
-function Control({ icon, label, onClick, filled, tvPlay }: { icon: typeof Play; label: string; onClick: () => unknown; filled?: boolean; tvPlay?: boolean }) {
-  return <IconButton icon={icon} label={label} variant="stage" size="lg" onClick={() => void onClick()} data-tv-play={tvPlay || undefined} className={filled ? "[&_svg]:fill-current" : undefined} />;
+/** Play in the middle, larger than the rest (72 against 48: the main action shows by its size). */
+const BIG_PLAY = "size-18 [&_svg]:size-9 [&_svg]:fill-current [&>span]:size-18";
+
+/** The skip / start-over buttons and the next episode's card: above the block of controls, lower when it fades. */
+const CORNER = "pointer-events-auto absolute end-4 z-10 animate-fade-up transition-[bottom] duration-slow ease-slow md:end-10";
+function cornerBottom(chrome: boolean) {
+  // The block's height is measured once by CSS: `--player-bar` on the player (globals.css), set by ResizeObserver below.
+  return { bottom: chrome ? "calc(var(--player-bar, 9rem) + 0.75rem)" : "max(1.5rem, env(safe-area-inset-bottom))" };
+}
+
+/**
+ * Full screen on a phone held upright turns it sideways (where the browser lets a page lock the orientation: Android;
+ * an iPhone plays full screen in its own player).
+ */
+function fullscreen(request: () => Promise<void>) {
+  background(
+    request().then(() => {
+      const o = screen.orientation as ScreenOrientation & { lock?: (o: "landscape") => Promise<void> };
+      if (window.matchMedia("(pointer: coarse) and (orientation: portrait)").matches && o?.lock) return o.lock("landscape");
+    }),
+  );
+}
+
+/**
+ * The title's line over the timeline; paused for a moment, the pause's own look in the same place: the logo (or the
+ * name, larger), the episode, and how long is left with the time it ends.
+ */
+function TitleLine({ title, subtitle, logo, resting, left }: { title: string; subtitle: string | null; logo: TitleLogoArt | null; resting: boolean; left: string | null }) {
+  return (
+    <div className="mb-1 flex min-w-0 flex-col items-start gap-1 md:mb-2">
+      {resting && logo ? (
+        <TitleLogo logo={logo} alt={title} className="mb-1 max-w-[min(70vw,24rem)] animate-fade-up [--logo-h:3.5rem] md:[--logo-h:6rem]">
+          <p className="max-w-full truncate text-h2 md:text-h1">{title}</p>
+        </TitleLogo>
+      ) : (
+        <p className={cn("max-w-full truncate text-text-1 transition-[font-size] duration-base", resting ? "text-h2 md:text-h1" : "text-title md:text-h3")}>{title}</p>
+      )}
+      {subtitle && <p className={cn("max-w-full truncate font-medium text-text-2", resting ? "text-body md:text-title" : "text-body-s md:text-body")}>{subtitle}</p>}
+      {left && <p className="animate-fade-up text-body-s text-text-2 tabular-nums md:text-body">{left}</p>}
+    </div>
+  );
+}
+
+/**
+ * The next episode after the credits begin (or near the end): its still (blurred when the profile hides unwatched
+ * ones), its name, "Play now" filling up as the countdown runs, "Watch the credits" to stay. Said once to a reader.
+ */
+function NextCard({ next, seconds, total, ended, onDismiss, style }: { next: NonNullable<PlayerProps["next"]>; seconds: number; total: number; ended: boolean; onDismiss: () => void; style: CSSProperties }) {
+  const t = useTranslations("player");
+  const go = useRef<HTMLButtonElement>(null);
+  // At the very end the card is the screen's one action: the focus on it (Enter plays the next one).
+  useEffect(() => {
+    if (ended) go.current?.focus({ preventScroll: true });
+  }, [ended]);
+  return (
+    <section
+      aria-label={t("nextEpisode")}
+      data-interactive
+      className="pointer-events-auto absolute end-4 z-10 w-80 max-w-[calc(100%-2rem)] animate-fade-up overflow-hidden rounded-lg border border-line bg-surface-1/95 shadow-float transition-[bottom] duration-slow ease-slow md:end-10 md:w-88"
+      style={style}
+    >
+      {next.still && (
+        <div className="relative aspect-video overflow-hidden bg-surface-2">
+          <img src={next.still} alt="" className={cn("size-full object-cover", next.blur && "scale-110 blur-lg")} />
+        </div>
+      )}
+      <div className="flex flex-col gap-3 p-4">
+        <div>
+          <p className="text-body-s font-semibold text-text-2" aria-hidden>
+            {t("nextIn", { seconds })}
+          </p>
+          <p className="sr-only" role="status">
+            {t("nextIn", { seconds: total })}
+          </p>
+          <p className="mt-1 line-clamp-2 text-title text-text-1">{next.label}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button ref={go} onClick={next.go} className="grow overflow-hidden">
+            {/* The countdown as a fill under the words (a shade of the button's own colours); per second with reduced motion. */}
+            <span aria-hidden key={total} data-countdown className="absolute inset-y-0 start-0 bg-bg/15" style={{ animationDuration: `${total}s`, width: `${((total - seconds) / total) * 100}%` }} />
+            <span className="relative inline-flex items-center gap-2">
+              <Play aria-hidden className="size-5 fill-current" />
+              {t("playNow")}
+            </span>
+          </Button>
+          <Button variant="secondary" onClick={onDismiss}>
+            {t("watchCredits")}
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** A control of the bar (11.1): IconButton `stage` 48, the play icon filled (6.4); `pressed` while its menu is open. */
+function Control({ icon, label, onClick, filled, pressed, ref }: { icon: LucideIcon; label: string; onClick: () => unknown; filled?: boolean; pressed?: boolean; ref?: RefObject<HTMLButtonElement | null> }) {
+  return (
+    <IconButton
+      ref={ref}
+      icon={icon}
+      label={label}
+      variant="stage"
+      size="lg"
+      aria-expanded={pressed}
+      onClick={() => void onClick()}
+      className={filled ? "[&_svg]:fill-current" : undefined}
+    />
+  );
+}
+
+/**
+ * Keeps `--player-bar` on the player — the height of its block of controls, which the corner's buttons stand above —
+ * and gives it to the subtitles' lift.
+ */
+function useBarHeight(container: HTMLElement | null) {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const bar = container?.querySelector<HTMLElement>("[data-player-bar]");
+    if (!container || !bar || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const h = Math.round(bar.offsetHeight);
+      container.style.setProperty("--player-bar", `${h}px`);
+      setHeight(h);
+    });
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, [container]);
+  return height;
 }

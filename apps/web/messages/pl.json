@@ -1303,7 +1303,13 @@
     "episodesFailed": "Nie udało się wczytać odcinków tego sezonu.",
     "otherResults": "{count, plural, one {Jeszcze # wynik dla zapytania} few {Jeszcze # wyniki dla zapytania} many {Jeszcze # wyników dla zapytania} other {Jeszcze # wyniku dla zapytania}}",
     "seekBack": "−{seconds} s",
-    "seekForward": "+{seconds} s"
+    "seekForward": "+{seconds} s",
+    "pauseLeft": "Zostało {left} · koniec o {at}",
+    "watchCredits": "Oglądaj napisy końcowe",
+    "volumeHint": "Głośność {value}",
+    "mutedHint": "Dźwięk wyłączony",
+    "subtitlesOnHint": "Napisy włączone",
+    "subtitlesOffHint": "Napisy wyłączone"
   },
   "connections": {
     "checkAndSave": "Sprawdź i zapisz",

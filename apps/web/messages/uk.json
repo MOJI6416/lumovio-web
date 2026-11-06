@@ -1303,7 +1303,13 @@
     "episodesFailed": "Не вдалося завантажити серії цього сезону.",
     "otherResults": "{count, plural, one {ще # результат за запитом} few {ще # результати за запитом} many {ще # результатів за запитом} other {ще # результату за запитом}}",
     "seekBack": "−{seconds} с",
-    "seekForward": "+{seconds} с"
+    "seekForward": "+{seconds} с",
+    "pauseLeft": "Залишилося {left} · завершиться о {at}",
+    "watchCredits": "Дивитися титри",
+    "volumeHint": "Гучність {value}",
+    "mutedHint": "Звук вимкнено",
+    "subtitlesOnHint": "Субтитри ввімкнено",
+    "subtitlesOffHint": "Субтитри вимкнено"
   },
   "connections": {
     "checkAndSave": "Перевірити й зберегти",
