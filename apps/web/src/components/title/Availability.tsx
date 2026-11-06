@@ -200,11 +200,12 @@ export function Availability({ title: d }: { title: TitleCore }) {
 function CopyLine({ marks, words, fallback }: { marks: QualityMark[]; words: (string | null)[]; fallback: string }) {
   const rest = words.filter(Boolean).join(" · ");
   if (marks.length === 0) return <>{[fallback, ...words.slice(1)].filter(Boolean).join(" · ")}</>;
+  // Inline, so the words follow the marks and wrap after them on a phone.
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-      <QualityBadges marks={marks} />
-      {rest && <span>{rest}</span>}
-    </span>
+    <>
+      <QualityBadges className="me-2" marks={marks} />
+      {rest}
+    </>
   );
 }
 

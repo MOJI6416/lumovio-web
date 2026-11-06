@@ -70,11 +70,12 @@ export function useCopyText() {
      */
     marks: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): QualityMark[] => {
       const q = s.quality;
-      if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, audio: q.audioCodecs });
+      // Jellyfin's scan adds "atmos" to the codecs when a track says Dolby Atmos (lib/media/jellyfin).
+      if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos") });
       const name = releaseName(s, all);
       if (!name) return [];
       const info = parseRelease(name, null, originalLanguage);
-      return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, audio: [name] });
+      return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
     },
     /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
     sound: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {

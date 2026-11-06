@@ -4,6 +4,7 @@ import { Ellipsis, Info, Magnet, Pencil, Play, RefreshCw, Search, SearchX, X } f
 import { useLocale, useTranslations } from "next-intl";
 import { useRef } from "react";
 import { useMediaErrorText } from "@/components/sources/media-error";
+import { QualityBadges, qualityMarks } from "@/components/sources/QualityBadges";
 import { formatSize, isPack, packWords, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { AccentBadge } from "@/components/ui/Badge";
@@ -270,7 +271,7 @@ export function TorrentFinder(props: FinderProps) {
   );
 }
 
-/** One release (7.15): what it is in words, where and how much, at most two labels, one "Watch" and "More". */
+/** One release (7.15): what is heard, its marks, where and how much, at most two labels, one "Watch" and "More". */
 function ReleaseRow({
   r,
   x,
@@ -313,10 +314,13 @@ function ReleaseRow({
           </>
         ) : undefined
       }
-      title={x ? [text.picture(x.info), text.audio(x)].filter(Boolean).join(" · ") : <span className="line-clamp-2">{r.title}</span>}
+      title={x ? text.audio(x) || text.option({ studio: null, voice: null, language: null }) : <span className="line-clamp-2">{r.title}</span>}
       meta={
         <>
+          {/* What is heard is the title; the picture and sound as marks (QualityBadges), then in words what they don't say. */}
+          {x && <QualityBadges className="me-2" marks={qualityMarks({ resolution: x.info.resolution, hdrFormats: x.info.hdrFormats, atmos: x.info.atmos })} />}
           {[
+            x ? text.besideMarks(x.info) : null,
             pack || null,
             size ? (x && tv && isPack(x.info.pack) ? t("packWhole", { size }) : size) : null,
             r.seeders !== null ? tt("tsSeeders", { count: r.seeders }) : t("seedersUnknownShort"),

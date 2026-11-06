@@ -103,6 +103,14 @@ export function useReleaseText() {
     ]
       .filter(Boolean)
       .join(" · ");
+  /**
+   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution only where they
+   * can't tell it ("720p" under HD, "SD", "quality not stated"), then the source ("Blu-ray"). Null when nothing is left.
+   */
+  const besideMarks = (info: ReleaseInfo) =>
+    [info.resolution === 2160 || info.resolution === 1080 ? null : info.resolution ? RESOLUTION[info.resolution] : t("tsNoResolution"), info.source ? SOURCE_LABEL[info.source] : null]
+      .filter(Boolean)
+      .join(" · ") || null;
   /** A picture version's chip: "1080p", "4K SDR", "4K HDR", "4K" when the name says nothing about the range. */
   const version = (resolution: ReleaseInfo["resolution"], range: Range | null) =>
     [resolution ? RESOLUTION[resolution] : t("tsNoResolution"), range && !(range === "sdr" && resolution !== 2160) ? RANGE_LABEL[range] : null].filter(Boolean).join(" ");
@@ -114,6 +122,7 @@ export function useReleaseText() {
     otherLanguages,
     allTracks,
     picture,
+    besideMarks,
     version,
     option,
     describe: (x: RankedRelease, withSeeders = true) =>

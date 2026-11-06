@@ -186,6 +186,15 @@ describe("picture versions and quality modes (TS1–TS3)", () => {
     expect(parseRelease("Dune (2021) WEB-DLRip 720p", null).source).toBe("webrip");
   });
 
+  it("reads Dolby Atmos only as a word of its own or DD+ Atmos's short form", () => {
+    expect(parseRelease("Dune.Part.Two.2024.2160p.UHD.BluRay.REMUX.DV.HDR10.HEVC.TrueHD.7.1.Atmos", null).atmos).toBe(true);
+    expect(parseRelease("Dune.Part.Two.2024.2160p.WEB-DL.DDP5.1.Atmos.DV.H.265", null).atmos).toBe(true);
+    expect(parseRelease("Dune.Part.Two.2024.1080p.AMZN.WEB-DL.DDPA5.1.H.264", null).atmos).toBe(true);
+    expect(parseRelease("Дюна 2 / Dune: Part Two (2024) UHD BDRemux 2160p | Dolby Atmos | D, P", "RuTracker.org").atmos).toBe(true);
+    expect(parseRelease("Atmosphere.2019.1080p.WEB-DL.DDP5.1.H.264", null).atmos).toBe(false);
+    expect(parseRelease("Dune.2021.2160p.WEB-DL.DDP5.1.HDR.H.265", null).atmos).toBe(false);
+  });
+
   it("keeps every quality of one studio: 1080p, 4K SDR and 4K HDR are versions, not one release", () => {
     const options = voiceOptions(rankReleases(hdrezka, film, prefsOf({ hevc: true })));
     expect(options).toHaveLength(1);

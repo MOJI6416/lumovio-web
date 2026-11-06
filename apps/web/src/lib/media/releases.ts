@@ -27,6 +27,8 @@ export interface ReleaseInfo {
   hdrFormats: HdrFormat[];
   /** The name says SDR. Saying nothing is not SDR, it is unknown. */
   sdr: boolean;
+  /** The sound is Dolby Atmos by the name ("TrueHD 7.1 Atmos", "DDP5.1 Atmos", "DDPA5.1"). */
+  atmos: boolean;
   hevc: boolean;
   codec: "hevc" | "avc" | "av1" | null;
   source: PictureSource | null;
@@ -437,6 +439,8 @@ export function parseRelease(title: string, tracker: string | null = null, origi
     hdr: hdrFormats.length > 0,
     hdrFormats,
     sdr: W("sdr").test(t),
+    // "Atmos" as a word (never "Atmosphere"), or DD+ Atmos as some groups shorten it: "DDPA5.1".
+    atmos: W("atmos").test(t) || /(?<![\p{L}\d])ddpa\s?\d/iu.test(t),
     hevc: codec === "hevc",
     codec,
     source,

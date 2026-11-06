@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { QualityBadges, qualityMarks } from "@/components/sources/QualityBadges";
-import { AudioMatchBadge, formatSize, QUALITY_MODES, SOURCE_LABEL, useReleaseText } from "@/components/sources/release-text";
+import { AudioMatchBadge, formatSize, QUALITY_MODES, useReleaseText } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { AccentBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -171,20 +171,11 @@ export function TorrentLookupPanel({ title: d, sources }: { title: TitleCore; so
           title={text.audio(chosen, option?.studio) || text.option({ studio: null, voice: null, language: null })}
           meta={
             <>
-              {/* The picture as marks (4K, HDR10, Dolby Vision, Atmos — QualityBadges), then the source, size, seeders, tracker. */}
-              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-                <QualityBadges marks={qualityMarks({ resolution: chosen.info.resolution, hdrFormats: chosen.info.hdrFormats, audio: [chosen.result.title] })} />
-                <span>
-                  {[
-                    chosen.info.resolution === null || chosen.info.resolution < 720 ? text.picture(chosen.info) : chosen.info.source ? SOURCE_LABEL[chosen.info.source] : null,
-                    formatSize(chosen.result.size, locale),
-                    chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null,
-                    chosen.result.tracker,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              </span>
+              {/* The picture and sound as marks (4K, Dolby Vision, Dolby Atmos — QualityBadges), then the source, size, seeders, tracker. */}
+              <QualityBadges className="me-2" marks={qualityMarks({ resolution: chosen.info.resolution, hdrFormats: chosen.info.hdrFormats, atmos: chosen.info.atmos })} />
+              {[text.besideMarks(chosen.info), formatSize(chosen.result.size, locale), chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null, chosen.result.tracker]
+                .filter(Boolean)
+                .join(" · ")}
               {/* Why this picture was picked: for a screen reader only (no explanations on screen, 2026-11-06). */}
               {reasons.length > 0 && <span className="sr-only">{reasons.map((r) => t(`tsWhy_${r}`)).join(" ")}</span>}
               {chosen.fit !== "ok" && (
