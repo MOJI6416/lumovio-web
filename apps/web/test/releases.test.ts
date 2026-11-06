@@ -405,6 +405,18 @@ describe("season packs by the name (TS5)", () => {
     }
   });
 
+  it("hears a Russian track in a torrent with no tracker by the trackers' own words (owner's TorrServer, 2026-11-06)", () => {
+    const name = "12 angry men [1957, BDRemux 1080p] [DEU Transfer] Dub + 2x MVO ( SomeWax) + AVO + VO + Sub (Rus, Eng) + Original (Eng)";
+    expect(parseRelease(name, null, "en").languages.sort()).toEqual(["en", "ru"]);
+    // Its translations are Russian tracks, so the label leads with them, not with the original.
+    expect(parseRelease(name, null, "en").tracks.filter((t) => !t.original).every((t) => t.language === "ru")).toBe(true);
+    // A Ukrainian-only translation stays Ukrainian; an English scene name's "Dubbed" says nothing about Russian.
+    expect(parseRelease("Film 2020 1080p MVO (Ukr) + Original Eng", null, "en").languages).not.toContain("ru");
+    expect(parseRelease("Naruto.S01.Dubbed.1080p.WEB-DL", null, "ja").languages).not.toContain("ru");
+    // With a tracker the tracker decides, as before.
+    expect(parseRelease("Film 2020 1080p MVO + Original Eng", "Toloka", "en").languages).toContain("uk");
+  });
+
   it("sinks a release holding other seasons below the rest and never recommends it", () => {
     const show = { title: "Во все тяжкие", originalTitle: "Breaking Bad", kind: "tv" as const, year: 2008, originalLanguage: "en" };
     const rel = (title: string, seeders: number): TsSearchResult => ({ title, link: `magnet:?xt=urn:btih:${title}`, hash: null, size: null, seeders, peers: null, tracker: "RuTracker.org", published: null });

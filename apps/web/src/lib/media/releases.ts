@@ -233,6 +233,8 @@ const SUBTITLES = /(?:sub|subs|субтитры|субтитри|сабы)\s*[:(
 /** Trackers whose releases are Russian unless they say otherwise, and Ukrainian ones. */
 const RU_TRACKERS = /rutracker|kinozal|nnm|noname|rutor|lostfilm|megapeer|anilibria|animelayer|rustorka/i;
 const UK_TRACKERS = /toloka|hurtom|mazepa/i;
+/** Kinds of translation only Russian and Ukrainian trackers write (an English name says "Dubbed", never "MVO"). */
+const RU_KINDS = /(?<![\p{L}\d])(?:MVO|DVO|AVO)(?![\p{L}\d])/u;
 
 // A kind of translation as a word or an abbreviation (single letters only as a credit's kind: "P (HDRezka)").
 const KIND_WORDS =
@@ -260,10 +262,12 @@ function langOfToken(token: string | undefined): string | null {
  * each studio in its own language, a language word, another name kept as written; a bare kind takes the language
  * written next to it; a studio credited on its own is a track of its own, with the one bare kind there is when it is
  * the only studio; "Original" is the title's own language. A track without a written language takes the tracker's
- * convention (Russian on Russian trackers, Ukrainian on Ukrainian ones), else stays unknown.
+ * convention (Russian on Russian trackers, Ukrainian on Ukrainian ones; with no tracker, Russian where the name writes
+ * MVO / DVO / AVO), else stays unknown.
  */
 function tracksOf(name: string, tracker: string | null, originalLanguage: string | null): ReleaseTrack[] {
-  const fallback = UK_TRACKERS.test(tracker ?? "") ? "uk" : RU_TRACKERS.test(tracker ?? "") ? "ru" : null;
+  // No tracker (a torrent already on a TorrServer): MVO / DVO / AVO in the name are those trackers' convention too.
+  const fallback = UK_TRACKERS.test(tracker ?? "") ? "uk" : RU_TRACKERS.test(tracker ?? "") || (!tracker && RU_KINDS.test(name)) ? "ru" : null;
   let rest = name.replace(/[._]/g, " ").replace(SUBTITLES, (m) => " ".repeat(m.length));
   const found: { at: number; track: ReleaseTrack }[] = [];
   const used = new Set<string>();
@@ -409,8 +413,10 @@ export function parseRelease(title: string, tracker: string | null = null, origi
   if (originalLanguage && ORIGINAL.test(audio)) languages.add(originalLanguage);
   const tr = tracker ?? "";
   if (UK_TRACKERS.test(tr)) languages.add("uk");
-  else if (voice && RU_TRACKERS.test(tr)) {
-    // "Dub (Ukr)" or "Ukr Dub" alone is a Ukrainian dub; any other translation on such a tracker is Russian.
+  else if (voice && (RU_TRACKERS.test(tr) || (!tr && RU_KINDS.test(audio)))) {
+    // "Dub (Ukr)" or "Ukr Dub" alone is a Ukrainian dub; any other translation on such a tracker is Russian. A torrent
+    // with no tracker (one already on a TorrServer) is judged by its name: MVO / DVO / AVO are those trackers' own words
+    // ("12 angry men … Dub + 2x MVO + AVO + Original (Eng)" has a Russian dub, owner's TorrServer, 2026-11-06).
     const ukOnly = languages.has("uk") && !languages.has("ru") && /(?:dub|mvo|dvo|avo|vo|дубляж)[\s(]*(?:ukr|укр)|(?:ukr|укр)\p{L}*[\s)]*(?:dub|mvo|dvo|avo|vo|дубляж)/iu.test(audio);
     if (!ukOnly) languages.add("ru");
   }
