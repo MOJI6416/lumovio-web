@@ -123,7 +123,8 @@ function AiExamples() {
 
 /**
  * The sign-in sheet (a dialog on a tablet and desktop): open it where a guest presses something that needs an account.
- * `intent` — a title action to finish after signing in; `next` — where to return (this page by default).
+ * `intent` — a title action to finish after signing in; `next` — where to return (this page by default). The title says
+ * what it is for; its explanation is the layer's description for a screen reader only (no visible explanations, 1.2).
  */
 export function GuestGate({
   open,
@@ -149,7 +150,7 @@ export function GuestGate({
       trigger={trigger}
       size="sm"
       title={t(reason)}
-      description={t(`${textKey(reason)}Text`)}
+      description={<span className="sr-only">{t(`${textKey(reason)}Text`)}</span>}
       initialFocus={signIn}
     >
       {reason === "ai" && <AiExamples />}
