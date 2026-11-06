@@ -2,23 +2,21 @@
 
 import type { ConnectionSummary } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ellipsis, HelpCircle, Plus, Server } from "lucide-react";
+import { HelpCircle, Plus, Server } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
-import { StatusBadge, Tag } from "@/components/ui/Badge";
+import { StatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { IconButton } from "@/components/ui/IconButton";
-import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
+import { SettingsLink, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
 import { MediaNetError } from "@/lib/media/net";
 import { netErrorText, storedFailure } from "./net-errors";
 import { ServerMark } from "./ServerMark";
-import type { ServerMenuProps } from "./ServerMenu";
 import { profileHasAccess, STATUS, useServerActions, useServerFact } from "./server-actions";
 
 export { netErrorText } from "./net-errors";
@@ -27,16 +25,16 @@ export { netErrorText } from "./net-errors";
 const ServerPanel = dynamic(() => import("./ServerPanel").then((m) => m.ServerPanel), { ssr: false });
 const AddConnectionDialog = dynamic(() => import("./AddConnectionDialog").then((m) => m.AddConnectionDialog), { ssr: false });
 const ConnectionHelp = dynamic(() => import("./ConnectionHelp").then((m) => m.ConnectionHelp), { ssr: false });
-const serverMenu = lazyControl(() => import("./ServerMenu"));
 
 /** A server not checked for this long (or never) is checked when the list opens (SRV-08). */
 const RECHECK_AFTER_MS = 24 * 3600_000;
 
 /**
- * Settings → Servers (S19, design-system 7.16; audit SRV-03…SRV-06): one row per server — the type's mark, the name,
- * the status in words, the address and one line of fact — with "Open" (the server's panel with its settings and
- * actions) and "More" (check, scan, added releases, remove). A server this profile can't use says so and offers only
- * what works without access.
+ * Settings → Servers (S19, design-system 7.16; audit SRV-03…SRV-06): the servers as rows of one group, as the rest of the
+ * settings — the type's mark, the name, the type and address, one line of fact, the status in words at the end — each
+ * row opening the server's panel (state, check, scan or added releases, settings, who may use it, address, removing);
+ * "Add server" is the group's last row, "Help with connecting" a row of its own. A server this profile can't use says
+ * so and its panel offers only what works without access.
  */
 export function ConnectionsView({ initial }: { initial?: { connections: ConnectionSummary[] } }) {
   const t = useTranslations("connections");
@@ -68,30 +66,23 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
     );
   }, [due, q.data, q.isFetchedAfterMount, me]);
   const checked = useCallback(() => setDue((d) => d?.slice(1) ?? d), []);
+  // How Lumovio reaches a server and what to do when it can't, per server type (./ConnectionHelp).
+  const help = (
+    <SettingsSection>
+      <SettingsLink leading={<HelpCircle aria-hidden className="size-5 text-text-2" />} label={th("title")} opens onClick={() => setShowHelp(true)} />
+    </SettingsSection>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <p className="sr-only">{t("intro")}</p>
-        <Button icon={Plus} onClick={() => setAdding(true)}>
-          {t("add")}
-        </Button>
-      </div>
-      <div>
-        {/* How Lumovio reaches a server and what to do when it can't, per server type (./ConnectionHelp). */}
-        <Button variant="tertiary" size="sm" icon={HelpCircle} aria-haspopup="dialog" className="-ms-3" onClick={() => setShowHelp(true)}>
-          {th("title")}
-        </Button>
-      </div>
-      {showHelp && <ConnectionHelp onClose={() => setShowHelp(false)} />}
-
+    <div className="space-y-8">
+      <p className="sr-only">{t("intro")}</p>
       {/* A failed load is not "no servers" (X-14): an error with Retry, not "Add server". */}
       <QueryState
         query={q}
         loading={
-          <div className="divide-y divide-line rounded-md border border-line bg-surface-1">
+          <SettingsSection>
             {[0, 1].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-4 md:p-6">
+              <div key={i} className="flex items-center gap-3 py-3">
                 <Skeleton shape="sm" className="size-10" />
                 <span className="flex-1 space-y-2">
                   <Skeleton shape="xs" className="h-5 w-48" />
@@ -99,20 +90,41 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
                 </span>
               </div>
             ))}
-          </div>
+          </SettingsSection>
         }
         isEmpty={(d) => d.connections.length === 0}
-        empty={<EmptyState icon={Server} title={t("empty")} text={t("emptyText")} action={<Button onClick={() => setAdding(true)}>{t("add")}</Button>} />}
+        empty={
+          <div className="space-y-8">
+            <EmptyState
+              icon={Server}
+              title={t("empty")}
+              text={t("emptyText")}
+              action={
+                <Button icon={Plus} onClick={() => setAdding(true)}>
+                  {t("add")}
+                </Button>
+              }
+            />
+            {help}
+          </div>
+        }
         error={{ title: t("loadError") }}
       >
         {(d) => (
-          <ul aria-label={t("title")} className="divide-y divide-line rounded-md border border-line bg-surface-1">
-            {d.connections.map((c) => (
-              <ServerRow key={c.id} conn={c} onChange={refresh} autoCheck={due?.[0] === c.id} onAutoChecked={checked} />
-            ))}
-          </ul>
+          <div className="space-y-8">
+            <SettingsSection>
+              <ul aria-label={t("title")} className="divide-y divide-line">
+                {d.connections.map((c) => (
+                  <ServerRow key={c.id} conn={c} onChange={refresh} autoCheck={due?.[0] === c.id} onAutoChecked={checked} />
+                ))}
+              </ul>
+              <SettingsLink leading={<Plus aria-hidden className="size-5 text-text-1" />} label={t("add")} opens onClick={() => setAdding(true)} />
+            </SettingsSection>
+            {help}
+          </div>
         )}
       </QueryState>
+      {showHelp && <ConnectionHelp onClose={() => setShowHelp(false)} />}
       {adding && (
         <AddConnectionDialog
           onClose={() => setAdding(false)}
@@ -157,69 +169,58 @@ function ServerRow({
     if (actions.busy !== null) return onAutoChecked();
     void actions.test({ quiet: true }).then(onAutoChecked);
   }, [autoCheck]);
+  const line = fact(c, actions.scanned);
+  const address = c.baseUrl.replace(/^https?:\/\//, "");
+  const status = testing ? t("testing") : t(`status_${c.status}`);
 
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4 md:p-6">
-      <span className="grid size-10 shrink-0 place-items-center self-start rounded-sm bg-surface-2 text-text-2">
-        <ServerMark kind={c.kind} />
-      </span>
-      <div className="min-w-0 flex-1 basis-56">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h2 className="min-w-0 truncate text-title text-text-1">{c.name}</h2>
-          <Tag>{t(`kind_${c.kind}`)}</Tag>
-          {testing ? <StatusBadge status="neutral">{t("testing")}</StatusBadge> : <StatusBadge status={STATUS[c.status] ?? "neutral"}>{t(`status_${c.status}`)}</StatusBadge>}
-          {!access && <Tag>{t("noAccess")}</Tag>}
-        </div>
-        <p className="mt-1 truncate text-body-s text-text-2">{c.baseUrl}</p>
-        {fact(c, actions.scanned) && <p className="text-body-s text-text-2">{fact(c, actions.scanned)}</p>}
-        {/* What the last failed check ran into, in words (in place of a toast over the screen; phones 2026-10-30), and
-            what to do about it (./ConnectionHelp, its steps first). */}
-        {failure && !testing && (
+    <li>
+      <SettingsLink
+        leading={
+          <span className="grid size-10 place-items-center rounded-sm bg-surface-2 text-text-2">
+            <ServerMark kind={c.kind} />
+          </span>
+        }
+        label={
+          // On a phone the status goes by the name: at the end of the row it squeezed the address into three lines.
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-semibold">{c.name}</span>
+            <StatusBadge status={testing ? "neutral" : (STATUS[c.status] ?? "neutral")} className="shrink-0 sm:hidden">
+              {status}
+            </StatusBadge>
+          </span>
+        }
+        detail={
           <>
-            <p className="text-body-s text-text-2">{netErrorText(t, new MediaNetError(failure, failure), c.baseUrl)}</p>
-            {access && (
-              <Button variant="tertiary" size="sm" icon={HelpCircle} aria-haspopup="dialog" className="-ms-3 mt-1" onClick={() => setHelp(true)}>
+            <span className="block truncate">
+              {t(`kind_${c.kind}`)} · {address}
+            </span>
+            {!access && <span className="block">{t("noAccess")}</span>}
+            {line && <span className="block">{line}</span>}
+            {/* What the last failed check ran into, in words (in place of a toast over the screen; phones 2026-10-30). */}
+            {failure && !testing && <span className="block">{netErrorText(t, new MediaNetError(failure, failure), c.baseUrl)}</span>}
+          </>
+        }
+        value={
+          <StatusBadge status={testing ? "neutral" : (STATUS[c.status] ?? "neutral")} className="max-sm:hidden">
+            {status}
+          </StatusBadge>
+        }
+        opens
+        onClick={() => setOpen(true)}
+        after={
+          // What to do about a failed check (./ConnectionHelp, its steps first): a target of its own under the row's.
+          failure && !testing && access ? (
+            <div className="-mt-2 pb-3 ps-13">
+              <Button variant="tertiary" size="sm" icon={HelpCircle} aria-haspopup="dialog" className="-ms-3" onClick={() => setHelp(true)}>
                 {th("whatToDo")}
               </Button>
-            )}
-          </>
-        )}
-      </div>
-      <div className="flex items-center gap-2 max-sm:w-full max-sm:ps-14">
-        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
-          {t("open")}
-        </Button>
-        <ServerMore conn={c} access={access} actions={actions} />
-      </div>
+            </div>
+          ) : undefined
+        }
+      />
       {open && <ServerPanel conn={c} access={access} actions={actions} onChange={onChange} onClose={() => setOpen(false)} />}
       {help && failure && <ConnectionHelp kind={c.kind} failure={failure} server={c} onRetry={() => void actions.test()} onClose={() => setHelp(false)} />}
     </li>
-  );
-}
-
-/** "More" of a row: a light button until the pointer or the focus comes to it, then the menu itself (./ServerMenu). */
-function ServerMore(props: ServerMenuProps) {
-  const t = useTranslations("connections");
-  const light = useRef<HTMLButtonElement>(null);
-  const { full: m, start, activate } = useLazySwap(serverMenu, light);
-  if (m) return <m.ServerMenu {...props} initialOpen={start.open} focusTrigger={start.focus} />;
-  return (
-    <IconButton
-      ref={light}
-      icon={Ellipsis}
-      label={t("moreFor", { name: props.conn.name })}
-      aria-haspopup="menu"
-      aria-expanded={false}
-      onPointerEnter={() => activate(false)}
-      onFocus={() => activate(false)}
-      onPointerDown={(e) => {
-        if (e.button === 0) activate(true);
-      }}
-      onKeyDown={(e) => {
-        if (!OPEN_KEYS.includes(e.key)) return;
-        e.preventDefault();
-        activate(true);
-      }}
-    />
   );
 }

@@ -17,7 +17,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { IconButton } from "@/components/ui/IconButton";
 import { QueryState } from "@/components/ui/QueryState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { SettingsRow, SettingsSection } from "@/components/ui/Settings";
+import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toast";
@@ -81,7 +81,7 @@ export function RecommendationSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <p className="sr-only">{t("intro")}</p>
       {/* One answer feeds every section: when it fails, the page says so once, with "Retry" (8.5), not five times. */}
       {taste.isError && !taste.data ? (
@@ -90,20 +90,18 @@ export function RecommendationSettings() {
         </QueryState>
       ) : (
         <>
-          <SignalsSection taste={taste} onChange={refresh} />
-          <InterestsSection taste={taste} />
+          {/* The settings themselves first, then what they are built on (7.18): a long list goes below the switches. */}
+          <HowSection taste={taste} />
           <LikeSection taste={taste} onChange={refresh} />
           <MutedSection taste={taste} onChange={refresh} />
-          <HowSection taste={taste} />
+          <SignalsSection taste={taste} onChange={refresh} />
+          <InterestsSection taste={taste} />
           <OpenedSection taste={taste} onChange={refresh} />
         </>
       )}
+      {/* Starting over: apart and last, its consequence said under it (1.2, principle 6), asked first (8.3). */}
       <SettingsSection title={t("resetTitle")}>
-        <SettingsRow label={t("reset")} description={t("resetText")} risk>
-          <Button variant="danger-tertiary" onClick={() => void reset()}>
-            {t("reset")}
-          </Button>
-        </SettingsRow>
+        <SettingsLink tone="danger" label={t("reset")} detail={t("resetText")} onClick={() => void reset()} />
       </SettingsSection>
     </div>
   );

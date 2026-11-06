@@ -12,6 +12,7 @@ import { RadioGroup } from "@/components/ui/Checkbox";
 import { FilterChip } from "@/components/ui/Chip";
 import { SidePanel } from "@/components/ui/Dialog";
 import { InlineAlert } from "@/components/ui/InlineAlert";
+import { SaveError, SaveStatus } from "@/components/ui/Settings";
 import { Switch } from "@/components/ui/Switch";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
@@ -20,35 +21,41 @@ import { type ServerActions, STATUS, useServerFact } from "./server-actions";
 
 const AddConnectionDialog = dynamic(() => import("./AddConnectionDialog").then((m) => m.AddConnectionDialog), { ssr: false });
 
-/** A block of the panel: an h3 with "Saved" by it (8.8), its rows under it. */
+/**
+ * A block of the panel (7.18): a small title, as a settings group's, with "Saved" by it (8.8), its rows under it; a failed
+ * save stays here with "Retry".
+ */
 function Block({ title, save, children }: { title: string; save?: SaveState; children: ReactNode }) {
-  const t = useTranslations();
   const id = useId();
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3 border-t border-line pt-5">
       <div className="flex flex-wrap items-baseline gap-x-3">
-        <h3 id={id} className="text-h3 text-text-1">
+        <h3 id={id} className="text-body-s font-semibold text-text-3">
           {title}
         </h3>
-        <span role="status" className="text-body-s text-text-2">
-          {save?.status === "saving" ? t("ui.saving") : save?.status === "saved" ? t("common.saved") : ""}
-        </span>
+        <SaveStatus save={save} />
       </div>
-      {save?.status === "error" && (
-        <InlineAlert
-          tone="danger"
-          title={t("ui.saveFailed")}
-          action={
-            <Button variant="tertiary" size="sm" onClick={save.retry}>
-              {t("common.retry")}
-            </Button>
-          }
-        >
-          {save.message}
-        </InlineAlert>
-      )}
+      <SaveError save={save} />
       {children}
     </section>
+  );
+}
+
+/** A switch of the panel as a settings row: the name at the start, the switch at the end; what it does for a screen reader. */
+function PanelSwitch({ label, description, checked, onCheckedChange }: { label: string; description?: string; checked: boolean; onCheckedChange: (v: boolean) => void }) {
+  const id = useId();
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-4">
+      <label htmlFor={id} className="text-body text-text-1">
+        {label}
+      </label>
+      {description && (
+        <span id={`${id}-about`} className="sr-only">
+          {description}
+        </span>
+      )}
+      <Switch id={id} hideLabel label={label} description={description} checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
   );
 }
 
@@ -136,11 +143,11 @@ export function ServerPanel({
           <Block title={t("settingsTitle")} save={settingsSave.state}>
             {c.kind !== "torrserver" ? (
               <>
-                <Switch checked={settings.syncProgressToServer} onCheckedChange={(v) => set({ syncProgressToServer: v })} label={t("syncProgress")} />
-                <Switch checked={settings.importWatchedFromServer} onCheckedChange={(v) => set({ importWatchedFromServer: v })} label={t("importWatched")} />
+                <PanelSwitch checked={settings.syncProgressToServer} onCheckedChange={(v) => set({ syncProgressToServer: v })} label={t("syncProgress")} />
+                <PanelSwitch checked={settings.importWatchedFromServer} onCheckedChange={(v) => set({ importWatchedFromServer: v })} label={t("importWatched")} />
               </>
             ) : (
-              <Switch checked={settings.autoSearch} onCheckedChange={(v) => set({ autoSearch: v })} label={t("autoSearch")} description={t("autoSearchHint")} />
+              <PanelSwitch checked={settings.autoSearch} onCheckedChange={(v) => set({ autoSearch: v })} label={t("autoSearch")} description={t("autoSearchHint")} />
             )}
           </Block>
 

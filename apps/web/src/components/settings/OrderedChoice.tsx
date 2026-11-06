@@ -60,7 +60,7 @@ export function OrderedChoice({
   const free = options.filter((o) => !value.includes(o.value));
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-3 sm:w-80">
+    <div className="flex w-full min-w-0 flex-col gap-3">
       {value.length > 0 && (
         <ol ref={list} aria-label={listLabel} className="flex flex-col gap-1">
           {value.map((v, i) => (

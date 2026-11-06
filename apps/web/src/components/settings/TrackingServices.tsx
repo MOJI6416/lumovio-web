@@ -18,7 +18,7 @@ import { Link } from "@/components/ui/Link";
 import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
 import { Select } from "@/components/ui/Select";
-import { SettingsRow, SettingsSection } from "@/components/ui/Settings";
+import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toast";
@@ -55,7 +55,6 @@ function failureKey(detail: string | null): "failFirst" | "failImport" | "failSy
 export function TrackingServices() {
   const t = useTranslations("services");
   const tn = useTranslations("nav");
-  const tc = useTranslations("common");
   const params = useSearchParams();
   const router = useRouter();
   const q = useQuery({ queryKey: ["integrations"], queryFn: () => api<IntegrationsOverview>("/api/integrations") });
@@ -72,12 +71,12 @@ export function TrackingServices() {
 
   // A failed load is an error with Retry, not an endless skeleton (X-14).
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <p className="sr-only">{t("intro")}</p>
       <QueryState
         query={q}
         loading={
-          <div className="space-y-6">
+          <div className="space-y-8">
             <Skeleton shape="md" className="h-48 w-full" />
             <Skeleton shape="md" className="h-48 w-full" />
           </div>
@@ -85,7 +84,7 @@ export function TrackingServices() {
         error={{ title: t("loadError") }}
       >
         {(d) => (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {(["trakt", "simkl"] as const).map((p) => (
               <ServiceSection key={p} provider={p} available={d.available[p]} accounts={d.accounts.filter((a) => a.provider === p)} />
             ))}
@@ -94,14 +93,11 @@ export function TrackingServices() {
       </QueryState>
       {/* Files from other services: the import is a page of its own, not a section of the settings (SET-03). */}
       <SettingsSection title={tn("import")}>
-        <SettingsRow label={t("importFiles")} description={t("importFilesHint")}>
-          <IntlLink href="/import" className={buttonClass("secondary")}>
-            {tc("open")}
-          </IntlLink>
-        </SettingsRow>
+        <SettingsLink href="/import" label={t("importFiles")} description={t("importFilesHint")} />
       </SettingsSection>
-      <p className="max-w-measure text-body-s text-text-2">{t("privacy")}</p>
-      <p className="max-w-measure text-body-s text-text-2">{t("traktCredit")}</p>
+      {/* How the sign-in is kept is for a screen reader (1.2, principle 6); Trakt's credit stays visible, small. */}
+      <p className="sr-only">{t("privacy")}</p>
+      <p className="px-4 text-caption font-medium text-text-3">{t("traktCredit")}</p>
     </div>
   );
 }
@@ -264,6 +260,24 @@ function AccountBlock({
         </span>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="secondary" size="sm" icon={RefreshCw} loading={sync.pending} disabled={stuck} onClick={() => void sync.run()}>
+          {t("syncNow")}
+        </Button>
+        {/* Why it's off, next to it (7.1). */}
+        {stuck && <span className="text-body-s text-text-2">{a.status === "reauth" ? t("syncNeedsSignIn") : t("syncNeedsFirst")}</span>}
+        <div className="ms-auto">
+          <ServiceMore
+            label={t("moreActions", { service })}
+            items={{ reimport: t("reimport"), send: t("sendExisting"), disconnect: t("disconnect") }}
+            canReimport={!stuck}
+            canSend={a.canWrite && a.status !== "reauth"}
+            onReimport={() => void reimport()}
+            onSend={() => setSending(true)}
+            onDisconnect={() => void disconnect()}
+          />
+        </div>
+      </div>
       {a.status === "reauth" && (
         <InlineAlert
           tone="warning"
@@ -318,52 +332,38 @@ function AccountBlock({
         </ul>
       )}
 
-      <div className="grid gap-x-8 gap-y-2 md:grid-cols-2">
+      <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
         <fieldset className="min-w-0">
-          <legend className="mb-1 text-body-s font-semibold text-text-2">{t("readTitle", { service })}</legend>
-          {KINDS.map((k) => (
-            <Switch key={k} checked={a.settings.import[k]} disabled={a.status === "reauth"} onCheckedChange={(v) => patch({ import: { [k]: v } })} label={t(k)} />
-          ))}
+          <legend className="mb-1 text-body-s font-semibold text-text-3">{t("readTitle", { service })}</legend>
+          <div className="divide-y divide-line">
+            {KINDS.map((k) => (
+              <SyncSwitch key={k} checked={a.settings.import[k]} disabled={a.status === "reauth"} onCheckedChange={(v) => patch({ import: { [k]: v } })} label={t(k)} />
+            ))}
+          </div>
         </fieldset>
         <fieldset className="min-w-0">
-          <legend className="mb-1 text-body-s font-semibold text-text-2">{t("writeTitle", { service })}</legend>
-          {KINDS.map((k) => (
-            <Switch
-              key={k}
-              checked={a.settings.export[k] !== null}
+          <legend className="mb-1 text-body-s font-semibold text-text-3">{t("writeTitle", { service })}</legend>
+          <div className="divide-y divide-line">
+            {KINDS.map((k) => (
+              <SyncSwitch
+                key={k}
+                checked={a.settings.export[k] !== null}
+                disabled={!a.canWrite || a.status === "reauth"}
+                onCheckedChange={(v) => patch({ export: { [k]: v } })}
+                label={t(k)}
+              />
+            ))}
+            <SyncSwitch
+              checked={a.settings.scrobble}
               disabled={!a.canWrite || a.status === "reauth"}
-              onCheckedChange={(v) => patch({ export: { [k]: v } })}
-              label={t(k)}
+              onCheckedChange={(v) => patch({ scrobble: v })}
+              label={t("scrobble")}
+              description={t("scrobbleHint", { service })}
             />
-          ))}
-          <Switch
-            checked={a.settings.scrobble}
-            disabled={!a.canWrite || a.status === "reauth"}
-            onCheckedChange={(v) => patch({ scrobble: v })}
-            label={t("scrobble")}
-            description={t("scrobbleHint", { service })}
-          />
-          <p className="mt-1 text-body-s text-text-2">{a.canWrite ? t("writeHint", { service }) : t("readOnlyGrant")}</p>
+          </div>
+          {/* What writing touches — nothing is deleted there — or why it is off (7.1). */}
+          <p className="mt-2 text-body-s text-text-2">{a.canWrite ? t("writeHint", { service }) : t("readOnlyGrant")}</p>
         </fieldset>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" size="sm" icon={RefreshCw} loading={sync.pending} disabled={stuck} onClick={() => void sync.run()}>
-          {t("syncNow")}
-        </Button>
-        {/* Why it's off, next to it (7.1). */}
-        {stuck && <span className="text-body-s text-text-2">{a.status === "reauth" ? t("syncNeedsSignIn") : t("syncNeedsFirst")}</span>}
-        <div className="ms-auto">
-          <ServiceMore
-            label={t("moreActions", { service })}
-            items={{ reimport: t("reimport"), send: t("sendExisting"), disconnect: t("disconnect") }}
-            canReimport={!stuck}
-            canSend={a.canWrite && a.status !== "reauth"}
-            onReimport={() => void reimport()}
-            onSend={() => setSending(true)}
-            onDisconnect={() => void disconnect()}
-          />
-        </div>
       </div>
       {sending && <SendExisting account={a} onClose={() => setSending(false)} />}
     </div>
@@ -440,5 +440,24 @@ function ServiceMore(props: ServiceMenuProps) {
         activate(true);
       }}
     />
+  );
+}
+
+/** One of an account's switches: the name at the start, the switch at the end, as a settings row (7.18). */
+function SyncSwitch({ label, description, checked, disabled, onCheckedChange }: { label: string; description?: string; checked: boolean; disabled?: boolean; onCheckedChange: (v: boolean) => void }) {
+  const id = useId();
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-4 py-1">
+      <label htmlFor={id} className={disabled ? "text-body text-text-2" : "text-body text-text-1"}>
+        {label}
+      </label>
+      {description && (
+        <span id={`${id}-about`} className="sr-only">
+          {description}
+        </span>
+      )}
+      {/* With hideLabel the switch is described by `${id}-about`, the span above. */}
+      <Switch id={id} hideLabel label={label} description={description} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+    </div>
   );
 }

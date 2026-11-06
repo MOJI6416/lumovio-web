@@ -52,3 +52,24 @@ export function useUnsavedChanges(dirty: boolean) {
     };
   }, [dirty, confirm, router, t]);
 }
+
+/**
+ * A settings dialog that is a form with "Save" (design-system 8.8): closing it — ×, Escape, a click outside, "Cancel" —
+ * with typed changes asks first, "Close without saving?" with "Keep editing" as the safe choice; leaving the page asks
+ * as `useUnsavedChanges` does. Returns the close to give the dialog's `onOpenChange` and its "Cancel".
+ */
+export function useDiscardGuard(dirty: boolean, close: () => void) {
+  const t = useTranslations("settings");
+  const confirm = useConfirm();
+  useUnsavedChanges(dirty);
+  return async () => {
+    if (!dirty) return close();
+    const discard = await confirm({
+      title: t("discardTitle"),
+      text: t("discardText"),
+      confirmLabel: t("discard"),
+      cancelLabel: t("keepEditing"),
+    });
+    if (discard) close();
+  };
+}
