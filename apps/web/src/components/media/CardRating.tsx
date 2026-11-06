@@ -47,8 +47,9 @@ export function CardRating({ title, className }: { title: Rated & Pick<TitleSumm
   const score = title.lumovioScore;
   if (!s) return score ? <ScoreBadge score={score.score} kind={title.kind} confidence={score.confidence} className={clsx("shrink-0", className)} /> : null;
   return (
-    <span className={clsx("inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold tabular-nums", className)}>
-      {s.brand === "tmdb" ? "TMDB " : <BrandMark brand={s.brand} rotten={s.rotten} />}
+    // The value sits on the baseline of the text around it ("2026 · ★ 7,8 · Film"), the logo centred on the line.
+    <span className={clsx("inline-flex shrink-0 items-baseline gap-1 whitespace-nowrap font-semibold tabular-nums", className)}>
+      {s.brand === "tmdb" ? "TMDB " : <BrandMark brand={s.brand} rotten={s.rotten} className="self-center" />}
       {s.value}
     </span>
   );

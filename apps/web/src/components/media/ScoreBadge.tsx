@@ -30,8 +30,9 @@ export function ScoreBadge({ score, kind, confidence, className }: { score: numb
   const label = useScoreLabel()(score, kind, confidence);
   return (
     // The hint repeats aria-label for a mouse; "All ratings" on the title page explains the score in full.
-    <span role="img" aria-label={label} title={label} className={clsx("inline-flex items-center gap-1 font-bold tabular-nums", className)}>{/* ui-lint-ignore title-attr: repeats aria-label */}
-      <ScoreMark className="size-[1.05em]" />
+    <span role="img" aria-label={label} title={label} className={clsx("inline-flex items-baseline gap-1 font-bold tabular-nums", className)}>{/* ui-lint-ignore title-attr: repeats aria-label */}
+      {/* The score sits on the line's baseline with the text around it; the mark is centred on the line. */}
+      <ScoreMark className="size-[1.05em] self-center" />
       {score}
     </span>
   );
