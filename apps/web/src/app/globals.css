@@ -306,8 +306,9 @@
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.25rem;
-  /* 6.1 A profile avatar's squircle (rounded-avatar): part of its identity, not a size step. */
-  --radius-avatar: 28%;
+  /* 6.1 A profile avatar's shape (rounded-avatar): a circle since the 2026-11 redesign (the approved mockups, as Apple TV
+   * and Disney+), was a squircle of 28%; part of its identity, not a size step. */
+  --radius-avatar: 50%;
   /* 5.5 Layers: z-sticky … z-toast */
   --z-index-sticky: 20;
   --z-index-header: 50;
