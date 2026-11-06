@@ -64,11 +64,13 @@ export default async function AnimePage({ params, searchParams }: { params: Prom
   const query = discoverQuery(kind, browseState(get, true));
   // The first page rendered on the server; without it the browser loads it (with its own error and Retry).
   const first = await optional(serverApi<Paged<TitleSummary>>(`/api/catalog/discover?${query}&page=1`), null);
-  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11).
+  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11) — the latter for a screen reader only:
+  // no explanatory line on the screen (redesign 2026-11).
   const shelf = shelfHeading(get("shelf"), (k) => tr(k as "rows.finishedAnime"), gridGenres, locale);
   return (
     <div className="page-x mx-auto max-w-media">
-      <PageHeader back={{ href: "/anime", label: t("titleAnime") }} title={shelf?.title ?? t("allAnime")} description={shelf?.description} />
+      <PageHeader back={{ href: "/anime", label: t("titleAnime") }} title={shelf?.title ?? t("allAnime")} />
+      {shelf?.description && <p className="sr-only">{shelf.description}</p>}
       <Suspense>
         <BrowseView kind="tv" genres={gridGenres} anime allowKindSwitch initial={first ? { query, page: first } : undefined} />
       </Suspense>

@@ -188,6 +188,8 @@ export interface MenuCheckboxItemProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** The menu stays open after the item is switched: one of several choices (a catalog's genres). */
+  keepOpen?: boolean;
 }
 
 /** An item that turns something on or off ("Favourites"): a check on the end while it is on. */
@@ -197,6 +199,7 @@ export function MenuCheckboxItem({
   checked,
   onCheckedChange,
   disabled,
+  keepOpen,
 }: MenuCheckboxItemProps) {
   const mode = useContext(MenuMode);
   const check = <Check aria-hidden className="size-5 shrink-0 text-text-1" />;
@@ -208,7 +211,7 @@ export function MenuCheckboxItem({
         disabled={disabled}
         className={SHEET_ITEM}
         onClick={() => {
-          mode.close();
+          if (!keepOpen) mode.close();
           onCheckedChange(!checked);
         }}
       >
@@ -222,6 +225,8 @@ export function MenuCheckboxItem({
     <DM.CheckboxItem
       checked={checked}
       onCheckedChange={(c) => onCheckedChange(c === true)}
+      // Radix closes the menu on select unless the event is prevented.
+      onSelect={keepOpen ? (e) => e.preventDefault() : undefined}
       disabled={disabled}
       className={ITEM}
     >

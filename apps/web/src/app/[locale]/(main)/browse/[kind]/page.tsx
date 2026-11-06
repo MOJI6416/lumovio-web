@@ -58,11 +58,13 @@ export default async function BrowsePage({ params, searchParams }: { params: Par
   const query = discoverQuery(kind, browseState(get, false));
   // The first page rendered on the server; without it the browser loads it (with its own error and Retry).
   const first = await optional(serverApi<Paged<TitleSummary>>(`/api/catalog/discover?${query}&page=1`), null);
-  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11).
+  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11) — the latter for a screen reader only:
+  // no explanatory line on the screen (redesign 2026-11).
   const shelf = shelfHeading(get("shelf"), (k) => tr(k as "rows.oneEvening"), genres, locale);
   return (
     <div className="page-x mx-auto max-w-media">
-      <PageHeader back={{ href: `/browse/${kind}`, label: title }} title={shelf?.title ?? (kind === "tv" ? t("allSeries") : t("allMovies"))} description={shelf?.description} />
+      <PageHeader back={{ href: `/browse/${kind}`, label: title }} title={shelf?.title ?? (kind === "tv" ? t("allSeries") : t("allMovies"))} />
+      {shelf?.description && <p className="sr-only">{shelf.description}</p>}
       <Suspense>
         <BrowseView kind={kind} genres={genres} initial={first ? { query, page: first } : undefined} />
       </Suspense>

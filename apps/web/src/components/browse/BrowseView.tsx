@@ -2,7 +2,7 @@
 
 import type { CatalogSorts, Genre, MediaKind, Paged, TitleSummary } from "@lumovio/contracts";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Clapperboard, ListFilterPlus, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Clapperboard, ListFilterPlus, SlidersHorizontal, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { lazy, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -11,14 +11,15 @@ import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
 import { TitleGrid } from "@/components/media/Row";
 import { keepShelf, SHELF_COPY } from "@/components/media/shelf-copy";
 import { useSession } from "@/components/providers/Providers";
-import { AccentBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { FilterChip, InputChip } from "@/components/ui/Chip";
+import { cn } from "@/components/ui/cn";
 import { Combobox } from "@/components/ui/Combobox";
 import { DialogActions, Sheet } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
 import { InlineAlert } from "@/components/ui/InlineAlert";
+import { lazyControl, useLazySwap, useStandIn } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Select } from "@/components/ui/Select";
@@ -34,10 +35,14 @@ const orAny = (v: string) => v || ANY;
 const fromAny = (v: string) => (v === ANY ? null : v);
 /** TMDB stops counting at about this many results: past it the number is a ceiling, not a count (CAT-07). */
 const COUNT_CEILING = 20000;
+/** Keys of the loading grid's 18 skeleton cards. */
+const SKELETONS = Array.from({ length: 18 }, (_, i) => `skeleton-${i}`);
 /** Every filter of the grid in the address (the sort and the series/films switch are not filters). */
 const FILTER_KEYS = ["genres", "yearFrom", "yearTo", "ratingMin", "language", "without", "runtimeMax", "type", "status", "votesMin", "votesMax", "nospecials", "episodesMax", "imdbVotesMax", "opinions", "mood", "shelf"];
 
 type Patch = Record<string, string | null>;
+/** FilterChip is a toggle (aria-pressed); as the trigger of a menu, a popover or the sheet it is not. */
+const NOT_TOGGLE = { "aria-pressed": undefined };
 
 // Loaded when used (bundle budget): "Save as list", a smart list's "Edit conditions" (package F) and a guest's sign-in.
 const SaveRulesDialog = lazy(() => import("@/components/library/SaveRulesDialog").then((m) => ({ default: m.SaveRulesDialog })));
@@ -76,34 +81,97 @@ function useCountText() {
   return (total: number) => (total >= COUNT_CEILING ? t("resultsOver", { count: format.number(COUNT_CEILING) }) : t("results", { count: total }));
 }
 
+type Layers = typeof import("./pill-layers");
+const layers = lazyControl(() => import("./pill-layers"));
+type Opened = { open: boolean; setOpen: (open: boolean) => void };
+
 /**
- * The filters of a catalog grid (8.4), for both places they are shown: a row above the grid on a desktop (applied at
- * once) and the filter sheet on a phone and tablet (applied with its "Show N" button, CAT-03). Years can't be set
- * backwards: the other end's impossible years are disabled (CAT-06).
+ * A filter pill (design-system 7.4): a FilterChip with the filter's name at rest, its value once chosen, and a
+ * chevron; its name for a screen reader is "Filter: value". What it opens (a menu or a popover, `children`) loads
+ * when the pointer comes near, it gets the focus or the page is idle, and takes the light pill's place — open, if
+ * it was pressed (ui/lazy-swap, as Select; bundle budget).
  */
-function Filters({ state, set, kind, genres, layout }: { state: BrowseState; set: (patch: Patch) => void; kind: MediaKind; genres: Genre[]; layout: "row" | "sheet" }) {
+function Pill({
+  text,
+  selected,
+  label,
+  popup,
+  onOpenChange,
+  children,
+}: {
+  text: string;
+  selected: boolean;
+  /** "Genres: Drama, Comedy"; without it the text names the pill. */
+  label?: string;
+  popup: "menu" | "dialog";
+  onOpenChange?: (open: boolean) => void;
+  children: (m: Layers, trigger: ReactNode, opened: Opened) => ReactNode;
+}) {
+  const light = useRef<HTMLButtonElement>(null);
+  const swap = useLazySwap(layers, light);
+  const part = useStandIn(swap);
+  const face = (
+    <>
+      <span className="max-w-56 truncate">{text}</span>
+      <ChevronDown aria-hidden className={cn("-me-0.5 size-4 shrink-0", !selected && "text-text-2")} />
+    </>
+  );
+  if (part.full)
+    return (
+      <PillLayer m={part.full} start={swap.start} onOpenChange={onOpenChange} render={children}>
+        {(focus) => (
+          <FilterChip ref={focus} selected={selected} {...NOT_TOGGLE} aria-label={label}>
+            {face}
+          </FilterChip>
+        )}
+      </PillLayer>
+    );
+  return (
+    <FilterChip ref={light} selected={selected} {...NOT_TOGGLE} aria-label={label} aria-haspopup={popup} aria-expanded={false} {...part.handlers}>
+      {face}
+    </FilterChip>
+  );
+}
+
+/** The loaded pill: opens at once if the light one was pressed, takes the focus if it had it. */
+function PillLayer({
+  m,
+  start,
+  onOpenChange,
+  render,
+  children,
+}: {
+  m: Layers;
+  start: { open: boolean; focus: boolean };
+  onOpenChange?: (open: boolean) => void;
+  render: (m: Layers, trigger: ReactNode, opened: Opened) => ReactNode;
+  children: (focus: (el: HTMLButtonElement | null) => void) => ReactNode;
+}) {
+  const [open, setOpenState] = useState(start.open);
+  const setOpen = (o: boolean) => {
+    setOpenState(o);
+    onOpenChange?.(o);
+  };
+  const focus = (el: HTMLButtonElement | null) => {
+    if (el && start.focus && !start.open) el.focus();
+    start.focus = false;
+  };
+  return render(m, children(focus), { open, setOpen });
+}
+
+/** A single-choice filter with "Any": the same options for the desktop's pill menu and the sheet's pill group. */
+type Choice = { key: string; name: string; heading?: string; value: string; options: { value: string; label: string }[] };
+
+/** The years a range can start or end with, and their two lists; the other end's impossible years are disabled (CAT-06). */
+function YearFields({ state, set }: { state: BrowseState; set: (patch: Patch) => void }) {
   const t = useTranslations("browse");
-  const tr = useTranslations();
-  const locale = useLocale();
-  // Decimals in the locale's style (2.3: 6,5 in ru/uk).
-  const format = useFormatter();
-  const isMovie = kind === "movie";
-  const series = kind === "tv" && !state.anime;
-  const tv = kind === "tv";
   const year = new Date().getFullYear();
   const any = { value: ANY, label: t("any") };
   const years = Array.from({ length: year - 1919 }, (_, i) => String(year + 1 - i));
-  const minutes = (m: number) => formatRuntime(m, (k, v) => tr(k as "common.minutes", v)) ?? "";
-  const shown = genres.filter((g) => !(state.anime && g.id === 16));
-  const cap = (s: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
-  const toggleGenre = (id: number) => {
-    const next = state.genres.includes(id) ? state.genres.filter((g) => g !== id) : [...state.genres, id];
-    set({ genres: next.join(",") || null });
-  };
-  const selects = (
-    <>
+  return (
+    <div className="grid grid-cols-2 gap-3">
       <FilterSelect
-        label={`${t("years")} · ${t("from")}`}
+        label={t("from")}
         value={state.yearFrom}
         onChange={(v) => set({ yearFrom: v })}
         options={[any, ...years.map((y) => ({ value: y, label: y, disabled: Boolean(state.yearTo) && Number(y) > Number(state.yearTo) }))]}
@@ -114,81 +182,160 @@ function Filters({ state, set, kind, genres, layout }: { state: BrowseState; set
         onChange={(v) => set({ yearTo: v })}
         options={[any, ...years.map((y) => ({ value: y, label: y, disabled: Boolean(state.yearFrom) && Number(y) < Number(state.yearFrom) }))]}
       />
-      <FilterSelect
-        label={t("minRating")}
-        value={state.ratingMin}
-        onChange={(v) => set({ ratingMin: v })}
-        options={[any, ...[5, 6, 6.5, 7, 7.5, 8, 8.5].map((r) => ({ value: String(r), label: `${format.number(r)}+` }))]}
-      />
-      {isMovie && (
-        <FilterSelect
-          label={t("runtime")}
-          value={state.runtimeMax}
-          onChange={(v) => set({ runtimeMax: v })}
-          options={[any, ...[90, 100, 120, 150].map((m) => ({ value: String(m), label: t("runtimeMax", { time: minutes(m) }) }))]}
-        />
-      )}
-      {series && (
-        <FilterSelect
-          label={t("type")}
-          value={state.type}
-          onChange={(v) => set({ type: v })}
-          options={[any, { value: "scripted", label: t("typeScripted") }, { value: "mini", label: t("typeMini") }]}
-        />
-      )}
-      {tv && (
-        <FilterSelect
-          label={t("status")}
-          value={state.status}
-          onChange={(v) => set({ status: v })}
-          options={[any, { value: "ended", label: t("statusEnded") }, { value: "returning", label: t("statusReturning") }]}
-        />
-      )}
-      {!state.anime && (
-        <FilterSelect
-          label={t("originalLanguage")}
-          value={state.language}
-          onChange={(v) => set({ language: v })}
-          options={[any, ...LANGS.map((l) => ({ value: l, label: languageName(l, locale) ?? l }))]}
-        />
-      )}
-    </>
+    </div>
   );
+}
+
+/**
+ * The genres pill: a menu of genres that stays open while they are ticked. A tick shows at once, before the address
+ * catches up, so quick ticks don't undo each other.
+ */
+function GenresPill({ state, set, shown, name }: { state: BrowseState; set: (patch: Patch) => void; shown: Genre[]; name: (id: number) => string }) {
+  const t = useTranslations("browse");
+  const [pending, setPending] = useState<number[] | null>(null);
+  const picked = pending ?? state.genres;
+  const key = state.genres.join(",");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only when the address catches up
+  useEffect(() => {
+    if (pending?.join(",") === key) setPending(null);
+  }, [key]);
+  const pick = (next: number[]) => {
+    setPending(next);
+    set({ genres: next.join(",") || null });
+  };
+  const names = picked.map(name);
+  const text = names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ");
+  return (
+    <Pill
+      text={text || t("genres")}
+      selected={picked.length > 0}
+      label={picked.length ? `${t("genres")}: ${names.join(", ")}` : undefined}
+      popup="menu"
+      // Each opening starts from the address (a tick it never took doesn't stay).
+      onOpenChange={(o) => o && setPending(null)}
+    >
+      {(m, trigger, { open, setOpen }) => (
+        <m.Menu label={t("genres")} align="start" open={open} onOpenChange={setOpen} trigger={trigger}>
+          <m.MenuCheckboxItem checked={picked.length === 0} onCheckedChange={() => pick([])}>
+            {t("any")}
+          </m.MenuCheckboxItem>
+          <m.MenuSeparator />
+          {shown.map((g) => (
+            <m.MenuCheckboxItem
+              key={g.id}
+              keepOpen
+              checked={picked.includes(g.id)}
+              onCheckedChange={(on) => pick(on ? [...picked, g.id] : picked.filter((x) => x !== g.id))}
+            >
+              {name(g.id)}
+            </m.MenuCheckboxItem>
+          ))}
+        </m.Menu>
+      )}
+    </Pill>
+  );
+}
+
+/**
+ * The filters of a catalog grid (8.4), for both places they are shown: a row of pills above the grid on a desktop,
+ * each opening its menu and applied at once, and the filter sheet on a phone and tablet — the same filters as groups
+ * of pills, applied with its "Show N" button (CAT-03).
+ */
+function Filters({ state, set, kind, genres, layout }: { state: BrowseState; set: (patch: Patch) => void; kind: MediaKind; genres: Genre[]; layout: "row" | "sheet" }) {
+  const t = useTranslations("browse");
+  const tr = useTranslations();
+  const locale = useLocale();
+  // Decimals in the locale's style (2.3: 6,5 in ru/uk).
+  const format = useFormatter();
+  const isMovie = kind === "movie";
+  const series = kind === "tv" && !state.anime;
+  const tv = kind === "tv";
+  const minutes = (m: number) => formatRuntime(m, (k, v) => tr(k as "common.minutes", v)) ?? "";
+  const shown = genres.filter((g) => !(state.anime && g.id === 16));
+  const cap = (s: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
+  const genreName = (id: number) => cap(genres.find((g) => g.id === id)?.name ?? `#${id}`);
+  const choices: Choice[] = [
+    { key: "ratingMin", name: t("rating"), heading: t("minRating"), value: state.ratingMin, options: [5, 6, 6.5, 7, 7.5, 8, 8.5].map((r) => ({ value: String(r), label: `${format.number(r)}+` })) },
+    ...(isMovie ? [{ key: "runtimeMax", name: t("runtime"), value: state.runtimeMax, options: [90, 100, 120, 150].map((m) => ({ value: String(m), label: t("runtimeMax", { time: minutes(m) }) })) }] : []),
+    ...(series ? [{ key: "type", name: t("type"), value: state.type, options: [{ value: "scripted", label: t("typeScripted") }, { value: "mini", label: t("typeMini") }] }] : []),
+    ...(tv ? [{ key: "status", name: t("status"), value: state.status, options: [{ value: "ended", label: t("statusEnded") }, { value: "returning", label: t("statusReturning") }] }] : []),
+    ...(!state.anime ? [{ key: "language", name: t("language"), heading: t("originalLanguage"), value: state.language, options: LANGS.map((l) => ({ value: l, label: cap(languageName(l, locale) ?? l) })) }] : []),
+  ];
+  const { yearFrom: from, yearTo: to } = state;
+  const yearsText = from && to ? (from === to ? from : `${from}–${to}`) : from ? t("yearsFrom", { year: from }) : to ? t("yearsTo", { year: to }) : "";
+
   if (layout === "sheet") {
+    const group = (legend: string, children: ReactNode) => (
+      <fieldset key={legend}>
+        <legend className="mb-2.5 text-body-s font-semibold text-text-1">{legend}</legend>
+        <div className="flex flex-wrap gap-x-2 gap-y-1">{children}</div>
+      </fieldset>
+    );
     return (
       <div className="space-y-6">
+        {group(
+          t("genres"),
+          shown.map((g) => (
+            <FilterChip
+              key={g.id}
+              selected={state.genres.includes(g.id)}
+              onClick={() => set({ genres: (state.genres.includes(g.id) ? state.genres.filter((x) => x !== g.id) : [...state.genres, g.id]).join(",") || null })}
+            >
+              {cap(g.name)}
+            </FilterChip>
+          )),
+        )}
         <fieldset>
-          <legend className="mb-2.5 text-body-s font-semibold text-text-1">{t("genres")}</legend>
-          <div className="flex flex-wrap gap-x-2 gap-y-1">
-            {shown.map((g) => (
-              <FilterChip key={g.id} selected={state.genres.includes(g.id)} onClick={() => toggleGenre(g.id)}>
-                {cap(g.name)}
-              </FilterChip>
-            ))}
-          </div>
+          <legend className="mb-2.5 text-body-s font-semibold text-text-1">{t("years")}</legend>
+          <YearFields state={state} set={set} />
         </fieldset>
-        <div className="grid grid-cols-2 gap-3">{selects}</div>
+        {choices.map((c) =>
+          group(c.heading ?? c.name, [
+            <FilterChip key={ANY} selected={!c.value} onClick={() => set({ [c.key]: null })}>
+              {t("any")}
+            </FilterChip>,
+            ...c.options.map((o) => (
+              <FilterChip key={o.value} selected={c.value === o.value} onClick={() => set({ [c.key]: c.value === o.value ? null : o.value })}>
+                {o.label}
+              </FilterChip>
+            )),
+          ]),
+        )}
       </div>
     );
   }
   return (
-    <div className="flex flex-wrap items-end gap-3 *:w-40">
-      <Field label={t("genres")} className="w-56!">
-        {(id, describedBy) => (
-          <Combobox
-            multiple
-            id={id}
-            aria-describedby={describedBy}
-            value={state.genres.map(String)}
-            onValueChange={(v) => set({ genres: v.join(",") || null })}
-            options={shown.map((g) => ({ value: String(g.id), label: cap(g.name) }))}
-            // "Any" is a value here as in the Selects next to it, not a grey hint (X-39).
-            emptyLabel={t("any")}
-          />
+    <>
+      <GenresPill state={state} set={set} shown={shown} name={genreName} />
+      <Pill text={yearsText || t("years")} selected={Boolean(yearsText)} label={yearsText ? `${t("years")}: ${yearsText}` : undefined} popup="dialog">
+        {(m, trigger, { open, setOpen }) => (
+          <m.Popover title={t("years")} align="start" open={open} onOpenChange={setOpen} trigger={trigger}>
+            <YearFields state={state} set={set} />
+          </m.Popover>
         )}
-      </Field>
-      {selects}
-    </div>
+      </Pill>
+      {choices.map((c) => {
+        const chosen = c.options.find((o) => o.value === c.value)?.label;
+        return (
+          <Pill key={c.key} text={chosen ?? c.name} selected={Boolean(chosen)} label={chosen ? `${c.heading ?? c.name}: ${chosen}` : undefined} popup="menu">
+            {(m, trigger, { open, setOpen }) => (
+              <m.Menu label={c.heading ?? c.name} align="start" open={open} onOpenChange={setOpen} trigger={trigger}>
+                {c.heading && <m.MenuLabel>{c.heading}</m.MenuLabel>}
+                <m.MenuCheckboxItem checked={!chosen} onCheckedChange={() => set({ [c.key]: null })}>
+                  {t("any")}
+                </m.MenuCheckboxItem>
+                <m.MenuSeparator />
+                {c.options.map((o) => (
+                  <m.MenuCheckboxItem key={o.value} checked={c.value === o.value} onCheckedChange={() => set({ [c.key]: o.value })}>
+                    {o.label}
+                  </m.MenuCheckboxItem>
+                ))}
+              </m.Menu>
+            )}
+          </Pill>
+        );
+      })}
+    </>
   );
 }
 
@@ -290,7 +437,13 @@ export function BrowseView({
 
   const items = useMemo(() => {
     const seen = new Set<string>();
-    return (q.data?.pages ?? []).flatMap((p) => p.results).filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
+    return (q.data?.pages ?? [])
+      .flatMap((p) => p.results)
+      .filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
   }, [q.data]);
   const first = q.data?.pages[0];
   const isMovie = kind === "movie";
@@ -305,7 +458,7 @@ export function BrowseView({
     [state.votesMin, state.votesMax, isMovie && state.noSpecials, tv && state.episodesMax, state.imdbVotesMax, state.opinions, isMovie && state.mood].filter(Boolean).length;
   const activeCount =
     state.genres.length +
-    [state.yearFrom, state.yearTo, state.ratingMin, state.language, isMovie && state.runtimeMax, series && state.type, tv && state.status].filter(Boolean).length +
+    [state.yearFrom || state.yearTo, state.ratingMin, state.language, isMovie && state.runtimeMax, series && state.type, tv && state.status].filter(Boolean).length +
     (shelf ? Math.min(1, hiddenCount) : hiddenCount);
   const genreName = (id: number) => genres.find((g) => g.id === id)?.name ?? `#${id}`;
   // Conditions that arrive from links and have no control of their own stay visible and removable.
@@ -351,39 +504,45 @@ export function BrowseView({
         ? t("apply")
         : t("showCount", { count: countText(draftCount.totalResults) });
   const grid = (children: ReactNode) => <TitleGrid>{children}</TitleGrid>;
-  const reset = activeCount > 0 && (
-    <Button variant="tertiary" size="sm" icon={X} onClick={() => update(cleared)}>
-      {tc("resetFilters")}
-    </Button>
-  );
   // TMDB's own sorts in the owner's order (2026-10-25), then the ones on Lumovio's catalog index over the whole
   // filtered catalog (not a loaded page) — each only where the filters allow it and enough titles have the score.
   const indexOption = (s: keyof typeof INDEX_SORTS, label: string) => (sorts.data?.[s] || state.sort === s ? [{ value: s, label }] : []);
+  const sortOptions = [
+    { value: "popularity", label: t("sortPopularity") },
+    { value: "release_desc", label: t("sortNewest") },
+    { value: "release_asc", label: t("sortOldest") },
+    { value: "rating", label: t("sortRating") },
+    { value: "votes", label: t("sortVotes") },
+    ...indexOption("imdb", t("sortImdb")),
+    ...indexOption("imdb_votes", t("sortImdbVotes")),
+    ...indexOption("lumovio", t("sortLumovio")),
+    ...indexOption("rt", t("sortRt")),
+    ...indexOption("metacritic", t("sortMetacritic")),
+    { value: "title", label: t("sortTitle") },
+  ];
+  const sortLabel = sortOptions.find((o) => o.value === state.sort)?.label ?? t("sortPopularity");
+  // The sort is not a filter: a pill of the same look on the end of the row, never "selected".
   const sort = (
-    <span className="ms-auto flex items-center gap-2">
-      <span className="text-body-s font-semibold text-text-2 max-sm:sr-only">{t("sort")}</span>
-      <Select
-        aria-label={t("sort")}
-        size="sm"
-        className="w-auto min-w-44"
-        value={state.sort}
-        onValueChange={(v) => update({ sort: v === "popularity" ? null : v })}
-        options={[
-          { value: "popularity", label: t("sortPopularity") },
-          { value: "release_desc", label: t("sortNewest") },
-          { value: "release_asc", label: t("sortOldest") },
-          { value: "rating", label: t("sortRating") },
-          { value: "votes", label: t("sortVotes") },
-          ...indexOption("imdb", t("sortImdb")),
-          ...indexOption("imdb_votes", t("sortImdbVotes")),
-          ...indexOption("lumovio", t("sortLumovio")),
-          ...indexOption("rt", t("sortRt")),
-          ...indexOption("metacritic", t("sortMetacritic")),
-          { value: "title", label: t("sortTitle") },
-        ]}
-      />
-    </span>
+    <Pill text={sortLabel} selected={false} label={`${t("sort")}: ${sortLabel}`} popup="menu">
+      {(m, trigger, { open, setOpen }) => (
+        <m.Menu label={t("sort")} open={open} onOpenChange={setOpen} trigger={trigger}>
+          {sortOptions.map((o) => (
+            <m.MenuCheckboxItem key={o.value} checked={state.sort === o.value} onCheckedChange={() => update({ sort: o.value === "popularity" ? null : o.value })}>
+              {o.label}
+            </m.MenuCheckboxItem>
+          ))}
+        </m.Menu>
+      )}
+    </Pill>
   );
+  // The grid's filters and sort as a smart list (package F); a guest is asked to sign in first (8.6). While a list's
+  // conditions are edited, the banner above saves them back instead.
+  const saveAsList = (className: string) =>
+    !editing && (
+      <Button variant="tertiary" size="sm" icon={ListFilterPlus} className={className} onClick={() => (me?.activeProfile ? setSaving(null) : setGate(true))}>
+        {tl("saveAsList")}
+      </Button>
+    );
   // A sort by a score lists the titles that have it, and says how many of the filtered ones those are — not for a kids
   // profile, whose numbers are counted before each title's age rule (as the count above is not shown then).
   const coverage = first?.coverage && !first.totalIsEstimate && isIndexSort(state.sort) ? first.coverage : null;
@@ -395,7 +554,9 @@ export function BrowseView({
           <EditRulesBar listId={editing} onSave={setSaving} className="mb-4" />
         </Suspense>
       )}
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      {/* One row of pills (7.4, 8.4): the filters, "Reset" once something is chosen, the sort and "Save as list" on
+          the end. Below lg the filters are one "Filters" pill opening the sheet. */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         {allowKindSwitch && (
           <SegmentedControl
             label={t("type")}
@@ -407,19 +568,32 @@ export function BrowseView({
             ]}
           />
         )}
-        <div className="max-lg:hidden">
+        <div className="contents max-lg:hidden">
           <Filters state={state} set={update} kind={kind} genres={genres} layout="row" />
+          {activeCount > 0 && (
+            <Button variant="tertiary" size="sm" onClick={() => update(cleared)}>
+              {t("resetShort")}
+            </Button>
+          )}
         </div>
-        <Button variant="secondary" size="sm" icon={SlidersHorizontal} className="lg:hidden" onClick={openSheet}>
+        <FilterChip
+          icon={SlidersHorizontal}
+          selected={activeCount > 0}
+          count={activeCount > 0 ? activeCount : undefined}
+          {...NOT_TOGGLE}
+          aria-haspopup="dialog"
+          className="lg:hidden"
+          onClick={openSheet}
+        >
           {t("filters")}
-          {activeCount > 0 && <AccentBadge className="tabular-nums">{activeCount}</AccentBadge>}
-        </Button>
-        <div className="max-lg:hidden">{reset}</div>
-        {/* The sort is not a filter: beside the filter button on a phone, beside the count from a desktop. */}
-        <div className="contents lg:hidden">{sort}</div>
+        </FilterChip>
+        <div className="ms-auto flex items-center gap-2">
+          {sort}
+          {saveAsList("max-lg:hidden")}
+        </div>
       </div>
       {presets.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           {presets.map((p) => (
             <InputChip key={p.key} label={p.label} onRemove={() => update(p.clear)} />
           ))}
@@ -434,26 +608,13 @@ export function BrowseView({
               ? countText(first.totalResults)
               : null}
         </p>
-        <div className="contents max-lg:hidden">{sort}</div>
-        {/* The grid's filters and sort as a smart list (package F); a guest is asked to sign in first (8.6). While a
-            list's conditions are edited, the banner above saves them back instead. */}
-        {!editing && (
-          <Button
-            variant="tertiary"
-            size="sm"
-            icon={ListFilterPlus}
-            className="max-lg:ms-auto"
-            onClick={() => (me?.activeProfile ? setSaving(null) : setGate(true))}
-          >
-            {tl("saveAsList")}
-          </Button>
-        )}
+        {saveAsList("ms-auto lg:hidden")}
       </div>
       {/* A failed load says so with Retry, not "nothing found" (8.4, audit X-14); a failed "Show more" — at the button
           below, not above the grid out of sight (CAT-12). */}
       <QueryState
         query={{ ...q, isError: q.isError && !q.isFetchNextPageError }}
-        loading={grid(Array.from({ length: 18 }, (_, i) => <PosterCardSkeleton key={i} />))}
+        loading={grid(SKELETONS.map((k) => <PosterCardSkeleton key={k} />))}
         isEmpty={(d) => d.pages.every((p) => p.results.length === 0)}
         empty={
           <EmptyState
