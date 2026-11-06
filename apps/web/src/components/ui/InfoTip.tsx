@@ -20,7 +20,7 @@ export interface InfoTipContent {
  * The "i" next to a heading (design-system 2.5, 7.13): what a shelf or section is, how it was picked and where its
  * data comes from, in a Popover (a sheet on a phone) — not grey lines under the heading (HOME-07, X-25). `label` names
  * the button ("How it's picked: Top 10", "About “Ratings”"), `title` heads the popover. One component for shelves
- * (media/ShelfInfo) and sections (sources/InfoTip) (X-44). The popover (Radix and its positioning) loads when the
+ * (once; the headings have none since 2026-11-06) and sections (sources/InfoTip) (X-44). The popover (Radix and its positioning) loads when the
  * button is approached, focused or the browser is idle (./lazy-swap, bundle budget); on a TV the button takes the
  * remote's size itself (IconButton).
  */

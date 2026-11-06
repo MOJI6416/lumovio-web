@@ -32,9 +32,35 @@ export function useNavigationLoading() {
   const here = decode(usePathname());
   const pending = useSyncExternalStore(
     pendingPages.subscribe,
-    () => pendingPages.list().some((to) => to !== "" && decode(to) !== here),
+    () => pendingPages.list().some((to) => to !== "" && decode(to) !== here && !framed(here, decode(to))),
     () => false,
   );
+  return useLate(pending);
+}
+
+/**
+ * A move between two sections of a frame that stays on screen — the settings beside their menu, from lg — shows its
+ * loader in the section's place (SettingsFrame, useSectionLoading), not over the whole page.
+ */
+const FRAMES = ["/settings"];
+const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 64rem)").matches;
+const inFrame = (frame: string, path: string) => path === frame || path.startsWith(`${frame}/`);
+function framed(here: string, to: string) {
+  return wide() && FRAMES.some((f) => inFrame(f, here) && inFrame(f, to));
+}
+
+/** Whether another section of `frame` is being prepared for longer than --loader-delay (the frame's own loader). */
+export function useSectionLoading(frame: string) {
+  const here = decode(usePathname());
+  const pending = useSyncExternalStore(
+    pendingPages.subscribe,
+    () => pendingPages.list().some((to) => to !== "" && decode(to) !== here && inFrame(frame, here) && inFrame(frame, decode(to))),
+    () => false,
+  );
+  return useLate(pending) && wide();
+}
+
+function useLate(pending: boolean) {
   const [late, setLate] = useState(false);
   useEffect(() => {
     if (!pending) {

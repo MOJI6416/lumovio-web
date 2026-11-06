@@ -66,6 +66,8 @@ export function SettingsNav({ sections, pathname, index }: { sections: SettingsS
               {/* The desktop's menu on the left. */}
               <Link
                 href={s.href}
+                // The frame keeps the page where it is (SettingsFrame): no jump to the top.
+                scroll={false}
                 aria-current={active ? "page" : undefined}
                 className={clsx(
                   "flex items-center gap-3 rounded-sm px-3 py-2.5 text-body font-semibold transition-colors duration-fast ease-fast max-lg:hidden",

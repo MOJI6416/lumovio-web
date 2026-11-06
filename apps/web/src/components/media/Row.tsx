@@ -3,14 +3,13 @@
 import { clsx } from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Children, type ReactNode, type RefObject, startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Children, type ReactNode, type RefObject, startTransition, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHydrated } from "@/components/title/hydrated";
 import { IconButton } from "@/components/ui/IconButton";
 import { Link } from "@/components/ui/Link";
 import { discoveryPage, observeShelf } from "@/lib/discovery-metrics";
 import { CARD_GAP_X, type CardShape, GRID_COLS, SHELF_COLS } from "./card-sizes";
 import { type Shelf, ShelfContext } from "./shelf-context";
-import { ShelfInfo } from "./ShelfInfo";
 import { drawInTurn, restoredScrollY } from "./shelf-turns";
 
 export type RowKind = CardShape;
@@ -84,7 +83,6 @@ export function Row({
   heading,
   note,
   rules,
-  info,
   actions,
   href,
   children,
@@ -95,11 +93,11 @@ export function Row({
   title: string;
   /** What the h2 shows when it's more than `title`'s text: a name in another language marked with `lang` (8.11). */
   heading?: ReactNode;
-  /** What the shelf is, in plain words (in the "i"). */
+  /** What the shelf is, in plain words (the section's description for a screen reader). */
   note?: string;
-  /** How it was picked, its source (in the "i"). */
+  /** How it was picked, its source (also for a screen reader). */
   rules?: string;
-  /** More for the "i": a link to adjust the shelf. */
+  /** A link to adjust the shelf, once in the "i"; not shown since the "i" left the headings (2026-11-06). */
   info?: ReactNode;
   /** Controls at the end of the heading row (the starter's "Not now"); never filters. */
   actions?: ReactNode;
@@ -112,6 +110,7 @@ export function Row({
   const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
   const section = useRef<HTMLElement>(null);
+  const aboutId = useId();
   // Cards drawn at once while hydrating (the server's HTML has them all); after a client-side navigation, in turns
   // (./shelf-turns): the shelves on or near the first screen before the page paints, the rest right after.
   const hydrated = useHydrated();
@@ -197,6 +196,7 @@ export function Row({
   };
 
   const headingId = id ? `${id}-heading` : undefined;
+  const about = [note, rules].filter(Boolean).join(" ");
   // The edge with more cards fades over the page's gutter (7.13); the other edge stays sharp.
   const side = (more: boolean) => (more ? "transparent" : "black");
   const mask = `linear-gradient(to right, ${side(!edges.start)} 0, black var(--gutter), black calc(100% - var(--gutter)), ${side(!edges.end)} 100%)`;
@@ -207,12 +207,24 @@ export function Row({
   return (
     // `.shelf`: drawn only when it comes near the screen, holding the height of its kind of cards until then (globals.css);
     // a shelf waiting for its turn holds that height too.
-    <section ref={section} className={clsx("shelf group/row relative", !drawn && "min-h-(--shelf-h)")} data-shelf={kind} aria-labelledby={headingId}>
+    <section
+      ref={section}
+      className={clsx("shelf group/row relative", !drawn && "min-h-(--shelf-h)")}
+      data-shelf={kind}
+      aria-labelledby={headingId}
+      aria-describedby={about ? aboutId : undefined}
+    >
       <div className="page-x mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 md:mb-4">
         <h2 id={headingId} className="text-h2 text-text-1">
           {heading ?? title}
         </h2>
-        {(note || rules || info) && <ShelfInfo title={title} note={note} rules={rules} link={info} />}
+        {/* No "i" by the heading (owner, 2026-11-06: the heading says what the shelf is); what it is and how it was
+            picked stays for a screen reader. */}
+        {about && (
+          <p id={aboutId} className="sr-only">
+            {about}
+          </p>
+        )}
         {/* A shelf's own actions take a line of their own on a phone, from the page's margin (the starter shelf's three). */}
         <div className={clsx("ms-auto flex items-center gap-x-4 gap-y-1", actions && "max-sm:ms-0 max-sm:basis-full")}>
           {actions}

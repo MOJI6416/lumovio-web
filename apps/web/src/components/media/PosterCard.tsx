@@ -2,7 +2,7 @@
 
 import type { TitleSummary } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useCardFact } from "@/hooks/useCardFact";
@@ -89,15 +89,16 @@ export function PosterCard({
   const shelfFact = useCardFact(title);
   const fact = factProp ?? shelfFact;
   const press = useLongPress();
-  // In a shelf a poster speaks for itself, as on Apple TV (redesign-2026-11.md 5): no caption under it; with a mouse the
-  // name, year and score come up over the poster's foot on hover and focus. A card that says why it is in the shelf
-  // (a fact, a subtitle), one without a poster, a grid and the site's TV mode keep the caption. The link's name is whole
-  // either way.
-  // A poster in a script the viewer may not read (an anime's, a Korean drama's: TMDB has no localized one for most)
-  // keeps its caption too — every interface language is Latin or Cyrillic.
+  // One rule for a poster in a shelf, as on Apple TV (redesign-2026-11.md 5): never a caption under it, so every shelf
+  // is the same row of posters. What has to be read stays on the poster's foot, on a scrim, always: the shelf's fact or
+  // the card's subtitle ("20 Nov", "3 seasons · 24 episodes", a role), and the name of a poster in a script the viewer
+  // may not read (an anime's, a Korean drama's: TMDB has no localized one for most; every interface language is Latin
+  // or Cyrillic). The rest show their name, year and score there on hover and focus, with a mouse. A card without a
+  // poster, a grid and the site's TV mode keep the caption; the link's name is whole either way.
   const inShelf = Boolean(useShelf());
   const foreignArt = title.isAnime || NON_LATIN_ART.has(title.originalLanguage ?? "");
-  const bare = inShelf && !subtitle && !fact && Boolean(title.posterPath) && !foreignArt;
+  const bare = inShelf && Boolean(title.posterPath);
+  const pinned = foreignArt || Boolean(subtitle || fact);
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
@@ -151,12 +152,29 @@ export function PosterCard({
           <div
             aria-hidden
             className={cn(
-              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm opacity-0 transition-opacity duration-base ease-base group-hover/card:opacity-100 group-focus-within/card:opacity-100 pointer-coarse:hidden in-data-[tv=1]:hidden",
+              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm transition-opacity duration-base ease-base in-data-[tv=1]:hidden",
+              pinned
+                ? "opacity-100"
+                : "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 pointer-coarse:hidden",
               artBox("poster"),
             )}
           >
-            <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-3 pt-12 pb-3 pe-11">
-              <CardMeta title={title.title} titleLang={latinLang(title.title, locale)} meta={[title.year, rating]} className="mt-0" />
+            {/* Small type for a poster's foot (a phone's poster is ~110 px wide); room for "More" only where a mouse shows it. */}
+            <div className="w-full bg-linear-to-t from-stage via-stage/75 to-transparent px-2.5 pt-10 pb-2.5 pointer-fine:pe-11">
+              <p className="line-clamp-2 break-words text-body-s font-semibold text-text-1" lang={latinLang(title.title, locale)}>
+                {title.title}
+              </p>
+              {meta.some(Boolean) && (
+                <p className={cn("mt-0.5 text-caption text-text-2", subtitle || fact ? "line-clamp-2" : "truncate")}>
+                  {meta.filter(Boolean).map((m, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
+                    <Fragment key={i}>
+                      {i > 0 && " · "}
+                      {m}
+                    </Fragment>
+                  ))}
+                </p>
+              )}
             </div>
           </div>
         )}

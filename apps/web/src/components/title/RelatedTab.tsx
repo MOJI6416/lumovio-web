@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { PosterCard } from "@/components/media/PosterCard";
 import { TitleGrid } from "@/components/media/Row";
 import { withNameLang } from "@/components/media/recommendation-copy";
-import { ShelfInfo } from "@/components/media/ShelfInfo";
 
 /**
  * "More like this" (design-system 7.12, 7.13, TTL-16): the collection the title belongs to — named without TMDB's
@@ -52,7 +51,8 @@ export function RelatedTab({
               {/* A name TMDB has only in Latin letters on a ru/uk page is marked with its language (8.11, L10N-11). */}
               {"name" in s && s.name ? withNameLang(s.title, s.name, locale) : s.title}
             </h2>
-            {s.note && <ShelfInfo title={s.title} note={s.note} />}
+            {/* No "i" by the heading (2026-11-06); what the section is stays for a screen reader. */}
+            {s.note && <p className="sr-only">{s.note}</p>}
           </div>
           <TitleGrid>
             {s.items.map((p) => (
