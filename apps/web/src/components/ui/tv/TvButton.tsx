@@ -12,7 +12,8 @@ import { cn } from "../cn";
 export type TvButtonLook = "pill" | "round" | "row";
 
 const LOOKS: Record<TvButtonLook, string> = {
-  pill: "h-11 min-w-11 px-5 gap-3 rounded-sm",
+  // A pill as the site's buttons since the 2026-11 redesign (one family on every screen).
+  pill: "h-11 min-w-11 px-5 gap-3 rounded-full",
   round: "size-11 rounded-full [&_svg]:size-6",
   // A full-width line of a list (settings, sources, tracks): label at the start, its value or mark at the end.
   row: "min-h-11 w-full justify-start gap-4 whitespace-normal rounded-sm px-5 py-2 text-start",

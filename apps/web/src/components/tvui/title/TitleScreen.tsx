@@ -5,7 +5,6 @@ import { User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { TitleLogo } from "@/components/media/TitleLogo";
 import type { TitleCore } from "@/components/title/core";
-import { cn } from "@/components/ui/cn";
 import { Link } from "@/i18n/navigation";
 import { tmdbImage } from "@/lib/images";
 import { personHref } from "@/lib/slug";
@@ -136,7 +135,7 @@ function Person({ person: p, locale }: { person: CastMember; locale: string }) {
         {p.name}
       </span>
       {p.character && (
-        <span className={cn("line-clamp-1 text-center text-body-s text-text-2")}>{p.character}</span>
+        <span className="line-clamp-1 text-center text-body text-text-2">{p.character}</span>
       )}
     </Link>
   );
