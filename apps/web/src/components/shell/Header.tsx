@@ -154,7 +154,11 @@ export function Header({ overlay }: { overlay: boolean }) {
         </div>
         {/* From md to lg the sections are as wide as the header allows: when they don't fit (a kids profile's tag, a
             longer language) they scroll sideways instead of pushing the search and the account off the screen. */}
-        <nav aria-label={t("mainMenu")} className="min-w-0 max-md:hidden">
+        <nav
+          aria-label={t("mainMenu")}
+          // Under the header's open search where it reaches them (HeaderSearchPanel): faded out, and back as it closes.
+          className="min-w-0 transition-opacity duration-base ease-base in-data-[search-over]:pointer-events-none in-data-[search-over]:opacity-0 max-md:hidden"
+        >
           <ul
             ref={navList}
             style={{ maskImage: navFade, WebkitMaskImage: navFade }}

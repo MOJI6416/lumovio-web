@@ -32,20 +32,20 @@ type Option =
   | { kind: "describe"; key: string; href: string }
   | { kind: "all"; key: string; href: string };
 
-/** The round button the field grows out of (IconButton md), and how long it takes to shrink back (--dur-base). */
-const BUTTON = 40;
+/** The round button the field grows out of (IconButton sm, as the avatar), the field's width, and how long it takes
+ * back (--dur-base). */
+const BUTTON = 32;
+const WIDTH = 288;
 const CLOSE_MS = 200;
 
 /**
- * The open field's width: 320, 384 from lg — or, when that would reach into the header's sections (768–1023, a kids
- * profile's tag, a longer language), from where the sections start, covering them while it is open.
+ * Whether the open field would reach into the header's sections (768–1023, a kids profile's tag, a longer language):
+ * they fade out under it then, rather than the field growing over all of them.
  */
-function roomFor(el: HTMLElement | null): number {
-  const wide = window.matchMedia("(min-width: 64rem)").matches ? 384 : 320;
+function overSections(el: HTMLElement | null): boolean {
   const nav = el?.closest("header")?.querySelector("nav")?.getBoundingClientRect();
-  if (!el || !nav || nav.width === 0) return wide;
-  const right = el.getBoundingClientRect().right;
-  return right - wide < nav.right + 16 ? Math.max(wide, right - nav.left) : wide;
+  if (!el || !nav || nav.width === 0) return false;
+  return el.getBoundingClientRect().right - WIDTH < nav.right + 16;
 }
 
 /**
@@ -78,13 +78,26 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
   }, [q]);
   // The field grows out of the round button and back into it (--dur-base, ease-base: 6.3, 7.19); its width is the
   // header's room — over the sections when they are in the way, so nothing beside it moves.
-  const [width, setWidth] = useState(BUTTON);
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
+  // The sections make room by fading (Header, `data-search-over`) for as long as the field is out.
+  const sections = (on: boolean) => {
+    const header = box.current?.closest("header");
+    if (!header) return;
+    if (on) header.dataset.searchOver = "";
+    else delete header.dataset.searchOver;
+  };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on opening only; `sections` touches the header alone
   useLayoutEffect(() => {
-    setWidth(roomFor(box.current));
-    const id = requestAnimationFrame(() => setExpanded(true));
-    return () => cancelAnimationFrame(id);
+    const over = overSections(box.current);
+    const id = requestAnimationFrame(() => {
+      setExpanded(true);
+      sections(over);
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      sections(false);
+    };
   }, []);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -95,8 +108,11 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
   shrinkRef.current = () => {
     if (closing) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return closeRef.current();
+    // The field gives up the focus (its border goes back to the button's) and its text, and shrinks into the button.
+    input.current?.blur();
     setClosing(true);
     setExpanded(false);
+    sections(false);
     closeTimer.current = setTimeout(() => closeRef.current(), CLOSE_MS);
   };
   // Opened: the field takes the focus; a press outside closes it.
@@ -281,7 +297,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
 
   return (
     // The button's place in the header: the field grows from its end edge over what stands before it.
-    <div ref={box} className="relative size-10 max-md:hidden">
+    <div ref={box} className="relative size-8 max-md:hidden">
       <SearchField
         ref={input}
         size="md"
@@ -297,8 +313,15 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
         aria-label={tr("nav.search")}
         placeholder={tr("nav.search")}
         maxLength={QUERY_MAX}
-        boxStyle={{ width: expanded ? width : BUTTON }}
-        className="absolute end-0 top-0 z-10 overflow-hidden border-transparent transition-[width,border-color,box-shadow] duration-base ease-base in-data-[tv=1]:transition-none"
+        boxStyle={{ width: expanded ? WIDTH : BUTTON }}
+        // Shrunk it is the button exactly — the same border, fill and icon —, so the two swap without a jump; the text
+        // and the clear button go first. Clipped, not hidden: a scroll container would scroll the focused field's caret
+        // into view and move the icon 3 px.
+        className={cn(
+          "absolute end-0 top-0 z-10 overflow-clip transition-[width,border-color,box-shadow] duration-base ease-base in-data-[tv=1]:transition-none",
+          "[&>:not(svg)]:transition-opacity [&>:not(svg)]:duration-fast",
+          !expanded && "[&>:not(svg)]:opacity-0",
+        )}
       />
       {showList && (
         // The page's theme, not the stage's: over a hero the header is a stage (3.5), its list is the site's own layer.
@@ -306,7 +329,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
         <div
           data-theme={document.documentElement.dataset.theme}
           className={cn(
-            "absolute end-0 top-12 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto rounded-md border border-line bg-surface-2 p-2 text-text-1 shadow-float",
+            "absolute end-0 top-10 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto rounded-md border border-line bg-surface-2 p-2 text-text-1 shadow-float",
             "transition-[opacity,translate] duration-base ease-base starting:-translate-y-1 starting:opacity-0 in-data-[tv=1]:transition-none",
             closing && "pointer-events-none -translate-y-1 opacity-0",
           )}

@@ -7,8 +7,9 @@ import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
 
 const SIZE = {
-  /** The header's (40). */
-  md: { box: "h-10 ps-3.5 pe-1", icon: "size-4.5", text: "text-body" },
+  /** The header's (32, as the avatar beside it): the icon where the round search button has it (16, centred in the
+   * first 32), so the button and the field grow into each other without a jump. */
+  md: { box: "h-8 ps-1.75 pe-0.5", icon: "size-4", text: "text-body" },
   /** The search page's: 48 on a phone, 56 from `md`. */
   lg: { box: "h-12 ps-4 pe-1.5 md:h-14 md:ps-5 md:pe-2", icon: "size-5 md:size-6", text: "text-body-l" },
 } as const;
