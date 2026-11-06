@@ -137,7 +137,8 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
 
   if (!signedIn) {
     return (
-      <div className="mt-8 max-w-3xl rounded-md border border-line bg-surface-1">
+      // In the middle of the page, as the empty and error states (no block hangs at the start, owner 2026-10-25).
+      <div className="mx-auto mt-8 max-w-3xl rounded-md border border-line bg-surface-1">
         <GuestGatePanel reason="ai" next="/search?mode=ai" />
       </div>
     );
