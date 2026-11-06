@@ -9,6 +9,7 @@ import "../globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { ThemeSync } from "@/components/shell/Preferences";
 import { ThemeScript } from "@/components/shell/ThemeScript";
+import { DragScroll } from "@/components/ui/DragScroll";
 import { localeInfo } from "@/i18n/locales";
 import { BRAND_LIME, OG_IMAGE } from "@/lib/brand";
 import { APPLE_STARTUP_IMAGES } from "@/lib/brand-startup.gen";
@@ -110,6 +111,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
           <Providers me={me} apiDown={meState === "unavailable"} locale={locale} tv={tv}>
             {children}
             <ThemeSync />
+            <DragScroll />
           </Providers>
         </NextIntlClientProvider>
       </body>
