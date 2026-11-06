@@ -2,28 +2,27 @@
 
 import type { Availability, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Server, Settings2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Settings2, X } from "lucide-react";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ServerMark } from "@/components/connections/ServerMark";
 import { useSession } from "@/components/providers/Providers";
-import { GuestGatePanel } from "@/components/shell/GuestGate";
+import { CopyChoice } from "@/components/sources/CopyChoice";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
+import { EpisodePick } from "@/components/sources/EpisodePick";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "@/components/title/CopyActions";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
-import { AccentBadge, StatusBadge, Tag } from "@/components/ui/Badge";
+import { AccentBadge } from "@/components/ui/Badge";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { IconButton } from "@/components/ui/IconButton";
 import { type Step, Steps } from "@/components/ui/Progress";
@@ -1322,93 +1321,47 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             )}
 
             {(phase.kind === "choose" || phase.kind === "error" || phase.kind === "external") && (
-              <div id="sources" className="scroll-mt-24">
-                {candidates.length > 0 && (
-                  <SourceSection id="copies-h" title={tt("yourServers")}>
-                    <ul className="flex flex-col gap-2">
-                      {candidates.map((c, i) => {
-                        const isCurrent = active ? sameCopy(active.candidate, c) : sameCopy(current, c);
-                        const broken = failed.current.has(c.key);
-                        return (
-                          <li key={c.key}>
-                            <SourceRow
-                              selected={isCurrent}
-                              icon={<ServerMark kind={c.provider} />}
-                              badges={
-                                isCurrent && active ? (
-                                  <Tag>{t("nowPlaying")}</Tag>
-                                ) : broken ? (
-                                  <StatusBadge status="warning">{t("failedSource")}</StatusBadge>
-                                ) : i === 0 && candidates.length > 1 && !active ? (
-                                  <Tag>{tt("startsFirst")}</Tag>
-                                ) : undefined
-                              }
-                              title={titleOf(c)}
-                              meta={copyText.meta(c.server, d.title)}
-                              action={
-                                isCurrent && active ? (
-                                  <Button variant="secondary" onClick={backToPlayer}>
-                                    <Play aria-hidden className="fill-current" />
-                                    {t("continueWatching")}
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="secondary"
-                                    onClick={(e) => {
-                                      keepPlace(e.currentTarget);
-                                      choose(c);
-                                    }}
-                                  >
-                                    <Play aria-hidden className="fill-current" />
-                                    {tt("tsWatch")}
-                                  </Button>
-                                )
-                              }
-                              more={
-                                signedIn && !isKids ? (
-                                  <CopyActions
-                                    title={{ ...d, trailer: null }}
-                                    copy={c.server}
-                                    episodes={(avail.data?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.connectionId === c.server.connectionId && hashOf(x.externalId).toLowerCase() === hashOf(c.server.externalId).toLowerCase())}
-                                    manage={c.provider === "torrserver"}
-                                    onRemove={setRemoval}
-                                    onDetails={() => setDetails(c.server)}
-                                  />
-                                ) : undefined
-                              }
-                            />
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </SourceSection>
+              // The copies as the title's "Where to watch" says them (CopyChoice, sources-screen session): the one to watch
+              // as a card, the rest under it; a guest, no servers, a kids profile, a failure — the same card. A series'
+              // episode is changed here too.
+              <div id="sources" className="flex scroll-mt-24 flex-col gap-8">
+                {d.kind === "tv" && season !== null && episode !== null && (
+                  <EpisodePick details={d} season={season} episode={episode} href={(s, e) => `${epHref(s, e)}&pick=1`} />
                 )}
-                {/* With a TorrServer to search, no copy yet is one line, not a dead end: the search follows. */}
-                {phase.kind === "choose" && candidates.length === 0 && finderShown && ws.kind !== "error" && <p className="text-body text-text-2">{t("noCopiesYet")}</p>}
-                {/* A guest: the one sign-in panel (8.6, AUTH-02), back to this screen afterwards. */}
-                {phase.kind === "choose" && candidates.length === 0 && !signedIn && <GuestGatePanel reason="watch" next={here} />}
-                {phase.kind === "choose" && candidates.length === 0 && signedIn && ws.kind === "error" && (
-                  <ErrorState error={avail.error} title={tt("statusError")} onRetry={() => void avail.refetch().then(() => setPhase({ kind: "loading" }))} retrying={avail.isFetching} />
-                )}
-                {phase.kind === "choose" && candidates.length === 0 && signedIn && !finderShown && ws.kind !== "error" && (
-                  <EmptyState
-                    icon={Server}
-                    title={t("noSources")}
-                    text={whyNothing}
-                    action={
-                      !isKids && (ws.kind === "noServers" || ws.kind === "unreachable") ? (
-                        <Link href="/settings/connections" className={buttonClass("primary")}>
-                          {ws.kind === "noServers" ? tt("connectServer") : tt("checkConnection")}
-                        </Link>
-                      ) : undefined
-                    }
-                    secondaryAction={
-                      <Link href={`${titleHref(d.kind, d.tmdbId, d.title)}?tab=watch`} className={buttonClass("secondary")}>
-                        {tt("availability")}
-                      </Link>
-                    }
-                  />
-                )}
+                <CopyChoice
+                  copies={candidates.map((c) => ({ key: c.key, server: c.server, playing: Boolean(active && sameCopy(active.candidate, c)), failed: failed.current.has(c.key) }))}
+                  all={avail.data?.servers ?? []}
+                  originalLanguage={d.originalLanguage}
+                  state={ws}
+                  signedIn={signedIn}
+                  kids={isKids}
+                  finder={finderShown}
+                  next={here}
+                  onWatch={(copy, el) => {
+                    keepPlace(el);
+                    const c = candidates.find((x) => x.key === copy.key);
+                    if (c) choose(c);
+                  }}
+                  onContinue={backToPlayer}
+                  more={
+                    signedIn && !isKids
+                      ? (copy, size) => (
+                          <CopyActions
+                            title={{ ...d, trailer: null }}
+                            copy={copy}
+                            size={size}
+                            episodes={(avail.data?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.connectionId === copy.connectionId && hashOf(x.externalId).toLowerCase() === hashOf(copy.externalId).toLowerCase())}
+                            manage={copy.kind === "torrserver"}
+                            onRemove={setRemoval}
+                            onDetails={() => setDetails(copy)}
+                          />
+                        )
+                      : undefined
+                  }
+                  error={avail.error}
+                  onRetry={() => void avail.refetch().then(() => setPhase({ kind: "loading" }))}
+                  retrying={avail.isFetching}
+                />
               </div>
             )}
 
@@ -1419,7 +1372,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 <span id={FIND_SOURCE_ID} tabIndex={-1} className="sr-only">
                   {t("findAnother")}
                 </span>
-                <TorrentFinder {...finderProps} />
+                <TorrentFinder {...finderProps} lead={candidates.length === 0 && !active} />
               </div>
             )}
           </div>
