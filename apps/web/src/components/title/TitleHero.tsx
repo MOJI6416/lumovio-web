@@ -16,9 +16,10 @@ import { TitleActions } from "./TitleActions";
 import { YourRating } from "./YourRating";
 
 // A name in the credits: white beside its grey role, underlined under the pointer (a list of names, not running text:
-// four underlines in a row were noise; 7.14). A 44 px target on a phone and 32+ on a computer (5.6, TTL-29) without
-// moving the line — an inline element's vertical padding grows what can be pressed, not the line box.
-const CREDIT = "whitespace-nowrap rounded-xs py-3.5 font-semibold text-text-1 underline-offset-3 hover:underline md:py-2";
+// four underlines in a row were noise; 7.14). Its own box, 44 px tall on a phone and 32 from a tablet (5.6), in rows
+// exactly that tall: the targets of two lines meet and never overlap (an inline link's padding grew its target over the
+// line below, and "Director" took the presses meant for the cast above it).
+const CREDIT = "inline-flex min-h-11 items-center rounded-xs font-semibold text-text-1 underline-offset-3 hover:underline max-md:min-w-11 md:min-h-8";
 
 /** Animation is said by "Anime" already: it isn't one of an anime's genres in its facts. */
 const ANIMATION = 16;
@@ -63,26 +64,30 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
 
   const makers = d.kind === "movie" ? d.crew.filter((c) => c.job === "Director").slice(0, 2) : d.creators.slice(0, 2);
   const cast = d.cast.slice(0, 3);
-  const names = (people: { id: number; name: string }[]) =>
+  // Each name whole with its comma; the line wraps between names, never inside one. A phone shows `phone` of them: a
+  // third name there takes a 44 px line of its own, and the whole cast is a shelf further down anyway.
+  const names = (people: { id: number; name: string }[], phone = people.length) =>
     people.map((p, i) => (
-      <Fragment key={p.id}>
-        {i > 0 && ", "}
+      <span key={p.id} className={clsx("inline-flex items-center whitespace-nowrap", i >= phone && "max-sm:hidden")}>
         {/* A name TMDB has only in Latin letters on a ru/uk page is marked with its language (8.11, L10N-11). */}
         <Link href={personHref(p.id, p.name)} className={CREDIT} lang={latinLang(p.name, locale)}>
           {p.name}
         </Link>
-      </Fragment>
+        {i < people.length - 1 && <span className={clsx(i === phone - 1 && "max-sm:hidden")}>,</span>}
+      </span>
     ));
   const credits = (cast.length > 0 || makers.length > 0) && (
-    <div className="mt-4 flex flex-col gap-1 text-body-s text-text-2 md:mt-5 lg:mt-0 lg:pb-1">
+    <div data-credits className="mt-2 flex flex-col text-body-s text-text-2 md:mt-3 lg:mt-0">
       {cast.length > 0 && (
-        <p>
-          {t("title.cast")} {names(cast)}
+        <p className="flex flex-wrap items-center gap-x-1">
+          <span>{t("title.cast")}</span>
+          {names(cast, 2)}
         </p>
       )}
       {makers.length > 0 && (
-        <p>
-          {d.kind === "movie" ? t("title.directedBy") : t("title.createdBy")} {names(makers)}
+        <p className="flex flex-wrap items-center gap-x-1">
+          <span>{d.kind === "movie" ? t("title.directedBy") : t("title.createdBy")}</span>
+          {names(makers)}
         </p>
       )}
     </div>

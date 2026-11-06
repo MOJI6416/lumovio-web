@@ -1,7 +1,7 @@
 import type { TitleDetails } from "@lumovio/contracts";
 import { ExternalLink } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "@/components/ui/Link";
 import { capitalize, formatDate, languageName, regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
@@ -29,14 +29,16 @@ export async function TitleFacts({ details: d, locale }: { details: TitleDetails
   if (d.genres.length)
     rows.push([
       tb("genres"),
-      <span key="g">
+      // Each genre its own target, 44 px tall on a phone and 32 from a tablet, in rows that tall: two lines of genres
+      // never take each other's presses (as the hero's credits, 7.14).
+      <span key="g" className="flex flex-wrap gap-x-1">
         {d.genres.map((g, i) => (
-          <Fragment key={g.id}>
-            {i > 0 && ", "}
-            <Link href={`/browse/${d.kind}?genres=${g.id}`} className="py-3.5 md:py-2">
+          <span key={g.id} className="inline-flex items-center whitespace-nowrap">
+            <Link href={`/browse/${d.kind}?genres=${g.id}`} className="inline-flex min-h-11 items-center md:min-h-8">
               {capitalize(g.name, locale)}
             </Link>
-          </Fragment>
+            {i < d.genres.length - 1 && ","}
+          </span>
         ))}
       </span>,
     ]);
