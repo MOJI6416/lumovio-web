@@ -74,9 +74,13 @@ export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, 
 /** The sources screen for the same viewing: other copies, a new search (never an empty player, 8.2). */
 export const sourcesHref = (href: string, extra = "") => `${href}${href.includes("?") ? "&" : "?"}pick=1${extra}`;
 
-/** The tabs of a title, in the address as `?tab=` (7.5, 8.7). */
-export const TITLE_TABS = ["episodes", "watch", "related", "videos", "details"] as const;
-export type TitleTabId = (typeof TITLE_TABS)[number];
+/**
+ * The sections of a title's page that a link can open, each the id of its element (9, Title): the page was tabs until
+ * 2026-11, and their links (`?tab=episodes` from the calendar, `#episodes` from a card's "Mark episodes", `?tab=watch`
+ * from the player) land on the section of the same name.
+ */
+export const TITLE_SECTIONS = ["episodes", "videos", "watch", "related", "people", "details"] as const;
+export type TitleSectionId = (typeof TITLE_SECTIONS)[number];
 
 /** TMDB names a collection "Dune Collection" / "Дюна (Коллекция)" / "Дюна (Колекція)": the name alone (TTL-16). */
 export function collectionName(name: string): string {

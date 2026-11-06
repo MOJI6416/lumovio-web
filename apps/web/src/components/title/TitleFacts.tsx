@@ -1,48 +1,45 @@
 import type { TitleDetails } from "@lumovio/contracts";
 import { ExternalLink } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { ReactNode } from "react";
-import { formatDate, languageName, regionName } from "@/lib/format";
+import { Fragment, type ReactNode } from "react";
+import { Link } from "@/components/ui/Link";
+import { capitalize, formatDate, languageName, regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
-import { ExternalLinks, FactsInfo, PeopleRows, RatingsSection, Soundtrack } from "./tab-parts";
+import { ExternalLinks, FactsInfo } from "./parts";
 
 // TMDB's statuses, said in the interface language (TTL-07).
 const STATUSES = ["Rumored", "Planned", "In Production", "Post Production", "Released", "Canceled", "Returning Series", "Ended", "Pilot"];
 
-const LINK =
-  "inline-flex min-h-8 items-center gap-1.5 rounded-sm border border-line px-3 text-body-s text-text-1 transition-colors duration-fast ease-fast hover:border-line-2 hover:bg-surface-2 max-sm:min-h-11";
-
-/** A section of the tab: the h2 of a shelf (7.13), an optional "i", on the page gutter. */
-function Section({ id, title, info, children }: { id: string; title: string; info?: ReactNode; children: ReactNode }) {
-  return (
-    <section aria-labelledby={id} className="page-x">
-      <div className="mb-3 flex items-center gap-1 md:mb-4">
-        <h2 id={id} className="text-h2 text-text-1">
-          {title}
-        </h2>
-        {info}
-      </div>
-      {children}
-    </section>
-  );
-}
+// "Elsewhere": quiet links that leave the site (↗), 44 px tall on a phone (5.6).
+const LINK = "inline-flex min-h-8 items-center gap-1 text-body text-text-1 underline decoration-1 underline-offset-3 hover:decoration-2 max-sm:min-h-11";
 
 /**
- * The "Details" tab (S06, S07, C13; TTL-07, TTL-10, TTL-16, TTL-21; owner 2026-10-25: "everything piled up"): sections
- * with one heading style and one rhythm (48 between them, 32 on a phone), each said once —
- * 1. Facts — a grid of what the hero doesn't say: status in the interface language, the full release date, the number
- *    of episodes, countries, languages, networks (and TMDB's keywords in English only, they have no translation); the
- *    credits for the data and the art (TMDB, Fanart.tv) in the "i";
- * 2. Ratings — the Lumovio Score beside the sources, critics and audience, each on a meter (./RatingsSection);
- * 3. Cast and 4. Creators — shelves of PersonCards;
- * 5. Soundtrack;
- * 6. Elsewhere — the title on TMDB, IMDb, Wikidata, its own site, Letterboxd, Kinopoisk…
- * Nothing the hero shows is repeated: overview, genres, the director or creators' line, the original title, the age rating.
+ * "Details" (S06, S07, C13; TTL-07, TTL-10, TTL-16, TTL-21; 2026-11-06 the reference at the foot of the page, not a
+ * tab): one grid of what the hero doesn't say — the genres as links to the catalog, the status in the interface
+ * language, the full release date, the number of episodes and their numbering, countries, languages, networks (TMDB's
+ * keywords in English only, they have no translation) and, last, the title on other sites (TMDB, IMDb, Wikidata, its own
+ * site, Letterboxd, Kinopoisk…). The credits for the data and the art (TMDB, Fanart.tv) are in the "i" by the heading.
+ * The ratings, the people and the soundtrack are sections of their own (the page, 9 Title).
  */
 export async function TitleFacts({ details: d, locale }: { details: TitleDetails; locale: string }) {
   const t = await getTranslations("title");
   const tp = await getTranslations("titlePage");
+  const tb = await getTranslations("browse");
   const rows: [string, ReactNode][] = [];
+  if (d.genres.length)
+    rows.push([
+      tb("genres"),
+      <span key="g">
+        {d.genres.map((g, i) => (
+          <Fragment key={g.id}>
+            {i > 0 && ", "}
+            <Link href={`/browse/${d.kind}?genres=${g.id}`} className="py-3.5 md:py-2">
+              {capitalize(g.name, locale)}
+            </Link>
+          </Fragment>
+        ))}
+      </span>,
+    ]);
   if (d.status) rows.push([t("status"), STATUSES.includes(d.status) ? tp(`status_${d.status.replace(/ /g, "")}` as "status_Released") : <span key="s" lang="en">{d.status}</span>]);
   if (d.releaseDate) rows.push([d.kind === "movie" ? t("released") : t("firstAired"), formatDate(d.releaseDate, locale, { dateStyle: "long" })]);
   if (d.kind === "tv" && d.numberOfEpisodes) rows.push([tp("episodeCount"), (await getTranslations("common"))("episodes", { count: d.numberOfEpisodes })]);
@@ -101,43 +98,43 @@ export async function TitleFacts({ details: d, locale }: { details: TitleDetails
   ].filter(Boolean) as { href: string; label: string }[];
 
   return (
-    <div className="flex flex-col gap-8 md:gap-12">
-      {rows.length > 0 && (
-        <Section id="facts-h" title={tp("facts")} info={<FactsInfo title={tp("facts")} note={credits} />}>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {rows.map(([k, v]) => (
-              <div key={k} className="min-w-0">
-                <dt className="text-body-s text-text-2">{k}</dt>
-                <dd className="mt-1 text-body text-text-1">{v}</dd>
-              </div>
-            ))}
-            {english && d.keywords.length > 0 && (
-              <div className="col-span-full">
-                <dt className="text-body-s text-text-2">{t("keywords")}</dt>
-                <dd className="mt-1 text-body text-text-1">{d.keywords.slice(0, 12).join(" · ")}</dd>
-              </div>
-            )}
-          </dl>
-        </Section>
-      )}
-      <RatingsSection kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
-      <PeopleRows cast={d.cast} crew={d.crew} creators={d.creators} />
-      <div className="page-x">
-        <Soundtrack kind={d.kind} tmdbId={d.tmdbId} searchQuery={`${d.originalTitle ?? d.title} soundtrack`} />
+    <section id="details" aria-labelledby="details-h" className="page-x scroll-mt-24">
+      <div className="mb-3 flex items-center gap-1 md:mb-4">
+        <h2 id="details-h" className="text-h2 text-text-1">
+          {t("details")}
+        </h2>
+        <FactsInfo title={t("details")} note={credits} />
       </div>
-      <Section id="links-h" title={t("externalLinks")}>
-        <ul className="flex flex-wrap gap-2">
-          {links.map((l) => (
-            <li key={l.href}>
-              <a href={l.href} target="_blank" rel="noreferrer noopener" className={LINK}>
-                {l.label}
-                <ExternalLink aria-hidden className="size-4" />
-              </a>
-            </li>
-          ))}
-          <ExternalLinks kind={d.kind} tmdbId={d.tmdbId} exclude={["imdb"]} className={LINK} />
-        </ul>
-      </Section>
-    </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {rows.map(([k, v]) => (
+          <div key={k} className="min-w-0">
+            <dt className="text-body-s text-text-2">{k}</dt>
+            <dd className="mt-1 text-body text-text-1">{v}</dd>
+          </div>
+        ))}
+        {english && d.keywords.length > 0 && (
+          <div className="col-span-full">
+            <dt className="text-body-s text-text-2">{t("keywords")}</dt>
+            <dd className="mt-1 text-body text-text-1">{d.keywords.slice(0, 12).join(" · ")}</dd>
+          </div>
+        )}
+        <div className="col-span-full">
+          <dt className="text-body-s text-text-2">{t("externalLinks")}</dt>
+          <dd className="mt-1">
+            <ul className="flex flex-wrap gap-x-5 gap-y-1">
+              {links.map((l) => (
+                <li key={l.href}>
+                  <a href={l.href} target="_blank" rel="noreferrer noopener" className={LINK}>
+                    {l.label}
+                    <ExternalLink aria-hidden className="size-4" />
+                  </a>
+                </li>
+              ))}
+              <ExternalLinks kind={d.kind} tmdbId={d.tmdbId} exclude={["imdb"]} className={LINK} />
+            </ul>
+          </dd>
+        </div>
+      </dl>
+    </section>
   );
 }

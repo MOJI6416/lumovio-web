@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, Check, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, Plus, RefreshCw, Search, Server, Tv } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, ChevronDown, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, Plus, RefreshCw, Search, Server, Tv } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { QualityBadges, QualityLine, qualityMarks, SLOT, Slotted } from "@/compo
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
-import { Link as ActionLink } from "@/components/ui/Link";
+import { Link as ActionLink, linkClass } from "@/components/ui/Link";
 import { lazyControl, useLazySwap, useStandIn } from "@/components/ui/lazy-swap";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
@@ -22,23 +22,24 @@ import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { isOngoing, resumable, sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-plan";
+import { setRateOpen } from "./rate-open";
+import { scrollToSection } from "./section-link";
 import { serviceOf } from "./services";
-import { scrollToTabs, useOpenTab } from "./tab-link";
 import type { ProbeResult } from "./TorrentProbe";
 import { TrailerDialog } from "./TrailerDialog";
 
 // The rarely opened parts load when they are approached (ui/lazy-swap) or opened; the search for a release only where
 // it runs.
 const moreModule = lazyControl(() => import("./TitleMore"));
-const TitleRate = dynamic(() => import("./TitleRate").then((m) => m.TitleRate), { ssr: false });
 const TorrentProbe = dynamic(() => import("./TorrentProbe").then((m) => m.TorrentProbe), { ssr: false });
 
 /**
  * The title hero's actions (design-system 7.14 items 6–7, 8.2; redesign-2026-11.md 2): one main button by the table of
  * 8.2 — "Continue", "Watch" (own copy, or the recommended TorrServer release), the trailer, or none (then "Watchlist" is
- * the main one); beside it two circles: "Watchlist" (+, ✓ when on) and "More" with the rest (Rate, Favourites, Watched,
- * Not interested, Add to list…, new-episode alerts, Share). Under them one line of where it plays from, with the way to
- * "Where to watch". The same row on a phone, the main button taking the width the circles leave.
+ * the main one); beside it two circles: "Watchlist" (+, ✓ when on) and "More" with the rest (Favourites, Watched,
+ * Not interested, Add to list…, new-episode alerts, Share, the picture). Under them one line of where it plays from,
+ * with the way down to "Where to watch". The same row on a phone, the main button taking the width the circles leave.
+ * The rating isn't here: it stands with the ratings (./YourRating).
  */
 export function TitleActions({ title: d }: { title: TitleCore }) {
   const t = useTranslations("titlePage");
@@ -53,8 +54,6 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [playing, setPlaying] = useState(false);
-  const tabs = useOpenTab();
-  const [rateOpen, setRateOpen] = useState(false);
 
   const moreLight = useRef<HTMLButtonElement>(null);
   const more = useLazySwap(moreModule, moreLight);
@@ -68,7 +67,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     replayed.current = true;
     const action = takeGuestIntent(d.id);
     if (!action || actions.replay(action)) return;
-    if (action === "rate") setRateOpen(true);
+    if (action === "rate") setRateOpen(d.id);
     else if (action === "follow" && isOngoing(d)) {
       void api("/api/follow", { method: "POST", json: { titleId: d.id, on: true } }).then(
         () => toast.success(tg("doneFollow")),
@@ -156,9 +155,6 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     />
   );
 
-  const rating = state?.rating ?? null;
-  // A guest gets the sign-in sheet for it, and the dialog after signing in (8.6).
-  const onRate = () => (signedIn ? setRateOpen(true) : actions.requireAuth("rate", "rate"));
   const moreLabel = t("more");
 
   return (
@@ -172,12 +168,11 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         )}
         {watchlist}
         {moreIn.full ? (
-          <moreIn.full.TitleMore title={d} initialOpen={more.start.open} focusTrigger={more.start.focus} label={moreLabel} rating={rating} onRate={onRate} />
+          <moreIn.full.TitleMore title={d} initialOpen={more.start.open} focusTrigger={more.start.focus} label={moreLabel} />
         ) : (
           <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" size="lg" label={moreLabel} aria-haspopup="menu" aria-expanded={false} {...moreIn.handlers} />
         )}
       </div>
-      {signedIn && rateOpen && <TitleRate title={d} actions={actions} open={rateOpen} onOpenChange={setRateOpen} />}
       {/* While availability loads, the line it brings is held (7.11), so the hero doesn't grow when it arrives. */}
       {plan.primary?.kind === "loading" && (
         <div aria-hidden className="mt-4 flex h-8 items-center max-sm:h-11">
@@ -185,7 +180,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         </div>
       )}
       {plan.summary && (
-        <AvailabilityLine summary={plan.summary} kids={kids} whereHref={tabs.href("watch")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
+        <AvailabilityLine summary={plan.summary} kids={kids} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
       )}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
       <GuestGate {...actions.gate} />
@@ -234,18 +229,19 @@ function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary:
   );
 }
 
-/** One line of availability under the actions (7.14 item 7, TTL-06, TTL-13, TTL-14): a fact and the next step. */
+/**
+ * One line of availability under the actions (7.14 item 7, TTL-06, TTL-13, TTL-14): a fact and the next step — most
+ * often "Where to watch ⌄", which brings that section of this page up (a jump, not a step in the history).
+ */
 function AvailabilityLine({
   summary: s,
   kids,
-  whereHref,
   onRetry,
   retrying,
   onSignIn,
 }: {
   summary: NonNullable<Summary>;
   kids: boolean;
-  whereHref: string;
   onRetry: () => void;
   retrying: boolean;
   onSignIn: () => void;
@@ -254,9 +250,18 @@ function AvailabilityLine({
   const tt = useTranslations("title");
   const tm = useTranslations("common");
   const where = (
-    <ActionLink variant="action" arrow href={whereHref} replace scroll={false} onClick={scrollToTabs}>
+    // biome-ignore lint/a11y/useValidAnchor: a link to the section (opened in a new tab, it lands there); a press scrolls to it smoothly, without a step in the history
+    <a
+      href="#watch"
+      className={linkClass("action")}
+      onClick={(e) => {
+        e.preventDefault();
+        scrollToSection("watch");
+      }}
+    >
       {tt("availability")}
-    </ActionLink>
+      <ChevronDown aria-hidden className="size-4 shrink-0" />
+    </a>
   );
   let icon: ReactNode = <Info aria-hidden className="size-4 shrink-0" />;
   let text: ReactNode;

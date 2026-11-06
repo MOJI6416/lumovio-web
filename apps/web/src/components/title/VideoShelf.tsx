@@ -1,27 +1,31 @@
 "use client";
 
 import type { Video } from "@lumovio/contracts";
+import { Play } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { ArtCaption } from "@/components/media/ArtCaption";
 import { Artwork } from "@/components/media/Artwork";
-import { CardMeta } from "@/components/media/CardMeta";
-import { CARD_GAP_X, LANDSCAPE_SIZES } from "@/components/media/card-sizes";
+import { LANDSCAPE_SIZES } from "@/components/media/card-sizes";
+import { Row } from "@/components/media/Row";
 import { TrailerDialog, videoPage } from "./TrailerDialog";
 
 // TMDB's video types, said in the interface language (TTL-07).
 const TYPES = ["Trailer", "Teaser", "Clip", "Featurette", "Behind the Scenes", "Bloopers", "Opening Credits", "Recap"] as const;
-const typeKey = (type: string) => (TYPES as readonly string[]).includes(type) ? `videoType_${type.replace(/ /g, "")}` : null;
+const typeKey = (type: string) => ((TYPES as readonly string[]).includes(type) ? `videoType_${type.replace(/ /g, "")}` : null);
 const ORDER = (type: string) => {
   const i = (TYPES as readonly string[]).indexOf(type);
   return i < 0 ? TYPES.length : i;
 };
 
 /**
- * The "Videos" tab (design-system 7.12, C13): 16:9 cards — the frame, the name in up to two lines, "Trailer · Russian"
- * under it — trailers first, the interface language's first among them. A card is a link to the video's page; a press
- * plays it here, in the privacy-enhanced player, only once asked for.
+ * "Videos" on the title page (design-system 7.12, 7.13, C13; 2026-11-06 a shelf, right under the hero of a film and the
+ * episodes of a series: the trailer is what deciding needs next): 16:9 cards of the shelf with the name and "Trailer ·
+ * Russian" on the frame's foot (ArtCaption, ▶ before it: a press plays), as every card of a shelf — trailers first, the
+ * interface language's first among them. A card is a link to the video's page; a press plays it here, in the
+ * privacy-enhanced player, only once asked for.
  */
-export function VideosTab({ videos, title }: { videos: Video[]; title: string }) {
+export function VideoShelf({ videos, title }: { videos: Video[]; title: string }) {
   const t = useTranslations("titlePage");
   const locale = useLocale();
   const [active, setActive] = useState<Video | null>(null);
@@ -34,21 +38,19 @@ export function VideosTab({ videos, title }: { videos: Video[]; title: string })
   };
   const sorted = [...videos].sort((a, b) => ORDER(a.type) - ORDER(b.type) || Number(b.language === lang) - Number(a.language === lang) || Number(b.official) - Number(a.official));
   return (
-    <section aria-labelledby="videos-h" className="page-x">
-      <h2 id="videos-h" className="mb-4 text-h2 text-text-1">
-        {t("videos")}
-      </h2>
-      <ul className={`grid grid-cols-1 gap-y-6 sm:grid-cols-2 md:grid-cols-[repeat(auto-fill,17.5rem)] xl:grid-cols-[repeat(auto-fill,19rem)] 2xl:grid-cols-[repeat(auto-fill,21rem)] ${CARD_GAP_X}`}>
+    <>
+      <Row id="videos" title={t("videos")} kind="landscape">
         {sorted.map((v) => {
           const key = typeKey(v.type);
           // biome-ignore lint/suspicious/noExplicitAny: the videoType_* keys are built from TYPES
           const type = key ? t(key as any) : <span lang="en">{v.type}</span>;
           return (
-            <li key={v.key} className="group/card min-w-0">
+            <div key={v.key} className="group/card relative w-full min-w-0 select-none">
               <a
                 href={videoPage(v)}
                 target="_blank"
                 rel="noreferrer noopener"
+                draggable={false}
                 onClick={(e) => {
                   e.preventDefault();
                   setActive(v);
@@ -63,13 +65,19 @@ export function VideosTab({ videos, title }: { videos: Video[]; title: string })
                   placeholder="movie"
                 />
                 {/* The video's own title is in its language ("Official Trailer" on a Russian page, TTL-07). */}
-                <CardMeta title={v.name} titleLang={v.language && v.language !== lang ? v.language : undefined} meta={[type, language(v.language)]} />
+                <ArtCaption
+                  shape="landscape"
+                  title={v.name}
+                  titleLang={v.language && v.language !== lang ? v.language : undefined}
+                  meta={[type, language(v.language)]}
+                  lead={<Play aria-hidden className="me-1 size-3 shrink-0 self-center fill-current" />}
+                />
               </a>
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </Row>
       <TrailerDialog video={active} title={title} onClose={() => setActive(null)} />
-    </section>
+    </>
   );
 }

@@ -4,15 +4,14 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { cache } from "react";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
-import { collectionName, TITLE_TABS, type TitleTabId, titleCore } from "@/components/title/core";
+import { collectionName, titleCore } from "@/components/title/core";
 import { MaturityBlocked } from "@/components/title/MaturityBlocked";
-import { TitleUnavailable } from "@/components/title/TitleUnavailable";
-import { TitleActions } from "@/components/title/TitleActions";
-import { TitleFacts } from "@/components/title/TitleFacts";
 import { OpenedSignal } from "@/components/title/OpenedSignal";
+import { Availability, PeopleRows, RatingsSection, RelatedShelves, SeasonBrowser, Soundtrack, VideoShelf } from "@/components/title/parts";
+import { SectionArrival } from "@/components/title/SectionArrival";
+import { TitleFacts } from "@/components/title/TitleFacts";
 import { TitleHero } from "@/components/title/TitleHero";
-import { TitleTabs } from "@/components/title/TitleTabs";
-import { Availability, RelatedTab, SeasonBrowser, VideosTab } from "@/components/title/tab-parts";
+import { TitleUnavailable } from "@/components/title/TitleUnavailable";
 import { ApiRequestError } from "@/lib/api";
 import { OG_IMAGE } from "@/lib/brand";
 import { tmdbImage } from "@/lib/images";
@@ -30,6 +29,9 @@ type Params = Promise<{ locale: string; kind: string; slug: string }>;
  */
 const titlePath = (d: TitleDetails, own: string, l: string) => titleHref(d.kind, d.tmdbId, l === own ? d.title : (d.localTitles?.[l as "en"] ?? d.title));
 type Search = Promise<{ tab?: string | string[] }>;
+
+/** A section's place under the sticky header when a link brings it up. */
+const SECTION = "scroll-mt-24";
 
 const safeDecode = (s: string) => {
   try {
@@ -83,12 +85,20 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
+/**
+ * A title's page (design-system 9, Title; 2026-11-06 from scratch): one page to scroll, as Apple TV's and the TV's —
+ * no tabs to guess at. The hero decides and starts; under it what starting needs (a series' episodes), then the trailer
+ * and the videos, every way to watch it, what is like it, who made it and who is in it, and the reference at the foot:
+ * the ratings in full, the details, the soundtrack. Sections without anything to show aren't there.
+ */
 export default async function TitlePage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { locale, kind, slug } = await params;
   const { tab: tabParam } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("title");
-  const tp = await getTranslations("titlePage");
+  // "More by …" (the director's or creator's other titles) is asked for beside the title itself, from a cache.
+  const tmdbId = parseSlugId(slug);
+  const moreByLoad = (kind === "movie" || kind === "tv") && tmdbId ? optional(serverApi<MoreBy | null>(`/api/catalog/title/${kind}/${tmdbId}/more-by`), null) : Promise.resolve(null);
   let d: Awaited<ReturnType<typeof load>>;
   try {
     d = await load(kind, slug);
@@ -131,44 +141,49 @@ export default async function TitlePage({ params, searchParams }: { params: Para
 
   // The collection without TMDB's "(Collection)" and without this title (TTL-16).
   const collection = d.collection ? { name: collectionName(d.collection.name), parts: d.collection.parts.filter((p) => p.id !== d.id) } : null;
-  // Each title once on the tab: what the collection shows isn't repeated in the recommendations.
+  // Each title once on the page: what the collection shows isn't repeated in the recommendations.
   const shown = new Set([d.id, ...(collection?.parts.map((p) => p.id) ?? [])]);
   const related = d.related.filter((p) => !shown.has(p.id));
   const relatedOther = d.relatedOther.filter((p) => !shown.has(p.id));
-  const tabs: { id: TitleTabId; label: string }[] = [];
-  if (d.kind === "tv" && d.seasons.length > 0) tabs.push({ id: "episodes", label: t("episodesTitle") });
-  tabs.push({ id: "watch", label: t("availability") });
-  if (related.length > 0 || relatedOther.length > 0 || (collection && collection.parts.length > 0)) tabs.push({ id: "related", label: t("related") });
-  if (d.videos.length > 0) tabs.push({ id: "videos", label: t("trailers") });
-  tabs.push({ id: "details", label: t("details") });
-  const asked = (Array.isArray(tabParam) ? tabParam[0] : tabParam) as TitleTabId | undefined;
-  const active: TitleTabId = asked && TITLE_TABS.includes(asked) && tabs.some((x) => x.id === asked) ? asked : tabs[0]!.id;
-  // "More by …" (the director's or creator's other titles) only when its tab is open: one more request, from a cache.
-  const moreBy = active === "related" ? await optional(serverApi<MoreBy | null>(`/api/catalog/title/${d.kind}/${d.tmdbId}/more-by`), null) : null;
+  const moreBy = await moreByLoad;
+  const anyRelated = related.length > 0 || relatedOther.length > 0 || (collection && collection.parts.length > 0) || (moreBy?.items.length ?? 0) > 0;
 
   return (
     <article>
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <TitleHero details={d}>
-        <TitleActions title={core} />
-      </TitleHero>
+      <TitleHero details={d} core={core} />
       <OpenedSignal titleId={d.id} />
-      <TitleTabs tabs={tabs} active={active} label={tp("sections", { title: d.title })}>
-        {active === "episodes" && (
-          <div className="page-x">
-            <SeasonBrowser title={core} />
+      <SectionArrival />
+      <div className="mx-auto flex max-w-media flex-col gap-8 pt-8 pb-10 md:gap-12 md:pt-10">
+        {d.kind === "tv" && d.seasons.length > 0 && <SeasonBrowser title={core} />}
+        {d.videos.length > 0 && (
+          <div id="videos" className={SECTION}>
+            <VideoShelf videos={d.videos} title={d.title} />
           </div>
         )}
-        {active === "watch" && (
-          <div className="page-x">
-            <Availability title={core} />
+        <section id="watch" aria-labelledby="watch-h" className={`page-x ${SECTION}`}>
+          <h2 id="watch-h" className="mb-3 text-h2 text-text-1 md:mb-4">
+            {t("availability")}
+          </h2>
+          <Availability title={core} />
+        </section>
+        {anyRelated && (
+          <div id="related" className={SECTION}>
+            <RelatedShelves collection={collection} related={related} relatedOther={relatedOther} moreBy={moreBy} />
           </div>
         )}
-        {active === "related" && <RelatedTab collection={collection} related={related} relatedOther={relatedOther} moreBy={moreBy} />}
-        {active === "videos" && <VideosTab videos={d.videos} title={d.title} />}
-        {active === "details" && <TitleFacts details={d} locale={locale} />}
-      </TitleTabs>
+        {(d.cast.length > 0 || d.crew.length > 0 || d.creators.length > 0) && (
+          <div id="people" className={SECTION}>
+            <PeopleRows cast={d.cast} crew={d.crew} creators={d.creators} />
+          </div>
+        )}
+        <RatingsSection kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
+        <TitleFacts details={d} locale={locale} />
+        <div className="page-x">
+          <Soundtrack kind={d.kind} tmdbId={d.tmdbId} searchQuery={`${d.originalTitle ?? d.title} soundtrack`} />
+        </div>
+      </div>
     </article>
   );
 }

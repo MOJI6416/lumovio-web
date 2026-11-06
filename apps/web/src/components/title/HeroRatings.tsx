@@ -18,8 +18,8 @@ function toRatings() {
 /**
  * The hero's ratings (owner's decision 1.3, 7.14 item 3, 7.22): one quiet line — the Lumovio Score when it is sure
  * enough for a card (medium or high), IMDb (TMDB without it) and the critics' score (Rotten Tomatoes, else
- * Metacritic) — that is itself the way to every rating: it opens "Ratings" in Details, as the line under the actions
- * opens "Where to watch" (`replace`, Back leaves the title). It replaced the "All ratings" popover (2026-11-06).
+ * Metacritic) — that is itself the way to every rating: it brings "Ratings" up on the page, as the line under the actions
+ * brings "Where to watch" (`replace`, Back leaves the title). It replaced the "All ratings" popover (2026-11-06).
  */
 export function HeroRatings({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: MediaKind; tmdbId: number; tmdbRating: number | null; tmdbVotes: number | null }) {
   const t = useTranslations("titlePage");
@@ -47,7 +47,7 @@ export function HeroRatings({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: Med
 
   return (
     <Link
-      href={`${pathname}?tab=details#${RATINGS_ANCHOR}`}
+      href={`${pathname}#${RATINGS_ANCHOR}`}
       replace
       scroll={false}
       onClick={toRatings}

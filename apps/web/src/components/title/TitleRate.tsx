@@ -10,20 +10,22 @@ import { api } from "@/lib/api";
 import type { TitleCore } from "./core";
 
 /**
- * "Rate" (design-system 8.1, TTL-22; redesign-2026-11.md 2: an item of the hero's "More"): a small dialog (a sheet on a
- * phone) with 1–10 — a press saves it at once; "Remove rating" in the same dialog takes it back. ←/→ move between the
- * values. TitleActions loads it when it is opened.
+ * "Rate" (design-system 8.1, TTL-22; the hero's own rating, ./YourRating): a small dialog (a sheet on a phone) with
+ * 1–10 — a press saves it at once; "Remove rating" in the same dialog takes it back. ←/→ move between the values.
+ * Loaded when it is opened. `onSaved` hears the value the server kept (the star's click, 6.3.1).
  */
 export function TitleRate({
   title: d,
   actions,
   open,
   onOpenChange,
+  onSaved,
 }: {
   title: TitleCore;
   actions: ReturnType<typeof usePersonalActions>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSaved?: (value: number | null) => void;
 }) {
   const t = useTranslations("titlePage");
   const tt = useTranslations("title");
@@ -37,7 +39,8 @@ export function TitleRate({
 
   const save = async (value: number | null) => {
     onOpenChange(false);
-    await actions.mutate({ key: "rate", run: () => api("/api/library/rating", { method: "PUT", json: { titleId: d.id, value } }), optimistic: { rating: value } });
+    const r = await actions.mutate({ key: "rate", run: () => api("/api/library/rating", { method: "PUT", json: { titleId: d.id, value } }), optimistic: { rating: value } });
+    if (r?.ok) onSaved?.(value);
   };
   const onKey = (e: KeyboardEvent, v: number) => {
     const rtl = getComputedStyle(e.currentTarget).direction === "rtl";

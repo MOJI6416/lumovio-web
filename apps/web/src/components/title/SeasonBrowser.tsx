@@ -35,10 +35,12 @@ type SpoilerPart = "still" | "name" | "overview";
 type Spoilers = Record<SpoilerPart, boolean | null>;
 
 /**
- * The "Episodes" tab (design-system 7.12 EpisodeRow, S07, C12): the seasons as a row of pills (ui/PillTabs, owner
- * 2026-10-25 — not a select), specials last, the row scrolling on a phone and opening on the profile's season with
- * "7 episodes · 2008" under it; a row per episode — the 16:9 still, its number and name, date and length, two lines
- * of overview, "Watched" (IconButton pressed: changes at once, pressing again takes it back). Marking an episode while
+ * "Episodes" (design-system 7.12 EpisodeRow, S07, C12; 2026-11-06 the first section under a series' hero — choosing the
+ * episode is starting): one line on top — the heading, the season as one select-pill ("Season 2 ⌄", specials last; a
+ * series of one season has nothing to choose), "7 episodes · 2008" and the season's actions at the end (on a phone
+ * they scroll in a line of their own) — and the episodes as one horizontal strip of cards: the 16:9 still, its number,
+ * date and length, the name, two lines of overview, "Watched" (IconButton pressed: changes at once, pressing again
+ * takes it back). It opens on the profile's season. Marking an episode while
  * earlier ones are unwatched offers "Mark the earlier ones too" (the series' "up to this episode", 8.1). "Mark season
  * watched" / "Unmark season" say what they did with "Undo", which puts back exactly what was there — the old dates
  * included (TTL-05, TTL-25). "Next episode" goes to the first unwatched aired one. Spoilers (8.12): after the last
@@ -185,18 +187,17 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   const current = d.seasons.find((s) => s.seasonNumber === season);
   const facts = current ? [tc("episodes", { count: current.episodeCount }), current.airDate?.slice(0, 4)].filter(Boolean).join(" · ") : null;
   return (
-    <section aria-labelledby="seasons-h">
-      <h2 id="seasons-h" className="sr-only">
-        {t("episodesTitle")}
-      </h2>
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+    <section id="episodes" aria-labelledby="episodes-h" className="page-x scroll-mt-24">
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 md:mb-4">
+        <h2 id="episodes-h" className="text-h2 text-text-1">
+          {t("episodesTitle")}
+        </h2>
         {/* The season is one control showing its value (redesign-2026-11.md 5); a series of one season has nothing to
             choose: its facts and actions only. */}
-        {tabs.length > 1 && (
-          <Select value={String(season)} onValueChange={(v) => setSeason(Number(v))} options={tabs} aria-label={t("seasons")} className="w-auto min-w-36 rounded-full font-semibold" />
-        )}
-        {facts && <p className="text-body-s text-text-2 tabular-nums in-data-[tv=1]:text-body">{facts}</p>}
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 sm:ms-auto">
+        {tabs.length > 1 && <Select size="sm" value={String(season)} onValueChange={(v) => setSeason(Number(v))} options={tabs} aria-label={t("seasons")} className="w-auto min-w-32" />}
+        {facts && <p className="text-body-s text-text-2 tabular-nums">{facts}</p>}
+        {/* On a phone the season's actions are a line of their own that scrolls, never three lines over the strip. */}
+        <div className="scroll-row flex items-center gap-x-1 max-sm:-mx-(--gutter) max-sm:basis-full max-sm:overflow-x-auto max-sm:px-(--gutter) sm:ms-auto sm:flex-wrap">
           {signedIn && watchedSet.size > 0 && (
             <Button variant="tertiary" size="sm" icon={SkipForward} onClick={goNext}>
               {tp("nextUnwatched")}

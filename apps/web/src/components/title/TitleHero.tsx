@@ -1,37 +1,47 @@
 import type { TitleDetails } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 import { TitleLogo } from "@/components/media/TitleLogo";
 import { FanartBackdrop } from "@/components/title/FanartBackdrop";
 import { AgeRating } from "@/components/ui/Badge";
-import { Link } from "@/components/ui/Link";
-import { capitalize, formatRuntime } from "@/lib/format";
+import { Link } from "@/i18n/navigation";
+import { capitalize, formatRuntime, latinLang } from "@/lib/format";
 import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
 import { personHref } from "@/lib/slug";
+import type { TitleCore } from "./core";
 import { ExpandableText } from "./ExpandableText";
 import { HeroRatings } from "./HeroRatings";
+import { TitleActions } from "./TitleActions";
+import { YourRating } from "./YourRating";
 
-// Links in the credits line: a 44 px target on a phone and 32+ on a computer (5.6, TTL-29) without moving the line —
-// an inline element's vertical padding grows what can be pressed, not the line box, and its side padding is taken
-// back by an equal negative margin, so a short genre ("War", "Жахи") is wide enough too.
-const CREDIT = "-mx-2 px-2 py-3.5 font-semibold md:py-2";
+// A name in the credits: white beside its grey role, underlined under the pointer (a list of names, not running text:
+// four underlines in a row were noise; 7.14). A 44 px target on a phone and 32+ on a computer (5.6, TTL-29) without
+// moving the line — an inline element's vertical padding grows what can be pressed, not the line box.
+const CREDIT = "whitespace-nowrap rounded-xs py-3.5 font-semibold text-text-1 underline-offset-3 hover:underline md:py-2";
+
+/** Animation is said by "Anime" already: it isn't one of an anime's genres in its facts. */
+const ANIMATION = 16;
+const ENDED = new Set(["Ended", "Canceled"]);
 
 /**
- * The title's hero (design-system 7.14, 3.5, 10.1): the logo or the name in `display` (and the original name when it
- * differs), "Film · 2021 · 2 h 35 min" with the age rating, up to three ratings and "All ratings", the overview in three
- * lines with "More", the director or creators and the genres as links, then the actions (`children`, TitleActions).
- * The art is a stage: dark in either theme, text on its scrims, a straight edge where a light page begins.
+ * The title's hero (design-system 7.14, 3.5, 10.1; 2026-11-06, from scratch): what is needed to decide and to start, on
+ * the art. The logo or the name in `display` (the original name under it when it differs); one line of facts as the
+ * TV's — "Series · 2008–2013 · 5 seasons · Drama · Crime" and the age rating; the ratings with the profile's own one
+ * at their end; the overview in three lines with "More"; the actions (main button by 8.2, "+", "•••") and the line of
+ * where it plays from. Who made it and who is in it stand apart, at the foot of the right side on a computer, as Apple
+ * TV's, under the overview on a phone — the names are links to their pages. The genres as links, the dates and the
+ * rest are in "Details" below.
  *
- * Phone: the art in a 2:1 band under the header and the text under it; the actions come right after the metadata, so
- * the main button and the row of three are on the first screen (10.1). Without any art (TTL-17) the hero is a plain
- * page header — no empty stage above the name.
+ * The art is a stage: dark in either theme, text on its scrims, a straight edge where a light page begins. Phone: the
+ * art in a 2:1 band under the header, the name under it, then the facts, the ratings and the actions on the first
+ * screen; the overview and the credits after them (the reading order stays name → overview → actions). Without any
+ * art (TTL-17) the hero is a plain page header — no empty stage above the name.
  */
-export async function TitleHero({ details: d, children }: { details: TitleDetails; children: ReactNode }) {
+export async function TitleHero({ details: d, core }: { details: TitleDetails; core: TitleCore }) {
   const t = await getTranslations();
   const locale = await getLocale();
   const runtime = formatRuntime(d.runtime, (k, v) => t(k as "common.minutes", v));
-  const people = d.kind === "movie" ? d.crew.filter((c) => c.job === "Director").slice(0, 2) : d.creators.slice(0, 2);
   const kind = d.isAnime ? t("common.anime") : d.kind === "movie" ? t("common.movie") : t("common.series");
   // A Fanart.tv background stands in when TMDB has no backdrop (with the poster layout underneath).
   const wide = Boolean(d.backdropPath || d.altBackdrop);
@@ -39,7 +49,44 @@ export async function TitleHero({ details: d, children }: { details: TitleDetail
   preloadBackdrop(d.backdropPath);
   const art = Boolean(wide || d.posterPath);
   const original = d.originalTitle && d.originalTitle !== d.title ? d.originalTitle : null;
-  const meta = [kind, d.year, runtime, d.kind === "tv" && d.numberOfSeasons ? t("common.seasons", { count: d.numberOfSeasons }) : null].filter((x) => x !== null && x !== undefined && x !== "");
+  // A finished series says its years ("2008–2013"): whether it has an end is part of deciding.
+  const last = d.kind === "tv" && d.status && ENDED.has(d.status) ? Number(d.lastEpisode?.airDate?.slice(0, 4)) || null : null;
+  const years = d.year && last && last > d.year ? `${d.year}–${last}` : d.year ? String(d.year) : null;
+  const genres = d.genres.filter((g) => !(d.isAnime && g.id === ANIMATION)).slice(0, 2);
+  const facts = [
+    kind,
+    years,
+    runtime,
+    d.kind === "tv" && d.numberOfSeasons ? t("common.seasons", { count: d.numberOfSeasons }) : null,
+    ...genres.map((g) => capitalize(g.name, locale)),
+  ].filter((x): x is string => Boolean(x));
+
+  const makers = d.kind === "movie" ? d.crew.filter((c) => c.job === "Director").slice(0, 2) : d.creators.slice(0, 2);
+  const cast = d.cast.slice(0, 3);
+  const names = (people: { id: number; name: string }[]) =>
+    people.map((p, i) => (
+      <Fragment key={p.id}>
+        {i > 0 && ", "}
+        {/* A name TMDB has only in Latin letters on a ru/uk page is marked with its language (8.11, L10N-11). */}
+        <Link href={personHref(p.id, p.name)} className={CREDIT} lang={latinLang(p.name, locale)}>
+          {p.name}
+        </Link>
+      </Fragment>
+    ));
+  const credits = (cast.length > 0 || makers.length > 0) && (
+    <div className="mt-4 flex flex-col gap-1 text-body-s text-text-2 md:mt-5 lg:mt-0 lg:pb-1">
+      {cast.length > 0 && (
+        <p>
+          {t("title.cast")} {names(cast)}
+        </p>
+      )}
+      {makers.length > 0 && (
+        <p>
+          {d.kind === "movie" ? t("title.directedBy") : t("title.createdBy")} {names(makers)}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <header
@@ -88,80 +135,56 @@ export async function TitleHero({ details: d, children }: { details: TitleDetail
           art && (wide ? "pt-[calc(4rem+50vw-40px)]" : "pt-[calc(4rem+50vw+12px)]"),
         )}
       >
-        {/* Phones put the actions right under the metadata (10.1); the rest follows them. */}
-        <div className="flex max-w-180 animate-fade-up flex-col">
-          <h1 className="text-balance">
-            {d.logo ? (
-              <TitleLogo
-                logo={d.logo}
-                alt={d.title}
-                className={clsx(
-                  "max-w-[82vw] object-contain md:max-w-[32.5rem]",
-                  // The logo's height limit (6.5: up to 160 px on a computer, 96 on a phone; a wide one lower).
-                  d.logo.aspectRatio > 3.2 ? "[--logo-h:4.5rem] md:[--logo-h:8rem]" : "[--logo-h:6rem] md:[--logo-h:10rem]",
-                )}
-              >
+        {/* The text on the left; the credits at the foot of the right side from a laptop, under the text below that. */}
+        <div className="grid animate-fade-up lg:grid-cols-[minmax(0,40rem)_minmax(0,22rem)] lg:items-end lg:justify-between lg:gap-x-12">
+          <div className="flex max-w-160 flex-col">
+            <h1 className="text-balance">
+              {d.logo ? (
+                <TitleLogo
+                  logo={d.logo}
+                  alt={d.title}
+                  className={clsx(
+                    "max-w-[82vw] object-contain md:max-w-[32.5rem]",
+                    // The logo's height limit (6.5: up to 160 px on a computer, 96 on a phone; a wide one lower).
+                    d.logo.aspectRatio > 3.2 ? "[--logo-h:4.5rem] md:[--logo-h:8rem]" : "[--logo-h:6rem] md:[--logo-h:10rem]",
+                  )}
+                >
+                  <span className="block text-display">{d.title}</span>
+                </TitleLogo>
+              ) : (
                 <span className="block text-display">{d.title}</span>
-              </TitleLogo>
-            ) : (
-              <span className="block text-display">{d.title}</span>
-            )}
-          </h1>
-          {original && (
-            <p className="mt-2 text-body-s text-text-2" lang={d.originalLanguage ?? undefined}>
-              {original}
-            </p>
-          )}
-          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-body-s font-semibold text-text-2 md:text-body">
-            {meta.map((m, i) => (
-              <Fragment key={String(m)}>
-                {i > 0 && <span aria-hidden>·</span>}
-                {/* Each fact keeps its own direction: "2 h 35 min" stays in that order on an RTL page (8.11). */}
-                <bdi>{m}</bdi>
-              </Fragment>
-            ))}
-            {d.certification && <AgeRating rating={d.certification} className="ms-1" />}
-          </p>
-          <div className="mt-4 max-md:order-2">
-            <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
-          </div>
-          <div className="mt-4 max-md:order-3">
-            {d.overview ? (
-              <ExpandableText text={d.overview} lines={3} label={t("titlePage.readOverview")} className="text-body-l text-text-1" />
-            ) : (
-              <p className="text-body-s text-text-2">{t("title.noOverview")}</p>
-            )}
-          </div>
-          {(people.length > 0 || d.genres.length > 0) && (
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-body-s text-text-2 max-md:order-4">
-              {people.length > 0 && (
-                <span>
-                  {d.kind === "movie" ? t("title.directedBy") : t("title.createdBy")}{" "}
-                  {people.map((p, i) => (
-                    <Fragment key={p.id}>
-                      {i > 0 && ", "}
-                      <Link href={personHref(p.id, p.name)} className={CREDIT}>
-                        {p.name}
-                      </Link>
-                    </Fragment>
-                  ))}
-                </span>
               )}
-              {d.genres.length > 0 && (
-                <span>
-                  {d.genres.slice(0, 4).map((g, i) => (
-                    <Fragment key={g.id}>
-                      {i > 0 && ", "}
-                      <Link href={`/browse/${d.kind}?genres=${g.id}`} className={CREDIT}>
-                        {capitalize(g.name, locale)}
-                      </Link>
-                    </Fragment>
-                  ))}
-                </span>
-              )}
+            </h1>
+            {original && (
+              <p className="mt-2 text-body-s text-text-2" lang={d.originalLanguage ?? undefined}>
+                {original}
+              </p>
+            )}
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-body-s font-semibold text-text-2 md:text-body">
+              {facts.map((m, i) => (
+                <Fragment key={m}>
+                  {i > 0 && <span aria-hidden>·</span>}
+                  {/* Each fact keeps its own direction: "2 h 35 min" stays in that order on an RTL page (8.11). */}
+                  <bdi className="whitespace-nowrap">{m}</bdi>
+                </Fragment>
+              ))}
+              {d.certification && <AgeRating rating={d.certification} className="ms-1" />}
             </p>
-          )}
-          <div className="mt-6 max-md:order-1 max-md:mt-5 max-md:mb-2">{children}</div>
+            {/* The title's ratings, then the profile's own: what others think, and what you did. */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
+              <YourRating title={core} />
+            </div>
+            {d.overview && (
+              <div className="mt-4 max-md:order-4">
+                <ExpandableText text={d.overview} lines={3} label={t("titlePage.readOverview")} className="text-body-l text-text-1" />
+              </div>
+            )}
+            <div className="mt-6 max-md:order-3 max-md:mt-5">
+              <TitleActions title={core} />
+            </div>
+          </div>
+          {credits}
         </div>
       </div>
     </header>

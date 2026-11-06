@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CircleCheck, Ellipsis, EyeOff, Heart, ImageIcon, ListPlus, Share2, Star } from "lucide-react";
+import { Bell, CircleCheck, Ellipsis, EyeOff, Heart, ImageIcon, ListPlus, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { CreateListDialog } from "@/components/library/CreateListDialog";
@@ -22,7 +22,7 @@ import { isOngoing, type TitleCore } from "./core";
 const ArtChooser = lazy(() => import("./ArtChooser").then((m) => ({ default: m.ArtChooser })));
 
 /**
- * The title hero's "More" (design-system 8.1, TTL-02, TTL-08, TTL-09, TTL-20, TTL-24): Rate, Favourites, Watched (a series:
+ * The title hero's "More" (design-system 8.1, TTL-02, TTL-08, TTL-09, TTL-20, TTL-24): Favourites, Watched (a series:
  * all of it, exactly undone), Not interested, Add to list… (the list picker with "New list"), new-episode alerts for a
  * series that still gets them (saying where they arrive), Share (the system sheet, else the link copied). The same
  * requests, toasts and Undo as a card's "More" (media/usePersonalActions). Loaded by TitleActions when approached.
@@ -32,17 +32,11 @@ export function TitleMore({
   initialOpen,
   focusTrigger,
   label,
-  rating,
-  onRate,
 }: {
   title: TitleCore;
   initialOpen: boolean;
   focusTrigger: boolean;
   label: string;
-  /** The profile's rating, shown in the "Rate" item ("Rated 8"). */
-  rating: number | null;
-  /** Opens the rating dialog (or the sign-in sheet for a guest). */
-  onRate: () => void;
 }) {
   const t = useTranslations("titlePage");
   const tc = useTranslations("card");
@@ -97,10 +91,6 @@ export function TitleMore({
   return (
     <>
       <Menu open={open} onOpenChange={setOpen} label={label} title={d.title} align="start" trigger={triggerEl}>
-        {/* "Rate" left the hero's row for here; it opens its dialog (./TitleRate). */}
-        <MenuItem icon={Star} onSelect={onRate}>
-          {rating ? t("ratedLabel", { value: rating }) : t("rate")}
-        </MenuItem>
         <MenuCheckboxItem icon={Heart} checked={a.isFavorite} onCheckedChange={(on) => void a.setFavorite(on)}>
           {tc("favorite")}
         </MenuCheckboxItem>
