@@ -20,7 +20,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { type FocusEvent, useEffect, useRef, useState } from "react";
 import { type FinderProps, PAGE, SORTS, type Sort, useTorrentFinder } from "@/components/player/finder";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, isPack, packWords, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, isPack, packWords, ReleaseLine, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { AccentBadge } from "@/components/ui/Badge";
 import { TvButton } from "@/components/ui/tv/TvButton";
 import { formatDate } from "@/lib/format";
@@ -368,15 +368,15 @@ function TvReleaseRow({
   const locale = useLocale();
   const text = useReleaseText();
   const size = formatSize(r.size, locale);
-  const meta = [
+  const where = [
     x && series ? packWords(t, x.info.pack) || null : null,
     size ? (x && series && isPack(x.info.pack) ? t("packWhole", { size }) : size) : null,
     r.seeders !== null ? tt("tsSeeders", { count: r.seeders }) : t("seedersUnknownShort"),
     trackersOf(r).filter(Boolean).join(", ") || null,
     formatDate(r.published, locale),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ];
+  // As the web's rows (7.15): what is heard is the title; its quality marks, then where and how much.
+  const meta = x ? <ReleaseLine info={x.info} rest={where} /> : where.filter(Boolean).join(" · ");
   const other = x ? text.otherLanguages(x) : null;
   return (
     // The focused row grows with its ring (1.5 % of a wide row is ~12 px a side at 1920): room for it before "i".
@@ -398,7 +398,7 @@ function TvReleaseRow({
               {x && <ReleaseTag x={x} linked={linked} season={season} />}
             </span>
           )}
-          <span className="break-words text-body-l">{x ? [text.picture(x.info), text.audio(x)].filter(Boolean).join(" · ") : r.title}</span>
+          <span className="break-words text-body-l">{x ? text.audio(x) || text.option({ studio: null, voice: null, language: null }) : r.title}</span>
           <span className="font-normal opacity-75">
             {meta}
             {other && <span className="block">{other}</span>}
@@ -444,7 +444,7 @@ function DetailsLayer({
         <>
           <div className="flex flex-col gap-2">
             <h2 className="text-h2 text-text-1">{tp("releaseDetails")}</h2>
-            <p className="text-body-l text-text-2">{x ? [text.picture(x.info), text.audio(x)].filter(Boolean).join(" · ") : t("detailOtherTitle")}</p>
+            <p className="text-body-l text-text-2">{x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : t("detailOtherTitle")}</p>
           </div>
           <div data-zone="release-watch" className="flex flex-col gap-2">
             <TvButton

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo } from "react";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
-import { RESOLUTION, useReleaseText } from "@/components/sources/release-text";
+import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useTorrentLookup } from "@/hooks/useTorrentLookup";
@@ -26,7 +26,7 @@ export interface ProbeResult {
 
 /**
  * The profile's TorrServer search for the title, run by this device for the hero's main button and line (8.2: "Watch ·
- * Through TorrServer · 1080p · dub Le Doyen"). The same query as "Where to watch" (hooks/useTorrentLookup), so both
+ * Through TorrServer · [HD] dub Le Doyen"). The same query as "Where to watch" (hooks/useTorrentLookup), so both
  * say the same thing (TTL-06) and the search runs once; the recommendation is the one "Where to watch" shows first.
  * Loaded only where such a search runs. Draws nothing.
  */
@@ -61,7 +61,11 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
     );
   }, [lookup.data?.at, inWatchlist]);
 
-  const summary = chosen ? [chosen.info.resolution ? RESOLUTION[chosen.info.resolution] : null, text.audio(chosen, option?.studio)].filter(Boolean).join(" · ") : "";
+  // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
+  const marks = chosen ? releaseMarks(chosen.info) : [];
+  const summary = chosen
+    ? [marks.length ? (chosen.info.resolution === 720 ? RESOLUTION[720] : null) : chosen.info.resolution ? RESOLUTION[chosen.info.resolution] : null, text.audio(chosen, option?.studio)].filter(Boolean).join(" · ")
+    : "";
   const status = lookup.isError ? "failed" : lookup.isLoading || !lookup.data ? "searching" : chosen ? "found" : "nothing";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: tells the hero when the answer changes
@@ -72,7 +76,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
     }
     const href = watchHref(d, lib?.progress);
     onChange({
-      state: { state: "found", name: source.name, summary },
+      state: { state: "found", name: source.name, summary, marks },
       play: async () => {
         try {
           const added = await addTorrentSource(source.id, d, null, chosen.result);

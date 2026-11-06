@@ -4,6 +4,7 @@ import type { ReleaseQuality } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { formatDate, formatSize } from "@/lib/format";
+import { QualityLine, qualityMarks } from "./QualityBadges";
 import {
   audioMatch,
   type HdrFormat,
@@ -136,6 +137,18 @@ export function useReleaseText() {
         .filter(Boolean)
         .join(" · "),
   };
+}
+
+/** A release's marks (QualityBadges, 7.15): its resolution, one HDR format, Dolby Atmos, as its name says them. */
+export const releaseMarks = (info: Pick<ReleaseInfo, "resolution" | "hdrFormats" | "atmos">) => qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
+
+/**
+ * A release as its marks, then in words what they don't say ("720p", the source) and `rest` — what is heard, or where
+ * and how much (QualityLine): one line for every place a release is listed or detailed.
+ */
+export function ReleaseLine({ info, rest = [] }: { info: ReleaseInfo; rest?: readonly (string | null | undefined)[] }) {
+  const text = useReleaseText();
+  return <QualityLine marks={releaseMarks(info)} words={[text.besideMarks(info), ...rest]} />;
 }
 
 /** The label that says what a release's audio has to do with the profile: its studio, or only its language (7.4 Tag). */

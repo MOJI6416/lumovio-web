@@ -7,7 +7,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate, takeGuestIntent } from "@/components/shell/GuestGate";
-import { type QualityMark, QualityBadges, qualityMarks } from "@/components/sources/QualityBadges";
+import { QualityBadges, QualityLine, qualityMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
@@ -100,7 +100,16 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     kids,
     watch: avail.state,
     resume: resumable(p),
-    copy: first && avail.state.kind === "playable" ? { server: first.connectionName, resolution: first.quality?.resolution ?? null, others: avail.state.copies - 1 } : null,
+    copy:
+      first && avail.state.kind === "playable"
+        ? {
+            server: first.connectionName,
+            resolution: first.quality?.resolution ?? null,
+            // Its marks by its server's data (a TorrServer copy's release name is read only in "Where to watch").
+            marks: first.quality ? qualityMarks({ resolution: first.quality.resolution, hdr: first.quality.hdr, atmos: first.quality.audioCodecs?.includes("atmos") }) : [],
+            others: avail.state.copies - 1,
+          }
+        : null,
     torrent,
     trailer: Boolean(d.trailer),
     offers: offerNames,
@@ -176,16 +185,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         </div>
       )}
       {plan.summary && (
-        <AvailabilityLine
-          summary={plan.summary}
-          // The first copy's marks by its server's data (a TorrServer copy's release name is read only in "Where to watch").
-          marks={first?.quality ? qualityMarks({ resolution: first.quality.resolution, hdr: first.quality.hdr, atmos: first.quality.audioCodecs?.includes("atmos") }) : []}
-          kids={kids}
-          whereHref={tabs.href("watch")}
-          onRetry={() => void avail.refetch()}
-          retrying={avail.isFetching}
-          onSignIn={() => actions.requireAuth("watch")}
-        />
+        <AvailabilityLine summary={plan.summary} kids={kids} whereHref={tabs.href("watch")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
       )}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
       <GuestGate {...actions.gate} />
@@ -237,7 +237,6 @@ function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary:
 /** One line of availability under the actions (7.14 item 7, TTL-06, TTL-13, TTL-14): a fact and the next step. */
 function AvailabilityLine({
   summary: s,
-  marks,
   kids,
   whereHref,
   onRetry,
@@ -245,8 +244,6 @@ function AvailabilityLine({
   onSignIn,
 }: {
   summary: NonNullable<Summary>;
-  /** The first copy's quality marks (QualityBadges): said instead of its resolution in words. */
-  marks: QualityMark[];
   kids: boolean;
   whereHref: string;
   onRetry: () => void;
@@ -269,21 +266,21 @@ function AvailabilityLine({
       icon = <Server aria-hidden className="size-4 shrink-0" />;
       const others = s.others > 0 ? tt("moreCopies", { count: s.others }) : null;
       // "On «Home» [4K] [Dolby Vision] · 2 more copies": the marks say the resolution, never the words too.
-      text =
-        marks.length > 0 ? (
-          <>
-            {t("onServer", { server: s.server })}
-            <QualityBadges className="ms-2 me-1.5" marks={marks} />
-            {others && `· ${others}`}
-          </>
-        ) : (
-          [t("onServer", { server: s.server }), s.resolution, others].filter(Boolean).join(" · ")
-        );
+      text = s.marks?.length ? (
+        <>
+          {t("onServer", { server: s.server })}
+          <QualityBadges className="ms-2 me-1.5" marks={s.marks} />
+          {others && `· ${others}`}
+        </>
+      ) : (
+        [t("onServer", { server: s.server }), s.resolution, others].filter(Boolean).join(" · ")
+      );
       break;
     }
     case "release":
       icon = <Magnet aria-hidden className="size-4 shrink-0" />;
-      text = t("viaRelease", { name: s.name, summary: s.summary });
+      // "Through TorrServer «torr» · [4K] [Dolby Vision] Ukrainian · dub": the marks where the summary goes.
+      text = s.marks?.length ? <Slotted text={t("viaRelease", { name: s.name, summary: SLOT })} node={<QualityLine marks={s.marks} words={[s.summary]} />} /> : t("viaRelease", { name: s.name, summary: s.summary });
       break;
     case "searching":
       icon = <Magnet aria-hidden className="size-4 shrink-0" />;

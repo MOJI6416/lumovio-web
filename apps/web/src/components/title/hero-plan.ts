@@ -1,3 +1,4 @@
+import type { QualityMark } from "@/components/sources/QualityBadges";
 import type { WatchState } from "@/lib/watch-state";
 
 /*
@@ -12,8 +13,8 @@ export type TorrentState =
   /** A TorrServer without automatic search: a source is found on the sources screen. */
   | { state: "manual"; name: string }
   | { state: "searching"; name: string }
-  /** `summary` — "1080p · Ukrainian · dub (Le Doyen)". */
-  | { state: "found"; name: string; summary: string }
+  /** `marks` — the release's quality marks (QualityBadges); `summary` — the rest in words: "Ukrainian · dub (Le Doyen)". */
+  | { state: "found"; name: string; summary: string; marks?: QualityMark[] }
   | { state: "nothing"; name: string }
   | { state: "failed"; name: string };
 
@@ -23,8 +24,8 @@ export interface PlanInput {
   watch: WatchState;
   /** Part-way through it (more than 30 s, not finished). */
   resume: boolean;
-  /** The copy the player starts with, when the profile's servers have one. */
-  copy: { server: string; resolution: string | null; others: number } | null;
+  /** The copy the player starts with, when the profile's servers have one; `marks` — its quality marks (QualityBadges). */
+  copy: { server: string; resolution: string | null; marks?: QualityMark[]; others: number } | null;
   torrent: TorrentState;
   trailer: boolean;
   /** Legal streaming services for the region, subscriptions and free ones first. */
@@ -46,8 +47,8 @@ export type Primary =
   | null;
 
 export type Summary =
-  | { kind: "copy"; server: string; resolution: string | null; others: number }
-  | { kind: "release"; name: string; summary: string }
+  | { kind: "copy"; server: string; resolution: string | null; marks?: QualityMark[]; others: number }
+  | { kind: "release"; name: string; summary: string; marks?: QualityMark[] }
   | { kind: "searching"; name: string }
   | { kind: "manual"; name: string }
   | { kind: "nothingFound"; offers: string[] }
@@ -85,7 +86,7 @@ export function heroPlan(i: PlanInput): Plan {
   // The one line under the actions: where it plays from, or why nothing does and what the next step is.
   let summary: Summary;
   if (w.kind === "playable" && i.copy) summary = { kind: "copy", ...i.copy };
-  else if (t.state === "found") summary = { kind: "release", name: t.name, summary: t.summary };
+  else if (t.state === "found") summary = { kind: "release", name: t.name, summary: t.summary, marks: t.marks };
   else if (t.state === "searching") summary = { kind: "searching", name: t.name };
   // A failed check or a server that didn't answer is said before anything else: a copy may well be there.
   else if (w.kind === "error") summary = { kind: "error" };

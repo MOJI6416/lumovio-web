@@ -12,6 +12,7 @@ import { useSession } from "@/components/providers/Providers";
 import { GuestGatePanel } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
+import { QualityLine } from "@/components/sources/QualityBadges";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
@@ -237,6 +238,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   );
   // A copy in words (PLR-05): its version, never its server's name alone.
   const versionOf = useCallback((c: Candidate) => copyText.version(c.server, avail.data?.servers ?? [], d.originalLanguage), [copyText, avail.data, d.originalLanguage]);
+  // A copy's row title (7.15): its quality marks, then what they don't say and what is heard (QualityLine).
+  const titleOf = useCallback(
+    (c: Candidate) => {
+      const q = copyText.quality(c.server, avail.data?.servers ?? [], d.originalLanguage);
+      return <QualityLine marks={q.marks} words={q.words} />;
+    },
+    [copyText, avail.data, d.originalLanguage],
+  );
   /** What a preparation starts: "1080p · WEB-DL · Russian · dubbed — torr". */
   const labelOf = useCallback((c: Candidate) => `${versionOf(c)} — ${c.label}`, [versionOf]);
 
@@ -786,7 +795,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
 
   // The copies for the player's "Source" panel: one of them plays from the same position.
   const sourcesInfo = {
-    list: candidates.map((c) => ({ key: c.key, kind: c.provider, title: versionOf(c), meta: copyText.meta(c.server, d.title), current: sameCopy(active?.candidate, c), failed: failed.current.has(c.key) })),
+    list: candidates.map((c) => ({ key: c.key, kind: c.provider, title: titleOf(c), meta: copyText.meta(c.server, d.title), current: sameCopy(active?.candidate, c), failed: failed.current.has(c.key) })),
     onPick: (key: string, pos: number) => {
       const c = candidates.find((x) => x.key === key);
       if (!c) return;
@@ -992,7 +1001,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                   title: fileTitle(phase.torrents),
                   hint: d.kind === "tv" ? t("pickEpisodeFileHint") : t("pickMovieFileHint"),
                   groups: phase.torrents.map((tf) => ({
-                    label: `${versionOf(tf.candidate)} — ${tf.candidate.label}`,
+                    key: tf.candidate.key,
+                    label: (
+                      <>
+                        {titleOf(tf.candidate)} — {tf.candidate.label}
+                      </>
+                    ),
                     files: tf.files.map((f) => {
                       const parsed = "parsed" in f ? f.parsed : null;
                       const exact = parsed?.season === season && parsed?.episode === episode;
@@ -1025,7 +1039,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                     return {
                       key: c.key,
                       kind: c.provider,
-                      title: versionOf(c),
+                      title: titleOf(c),
                       meta: copyText.meta(c.server, d.title),
                       badge: playing ? "playing" : failed.current.has(c.key) ? "failed" : i === 0 && candidates.length > 1 && !active ? "first" : null,
                       server: c.server,
@@ -1176,7 +1190,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 {phase.torrents.map((tf) => (
                   <div key={tf.candidate.key} className="flex flex-col gap-2">
                     <p className="break-words text-body-s font-semibold text-text-2">
-                      {versionOf(tf.candidate)} — {tf.candidate.label}
+                      {titleOf(tf.candidate)} — {tf.candidate.label}
                     </p>
                     {tf.files.length === 0 ? (
                       <p className="text-body-s text-text-2">{t("noVideoFiles")}</p>
@@ -1250,7 +1264,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                                   <Tag>{tt("startsFirst")}</Tag>
                                 ) : undefined
                               }
-                              title={versionOf(c)}
+                              title={titleOf(c)}
                               meta={copyText.meta(c.server, d.title)}
                               action={
                                 isCurrent && active ? (

@@ -4,8 +4,7 @@ import { Ellipsis, Info, Magnet, Pencil, Play, RefreshCw, Search, SearchX, X } f
 import { useLocale, useTranslations } from "next-intl";
 import { useRef } from "react";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { QualityBadges, qualityMarks } from "@/components/sources/QualityBadges";
-import { formatSize, isPack, packWords, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, isPack, packWords, ReleaseLine, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { AccentBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -302,6 +301,14 @@ function ReleaseRow({
   const trackersText = trackersOf(r).filter(Boolean).join(", ");
   const tag = x ? <ReleaseTag x={x} linked={linked} season={season} /> : null;
   const other = x ? text.otherLanguages(x) : null;
+  // Where and how much, after the marks.
+  const where = [
+    pack || null,
+    size ? (x && tv && isPack(x.info.pack) ? t("packWhole", { size }) : size) : null,
+    r.seeders !== null ? tt("tsSeeders", { count: r.seeders }) : t("seedersUnknownShort"),
+    trackersText || null,
+    formatDate(r.published, locale),
+  ];
   return (
     <SourceRow
       selected={recommended}
@@ -318,17 +325,7 @@ function ReleaseRow({
       meta={
         <>
           {/* What is heard is the title; the picture and sound as marks (QualityBadges), then in words what they don't say. */}
-          {x && <QualityBadges className="me-2" marks={qualityMarks({ resolution: x.info.resolution, hdrFormats: x.info.hdrFormats, atmos: x.info.atmos })} />}
-          {[
-            x ? text.besideMarks(x.info) : null,
-            pack || null,
-            size ? (x && tv && isPack(x.info.pack) ? t("packWhole", { size }) : size) : null,
-            r.seeders !== null ? tt("tsSeeders", { count: r.seeders }) : t("seedersUnknownShort"),
-            trackersText || null,
-            formatDate(r.published, locale),
-          ]
-            .filter(Boolean)
-            .join(" · ")}
+          {x ? <ReleaseLine info={x.info} rest={where} /> : where.filter(Boolean).join(" · ")}
           {other && <span className="mt-0.5 block">{other}</span>}
           {!x && <span className="mt-0.5 block">{t("detailOtherTitle")}</span>}
         </>
@@ -375,7 +372,7 @@ function ReleaseDetails({
   const facts = useReleaseFacts();
   const rows = r ? facts(r, x, tv) : [];
   return (
-    <SidePanel open={r !== null} onOpenChange={(o) => !o && onClose()} title={tp("releaseDetails")} description={x ? [text.picture(x.info), text.audio(x)].filter(Boolean).join(" · ") : undefined}>
+    <SidePanel open={r !== null} onOpenChange={(o) => !o && onClose()} title={tp("releaseDetails")} description={x ? <ReleaseLine info={x.info} rest={[text.audio(x)]} /> : undefined}>
       {r && !x && <p className="mb-4 text-body-s text-text-2">{t("detailOtherTitle")}</p>}
       <dl className="flex flex-col gap-4">
         {rows.map(([k, v]) => (

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 /** What a copy's picture and sound are, as marks (design-system 7.15): Apple TV's set, in its order. */
@@ -70,5 +71,36 @@ export function QualityBadges({ marks, className }: { marks: readonly QualityMar
         );
       })}
     </span>
+  );
+}
+
+/**
+ * A copy or a release as its marks, then in words what they don't say ("720p", the source, what is heard), inline so
+ * the words wrap after the marks; with no marks, the words alone (`fallback` first, when given).
+ */
+export function QualityLine({ marks, words, fallback }: { marks: readonly QualityMark[]; words: readonly (string | null | undefined)[]; fallback?: string | null }) {
+  const rest = words.filter(Boolean).join(" · ");
+  if (marks.length === 0) return <>{[fallback, rest].filter(Boolean).join(" · ")}</>;
+  return (
+    <>
+      <QualityBadges className={rest ? "me-2" : undefined} marks={marks} />
+      {rest}
+    </>
+  );
+}
+
+/** Where a translated line takes a node of its own ("Through TorrServer «torr» · {summary}"): pass it as the value. */
+export const SLOT = "\u0001";
+
+/** A translated line with `SLOT` in it, the slot replaced by `node`. */
+export function Slotted({ text, node }: { text: string; node: ReactNode }) {
+  const at = text.indexOf(SLOT);
+  if (at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      {node}
+      {text.slice(at + SLOT.length)}
+    </>
   );
 }

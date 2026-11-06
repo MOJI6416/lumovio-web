@@ -45,7 +45,8 @@ export interface EpisodesInfo {
 
 /** This title's copies for the "Source" panel, and the search for another release (PLR-03). */
 export interface SourcesInfo {
-  list: { key: string; kind: Availability["kind"]; title: string; meta: string; current: boolean; failed: boolean }[];
+  /** `title`: the copy's marks and words (QualityLine). */
+  list: { key: string; kind: Availability["kind"]; title: ReactNode; meta: string; current: boolean; failed: boolean }[];
   /** Another copy, from this position. */
   onPick: (key: string, positionSec: number) => void;
   /** The sources screen over the paused player, with the way back to it; absent for a kids profile. */

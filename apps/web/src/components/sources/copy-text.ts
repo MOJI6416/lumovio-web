@@ -49,40 +49,56 @@ export function useCopyText() {
     return i < 0 ? langs.length : i;
   };
 
-  return {
-    /**
-     * The copy's version: "1080p · HDR10 · HEVC · Russian, English" from the server (the audio languages its scan read),
-     * or the release's picture and audio.
-     */
-    version: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string => {
-      const known = [s.quality?.resolution, s.quality?.hdr, s.quality?.videoCodec?.toUpperCase(), languagesOf(s)].filter(Boolean).join(" · ");
-      if (known) return known;
-      const name = releaseName(s, all);
-      if (name) {
-        const info = parseRelease(name, null, originalLanguage);
-        const words = [info.resolution !== null || info.source !== null ? text.picture(info) : null, text.audio({ info, language: null })].filter(Boolean).join(" · ");
-        if (words) return words;
-      }
-      return KIND_LABEL[s.kind];
-    },
-    /**
-     * The copy's picture and sound as marks (QualityBadges): the server's quality data, or what its release's name says.
-     */
-    marks: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): QualityMark[] => {
-      const q = s.quality;
-      // Jellyfin's scan adds "atmos" to the codecs when a track says Dolby Atmos (lib/media/jellyfin).
-      if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos") });
-      const name = releaseName(s, all);
-      if (!name) return [];
+  /**
+   * The copy's version: "1080p · HDR10 · HEVC · Russian, English" from the server (the audio languages its scan read),
+   * or the release's picture and audio.
+   */
+  const version = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string => {
+    const known = [s.quality?.resolution, s.quality?.hdr, s.quality?.videoCodec?.toUpperCase(), languagesOf(s)].filter(Boolean).join(" · ");
+    if (known) return known;
+    const name = releaseName(s, all);
+    if (name) {
       const info = parseRelease(name, null, originalLanguage);
-      return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
-    },
-    /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
-    sound: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
-      const own = languagesOf(s);
-      if (own) return own;
-      const name = releaseName(s, all);
-      return name ? text.audio({ info: parseRelease(name, null, originalLanguage), language: null }) || null : null;
+      const words = [info.resolution !== null || info.source !== null ? text.picture(info) : null, text.audio({ info, language: null })].filter(Boolean).join(" · ");
+      if (words) return words;
+    }
+    return KIND_LABEL[s.kind];
+  };
+  /**
+   * The copy's picture and sound as marks (QualityBadges): the server's quality data, or what its release's name says.
+   */
+  const marks = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): QualityMark[] => {
+    const q = s.quality;
+    // Jellyfin's scan adds "atmos" to the codecs when a track says Dolby Atmos (lib/media/jellyfin).
+    if (q?.resolution || q?.hdr) return qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos") });
+    const name = releaseName(s, all);
+    if (!name) return [];
+    const info = parseRelease(name, null, originalLanguage);
+    return qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos });
+  };
+  /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
+  const sound = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
+    const own = languagesOf(s);
+    if (own) return own;
+    const name = releaseName(s, all);
+    return name ? text.audio({ info: parseRelease(name, null, originalLanguage), language: null }) || null : null;
+  };
+
+  return {
+    version,
+    marks,
+    sound,
+    /**
+     * The copy for a line of marks and words (QualityLine, 7.15): its marks, then what they don't say — "720p" under HD, a
+     * release's source — and what is heard; its version in words when it has no marks.
+     */
+    quality: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): { marks: QualityMark[]; words: (string | null)[] } => {
+      const m = marks(s, all, originalLanguage);
+      if (m.length === 0) return { marks: m, words: [version(s, all, originalLanguage)] };
+      const q = s.quality;
+      const name = q?.resolution || q?.hdr ? null : releaseName(s, all);
+      const beside = name ? text.besideMarks(parseRelease(name, null, originalLanguage)) : /^720/.test(q?.resolution ?? "") ? "720p" : null;
+      return { marks: m, words: [beside, sound(s, all, originalLanguage)] };
     },
     /** Where it is and how big: "On «torr» · TorrServer · 9.6 GB". */
     meta: (s: Availability, title: string) =>

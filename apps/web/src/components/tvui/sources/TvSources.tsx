@@ -29,8 +29,8 @@ import { TvFinder } from "./TvFinder";
 export interface TvCopyRow {
   key: string;
   kind: string;
-  /** Its version in words; `meta`: the server and what the release says. */
-  title: string;
+  /** Its quality marks and words (QualityLine); `meta`: the server and what the release says. */
+  title: ReactNode;
   meta: string;
   badge: "playing" | "failed" | "first" | null;
   server: Availability;
@@ -66,7 +66,7 @@ export interface TvSourcesProps {
   loading: boolean;
   preparing: { label: string; steps: Step[]; cancel: () => void } | null;
   error: { label: string; steps: Step[]; title: string; message: string; actions: TvAction[] } | null;
-  files: { title: string; hint: string; groups: { label: string; files: TvFileRow[] }[]; noFiles: string; other: TvAction } | null;
+  files: { title: string; hint: string; groups: { key: string; /** The torrent: its quality marks and words, and its server. */ label: ReactNode; files: TvFileRow[] }[]; noFiles: string; other: TvAction } | null;
   /** The other app's screen (ExternalPlayerPanel), as it is. */
   external: ReactNode;
   /** The copies and what stands instead of them; null while preparing or picking a file. */
@@ -204,7 +204,7 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
               <p className="max-w-measure text-body-l text-text-2">{files.hint}</p>
             </div>
             {files.groups.map((g, gi) => (
-              <div key={g.label} className="flex flex-col gap-3">
+              <div key={g.key} className="flex flex-col gap-3">
                 <p className="break-words text-body-l font-semibold text-text-2">{g.label}</p>
                 {g.files.length === 0 ? (
                   <p className="text-body-l text-text-2">{files.noFiles}</p>

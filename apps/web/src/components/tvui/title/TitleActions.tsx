@@ -21,10 +21,11 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import type { TitleLibraryState } from "@lumovio/contracts";
 import { useEditableLists, usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
+import { QualityBadges, QualityLine, qualityMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { type TitleCore, resumable, sourcesHref, startEpisode, watchHref } from "@/components/title/core";
 import { heroPlan, type Summary, type TorrentState } from "@/components/title/hero-plan";
 import { serviceOf } from "@/components/title/services";
@@ -115,6 +116,14 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         ? {
             server: first.connectionName,
             resolution: first.quality?.resolution ?? null,
+            // Its quality marks by its server's data, as the web hero's line.
+            marks: first.quality
+              ? qualityMarks({
+                  resolution: first.quality.resolution,
+                  hdr: first.quality.hdr,
+                  atmos: first.quality.audioCodecs?.includes("atmos"),
+                })
+              : [],
             others: avail.state.copies - 1,
           }
         : null,
@@ -266,20 +275,32 @@ function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kid
   const tt = useTranslations("title");
   const tv = useTranslations("tvui");
   let Icon = Server;
-  let text: string;
+  let text: ReactNode;
   switch (s.kind) {
-    case "copy":
-      text = [
-        t("onServer", { server: s.server }),
-        s.resolution,
-        s.others > 0 ? tt("moreCopies", { count: s.others }) : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
+    case "copy": {
+      const others = s.others > 0 ? tt("moreCopies", { count: s.others }) : null;
+      // The quality as marks (QualityBadges, 7.15), never also in words.
+      text = s.marks?.length ? (
+        <>
+          {t("onServer", { server: s.server })}
+          <QualityBadges className="ms-3 me-2" marks={s.marks} />
+          {others && `· ${others}`}
+        </>
+      ) : (
+        [t("onServer", { server: s.server }), s.resolution, others].filter(Boolean).join(" · ")
+      );
       break;
+    }
     case "release":
       Icon = Magnet;
-      text = t("viaRelease", { name: s.name, summary: s.summary });
+      text = s.marks?.length ? (
+        <Slotted
+          text={t("viaRelease", { name: s.name, summary: SLOT })}
+          node={<QualityLine marks={s.marks} words={[s.summary]} />}
+        />
+      ) : (
+        t("viaRelease", { name: s.name, summary: s.summary })
+      );
       break;
     case "searching":
       Icon = Magnet;

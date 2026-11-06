@@ -1,4 +1,5 @@
 import type { TorrentFind, TorrentFindBest } from "@lumovio/contracts";
+import { type QualityMark, qualityMarks } from "@/components/sources/QualityBadges";
 import { api } from "@/lib/api";
 import { RESOLUTION_LABEL, type RankedRelease, rangeOf, voiceOptions } from "@/lib/media/releases";
 
@@ -43,6 +44,18 @@ export function findPictureText(b: TorrentFindBest): string | null {
     .filter((p) => p.resolution !== null)
     .map((p) => [RESOLUTION_LABEL[p.resolution!], p.range && !(p.range === "sdr" && p.resolution !== 2160) ? range[p.range] : null].filter(Boolean).join(" "));
   return words.length ? [...new Set(words)].join(", ") : null;
+}
+
+/**
+ * A stored find's best picture version as quality marks (QualityBadges, 7.15): the highest resolution, with the best
+ * range found at it (Dolby Vision over HDR) — "[4K] [HDR]" for "1080p, 4K SDR, 4K HDR".
+ */
+export function findMarks(b: TorrentFindBest): QualityMark[] {
+  const versions = (b.pictures?.length ? b.pictures : b.resolution ? [{ resolution: b.resolution, range: null }] : []).filter((p) => p.resolution !== null);
+  const top = Math.max(0, ...versions.map((p) => p.resolution!));
+  if (!top) return [];
+  const ranges = versions.filter((p) => p.resolution === top).map((p) => p.range);
+  return qualityMarks({ resolution: top, hdrFormats: ranges.includes("dv") ? ["dv"] : ranges.includes("hdr") ? ["hdr"] : [] });
 }
 
 /** Finds this browser kept itself before they moved to Lumovio (2026-10-24): removed on sight. */

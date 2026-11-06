@@ -10,7 +10,7 @@ import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
 import { useReleaseText } from "@/components/sources/release-text";
-import { type QualityMark, QualityBadges } from "@/components/sources/QualityBadges";
+import { QualityLine } from "@/components/sources/QualityBadges";
 import { formatSize } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
@@ -100,6 +100,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
       // What its audio has to do with the profile: the same label a release's row has (7.4; Jellyfin's tracks too).
       const match = copyText.audioMatch(s, raw?.servers ?? [], d.originalLanguage);
       const first = i === 0 && copies.length > 1;
+      // Under the server's name: its marks (4K, Dolby Vision, Dolby Atmos — QualityBadges), what is heard and how big.
+      const q = copyText.quality(s, raw?.servers ?? [], d.originalLanguage);
       return (
           <SourceRow
             key={`${s.connectionId}-${s.externalId}`}
@@ -114,13 +116,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
               ) : undefined
             }
             title={s.connectionName}
-            meta={
-              <CopyLine
-                marks={copyText.marks(s, raw?.servers ?? [], d.originalLanguage)}
-                words={[copyText.sound(s, raw?.servers ?? [], d.originalLanguage), formatSize(s.quality?.sizeBytes ?? null, locale)]}
-                fallback={copyText.version(s, raw?.servers ?? [], d.originalLanguage)}
-              />
-            }
+            meta={<QualityLine marks={q.marks} words={[...q.words, formatSize(s.quality?.sizeBytes ?? null, locale)]} />}
             action={
               <Link href={playOf(s)} className={buttonClass(i === 0 ? "primary" : "secondary", "md")}>
                 <Play aria-hidden className="fill-current" />
@@ -190,22 +186,6 @@ export function Availability({ title: d }: { title: TitleCore }) {
       {removal && <CopyRemovalDialog target={removal} onClose={() => setRemoval(null)} />}
       <CopyDetails copy={details} all={raw?.servers ?? []} originalLanguage={d.originalLanguage} onClose={() => setDetails(null)} />
     </div>
-  );
-}
-
-/**
- * Under a copy's server name: its marks (4K, Dolby Vision, Atmos — QualityBadges) and what is heard and how big; the
- * release's or server's words when it gives no marks.
- */
-function CopyLine({ marks, words, fallback }: { marks: QualityMark[]; words: (string | null)[]; fallback: string }) {
-  const rest = words.filter(Boolean).join(" · ");
-  if (marks.length === 0) return <>{[fallback, ...words.slice(1)].filter(Boolean).join(" · ")}</>;
-  // Inline, so the words follow the marks and wrap after them on a phone.
-  return (
-    <>
-      <QualityBadges className="me-2" marks={marks} />
-      {rest}
-    </>
   );
 }
 

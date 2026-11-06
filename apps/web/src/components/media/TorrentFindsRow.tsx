@@ -1,10 +1,11 @@
 "use client";
 
-import type { ListDetails, SourceState } from "@lumovio/contracts";
+import type { ListDetails, SourceState, TorrentFindBest } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo } from "react";
 import { useSession } from "@/components/providers/Providers";
+import { QualityLine } from "@/components/sources/QualityBadges";
 import { usePlayable } from "@/hooks/useAvailability";
 import { autoSearchSource, isOut, type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { api } from "@/lib/api";
@@ -13,7 +14,7 @@ import { bestOf, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty } from "@/lib/media/torrserver";
 import { optional } from "@/lib/optional";
-import { dropLocalFinds, fetchFinds, findPictureText, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
+import { dropLocalFinds, fetchFinds, findMarks, findPictureText, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { PosterCard } from "./PosterCard";
 import { Row } from "./Row";
 
@@ -93,21 +94,18 @@ export function TorrentFindsRow() {
     .sort((a, b) => (finds[b.id]!.firstSeen ?? "").localeCompare(finds[a.id]!.firstSeen ?? ""));
   if (!torrServer || shown.length === 0) return null;
   const names = new Intl.DisplayNames([locale], { type: "language" });
-  const badge = (id: string) => {
-    const b = finds[id]!.best!;
-    return [
-      prefs.languages.length > 1 && b.language ? names.of(b.language) : null,
-      b.studio ?? (b.voice ? tt(`voice_${b.voice}`) : null),
-      // Every picture version it was found in (TS5): "1080p, 4K HDR".
-      findPictureText(b),
-    ]
-      .filter(Boolean)
-      .join(" · ");
+  const audio = (b: TorrentFindBest) => [prefs.languages.length > 1 && b.language ? names.of(b.language) : null, b.studio ?? (b.voice ? tt(`voice_${b.voice}`) : null)];
+  // Said in full: every picture version it was found in (TS5): "Dub · 1080p, 4K HDR".
+  const badge = (b: TorrentFindBest) => [...audio(b), findPictureText(b)].filter(Boolean).join(" · ");
+  // Shown: what is heard, then its best version as marks (QualityBadges, 7.15): "Dub [4K] [HDR]".
+  const shownFact = (b: TorrentFindBest) => {
+    const marks = findMarks(b);
+    return marks.length ? <QualityLine marks={marks} words={[audio(b).filter(Boolean).join(" · ")]} /> : undefined;
   };
   return (
     <Row id="torrent_finds" min={3} title={t("torrentFinds")} note={t("torrentFindsNote")}>
       {shown.map((x) => (
-        <PosterCard key={x.id} title={x} fact={badge(x.id) || undefined} />
+        <PosterCard key={x.id} title={x} fact={badge(finds[x.id]!.best!) || undefined} factShown={shownFact(finds[x.id]!.best!)} />
       ))}
     </Row>
   );

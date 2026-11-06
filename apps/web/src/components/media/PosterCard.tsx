@@ -47,6 +47,7 @@ export function PosterCard({
   className,
   subtitle,
   fact: factProp,
+  factShown,
   badge,
   progress,
   showState = true,
@@ -62,6 +63,8 @@ export function PosterCard({
   subtitle?: string;
   /** Why a client-side shelf has the card ("Dub · 1080p"), in place of the shelf's own fact. */
   fact?: string;
+  /** What the card shows for `fact` when it has more than words (quality marks: "Dub [4K] [HDR]"); `fact` stays its spoken words. */
+  factShown?: ReactNode;
   /** The one badge on the artwork, in place of "On your server" (a rating in the Ratings tab). */
   badge?: ReactNode;
   progress?: number | null;
@@ -95,7 +98,7 @@ export function PosterCard({
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
-  const meta = subtitle ? [subtitle] : fact ? [fact] : [title.year, rating];
+  const meta = subtitle ? [subtitle] : fact ? [factShown ?? fact] : [title.year, rating];
   const caption = (
     <CardMeta
       title={title.title}

@@ -6,7 +6,7 @@ import { Link2, ListVideo, Lock, RefreshCw, SearchX, Trash2, X } from "lucide-re
 import { useLocale, useTranslations } from "next-intl";
 import { lazy, Suspense, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
-import { formatSize, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, ReleaseLine, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { StatusBadge } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -379,7 +379,9 @@ function TorrentRow({
   const text = useReleaseText();
   const links = useLinks()(x, titles);
   const info = parseRelease(x.name);
-  const words = [info.resolution !== null || info.source !== null ? text.picture(info) : null, text.audio({ info, language: null })].filter(Boolean).join(" · ");
+  const audio = text.audio({ info, language: null });
+  // The release as its quality marks and words (ReleaseLine, 7.15), or in words when its name gives no marks.
+  const quality = releaseMarks(info).length ? <ReleaseLine info={info} rest={[audio]} /> : [info.resolution !== null || info.source !== null ? text.picture(info) : null, audio].filter(Boolean).join(" · ") || null;
   const name = links[0]?.title ?? x.name;
   const origin = links.length > 0 ? null : x.fromLumovio ? (x.addedFor ? t("addedForUnlinked", { title: x.addedFor }) : t("addedUnlinked")) : t("notLinkedOutside");
   const facts = [formatSize(x.sizeBytes, locale) && t("size", { size: formatSize(x.sizeBytes, locale)! }), x.addedAt ? t("addedAt", { date: formatDate(new Date(x.addedAt * 1000).toISOString(), locale) ?? "" }) : null].filter(Boolean).join(" · ");
@@ -401,9 +403,9 @@ function TorrentRow({
             </p>
           ))
         ) : (
-          <p className="text-title break-words text-text-1">{words || x.name}</p>
+          <p className="text-title break-words text-text-1">{quality || x.name}</p>
         )}
-        {links.length > 0 && words && <p className="text-body-s text-text-1">{words}</p>}
+        {links.length > 0 && quality && <p className="text-body-s text-text-1">{quality}</p>}
         <p className="text-body-s break-words text-text-3">{x.name}</p>
         {origin && <p className="text-body-s text-text-2">{origin}</p>}
         {/* Not linked: the title it looks like, when one is sure, or how many fit; linking is the person's choice (C133). */}
