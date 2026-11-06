@@ -20,6 +20,9 @@ import { POSTER_SIZES } from "./card-sizes";
 import { useDismissed, useShelf } from "./shelf-context";
 
 /** The card's one personal mark (7.12): "Watched" outranks "Watchlist". */
+/** Original languages whose posters are written in neither Latin nor Cyrillic letters (ISO 639-1, as TMDB gives them). */
+const NON_LATIN_ART = new Set(["ja", "ko", "zh", "cn", "th", "hi", "ar", "he", "fa", "ur", "ta", "te", "ml", "kn", "bn", "mr", "pa", "gu", "ka", "hy", "el", "am", "my", "km", "lo", "si", "ne"]);
+
 export function useCardMark(title: Pick<TitleSummary, "id" | "kind">, enabled = true) {
   const { data: state } = useLibraryState(title.id, enabled);
   const watched = state ? state.watchedCount > 0 || Boolean(state.progress?.completed && title.kind === "movie") : false;
@@ -90,8 +93,11 @@ export function PosterCard({
   // name, year and score come up over the poster's foot on hover and focus. A card that says why it is in the shelf
   // (a fact, a subtitle), one without a poster, a grid and the site's TV mode keep the caption. The link's name is whole
   // either way.
+  // A poster in a script the viewer may not read (an anime's, a Korean drama's: TMDB has no localized one for most)
+  // keeps its caption too — every interface language is Latin or Cyrillic.
   const inShelf = Boolean(useShelf());
-  const bare = inShelf && !subtitle && !fact && Boolean(title.posterPath);
+  const foreignArt = title.isAnime || NON_LATIN_ART.has(title.originalLanguage ?? "");
+  const bare = inShelf && !subtitle && !fact && Boolean(title.posterPath) && !foreignArt;
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
