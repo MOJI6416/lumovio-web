@@ -139,7 +139,7 @@ export const TvCard = memo(function TvCard({
   if (rank === undefined) return card;
   // The numeral stands beside the poster, the poster alone is the remote's stop (the ring and the growth are its own).
   return (
-    <div className="flex shrink-0 items-start">
+    <div data-tv-column className="flex shrink-0 items-start">
       <svg aria-hidden viewBox="0 0 120 180" preserveAspectRatio="xMaxYMax meet" className="aspect-2/3 w-23 shrink-0">
         <text
           x="118"

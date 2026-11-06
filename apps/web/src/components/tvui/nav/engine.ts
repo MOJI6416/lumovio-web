@@ -16,6 +16,8 @@
  *   focused zone's frame at `data-pin` (a fraction of the height) from the top (the home's shelves), otherwise it scrolls
  *   only as far as needed; `data-zone-frame` marks what has to be in view with a zone (its heading), `="top"` the hero.
  * - `data-key` — a stable identity of an item for memory and Back (a title's id, not its index).
+ * - `data-tv-column` — a wrapper whose box stands for its item when ↑/↓ cross between zones (a Top 10's numeral and
+ *   poster): the column below is chosen by the whole card, not by the poster beside the numeral.
  * - `data-tv-initial` — the item a screen starts on; `data-tv-initial-pending` marks where it will be while it loads,
  *   and the screen waits for it (up to 4 s) instead of starting elsewhere.
  * Items are any enabled focusable elements; `data-tv-skip` keeps one out (a link inside a card, a hidden slide).
@@ -248,8 +250,9 @@ export function findTarget(
     if (next) return { target: next, crossed: false };
   }
 
-  // Out of the zone: its neighbour that way, stepping over empty zones.
-  const from = active.getBoundingClientRect();
+  // Out of the zone: its neighbour that way, stepping over empty zones. From the item's whole column (a Top 10's
+  // numeral and poster), so ↓ from the first place lands on the first card below, not the second (owner, 2026-11-06).
+  const from = columnOf(active).getBoundingClientRect();
   let next = neighbour(zone, dir, scope);
   if (next === "stop") return null;
   const tried = new Set<HTMLElement>([zone]);
@@ -268,6 +271,11 @@ export function findTarget(
 }
 
 /** The item to land on when entering `zone` from `from` going `dir`. */
+/** The column an item stands for between shelves: its `data-tv-column` wrapper (a Top 10's numeral and poster), else itself. */
+function columnOf(el: HTMLElement): HTMLElement {
+  return el.closest<HTMLElement>("[data-tv-column]") ?? el;
+}
+
 export function enter(zone: HTMLElement, from: Box, dir: Dir, memory: ZoneMemory): HTMLElement | null {
   const items = itemsOf(zone);
   if (!items.length) return null;
@@ -282,7 +290,7 @@ export function enter(zone: HTMLElement, from: Box, dir: Dir, memory: ZoneMemory
   const remembered = key
     ? items.findIndex((el, i) => (key.startsWith("#") ? `#${i}` === key : el.dataset.key === key))
     : -1;
-  const boxes = items.map((el) => el.getBoundingClientRect() as Box);
+  const boxes = items.map((el) => columnOf(el).getBoundingClientRect() as Box);
   return items[
     entryIndex(boxes, from, dir, remembered, { width: window.innerWidth, height: window.innerHeight })
   ]!;
