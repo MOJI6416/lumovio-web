@@ -20,9 +20,6 @@ import { POSTER_SIZES } from "./card-sizes";
 import { useDismissed, useShelf } from "./shelf-context";
 
 /** The card's one personal mark (7.12): "Watched" outranks "Watchlist". */
-/** Original languages whose posters are written in neither Latin nor Cyrillic letters (ISO 639-1, as TMDB gives them). */
-const NON_LATIN_ART = new Set(["ja", "ko", "zh", "cn", "th", "hi", "ar", "he", "fa", "ur", "ta", "te", "ml", "kn", "bn", "mr", "pa", "gu", "ka", "hy", "el", "am", "my", "km", "lo", "si", "ne"]);
-
 export function useCardMark(title: Pick<TitleSummary, "id" | "kind">, enabled = true) {
   const { data: state } = useLibraryState(title.id, enabled);
   const watched = state ? state.watchedCount > 0 || Boolean(state.progress?.completed && title.kind === "movie") : false;
@@ -89,16 +86,11 @@ export function PosterCard({
   const shelfFact = useCardFact(title);
   const fact = factProp ?? shelfFact;
   const press = useLongPress();
-  // One rule for a poster in a shelf, as on Apple TV (redesign-2026-11.md 5): never a caption under it, so every shelf
-  // is the same row of posters. What has to be read stays on the poster's foot, on a scrim, always: the shelf's fact or
-  // the card's subtitle ("20 Nov", "3 seasons · 24 episodes", a role), and the name of a poster in a script the viewer
-  // may not read (an anime's, a Korean drama's: TMDB has no localized one for most; every interface language is Latin
-  // or Cyrillic). The rest show their name, year and score there on hover and focus, with a mouse. A card without a
-  // poster, a grid and the site's TV mode keep the caption; the link's name is whole either way.
-  const inShelf = Boolean(useShelf());
-  const foreignArt = title.isAnime || NON_LATIN_ART.has(title.originalLanguage ?? "");
-  const bare = inShelf && Boolean(title.posterPath);
-  const pinned = foreignArt || Boolean(subtitle || fact);
+  // One look for a poster in a shelf (owner, 2026-11-06): no caption under it — its name and one line (the shelf's fact,
+  // the card's subtitle, else year and score) stand on the poster's foot, on a scrim, always, so every shelf is the same
+  // row of posters and every name can be read, whatever the poster's script. A card without a poster, a grid and the
+  // site's TV mode keep the caption under the art; the link's name is whole either way.
+  const bare = Boolean(useShelf()) && Boolean(title.posterPath);
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
   // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
@@ -152,10 +144,9 @@ export function PosterCard({
           <div
             aria-hidden
             className={cn(
-              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm transition-opacity duration-base ease-base in-data-[tv=1]:hidden",
-              pinned
-                ? "opacity-100"
-                : "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 pointer-coarse:hidden",
+              "stage pointer-events-none absolute inset-x-0 top-0 flex items-end overflow-hidden rounded-sm in-data-[tv=1]:hidden",
+              // It rises with the art on hover and focus (Artwork's 1.04), or the scrim would stay behind the picture.
+              "transition-[scale] duration-base ease-base pointer-fine:group-hover/card:scale-[1.04] group-focus-visible/link:scale-[1.04] motion-reduce:scale-100!",
               artBox("poster"),
             )}
           >
