@@ -19,7 +19,7 @@ import {
   type ReleaseTrack,
   type VoiceOption,
 } from "@/lib/media/releases";
-import { editionOf } from "@/lib/media/release-pick";
+import { editionOf } from "@/lib/media/editions";
 import type { TsSearchResult } from "@/lib/media/torrserver";
 
 /*
@@ -235,7 +235,7 @@ export function useReleaseFacts() {
       [t("detailTracker"), r.origins ? r.origins.map((o) => `${o.tracker ?? "?"} (${o.seeders ?? "?"}/${o.peers ?? "?"})`).join(", ") : (r.tracker ?? none)],
       [t("detailPublished"), formatDate(r.published, locale) ?? none],
     );
-    // The cut, only when the name says it (theatrical, extended, the director's — lib/media/release-pick).
+    // The cut, only when the name says it (theatrical, extended, the director's — lib/media/editions).
     const cut = editionOf(r.title);
     if (cut) rows.splice(x ? 4 : 0, 0, [t("detailEdition"), tt(`edition_${cut}`)]);
     if (x) rows.push([t("detailDevice"), x.fit === "poor" ? tt(x.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv") : x.fit === "unknown" ? tt("tsFitUnknown") : t("fitOk")]);
