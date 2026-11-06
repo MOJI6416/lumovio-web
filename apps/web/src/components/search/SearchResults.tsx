@@ -7,7 +7,7 @@ import { Artwork } from "@/components/media/Artwork";
 import { CardRating } from "@/components/media/CardRating";
 import { CARD_GAP_X, GRID_COLS, SHELF_COLS } from "@/components/media/card-sizes";
 import { PersonCard } from "@/components/media/PersonCard";
-import { PosterCard, PosterCardSkeleton, useCardMark } from "@/components/media/PosterCard";
+import { PosterCard, PosterCardSkeleton, useCardMark, useRatingText } from "@/components/media/PosterCard";
 import { Row } from "@/components/media/Row";
 import { cn } from "@/components/ui/cn";
 import { Link as ActionLink } from "@/components/ui/Link";
@@ -72,7 +72,11 @@ export function BestMatchBlock({ best, genres }: { best: BestMatch; genres: Reco
     return (
       <section aria-labelledby="best-h">
         {heading}
-        <Link href={personHref(p.id, p.name)} className="group/link group/card flex items-center gap-5 rounded-md focus-visible:outline-none md:gap-8">
+        <Link
+          href={personHref(p.id, p.name)}
+          aria-label={[p.name, dept(p)].filter(Boolean).join(", ")}
+          className="group/link group/card flex items-center gap-5 rounded-md focus-visible:outline-none md:gap-8"
+        >
           <Artwork shape="person" src={tmdbImage(p.profilePath, "w185")} placeholder="person" className="w-28 shrink-0 md:w-40" />
           <span className="min-w-0">
             <span className="block text-h2 text-text-1 md:text-h1" lang={latinLang(p.name, locale)}>
@@ -89,14 +93,27 @@ export function BestMatchBlock({ best, genres }: { best: BestMatch; genres: Reco
 
 function BestTitle({ title, genres, heading }: { title: TitleSummary; genres: Record<number, string>; heading: ReactNode }) {
   const locale = useLocale();
+  const tc = useTranslations("common");
+  const tl = useTranslations("title");
+  const ratingLabel = useRatingText();
   const { state, mark } = useCardMark(title);
   const wide = Boolean(title.backdropPath);
+  // Named as a card is (PosterCard): "Dune (2021), Film, IMDb 8.0, Watched".
+  const label = [
+    `${title.title}${title.year ? ` (${title.year})` : ""}`,
+    title.isAnime ? tc("anime") : title.kind === "movie" ? tc("movie") : tc("series"),
+    ratingLabel(title),
+    mark === "watched" ? tl("watched") : mark === "watchlist" ? tl("watchlistRemove") : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   return (
     <section aria-labelledby="best-h">
       {heading}
       <Link
         href={titleHref(title.kind, title.tmdbId, title.title)}
         data-title-id={title.id}
+        aria-label={label}
         className={cn(
           "group/link group/card grid items-center gap-4 rounded-md focus-visible:outline-none md:gap-8",
           wide ? "md:grid-cols-[minmax(0,28rem)_1fr]" : "grid-cols-[auto_1fr]",
