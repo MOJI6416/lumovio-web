@@ -581,6 +581,9 @@
  */
 :root[data-tv="1"] {
   font-size: 1.25vw;
+  /* 4.2: nothing under body on a TV — `caption` (18 px on 1920) is body there: labels (Tag, "Recommended"), the
+   * timeline's time, a torrent's peers while buffering. */
+  --type-caption: var(--type-body);
 }
 :root[data-tv="1"] body {
   overflow: hidden;

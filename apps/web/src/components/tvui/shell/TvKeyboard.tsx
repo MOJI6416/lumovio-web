@@ -32,12 +32,15 @@ export function TvKeyboard({
   label,
   placeholder,
   onSubmit,
+  initial = true,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   placeholder?: string;
   onSubmit?: () => void;
+  /** The screen starts on its first key — not when it starts elsewhere (a search type's grid). */
+  initial?: boolean;
 }) {
   const tv = useTranslations("tvui");
   const locale = useLocale();
@@ -81,7 +84,7 @@ export function TvKeyboard({
           <TvButton
             key={`${set}${ch}`}
             data-key={`${set}:${ch}`}
-            data-tv-initial={i === 0 || undefined}
+            data-tv-initial={(initial && i === 0) || undefined}
             className="h-12 min-w-0 px-0 text-h3"
             onClick={() => type(ch)}
           >

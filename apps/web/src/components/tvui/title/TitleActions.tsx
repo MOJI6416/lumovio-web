@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback, useRef, useState } from "react";
 import type { TitleLibraryState } from "@lumovio/contracts";
 import { useEditableLists, usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
@@ -235,15 +235,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
 
       {layer === "rate" && <RateLayer title={d} onClose={() => setLayer(null)} />}
-      {layer === "more" && (
-        <MoreLayer
-          title={d}
-          onClose={() => setLayer(null)}
-          onLists={() => setLayer("lists")}
-          onPhone={() => setLayer("phone")}
-          onRate={() => setLayer("rate")}
-        />
-      )}
+      {layer === "more" && <MoreLayer title={d} onClose={(next) => setLayer(next)} />}
       {layer === "lists" && <ListsLayer title={d} onClose={() => setLayer(null)} />}
       {layer === "phone" && (
         <TvLayer look="dialog" className="max-w-240" label={tv("openOnPhone")} onClose={() => setLayer(null)}>
@@ -398,23 +390,22 @@ function RateLayer({ title: d, onClose }: { title: TitleCore; onClose: () => voi
   );
 }
 
+/**
+ * "Rate", "Add to list" and "Open on a phone" open their layer once this one has closed (its step of the history gone,
+ * as the sources screen's "More" does): opened while it was still closing, its late close took the next layer too.
+ */
 function MoreLayer({
   title: d,
   onClose,
-  onLists,
-  onPhone,
-  onRate,
 }: {
   title: TitleCore;
-  onClose: () => void;
-  onLists: () => void;
-  onPhone: () => void;
-  onRate: () => void;
+  onClose: (next: "rate" | "lists" | "phone" | null) => void;
 }) {
   const t = useTranslations("titlePage");
   const tc = useTranslations("card");
   const tv = useTranslations("tvui");
   const a = usePersonalActions(d);
+  const next = useRef<"rate" | "lists" | "phone" | null>(null);
   const setState = useSetLibraryState();
   const movie = d.kind === "movie";
   // A whole series at once, taken back exactly with "Undo" (TTL-25), as the site's "More" does.
@@ -434,13 +425,21 @@ function MoreLayer({
   const mark = (on: boolean, Icon: typeof Heart) =>
     on ? <Icon aria-hidden className="fill-current" /> : <Icon aria-hidden />;
   return (
-    <TvLayer label={d.title} onClose={onClose}>
+    <TvLayer label={d.title} onClose={() => onClose(next.current)}>
       {(close) => (
         <>
           <h2 className="text-h2 text-text-1">{d.title}</h2>
           <div data-zone="more" data-zone-axis="y" className="flex flex-col gap-3">
-            {/* The rating opens its own layer over this one (the hero's row has no "Rate" since the 2026-11 redesign). */}
-            <TvButton look="row" aria-haspopup="dialog" data-tv-initial onClick={onRate}>
+            {/* The rating opens its own layer in this one's place (the hero's row has no "Rate" since the 2026-11 redesign). */}
+            <TvButton
+              look="row"
+              aria-haspopup="dialog"
+              data-tv-initial
+              onClick={() => {
+                next.current = "rate";
+                close();
+              }}
+            >
               <Star aria-hidden className={cn(a.state?.rating && "fill-current")} />
               {a.state?.rating ? t("ratedLabel", { value: a.state.rating }) : t("rate")}
             </TvButton>
@@ -474,8 +473,8 @@ function MoreLayer({
             <TvButton
               look="row"
               onClick={() => {
+                next.current = "lists";
                 close();
-                onLists();
               }}
             >
               <ListPlus aria-hidden />
@@ -484,8 +483,8 @@ function MoreLayer({
             <TvButton
               look="row"
               onClick={() => {
+                next.current = "phone";
                 close();
-                onPhone();
               }}
             >
               <Smartphone aria-hidden />

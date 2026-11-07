@@ -72,11 +72,24 @@ export function TvLayer({
     const app = document.querySelector<HTMLElement>("[data-tv-app]");
     app?.setAttribute("inert", "");
     const box = document.querySelector<HTMLElement>(`[data-tv-layer="${id}"]`);
-    const first = box
-      ? ([...box.querySelectorAll<HTMLElement>("[data-tv-initial]")].find(isUsable) ?? itemsIn(box)[0])
-      : null;
+    const start = () =>
+      box ? ([...box.querySelectorAll<HTMLElement>("[data-tv-initial]")].find(isUsable) ?? itemsIn(box)[0]) : null;
+    const first = start();
     nav.focus(first);
+    // Its items still loading (the lists of "Add to list"): the first to arrive takes the focus, unless it is inside.
+    let wait: MutationObserver | null = null;
+    if (box && !first) {
+      wait = new MutationObserver(() => {
+        if (box.contains(document.activeElement)) return wait?.disconnect();
+        const el = start();
+        if (!el) return;
+        wait?.disconnect();
+        nav.focus(el);
+      });
+      wait.observe(box, { childList: true, subtree: true });
+    }
     return () => {
+      wait?.disconnect();
       if (!document.querySelector("[data-tv-layer]")) app?.removeAttribute("inert");
     };
   }, [id, nav]);

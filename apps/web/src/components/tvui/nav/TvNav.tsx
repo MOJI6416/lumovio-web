@@ -3,6 +3,7 @@
 import { useRouter as useNextRouter, usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { randomId } from "@/lib/random-id";
 import { isBackKey, type NavApi, NavContext } from "./context";
 import {
   applyShifts,
@@ -183,9 +184,13 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   /** `leave` is going back past the open layers to the previous screen. */
   const away = useRef(false);
 
+  /** Whose layer an entry is: a reload keeps `history.state`, so an entry an earlier page left with a layer's number
+   * (its numbers start again from 1 here) is just a screen's — read as a layer's, it kept this page's layers open. */
+  const doc = useRef("");
   const push = useCallback((l: Layer) => {
     l.pushed = true;
-    window.history.pushState({ ...(window.history.state as object), tvLayer: l.id }, "");
+    doc.current ||= randomId();
+    window.history.pushState({ ...(window.history.state as object), tvLayer: l.id, tvDoc: doc.current }, "");
   }, []);
   /** The history entries of the layers that are open and not on their way out. */
   const entries = useCallback(() => layers.current.filter((l) => l.pushed && !l.leaving).length, []);
@@ -391,7 +396,8 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   // The history: a step back past a layer's entry closes it (Back of the TV browser itself, or `dismiss`).
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
-      const at = ((e.state as { tvLayer?: number } | null)?.tvLayer ?? 0) as number;
+      const s = e.state as { tvLayer?: number; tvDoc?: string } | null;
+      const at = s?.tvDoc === doc.current ? (s.tvLayer ?? 0) : 0;
       if (backs.current) backs.current--;
       // `leave`: past the layers to the previous screen — they close with this one, nothing to give the focus back to.
       const left = away.current;

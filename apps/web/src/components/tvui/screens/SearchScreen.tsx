@@ -220,10 +220,11 @@ export function SearchScreen({
             {typed.isPending &&
               Array.from({ length: 8 }, (_, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
-                <span key={i} aria-hidden className="aspect-2/3 w-full animate-pulse rounded-sm bg-surface-2" />
+                <span key={i} aria-hidden data-tv-initial-pending={i === 0 || undefined} className="aspect-2/3 w-full animate-pulse rounded-sm bg-surface-2" />
               ))}
+            {/* "See all" lands on the grid's first card, not on the keyboard. */}
             {typedTitles.map((x, i) => (
-              <TvCard key={x.id} title={x} index={i} fluid />
+              <TvCard key={x.id} title={x} index={i} initial={i === 0} fluid />
             ))}
           </div>
         )}
@@ -254,10 +255,11 @@ export function SearchScreen({
   }
 
   return (
-    <div data-tv-screen="section" className="flex h-full gap-10 ps-(--tv-pad) pt-12">
+    // A type's grid is a step from the groups (TvNav "detail"): Back returns to them, not to the menu and the home.
+    <div data-tv-screen={kind ? "detail" : "section"} className="flex h-full gap-10 ps-(--tv-pad) pt-12">
       <h1 className="sr-only">{t("label")}</h1>
       <div className="flex w-104 shrink-0 flex-col gap-6">
-        <TvKeyboard value={q} onChange={setQ} label={t("label")} placeholder={t("placeholder")} onSubmit={() => recentSearches.push(q)} />
+        <TvKeyboard value={q} onChange={setQ} label={t("label")} placeholder={t("placeholder")} onSubmit={() => recentSearches.push(q)} initial={!kind} />
       </div>
 
       {/* The column's own start: shelves begin at its edge, with room for the focus ring. */}
