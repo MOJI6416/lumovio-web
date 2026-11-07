@@ -158,7 +158,7 @@ export default async function PersonPage({ params }: { params: Params }) {
           {(p.birthday || p.deathday || p.placeOfBirth) && (
             <p className="mt-2 flex flex-wrap gap-x-2 text-body-s text-text-2 md:text-body">
               {(p.birthday || p.deathday) && (
-                <span className={years !== null || p.placeOfBirth ? "after:ms-2 after:content-['·']" : undefined}>
+                <span className={years !== null || p.placeOfBirth ? "after:ms-2 after:content-['·'_/_'']" : undefined}>
                   {/* Each date whole on its line: "22 January / 2008" broke on a phone. */}
                   {p.birthday && (
                     <span className="whitespace-nowrap">
@@ -175,7 +175,7 @@ export default async function PersonPage({ params }: { params: Params }) {
                   )}
                 </span>
               )}
-              {years !== null && <span className={p.placeOfBirth ? "after:ms-2 after:content-['·']" : undefined}>{t("person.age", { count: years })}</span>}
+              {years !== null && <span className={p.placeOfBirth ? "after:ms-2 after:content-['·'_/_'']" : undefined}>{t("person.age", { count: years })}</span>}
               {p.placeOfBirth && (
                 <span lang="en">
                   <span className="sr-only">{t("person.placeLabel")}: </span>

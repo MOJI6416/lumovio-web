@@ -269,10 +269,11 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                 ...item.genreIds.map(genreName).filter(Boolean).slice(0, 2),
               ]
                 .filter((x) => x !== null && x !== undefined)
-                // The "·" ends the part before it, so a wrapped line never starts with one.
+                // The "·" ends the part before it, so a wrapped line never starts with one; its empty alt text keeps a
+                // screen reader from reading it as a stop of its own.
                 .map((x, i, all) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: a fixed order of parts
-                  <span key={i} className={i < all.length - 1 ? "after:ms-2 after:content-['·']" : undefined}>
+                  <span key={i} className={i < all.length - 1 ? "after:ms-2 after:content-['·'_/_'']" : undefined}>
                     {x}
                   </span>
                 ))}
