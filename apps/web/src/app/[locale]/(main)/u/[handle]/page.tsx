@@ -1,5 +1,5 @@
 import type { ListSummary, TitleSummary } from "@lumovio/contracts";
-import { Star, UserRound } from "lucide-react";
+import { CloudOff, Star, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -65,6 +65,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     return (
       <ErrorState
         variant="page"
+        icon={CloudOff}
         title={t("errors.unavailableTitle")}
         about={t("errors.loadText")}
         details={null}
