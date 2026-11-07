@@ -143,6 +143,8 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   const straightIn = !me.activeProfile && !manage && !params.get("switch") && only && !only.hasPin ? only : null;
   const [switching, setSwitching] = useState<Profile | null>(straightIn);
   const [creating, setCreating] = useState(false);
+  // "Add profile" opened by the address (the account menu's "+", `?add=1`): giving it up goes back to where it came from.
+  const [addByLink, setAddByLink] = useState(false);
   // A kids profile was just created while an adult one has no PIN: "Set a PIN on adult profiles?" (`name`: the new one).
   const [offer, setOffer] = useState<string | null>(null);
   // "Set PIN" (the hint, the offer): the profile's page opens with its PIN dialog.
@@ -242,6 +244,15 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
     const p = id ? profiles.find((x) => x.id === id) : null;
     if (p) return choose(p);
     if (straightIn) void select(straightIn);
+    // From the account menu's "+" (/profiles?add=1): the new profile's first step at once, over "Who's watching?" —
+    // not Manage profiles first (owner, 2026-11-07). The address loses `add`, so Back and a reload don't open it again.
+    if (params.get("add") === "1" && !inKids && !full) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("add");
+      window.history.replaceState(window.history.state, "", url);
+      setAddByLink(true);
+      setCreating(true);
+    }
     // The views behind "Manage profiles" come in the browser's spare time, so the press finds them here.
     const idle = window.requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 1500));
     if (!inKids) idle(() => void loadManager().then(() => loadEditor()));
@@ -297,6 +308,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   const onCreated = (p: Profile, list: Profile[], askPin: boolean) => {
     setProfiles(list);
     setCreating(false);
+    setAddByLink(false);
     open(editHref(p.id));
     // A new kids profile while an adult one has no PIN: offer to close the adult ones (as Disney+ does). The offer
     // itself says the profile was created — a toast would sit on its buttons in a phone's sheet.
@@ -520,7 +532,20 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
         </form>
       </Dialog>
 
-      {creating && <CreateProfile profiles={profiles} onClose={() => setCreating(false)} onCreated={onCreated} />}
+      {creating && (
+        <CreateProfile
+          profiles={profiles}
+          onClose={() => {
+            setCreating(false);
+            if (!addByLink) return;
+            // Opened from the account menu: back to the page the menu was on (the history's, or `next`).
+            const nav = (window as Window & { navigation?: { canGoBack?: boolean } }).navigation;
+            if (nav?.canGoBack ?? window.history.length > 1) window.history.back();
+            else window.location.href = to(next);
+          }}
+          onCreated={onCreated}
+        />
+      )}
       {offer !== null && (
         <PinOffer
           name={offer}

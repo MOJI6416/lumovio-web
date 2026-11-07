@@ -325,7 +325,9 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
             ))}
             {!kids && me.profiles.length < limit && (
               <MenuFace
-                href={`/profiles?manage=1&next=${back}`}
+                // Straight to the new profile's first step (ProfilePicker `?add=1`), not to Manage profiles, which
+                // has its own row below; giving it up comes back here.
+                href={`/profiles?add=1&next=${back}`}
                 face={
                   <span className="grid place-items-center rounded-avatar border-2 border-line-2 text-text-2" style={{ width: size, height: size }}>
                     <Plus aria-hidden className="size-5" />
