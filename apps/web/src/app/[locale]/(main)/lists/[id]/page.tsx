@@ -43,7 +43,7 @@ export default async function ListPage({ params }: { params: Params }) {
   const { id } = await params;
   const list = await load(id);
   // A guest with a link to a list that isn't open to everyone: sign in, then back here (LIB-18, AUTH-02).
-  if (!list && /^[0-9a-f-]{36}$/.test(id) && !(await getMeState())) return <SignInColumn reason="listOpen" />;
+  if (!list && /^[0-9a-f-]{36}$/.test(id) && !(await getMeState())) return <SignInColumn reason="listOpen" next={`/lists/${id}`} />;
   if (!list) notFound();
   return (
     // The Collection template on the page gutter (5.3, X-02); ListView brings the page header.
