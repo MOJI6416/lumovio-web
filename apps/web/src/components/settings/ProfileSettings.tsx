@@ -17,7 +17,7 @@ import { languageName } from "@/lib/format";
 import { SUBTITLE_DEFAULTS } from "@/lib/media/subs/view";
 import { useSettingsSave } from "@/lib/use-action";
 import { AUTO, capital, useLocaleOptions } from "./locale-options";
-import type { PublicPage } from "./ProfileDialogs";
+import { publicPageQuery } from "./queries";
 
 // The sub-screens load when one is opened (bundle budget): the ordered choice, the studios, the preview, the form.
 const AudioDialog = dynamic(() => import("./ProfileDialogs").then((m) => m.AudioDialog), { ssr: false });
@@ -280,12 +280,10 @@ function SpoilersSection({ value, change }: SectionProps) {
   );
 }
 
-const publicKey = (id: string) => ["public-settings", id];
-
 /** The profile's public page as a row with its state — closed, or its address — opening the form (an adult's). */
 function PublicRow({ profile, onOpen }: { profile: Profile; onOpen: () => void }) {
   const t = useTranslations("settings");
-  const q = useQuery({ queryKey: publicKey(profile.id), queryFn: () => api<PublicPage>(`/api/profiles/${profile.id}/public`) });
+  const q = useQuery(publicPageQuery(profile.id));
   const d = q.data;
   return (
     <SettingsLink
@@ -309,7 +307,7 @@ function PublicRow({ profile, onOpen }: { profile: Profile; onOpen: () => void }
 
 /** The form opens on what the page has now. */
 function PublicDialog({ profile, onClose }: { profile: Profile; onClose: () => void }) {
-  const q = useQuery({ queryKey: publicKey(profile.id), queryFn: () => api<PublicPage>(`/api/profiles/${profile.id}/public`) });
+  const q = useQuery(publicPageQuery(profile.id));
   if (!q.data) return null;
   return <PublicPageDialog profile={profile} initial={q.data} onClose={onClose} />;
 }

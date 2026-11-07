@@ -27,6 +27,7 @@ import { api } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-errors";
 import { relativeTime } from "@/lib/format";
 import { useAction, useSettingsSave } from "@/lib/use-action";
+import { integrationsQuery } from "./queries";
 import type { ServiceMenuProps } from "./ServiceMenu";
 
 const serviceMenu = lazyControl(() => import("./ServiceMenu"));
@@ -57,7 +58,7 @@ export function TrackingServices() {
   const tn = useTranslations("nav");
   const params = useSearchParams();
   const router = useRouter();
-  const q = useQuery({ queryKey: ["integrations"], queryFn: () => api<IntegrationsOverview>("/api/integrations") });
+  const q = useQuery(integrationsQuery);
 
   // Back from the service's consent page.
   useEffect(() => {

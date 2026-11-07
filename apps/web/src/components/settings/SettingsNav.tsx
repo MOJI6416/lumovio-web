@@ -2,11 +2,13 @@
 
 import { clsx } from "clsx";
 import { Bell, ChevronRight, Database, KeyRound, LifeBuoy, type LucideIcon, MonitorSmartphone, RefreshCw, Server, Shield, Sparkles } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
 import { ProfileAvatar } from "@/components/ui/Avatar";
 import { Tag } from "@/components/ui/Badge";
 import { Link } from "@/i18n/navigation";
+import { prefetchSection } from "./queries";
 
 /** Whose setting it is (design-system 7.18): the profile's, this browser's, the account's — and help. */
 export type SettingsGroup = "profile" | "device" | "account" | "help";
@@ -61,6 +63,7 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
   const t = useTranslations("settings");
   const tp = useTranslations("profiles");
   const { me } = useSession();
+  const qc = useQueryClient();
   const profile = me?.activeProfile;
   const groups = GROUPS.map((g) => sections.filter((s) => s.group === g)).filter((g) => g.length > 0);
   return (
@@ -72,6 +75,13 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
             <ul className="max-lg:divide-y max-lg:divide-line max-lg:overflow-hidden max-lg:rounded-md max-lg:bg-surface-1 lg:flex lg:flex-col lg:gap-0.5">
               {items.map((s) => {
                 const active = inSection(s, pathname);
+                // A section is prefetched whole — its server part too, not only the loading boundary there isn't — so
+                // the press shows it from the router's cache, without a trip to the server (2026-11-07: ~0.3 s felt
+                // heavy). Support is a page of its own, as any link.
+                const full = s.group !== "help" ? true : undefined;
+                // Its data too, from the first sign of the person heading there (pointer, focus, press).
+                const ahead = full ? () => prefetchSection(qc, s.href, profile?.id) : undefined;
+                const intent = { onPointerEnter: ahead, onFocus: ahead, onPointerDown: ahead };
                 const card = !s.icon && profile;
                 const mark = card ? (
                   <ProfileAvatar avatar={profile.avatar} photo={profile.photo} name={profile.name} size={40} />
@@ -95,6 +105,8 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
                     {/* The phone's and tablet's list: a row per section, its whole width a target (5.6). */}
                     <Link
                       href={s.phoneHref ?? s.href}
+                      prefetch={full}
+                      {...intent}
                       className={clsx(
                         "flex items-center gap-3 px-4 text-body text-text-1 transition-colors duration-fast ease-fast hover:bg-surface-2 focus-visible:-outline-offset-2 lg:hidden",
                         card ? "min-h-18 py-3" : "min-h-13",
@@ -107,6 +119,8 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
                     {/* The desktop's menu on the left. */}
                     <Link
                       href={s.href}
+                      prefetch={full}
+                      {...intent}
                       // The frame keeps the page where it is (SettingsFrame): no jump to the top.
                       scroll={false}
                       aria-current={active ? "page" : undefined}

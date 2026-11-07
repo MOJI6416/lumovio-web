@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useSettingsSave } from "@/lib/use-action";
+import { prefsQuery } from "./queries";
 
 /**
  * The account's preferences (/api/preferences). `discord` is the connected channel's webhook by its name in Discord
@@ -23,7 +24,7 @@ export type Prefs = {
  */
 export function usePrefs() {
   const qc = useQueryClient();
-  const query = useQuery({ queryKey: ["prefs"], queryFn: () => api<Prefs>("/api/preferences") });
+  const query = useQuery(prefsQuery);
   const { state, save } = useSettingsSave();
   const set = (patch: Partial<Prefs>) =>
     void save(

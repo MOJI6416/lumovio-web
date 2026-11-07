@@ -1,12 +1,15 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef } from "react";
 import { useSectionLoading } from "@/components/shell/NavigationLoading";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { cn } from "@/components/ui/cn";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useSession } from "@/components/providers/Providers";
 import { usePathname } from "@/i18n/navigation";
+import { prefetchLight } from "./queries";
 import { inSection, SettingsNav, useSettingsSections } from "./SettingsNav";
 
 /**
@@ -27,6 +30,21 @@ export function SettingsFrame({ kids, children }: { kids: boolean; children: Rea
   // Another section is being prepared (desktop, the menu beside it): the loader in the section's place, the menu and
   // the page where they are (owner, 2026-11-06: the page jumped and nothing said it was loading).
   const loading = useSectionLoading("/settings");
+  // The adult sections' first answers, read once the page is idle: a section drawn from the router's cache (the menu
+  // prefetches it whole, SettingsNav) then has its data too, without a skeleton.
+  const qc = useQueryClient();
+  const { me } = useSession();
+  const profileId = me?.activeProfile?.id;
+  useEffect(() => {
+    if (kids) return;
+    const run = () => prefetchLight(qc, profileId);
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(run, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(run, 500);
+    return () => clearTimeout(id);
+  }, [kids, qc, profileId]);
   // The new section starts right under the menu, which stays put: the page doesn't jump to its top. Only when the page
   // is scrolled past the frame's start.
   // biome-ignore lint/correctness/useExhaustiveDependencies: on each new section

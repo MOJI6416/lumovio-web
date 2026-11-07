@@ -17,6 +17,7 @@ import { ApiRequestError, api } from "@/lib/api";
 import { authErrorKey } from "@/lib/api-errors";
 import { authClient } from "@/lib/auth-client";
 import { relativeTime } from "@/lib/format";
+import { sessionsQuery } from "./queries";
 
 /** Rows before "Show more": the newest sign-ins first. */
 const FIRST = 6;
@@ -79,7 +80,7 @@ export function Sessions() {
   const qc = useQueryClient();
   const confirm = useConfirm();
   const [all, setAll] = useState(false);
-  const q = useQuery({ queryKey: ["sessions"], queryFn: () => api<{ sessions: DeviceSession[] }>("/api/sessions") });
+  const q = useQuery(sessionsQuery);
   const refresh = () => void qc.invalidateQueries({ queryKey: ["sessions"] });
 
   const revoke = async (g: Group) => {

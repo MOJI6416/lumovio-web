@@ -1,6 +1,5 @@
 "use client";
 
-import type { AuthCapabilities } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -12,9 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
-import { api } from "@/lib/api";
 import { authErrorKey } from "@/lib/api-errors";
 import { authClient } from "@/lib/auth-client";
+import { authCapsQuery } from "./queries";
 
 const SOCIAL = [
   { id: "google", name: "Google" },
@@ -35,7 +34,7 @@ export function AccountSettings() {
   const tr = useTranslations();
   const locale = useLocale();
   const { me } = useSession();
-  const caps = useQuery({ queryKey: ["auth-caps"], queryFn: () => api<AuthCapabilities>("/api/auth-capabilities"), staleTime: Infinity });
+  const caps = useQuery(authCapsQuery);
   const [linking, setLinking] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   if (!me) return null;

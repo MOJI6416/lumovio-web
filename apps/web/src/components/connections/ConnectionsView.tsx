@@ -13,9 +13,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { QueryState } from "@/components/ui/QueryState";
 import { SettingsLink, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { api } from "@/lib/api";
 import { MediaNetError } from "@/lib/media/net";
 import { netErrorText, storedFailure } from "./net-errors";
+import { connectionsQuery } from "@/components/settings/queries";
 import { ServerMark } from "./ServerMark";
 import { profileHasAccess, STATUS, useServerActions, useServerFact } from "./server-actions";
 
@@ -46,12 +46,7 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
   // The list the page was rendered with (./page): the rows are there at once, so nothing below them moves when they
   // load (phones 2026-10-30: the footer jumped, CLS 0.26). It is read again here all the same: the check below goes by
   // this device's own read.
-  const q = useQuery({
-    queryKey: ["connections"],
-    queryFn: () => api<{ connections: ConnectionSummary[] }>("/api/connections"),
-    initialData: initial,
-    refetchOnMount: "always",
-  });
+  const q = useQuery({ ...connectionsQuery, initialData: initial, refetchOnMount: "always" });
   const refresh = () => void qc.invalidateQueries({ queryKey: ["connections"] });
   // "Not checked" doesn't wait for a press (SRV-08): the servers this profile may use that weren't checked for a day
   // are checked as the list opens, one at a time, each row saying "Checking…" until its usual status comes back.

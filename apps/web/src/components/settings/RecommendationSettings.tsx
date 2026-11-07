@@ -4,7 +4,7 @@ import type { RecommendationDiscovery, RecommendationPrefs, TasteProfile, TasteS
 import { type UseQueryResult, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { useRecommendationFeedback } from "@/components/media/ForYouRow";
 import { useGenreEntries } from "@/components/media/GenresDialog";
 import { type GenreEntry, toggleGenre } from "@/components/media/genre-entries";
@@ -26,6 +26,7 @@ import { api } from "@/lib/api";
 import { untilComplete } from "@/lib/incomplete";
 import { titleHref } from "@/lib/slug";
 import { useSettingsSave } from "@/lib/use-action";
+import { tasteQuery } from "./queries";
 
 const TASTE = ["recommendations-taste"];
 type TasteQuery = UseQueryResult<TasteProfile>;
@@ -59,7 +60,9 @@ export function RecommendationSettings() {
   const t = useTranslations("recs");
   const qc = useQueryClient();
   const confirm = useConfirm();
-  const taste = useQuery({ queryKey: TASTE, queryFn: () => api<TasteProfile>("/api/recommendations/taste"), refetchInterval: untilComplete });
+  // The first render (and the server's) draws the settings at the top; the rest follows as a deferred render.
+  const rest = useDeferredValue(true, false);
+  const taste = useQuery({ ...tasteQuery, refetchInterval: untilComplete });
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: TASTE });
     void qc.invalidateQueries({ queryKey: ["recommendations"] });
@@ -92,17 +95,25 @@ export function RecommendationSettings() {
         <>
           {/* The settings themselves first, then what they are built on (7.18): a long list goes below the switches. */}
           <HowSection taste={taste} />
-          <LikeSection taste={taste} onChange={refresh} />
-          <MutedSection taste={taste} onChange={refresh} />
-          <SignalsSection taste={taste} onChange={refresh} />
-          <InterestsSection taste={taste} />
-          <OpenedSection taste={taste} onChange={refresh} />
+          {/* The long part — genres, the starter titles, the signals — right after the first frame: the section opens at
+              once from the menu instead of waiting for all of it (2026-11-07: 0.4–0.6 s on a phone at 4× CPU). */}
+          {rest && (
+            <>
+              <LikeSection taste={taste} onChange={refresh} />
+              <MutedSection taste={taste} onChange={refresh} />
+              <SignalsSection taste={taste} onChange={refresh} />
+              <InterestsSection taste={taste} />
+              <OpenedSection taste={taste} onChange={refresh} />
+            </>
+          )}
         </>
       )}
       {/* Starting over: apart and last, its consequence said under it (1.2, principle 6), asked first (8.3). */}
-      <SettingsSection title={t("resetTitle")}>
-        <SettingsLink tone="danger" label={t("reset")} detail={t("resetText")} onClick={() => void reset()} />
-      </SettingsSection>
+      {rest && (
+        <SettingsSection title={t("resetTitle")}>
+          <SettingsLink tone="danger" label={t("reset")} detail={t("resetText")} onClick={() => void reset()} />
+        </SettingsSection>
+      )}
     </div>
   );
 }
