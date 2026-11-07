@@ -37,16 +37,16 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Pro
   const t = await getTranslations("profiles");
   const tn = await getTranslations("nav");
   return (
-    // "Who's watching?" is a system screen: on the stage, dark in either theme (3.5, 7.17).
-    <div className="stage min-h-dvh bg-stage pb-10">
+    // The Picker template (design-system 9): the page's own background in its theme, as sign-in before it — no art to
+    // hold, so no stage (3.5) — the logo where the header has it, the question and the faces in the middle.
+    <div className="min-h-dvh bg-bg pb-16">
       {/* The logo where the header has it: a 64 bar on the page gutter (SH-15), below a home-screen app's status bar (7.19). */}
       <div className="page-x mx-auto flex h-(--header-h) max-w-media items-center pt-[env(safe-area-inset-top)]">
         <Link href="/" className="flex h-11 items-center rounded-xs text-text-1" aria-label={`Lumovio — ${tn("home")}`}>
           <Wordmark />
         </Link>
       </div>
-      {/* The Picker template (design-system 9): the stage, the question, the grid of profiles in the middle. */}
-      <main id="main" className="mx-auto mt-10 max-w-4xl px-4">
+      <main id="main" className="mx-auto mt-6 max-w-5xl px-4 sm:mt-12">
         {me === "unavailable" ? (
           <div className="text-center">
             <h1 className="mb-12 text-h1 text-text-1">{t("whoIsWatching")}</h1>

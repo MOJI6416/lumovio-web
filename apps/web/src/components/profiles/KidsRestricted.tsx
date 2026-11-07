@@ -3,11 +3,11 @@ import { getTranslations } from "next-intl/server";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Link } from "@/i18n/navigation";
-import { BackButton } from "./BackButton";
 
 /**
- * An adult-only page opened from a kids profile (PRF-02, PRF-04): say so plainly and offer the way out —
- * "Switch profile" opens the picker with every profile (PIN or account password), go home, or back.
+ * An adult-only page opened from a kids profile (PRF-02, PRF-04, 8.10): say so plainly and offer the way out in the
+ * account menu's words — "Leave the kids profile" opens "Who's watching?" with every profile (PIN, the account password
+ * or a mailed code) and comes back here — or go home. Back is the browser's (or, in the installed app, the header's).
  */
 export async function KidsRestricted({ from }: { from: string }) {
   const t = await getTranslations("profiles");
@@ -19,16 +19,13 @@ export async function KidsRestricted({ from }: { from: string }) {
       text={t("kidsRestrictedText")}
       action={
         <Link href={`/profiles?next=${encodeURIComponent(from)}`} className={buttonClass("primary")}>
-          {tn("profiles")}
+          {tn("leaveKids")}
         </Link>
       }
       secondaryAction={
-        <>
-          <Link href="/" className={buttonClass("tertiary")}>
-            {t("toHome")}
-          </Link>
-          <BackButton />
-        </>
+        <Link href="/" className={buttonClass("tertiary")}>
+          {t("toHome")}
+        </Link>
       }
     />
   );
