@@ -166,8 +166,8 @@ export interface TitleDetails extends TitleSummary {
   spokenLanguages: string[];
   certification: string | null;
   homepage: string | null;
-  /** The title's name in each finished language (TMDB's translation, else its English name): the other languages' addresses. */
-  localTitles?: Partial<Record<"en" | "ru" | "uk", string>>;
+  /** The title's name in each finished language as TMDB gives it there (translation, else original): the languages' addresses. */
+  localTitles?: Partial<Record<"en" | "uk" | "ru" | "es" | "de" | "fr" | "pt-BR" | "it" | "pl" | "tr", string>>;
   externalIds: ExternalIds;
   cast: CastMember[];
   crew: CrewMember[];
