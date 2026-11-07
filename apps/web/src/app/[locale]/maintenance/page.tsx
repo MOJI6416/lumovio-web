@@ -1,7 +1,6 @@
-import { RefreshCw } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Wordmark } from "@/components/shell/Wordmark";
-import { buttonClass } from "@/components/ui/Button";
+import { buttonClass } from "@/components/ui/button-class";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -32,8 +31,8 @@ export default async function MaintenancePage({ params }: { params: Promise<{ lo
           action={
             // The address in the bar is the page that was asked for (the proxy rewrote it here): "?" opens it again —
             // a link, so the page brings no script.
+            // No icon: lucide-react's Icon is a client module, and this page brings no script.
             <a href="?" className={buttonClass("primary", "lg")}>
-              <RefreshCw aria-hidden />
               {tc("retry")}
             </a>
           }
