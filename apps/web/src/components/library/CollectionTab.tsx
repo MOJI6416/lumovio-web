@@ -107,7 +107,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
             icon={Icon}
             title={kind === "watchlist" ? t("emptyWatchlist") : t("emptyFavorites")}
             // How a title gets here, for a screen reader: the heading and "Find titles" say enough (1.2).
-            text={<span className="sr-only">{kind === "watchlist" ? t("emptyWatchlistHint") : t("emptyFavoritesHint")}</span>}
+            about={kind === "watchlist" ? t("emptyWatchlistHint") : t("emptyFavoritesHint")}
             action={
               <Link href="/search" className={buttonClass("primary")}>
                 <Search aria-hidden />

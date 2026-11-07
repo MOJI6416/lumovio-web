@@ -2,11 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { Button } from "./Button";
 import { cn } from "./cn";
 import type { StateVariant } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
-import { InlineAlert } from "./InlineAlert";
 import { Progress } from "./Progress";
 import { Skeleton } from "./Skeleton";
 
@@ -19,13 +17,18 @@ export interface QueryLike<T> {
   isFetching: boolean;
   fetchStatus: "fetching" | "paused" | "idle";
   refetch: () => unknown;
+  /** useInfiniteQuery: only the next page failed — LoadMore says so in its place, not this wrapper. */
+  isFetchNextPageError?: boolean;
 }
 
 /**
- * One wrapper for the states of a request (design-system 8.4; audit X-14, X-17):
+ * One wrapper for the states of a request (design-system 7.11, 8.4):
  * - first load → `loading` (a Skeleton of the same layout) with "Loading…" for screen readers;
+ * - offline before anything came (react-query pauses the request) → "No connection" with Retry, not an endless
+ *   skeleton; the request goes on by itself once the connection is back;
  * - failed with nothing to show → ErrorState with "Retry" (refetch), never an empty state or an endless skeleton;
- * - failed while refreshing shown data → the data stays, an InlineAlert with "Retry" above it;
+ * - failed while refreshing shown data → the data stays, one line "Couldn't refresh" with Retry above it (a next page
+ *   that failed is LoadMore's to say, under the list);
  * - `isEmpty(data)` → `empty` (an EmptyState; nothing, if not given);
  * - data → `children(data)`, with a thin bar on top while it refreshes.
  *
@@ -34,7 +37,8 @@ export interface QueryLike<T> {
  *     {(list) => <ServerList servers={list} />}
  *   </QueryState>
  *
- * A disabled query that never ran renders nothing.
+ * `variant`: the failure's place — `section` (the content under the page's header), `page`, or `inline` for a part of
+ * a page whose other parts live. A disabled query that never ran renders nothing.
  */
 export function QueryState<T>({
   query,
@@ -51,7 +55,7 @@ export function QueryState<T>({
   isEmpty?: (data: T) => boolean;
   empty?: ReactNode;
   /** Already translated words for the failure, instead of the ones chosen from the error. */
-  error?: { title?: string; text?: string };
+  error?: { title?: string; about?: string };
   variant?: StateVariant;
   /** Placement of the wrapper. */
   className?: string;
@@ -60,14 +64,15 @@ export function QueryState<T>({
   const tc = useTranslations("common");
   const t = useTranslations("ui");
   const { data } = query;
+  const retry = () => void query.refetch();
   const failed = (
     <ErrorState
       className={className}
       error={query.error}
       title={error?.title}
-      text={error?.text}
+      about={error?.about}
       variant={variant}
-      onRetry={() => void query.refetch()}
+      onRetry={retry}
       retrying={query.isFetching}
     />
   );
@@ -75,6 +80,9 @@ export function QueryState<T>({
   if (data === undefined) {
     if (query.isError) return failed;
     if (query.isPending && query.fetchStatus === "idle") return null;
+    // Offline: react-query holds the request until the connection is back — say so instead of a skeleton for ever.
+    if (query.fetchStatus === "paused")
+      return <ErrorState className={className} error={null} variant={variant} onRetry={retry} />;
     return (
       <div aria-busy="true" className={className}>
         <span className="sr-only" role="status">
@@ -96,21 +104,14 @@ export function QueryState<T>({
       {query.isFetching && (
         <Progress value={null} label={tc("loading")} className="absolute inset-x-0 top-0" />
       )}
-      {query.isError && (
-        <InlineAlert
-          tone="danger"
+      {query.isError && !query.isFetchNextPageError && (
+        <ErrorState
           className="mb-4"
+          error={query.error}
           title={t("refreshFailed")}
-          action={
-            <Button
-              variant="tertiary"
-              size="sm"
-              loading={query.isFetching}
-              onClick={() => void query.refetch()}
-            >
-              {tc("retry")}
-            </Button>
-          }
+          variant="inline"
+          onRetry={retry}
+          retrying={query.isFetching}
         />
       )}
       {children(data)}

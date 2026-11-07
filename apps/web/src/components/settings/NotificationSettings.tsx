@@ -41,7 +41,7 @@ export function NotificationSettings() {
   if (query.isError && !query.data) {
     return (
       <SettingsSection title={t("newEpisodesSection")}>
-        <ErrorState error={query.error} title={t("prefsLoadError")} onRetry={() => void query.refetch()} retrying={query.isFetching} />
+        <ErrorState variant="inline" error={query.error} title={t("prefsLoadError")} onRetry={() => void query.refetch()} retrying={query.isFetching} />
       </SettingsSection>
     );
   }

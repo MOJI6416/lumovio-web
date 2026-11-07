@@ -11,7 +11,6 @@ import { ProfileAvatar } from "@/components/ui/Avatar";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { getPathname, Link } from "@/i18n/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { pageSeo } from "@/lib/seo";
@@ -64,20 +63,17 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     // Said on the page with Retry — not an endless wait or a generic crash (X-14). Retry reloads the page.
     const again = getPathname({ href: `/u/${encodeURIComponent(handle)}`, locale });
     return (
-      <div className="page-x">
-        <div className="mx-auto max-w-tool">
-          <PageHeader title={`@${handle}`} />
-          <ErrorState
-            title={t("errors.serverTitle")}
-            text={t("errors.serverText")}
-            action={
-              <a href={again} className={buttonClass("secondary")}>
-                {t("common.retry")}
-              </a>
-            }
-          />
-        </div>
-      </div>
+      <ErrorState
+        variant="page"
+        title={t("errors.unavailableTitle")}
+        about={t("errors.loadText")}
+        details={null}
+        action={
+          <a href={again} className={buttonClass("primary", "lg")}>
+            {t("common.retry")}
+          </a>
+        }
+      />
     );
   }
   // The owner looking at their own page (signed in, that profile chosen): "Edit" leads to where it is set up.
@@ -150,7 +146,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       )}
       {empty && (
         // Nothing shared yet is said in words (LIB-21); the owner is told what can go here ("Edit" is in the header).
-        <EmptyState icon={UserRound} title={t("publicProfile.empty")} text={own ? t("publicProfile.emptyOwner") : undefined} />
+        <EmptyState icon={UserRound} title={t("publicProfile.empty")} about={own ? t("publicProfile.emptyOwner") : undefined} />
       )}
     </div>
   );

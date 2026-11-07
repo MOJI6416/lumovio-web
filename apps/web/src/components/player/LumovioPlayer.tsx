@@ -96,6 +96,11 @@ export interface PlayerProps extends PlayerEvents {
   /** The title ("movie:603"): the subtitles chosen for it are remembered per profile on this device. */
   titleId?: string;
   footerNote?: ReactNode;
+  /**
+   * "Watch on TV" in the top corner (design-system 8.18, 11.1; the site only): drawn with where the viewing is and its
+   * audio track now, and the way to pause it here once the TV has it.
+   */
+  castButton?: (now: { position: number; audio: number | null; pause: () => void }) => ReactNode;
 }
 
 const VOLUME_KEY = "lumovio.player.volume";
@@ -451,11 +456,12 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
 
   // Resume position once metadata is known.
   useEffect(() => {
-    if (!startedRef.current && duration > 0 && props.startAt > 5 && props.startAt < duration - 10 && props.prepared.type === "progressive") {
+    const seeks = props.prepared.type === "progressive" || props.prepared.seekToStart;
+    if (!startedRef.current && duration > 0 && props.startAt > 5 && props.startAt < duration - 10 && seeks) {
       startedRef.current = true;
       void store.seek(props.startAt);
     } else if (duration > 0) startedRef.current = true;
-  }, [duration, props.startAt, props.prepared.type, store]);
+  }, [duration, props.startAt, props.prepared.type, props.prepared.seekToStart, store]);
 
   // "Start over" once playback has actually landed on the saved position; it goes after 10 s of
   // playback from there, or as soon as the position moves elsewhere.
@@ -747,6 +753,25 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
   }, [restingNow]);
 
   const togglePlay = () => (paused || ended ? store.play() : store.pause());
+  // "Watch on TV" (design-system 8.18): the phone's remote of this viewing on the TV — play/pause and ±10 s, shown on
+  // the TV as its own remote's (the controls and the seek's hint). Stopping is the viewing's (WatchView).
+  const castControl = useRef<(c: { action: string; delta?: number }) => void>(() => {});
+  castControl.current = (c) => {
+    store.toggleControls(true);
+    if (c.action === "toggle") void togglePlay();
+    else if (c.action === "seek" && c.delta) {
+      const to = Math.max(0, Math.min(duration > 0 ? duration - 1 : Number.POSITIVE_INFINITY, currentTime + c.delta));
+      void store.seek(to);
+      const step = c.delta;
+      setSeekHint((h) => ({ delta: (h && Date.now() - h.at < 1200 && Math.sign(h.delta) === Math.sign(step) ? h.delta : 0) + step, at: Date.now() }));
+    }
+  };
+  useEffect(() => {
+    if (!tvNav || hidden) return;
+    const on = (e: Event) => castControl.current((e as CustomEvent<{ action: string; delta?: number }>).detail);
+    window.addEventListener("lumovio:cast-control", on);
+    return () => window.removeEventListener("lumovio:cast-control", on);
+  }, [tvNav, hidden]);
   const percent = new Intl.NumberFormat(locale, { style: "percent" });
   const volumeTo = (v: number) => {
     const to = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
@@ -834,6 +859,8 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
       if (layerOpen || endShown) return;
       const el = e.target as HTMLElement | null;
       if (el && EDITABLE.test(el.tagName)) return;
+      // A dialog over the player ("Watch on TV") keeps its own keys: Space presses its button, Tab stays in it.
+      if (el?.closest('[role="dialog"]')) return;
       if (e.key === " " || e.code === "Space") {
         if (e.repeat) return e.preventDefault();
         e.preventDefault();
@@ -875,7 +902,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     };
     // A button "pressed" by Space on its keyup: the press was the pause above, not a click.
     const up = (e: KeyboardEvent) => {
-      if ((e.key === " " || e.code === "Space") && !layerOpen && inPlayer(e.target) && (e.target as HTMLElement).tagName === "BUTTON") e.preventDefault();
+      if ((e.key === " " || e.code === "Space") && !layerOpen && inPlayer(e.target) && (e.target as HTMLElement).tagName === "BUTTON" && !(e.target as HTMLElement).closest('[role="dialog"]')) e.preventDefault();
     };
     window.addEventListener("keydown", down, true);
     window.addEventListener("keyup", up, true);
@@ -1101,6 +1128,12 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
           <Controls.Group className={clsx(hit, "absolute start-4 top-[max(1rem,env(safe-area-inset-top))] md:start-8 md:top-8")}>
             <IconButton icon={ArrowLeft} label={tc("back")} variant="stage" size="lg" onClick={props.onBack} className="[&_svg]:rtl:-scale-x-100" />
           </Controls.Group>
+          {/* "Watch on TV" at the top end, where streaming apps keep it (YouTube, Netflix): the bar stays as it is. */}
+          {props.castButton && started && (
+            <Controls.Group className={clsx(hit, "absolute end-4 top-[max(1rem,env(safe-area-inset-top))] md:end-8 md:top-8")}>
+              {props.castButton({ position: currentTime, audio: props.prepared.audio.find((a) => a.isDefault)?.index ?? null, pause: () => void store.pause() })}
+            </Controls.Group>
+          )}
 
           <Controls.Group data-player-bar className={clsx(hit, "absolute inset-x-0 bottom-0 flex flex-col gap-1 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:gap-2 md:px-10 md:pb-6")}>
             {props.footerNote}

@@ -87,6 +87,11 @@ export interface PreparedPlayback {
     targetAddressSpace?: "loopback" | "local";
   };
   mime: string | null;
+  /**
+   * For "hls": its playlist starts at the film's beginning (Jellyfin's always does), so the player seeks to the start
+   * position itself, as for a file. Plex's starts at the `offset` asked for and needs no seek.
+   */
+  seekToStart?: boolean;
   method: PlaybackMethod;
   methodNote: string | null;
   subtitles: SubtitleTrack[];

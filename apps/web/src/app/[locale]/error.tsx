@@ -1,20 +1,20 @@
 "use client";
 
-import { RefreshCw, TriangleAlert } from "lucide-react";
+import { CircleAlert, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useTransition } from "react";
-import { FocusCard } from "@/components/shell/FocusCard";
 import { Shell } from "@/components/shell/Shell";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Link } from "@/i18n/navigation";
 import { RATE_LIMITED_DIGEST } from "@/lib/api";
 
 const CHUNK_RELOAD_KEY = "lumovio:chunk-reload";
 
 /**
- * Route-level error boundary (SH-02): the Focus template inside the shell, "Retry" that really asks the server again
- * (Next 16.4 `retry` re-fetches and re-renders the segment; `reset` alone only clears the client state) and "To the
- * home page"; plus a privacy-safe client error report.
+ * Route-level error boundary (SH-02; design-system 7.11, the page state): inside the shell, what happened and "Retry"
+ * that really asks the server again (Next 16.4 `retry` re-fetches and re-renders the segment; `reset` alone only clears
+ * the client state), "Home" beside it, the why for a screen reader; plus a privacy-safe client error report.
  */
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
   const t = useTranslations();
@@ -55,20 +55,25 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
     })();
   }, [error, limited]);
   return (
-    <Shell overlay>
+    <Shell>
       <title>{`${t("errors.serverTitle")} · ${t("common.appName")}`}</title>
-      <FocusCard icon={TriangleAlert} title={t("errors.serverTitle")} text={t(limited ? "errors.rateLimited" : "errors.serverText")}>
-        <Button
-          icon={RefreshCw}
-          loading={pending}
-          onClick={() => start(retry)}
-        >
-          {t("common.retry")}
-        </Button>
-        <Link href="/" className={buttonClass("secondary")}>
-          {t("shell.toHome")}
-        </Link>
-      </FocusCard>
+      <EmptyState
+        variant="page"
+        role="alert"
+        icon={CircleAlert}
+        title={t(limited ? "errors.rateLimitedTitle" : "errors.serverTitle")}
+        about={t(limited ? "errors.rateLimited" : "errors.loadText")}
+        action={
+          <Button size="lg" icon={RefreshCw} loading={pending} onClick={() => start(retry)}>
+            {t("common.retry")}
+          </Button>
+        }
+        secondaryAction={
+          <Link href="/" className={buttonClass("tertiary", "lg")}>
+            {t("shell.toHome")}
+          </Link>
+        }
+      />
     </Shell>
   );
 }

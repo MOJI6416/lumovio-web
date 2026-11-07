@@ -2,257 +2,257 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 241482,
+      "jsGzip": 242044,
       "cssGzip": 22620,
       "jsChunks": 17
     },
     "/[locale]/android-tv": {
-      "jsGzip": 184635,
+      "jsGzip": 184839,
       "cssGzip": 20670,
       "jsChunks": 12
     },
     "/[locale]/anime": {
-      "jsGzip": 234289,
+      "jsGzip": 234929,
       "cssGzip": 20624,
       "jsChunks": 17
     },
     "/[locale]/auth/forgot": {
-      "jsGzip": 199722,
+      "jsGzip": 199909,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/auth/reset": {
-      "jsGzip": 199722,
+      "jsGzip": 199910,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/auth/sign-in": {
-      "jsGzip": 199722,
+      "jsGzip": 199909,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/auth/sign-up": {
-      "jsGzip": 199722,
+      "jsGzip": 199909,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/auth/two-factor": {
-      "jsGzip": 199722,
+      "jsGzip": 199911,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/browse/[kind]": {
-      "jsGzip": 227224,
+      "jsGzip": 227871,
       "cssGzip": 20624,
       "jsChunks": 17
     },
     "/[locale]/calendar": {
-      "jsGzip": 195638,
+      "jsGzip": 195810,
       "cssGzip": 20624,
       "jsChunks": 14
     },
     "/[locale]/dev/player-check": {
-      "jsGzip": 209629,
+      "jsGzip": 209828,
       "cssGzip": 22620,
       "jsChunks": 14
     },
     "/[locale]/dev/ui": {
-      "jsGzip": 251570,
+      "jsGzip": 253563,
       "cssGzip": 20624,
       "jsChunks": 19
     },
     "/[locale]/import": {
-      "jsGzip": 204066,
+      "jsGzip": 204124,
       "cssGzip": 22539,
       "jsChunks": 14
     },
     "/[locale]/invite/[token]": {
-      "jsGzip": 188186,
+      "jsGzip": 188683,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/legal/[doc]": {
-      "jsGzip": 188999,
+      "jsGzip": 189199,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/library": {
-      "jsGzip": 200309,
+      "jsGzip": 200826,
       "cssGzip": 20624,
       "jsChunks": 14
     },
     "/[locale]/link": {
-      "jsGzip": 189560,
+      "jsGzip": 190326,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/lists/[id]": {
-      "jsGzip": 212474,
+      "jsGzip": 212838,
       "cssGzip": 20624,
       "jsChunks": 16
     },
     "/[locale]/open": {
-      "jsGzip": 184635,
+      "jsGzip": 184839,
       "cssGzip": 20624,
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 201000,
+      "jsGzip": 201321,
       "cssGzip": 20624,
       "jsChunks": 14
     },
     "/[locale]/profiles": {
-      "jsGzip": 186464,
+      "jsGzip": 187136,
       "cssGzip": 20624,
       "jsChunks": 13
     },
     "/[locale]/remote": {
-      "jsGzip": 194688,
+      "jsGzip": 197868,
       "cssGzip": 20624,
       "jsChunks": 14
     },
     "/[locale]/search": {
-      "jsGzip": 221202,
+      "jsGzip": 221300,
       "cssGzip": 24299,
       "jsChunks": 18
     },
     "/[locale]/settings": {
-      "jsGzip": 205770,
+      "jsGzip": 206288,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/account": {
-      "jsGzip": 207686,
+      "jsGzip": 208204,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/connections": {
-      "jsGzip": 199737,
+      "jsGzip": 201573,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/connections/[id]/torrents": {
-      "jsGzip": 234099,
+      "jsGzip": 235972,
       "cssGzip": 22539,
       "jsChunks": 16
     },
     "/[locale]/settings/devices": {
-      "jsGzip": 211134,
+      "jsGzip": 211652,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/notifications": {
-      "jsGzip": 209458,
+      "jsGzip": 209983,
       "cssGzip": 20624,
       "jsChunks": 16
     },
     "/[locale]/settings/privacy": {
-      "jsGzip": 212212,
+      "jsGzip": 212730,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/profile": {
-      "jsGzip": 205770,
+      "jsGzip": 206288,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/recommendations": {
-      "jsGzip": 214614,
+      "jsGzip": 216151,
       "cssGzip": 20624,
       "jsChunks": 17
     },
     "/[locale]/settings/security": {
-      "jsGzip": 207962,
+      "jsGzip": 208498,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/services": {
-      "jsGzip": 202478,
+      "jsGzip": 203406,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/stats": {
-      "jsGzip": 210006,
+      "jsGzip": 210056,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/support": {
-      "jsGzip": 201582,
+      "jsGzip": 202218,
       "cssGzip": 22194,
       "jsChunks": 14
     },
     "/[locale]/support/[id]": {
-      "jsGzip": 202182,
+      "jsGzip": 202829,
       "cssGzip": 22194,
       "jsChunks": 14
     },
     "/[locale]/title/[kind]/[slug]": {
-      "jsGzip": 218881,
+      "jsGzip": 220287,
       "cssGzip": 20624,
       "jsChunks": 16
     },
     "/[locale]/tvui": {
-      "jsGzip": 207952,
+      "jsGzip": 208141,
       "cssGzip": 22279,
       "jsChunks": 15
     },
     "/[locale]/tvui/[...rest]": {
-      "jsGzip": 193114,
+      "jsGzip": 193307,
       "cssGzip": 22279,
       "jsChunks": 14
     },
     "/[locale]/tvui/anime": {
-      "jsGzip": 211577,
+      "jsGzip": 211765,
       "cssGzip": 22279,
       "jsChunks": 16
     },
     "/[locale]/tvui/browse/[kind]": {
-      "jsGzip": 211577,
+      "jsGzip": 211765,
       "cssGzip": 22279,
       "jsChunks": 16
     },
     "/[locale]/tvui/library": {
-      "jsGzip": 201716,
+      "jsGzip": 201909,
       "cssGzip": 22279,
       "jsChunks": 15
     },
     "/[locale]/tvui/lists/[id]": {
-      "jsGzip": 200951,
+      "jsGzip": 201145,
       "cssGzip": 22279,
       "jsChunks": 15
     },
     "/[locale]/tvui/person/[slug]": {
-      "jsGzip": 197013,
+      "jsGzip": 197206,
       "cssGzip": 22279,
       "jsChunks": 14
     },
     "/[locale]/tvui/profiles": {
-      "jsGzip": 207105,
+      "jsGzip": 207298,
       "cssGzip": 22279,
       "jsChunks": 14
     },
     "/[locale]/tvui/search": {
-      "jsGzip": 202367,
+      "jsGzip": 203910,
       "cssGzip": 22279,
       "jsChunks": 15
     },
     "/[locale]/tvui/settings": {
-      "jsGzip": 209773,
+      "jsGzip": 209966,
       "cssGzip": 22279,
       "jsChunks": 15
     },
     "/[locale]/tvui/title/[kind]/[slug]": {
-      "jsGzip": 218331,
+      "jsGzip": 218624,
       "cssGzip": 22279,
       "jsChunks": 16
     },
     "/[locale]/tvui/tv": {
-      "jsGzip": 191036,
+      "jsGzip": 191229,
       "cssGzip": 22279,
       "jsChunks": 13
     },
     "/[locale]/tvui/watch/[kind]/[id]": {
-      "jsGzip": 512651,
+      "jsGzip": 518422,
       "cssGzip": 22279,
       "jsChunks": 21
     },
@@ -262,7 +262,7 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 497452,
+      "jsGzip": 502279,
       "cssGzip": 20624,
       "jsChunks": 20
     }

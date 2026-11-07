@@ -1,7 +1,7 @@
 import { UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { FocusCard } from "@/components/shell/FocusCard";
 import { buttonClass } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Link } from "@/i18n/navigation";
 
 /**
@@ -14,11 +14,17 @@ export default async function PublicProfileNotFound() {
     <>
       {/* A nested not-found takes no metadata: the tab is named here (SH-12); Next adds noindex to a 404 itself. */}
       <title>{`${t("publicProfile.notFoundTitle")} · ${t("common.appName")}`}</title>
-      <FocusCard icon={UserRound} title={t("publicProfile.notFoundTitle")} text={t("publicProfile.notFoundText")}>
-        <Link href="/" className={buttonClass("primary")}>
-          {t("shell.toHome")}
-        </Link>
-      </FocusCard>
+      <EmptyState
+        variant="page"
+        icon={UserRound}
+        title={t("publicProfile.notFoundTitle")}
+        about={t("publicProfile.notFoundText")}
+        action={
+          <Link href="/" className={buttonClass("primary", "lg")}>
+            {t("shell.toHome")}
+          </Link>
+        }
+      />
     </>
   );
 }

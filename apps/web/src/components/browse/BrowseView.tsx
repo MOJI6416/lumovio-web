@@ -18,7 +18,7 @@ import { Combobox } from "@/components/ui/Combobox";
 import { DialogActions, Sheet } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
-import { InlineAlert } from "@/components/ui/InlineAlert";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { lazyControl, useLazySwap, useStandIn } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -631,7 +631,7 @@ export function BrowseView({
           <EmptyState
             icon={Clapperboard}
             title={t("empty")}
-            text={t("emptyHint")}
+            about={t("emptyHint")}
             action={
               activeCount > 0 ? (
                 <Button variant="secondary" icon={X} onClick={() => update(cleared)}>
@@ -645,27 +645,12 @@ export function BrowseView({
         {() => grid(items.map((r, i) => <PosterCard key={r.id} title={r} priority={i < 6} />))}
       </QueryState>
       <div ref={sentinel} className="h-1" />
-      {q.isFetchNextPageError ? (
-        <InlineAlert
-          tone="danger"
-          className="mt-8"
-          action={
-            <Button variant="tertiary" size="sm" loading={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()}>
-              {tc("retry")}
-            </Button>
-          }
-        >
-          {tc("moreFailed")}
-        </InlineAlert>
-      ) : (
-        q.hasNextPage && (
-          <div className="mt-8 flex justify-center">
-            <Button variant="secondary" loading={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>
-              {tc("showMore")}
-            </Button>
-          </div>
-        )
-      )}
+      <LoadMore
+        onMore={() => void q.fetchNextPage()}
+        loading={q.isFetchingNextPage}
+        failed={q.isFetchNextPageError}
+        hasMore={q.hasNextPage}
+      />
       <Suspense>
         {saving !== false && (
           <SaveRulesDialog

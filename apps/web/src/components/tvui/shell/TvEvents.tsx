@@ -10,7 +10,9 @@ type RemoteKey = "up" | "down" | "left" | "right" | "ok" | "back" | "home" | "pl
 type DeviceEvent =
   | { type: "changed"; kind: string }
   | { type: "revoked" }
-  | { type: "remote"; key?: RemoteKey; text?: string };
+  | { type: "remote"; key?: RemoteKey; text?: string }
+  | { type: "cast"; castId: string; href: string; switched: boolean }
+  | { type: "playback"; action: "toggle" | "stop" | "seek"; delta?: number };
 
 /** Changes are applied once the remote has rested this long (TV document §12.4: not while an arrow is held). */
 const IDLE_MS = 2500;
@@ -89,6 +91,21 @@ export function TvEvents() {
         }
         return;
       }
+      // "Watch on TV" (design-system 8.18): a phone's viewing opens here at once — in place of the one playing, so Back
+      // from it doesn't start that one again; after its profile was switched to the phone's the TV loads anew in it.
+      if (e.type === "cast") {
+        if (e.switched) window.location.assign(home(e.href));
+        else nav.navigate(e.href, { replace: /\/watch\//.test(window.location.pathname) });
+        return;
+      }
+      // The phone's remote of that viewing: the player takes play/pause and seeks, the viewing its stop.
+      if (e.type === "playback") {
+        if (e.action === "stop") window.dispatchEvent(new CustomEvent("lumovio:cast-stop"));
+        else window.dispatchEvent(new CustomEvent("lumovio:cast-control", { detail: { action: e.action, delta: e.delta } }));
+        return;
+      }
+      // A kind of event this version doesn't know isn't a change to fetch again.
+      if (e.type !== "changed") return;
       if (e.kind === "progress") {
         if (Date.now() - lastProgress < PROGRESS_MS) return;
         lastProgress = Date.now();

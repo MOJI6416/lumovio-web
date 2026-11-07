@@ -302,6 +302,12 @@ function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kid
         ? `${t("nothingFound")} · ${t("offers", { services: s.offers.join(", ") })}`
         : t("nothingFound");
       break;
+    case "searchFailed":
+      Icon = CircleAlert;
+      text = s.offers.length
+        ? `${tt("tsFailed", { name: s.name })} ${t("offers", { services: s.offers.join(", ") })}`
+        : tt("tsFailed", { name: s.name });
+      break;
     case "offers":
       Icon = Tv;
       text = t("offers", { services: s.offers.join(", ") });
@@ -333,7 +339,7 @@ function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kid
         aria-hidden
         className={cn(
           "mt-1 size-6 shrink-0",
-          (s.kind === "unreachable" || s.kind === "error") && "text-warning",
+          (s.kind === "unreachable" || s.kind === "error" || s.kind === "searchFailed") && "text-warning",
         )}
       />
       <span>{text}</span>

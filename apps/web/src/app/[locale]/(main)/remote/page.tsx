@@ -11,16 +11,20 @@ export async function generateMetadata() {
   return { title: t("title"), robots: { index: false } };
 }
 
-/** The phone remote of the account's TVs (S56, TV document §7.3): an adult profile on a phone or a computer. */
+/**
+ * The phone remote of the account's TVs (S56, design-system 8.18, TV document §7.3): an adult profile on a phone or a
+ * computer. Reached from the header while a TV is open (RemoteEntry), from "Watch on TV" and from Settings → Devices;
+ * the title alone, as Apple TV's Remote — the surface says what it does.
+ */
 export default async function RemotePage() {
   const me = await getMeState();
   if (!me) redirect({ href: `/auth/sign-in?next=${encodeURIComponent("/remote")}`, locale: await getLocale() });
   const t = await getTranslations("remote");
-  const ts = await getTranslations("nav");
   return (
     <div className="page-x">
-      <div className="mx-auto max-w-tool">
-        <PageHeader title={t("title")} description={t("description")} back={{ href: "/settings/devices", label: ts("settings") }} />
+      {/* One centred column: the title over the remote, as the remote's own width (owner 2026-10-25: centred). */}
+      <div className="mx-auto max-w-sm">
+        <PageHeader title={t("title")} />
         {me === "unavailable" ? <ServiceUnavailable /> : me?.activeProfile?.isKids ? <KidsRestricted from="/remote" /> : <RemoteControl />}
       </div>
     </div>

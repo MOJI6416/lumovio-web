@@ -39,6 +39,11 @@ export interface MenuProps {
   side?: "top" | "bottom";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * A panel rather than a list (the account menu, "Language and theme"; 7.19): 320 wide with the dialogs' radius and
+   * room inside, for faces (MenuFaces) and rows without icons.
+   */
+  panel?: boolean;
 }
 
 export function Menu({
@@ -50,6 +55,7 @@ export function Menu({
   side = "bottom",
   open: openProp,
   onOpenChange,
+  panel = false,
 }: MenuProps) {
   const phone = usePhoneLayout();
   const [open, setOpen] = useOpenState(openProp, onOpenChange);
@@ -92,7 +98,8 @@ export function Menu({
             }
           }}
           className={cn(
-            "z-popover max-h-(--radix-dropdown-menu-content-available-height) min-w-56 max-w-80 origin-(--radix-dropdown-menu-content-transform-origin) overflow-y-auto rounded-md border border-line bg-surface-2 p-1 text-text-1 shadow-float transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
+            "z-popover max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-y-auto border border-line bg-surface-2 text-text-1 shadow-float transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
+            panel ? "w-80 rounded-lg p-2" : "min-w-56 max-w-80 rounded-md p-1",
             stage && "stage",
           )}
         >
@@ -249,11 +256,110 @@ export function MenuLabel({ children }: { children: ReactNode }) {
   return mode.sheet ? <p className={LABEL}>{children}</p> : <DM.Label className={LABEL}>{children}</DM.Label>;
 }
 
-export function MenuSeparator() {
+/** `quiet`: groups apart by space alone, no line (a panel's groups, 7.19). */
+export function MenuSeparator({ quiet = false }: { quiet?: boolean }) {
   const mode = useContext(MenuMode);
+  if (quiet) return mode.sheet ? <hr className="my-1.5 h-0 border-0" /> : <DM.Separator className="h-2" />;
   return mode.sheet ? (
     <hr className="my-2 h-px border-0 bg-line" />
   ) : (
     <DM.Separator className="-mx-1 my-1 h-px bg-line" />
+  );
+}
+
+/**
+ * Profiles as faces, up to four in a row and centred as "Who's watching?" centres them (7.17): one profile or a kids
+ * profile's single face stands in the middle, not alone at the start (the account menu, 7.19).
+ */
+export function MenuFaces({ label, children }: { label: string; children: ReactNode }) {
+  const mode = useContext(MenuMode);
+  const cls = "flex flex-wrap justify-center gap-x-1 gap-y-0.5 pt-1 pb-1";
+  return mode.sheet ? (
+    <fieldset className={cn(cls, "m-0 min-w-0 border-0")}>
+      <legend className="sr-only">{label}</legend>
+      {children}
+    </fieldset>
+  ) : (
+    <DM.Group aria-label={label} className={cls}>
+      {children}
+    </DM.Group>
+  );
+}
+
+export interface MenuFaceProps {
+  /** The face: a profile's avatar (48; 56 in a phone's sheet) or the "+" of a new profile. */
+  face: ReactNode;
+  /** Under the face, on one line. */
+  label: string;
+  /** Under the name: a kids profile's Tag. */
+  tag?: ReactNode;
+  /** The profile in use: ringed as on "Who's watching?", not an item to press. */
+  current?: boolean;
+  /** What a screen reader hears after the name ("current profile", "protected"). */
+  note?: string;
+  onSelect?: () => void;
+  href?: string;
+}
+
+// A face's cell: four to the panel's width (72 + gaps in 304; 80 in a phone's sheet).
+const FACE = "group/face flex w-18 min-w-0 flex-col items-center gap-1.5 rounded-md px-1 pt-2 pb-1.5 text-center outline-none";
+const FACE_RING = "relative rounded-avatar transition-transform duration-fast ease-fast";
+
+/** One face of MenuFaces: a menu item (an arrow reaches it, Enter picks it) unless it is the current one. */
+export function MenuFace({ face, label, tag, current, note, onSelect, href }: MenuFaceProps) {
+  const mode = useContext(MenuMode);
+  const body = (
+    <>
+      <span className={cn(FACE_RING, current ? "outline-2 outline-offset-3 outline-text-1 outline-solid" : "group-hover/face:scale-105 group-data-highlighted/face:scale-105 motion-reduce:transform-none")}>
+        {face}
+      </span>
+      {/* A long name takes a second line rather than losing its end (as on "Who's watching?" on a phone). */}
+      <span className={cn("line-clamp-2 w-full break-words", mode.sheet ? "text-body-s" : "text-caption", current ? "font-semibold text-text-1" : "text-text-2 group-hover/face:text-text-1 group-data-highlighted/face:text-text-1")}>
+        {label}
+        {note && <span className="sr-only"> · {note}</span>}
+      </span>
+      {tag}
+    </>
+  );
+  if (current)
+    return (
+      <div aria-current="true" className={cn(FACE, mode.sheet && "w-20")}>
+        {body}
+      </div>
+    );
+  if (mode.sheet) {
+    const cls = cn(FACE, "w-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus active:bg-surface-2");
+    if (href)
+      return (
+        <IntlLink href={href} className={cls} onClick={mode.close}>
+          {body}
+        </IntlLink>
+      );
+    return (
+      <button
+        type="button"
+        className={cls}
+        onClick={() => {
+          mode.close();
+          onSelect?.();
+        }}
+      >
+        {body}
+      </button>
+    );
+  }
+  const cls = cn(FACE, "cursor-pointer select-none transition-colors duration-fast ease-fast data-highlighted:bg-surface-3");
+  if (href)
+    return (
+      <DM.Item asChild onSelect={onSelect}>
+        <IntlLink href={href} className={cls}>
+          {body}
+        </IntlLink>
+      </DM.Item>
+    );
+  return (
+    <DM.Item onSelect={() => onSelect?.()} className={cls}>
+      {body}
+    </DM.Item>
   );
 }

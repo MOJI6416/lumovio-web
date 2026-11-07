@@ -212,15 +212,18 @@ export type FileChoice = { status: "match"; file: TsFile } | { status: "ambiguou
 /**
  * The film in a torrent: the biggest file that isn't a sample or extra. Copies of that same file in
  * other formats (same name, other extension) are fine — the browser-playable one wins. Another big
- * video with a different name (a second cut, part 2) makes it a question for the person.
+ * video with a different name (a second cut, part 2) makes it a question for the person. In that question the files
+ * that name the film's `year` come first (a trilogy's "The.Matrix.1999…" before "…Reloaded.2003…").
  */
-export function pickMovieFile(files: TsFile[]): FileChoice {
+export function pickMovieFile(files: TsFile[], year?: number | null): FileChoice {
   const videos = files.filter((f) => isVideoFile(f.path) && !isExtra(f.path)).sort((a, b) => b.length - a.length);
   const main = videos[0];
   if (!main) return { status: "none", candidates: files.filter((f) => isVideoFile(f.path)) };
   const same = videos.filter((f) => stem(f) === stem(main)).sort((a, b) => extRank(a) - extRank(b) || b.length - a.length);
   const rivals = videos.filter((f) => stem(f) !== stem(main) && f.length >= main.length * 0.4);
-  return rivals.length ? { status: "ambiguous", candidates: videos } : { status: "match", file: same[0]! };
+  if (!rivals.length) return { status: "match", file: same[0]! };
+  const names = (f: TsFile) => (year ? new RegExp(`(^|\\D)${year}(\\D|$)`).test(f.path.split("/").pop() ?? "") : false);
+  return { status: "ambiguous", candidates: [...videos.filter(names), ...videos.filter((f) => !names(f))] };
 }
 
 /** Torznab sizes come as bytes or as TorrServer's humanized text ("19.7 GCiB", "700 MiB"). */

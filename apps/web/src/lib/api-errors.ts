@@ -96,7 +96,7 @@ export function loadErrorKeys(e: unknown, place: ErrorPlace = "section"): { titl
   const page = place === "page";
   const temporary = {
     title: page ? "errors.serverTitle" : "errors.loadTitle",
-    text: page ? "errors.serverText" : "errors.loadText",
+    text: "errors.loadText",
   };
   if (!(e instanceof ApiRequestError)) return temporary;
   switch (e.code) {

@@ -92,21 +92,33 @@ export function useLazySwap<M>(control: LazyControl<M>, light: RefObject<HTMLEle
  */
 export function useStandIn<M>(swap: { full: M | null; activate: (open: boolean) => void }) {
   const [held, setHeld] = useState(false);
+  // The release of a press that ended without a click (onPointerUp).
+  const release = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hold = (on: boolean) => {
+    clearTimeout(release.current);
+    setHeld(on);
+  };
   return {
     full: held ? null : swap.full,
     handlers: {
       onPointerEnter: () => swap.activate(false),
       onFocus: () => swap.activate(false),
       onPointerDown: (e: PointerEvent) => {
-        if (e.button === 0) setHeld(true);
+        if (e.button === 0) hold(true);
         swap.activate(false);
       },
-      // After the click that follows it (same task), or for a press that ended elsewhere.
-      onPointerUp: () => setTimeout(() => setHeld(false), 0),
-      onPointerCancel: () => setHeld(false),
+      // The click releases it. A mouse's click comes in the same task as its pointer-up; a finger's comes later, as the
+      // mouse events after a tap, each in a task of its own (Android Chrome on a phone, 2026-11-07): released at once,
+      // the full part took the button's place between their mousedown and mouseup and the click went nowhere — a
+      // select's first tap on a page opened nothing most times. The timer is for a press that ended elsewhere.
+      onPointerUp: (e: PointerEvent) => {
+        clearTimeout(release.current);
+        release.current = setTimeout(() => setHeld(false), e.pointerType === "mouse" ? 0 : 500);
+      },
+      onPointerCancel: () => hold(false),
       onClick: () => {
         swap.activate(true);
-        setHeld(false);
+        hold(false);
       },
       onKeyDown: (e: KeyboardEvent) => {
         if (!OPEN_KEYS.includes(e.key)) return;

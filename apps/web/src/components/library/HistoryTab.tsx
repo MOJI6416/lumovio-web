@@ -7,8 +7,9 @@ import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { PosterCard } from "@/components/media/PosterCard";
 import { useSession } from "@/components/providers/Providers";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { QueryState } from "@/components/ui/QueryState";
 import { libraryKey } from "@/hooks/useLibraryState";
 import { Link } from "@/i18n/navigation";
@@ -34,7 +35,6 @@ const Card = memo(PosterCard);
  */
 export function HistoryTab() {
   const t = useTranslations("library");
-  const tc = useTranslations("common");
   const kids = Boolean(useSession().me?.activeProfile?.isKids);
   const qc = useQueryClient();
   const caption = useHistoryCaption();
@@ -87,7 +87,7 @@ export function HistoryTab() {
           icon={History}
           title={t("emptyHistory")}
           // Import is an adult's tool: a kids profile isn't pointed to it. The ways to fill it are the actions.
-          text={<span className="sr-only">{kids ? t("emptyHistoryHintKids") : t("emptyHistoryHint")}</span>}
+          about={kids ? t("emptyHistoryHintKids") : t("emptyHistoryHint")}
           action={
             <Link href="/search" className={buttonClass("primary")}>
               <Search aria-hidden />
@@ -135,13 +135,13 @@ export function HistoryTab() {
                 </ListGrid>
               </section>
             ))}
-            {q.hasNextPage && (
-              <div className="flex justify-center">
-                <Button variant="secondary" loading={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()}>
-                  {tc("showMore")}
-                </Button>
-              </div>
-            )}
+            <LoadMore
+              className="flex justify-center"
+              onMore={() => void q.fetchNextPage()}
+              loading={q.isFetchingNextPage}
+              failed={q.isFetchNextPageError}
+              hasMore={q.hasNextPage}
+            />
           </div>
         );
       }}

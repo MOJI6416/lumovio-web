@@ -10,6 +10,7 @@ import { useSession } from "@/components/providers/Providers";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineAlert } from "@/components/ui/InlineAlert";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { QueryState } from "@/components/ui/QueryState";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
@@ -160,30 +161,16 @@ export function ServersTab() {
                       <Card key={item.id} title={plain(item)} />
                     ))}
                   </ListGrid>
-                  {isFetchNextPageError ? (
-                    // The next page didn't come: what is here stays, with the way to ask again (8.4).
-                    <InlineAlert
-                      tone="danger"
-                      className="mt-8"
-                      action={
-                        <Button variant="tertiary" size="sm" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                          {t("common.retry")}
-                        </Button>
-                      }
-                    >
-                      {tl("listMoreFailed")}
-                    </InlineAlert>
-                  ) : (
-                    (shown.length < items.length || q.hasNextPage) && (
-                      // The next 60: drawn from what is here, and the next page of the index once those are all drawn.
-                      <div className="mt-8 flex flex-col items-center gap-2">
-                        <Button variant="secondary" loading={isFetchingNextPage} onClick={showMore}>
-                          {t("common.showMore")}
-                        </Button>
-                        <p className="text-body-s text-text-2">{tl("shownOf", { shown: shown.length, total: narrowed ? items.length : total })}</p>
-                      </div>
-                    )
-                  )}
+                  {/* The next 60: drawn from what is here, then the index's next page; one that didn't come — Retry here (8.4). */}
+                  <LoadMore
+                    onMore={showMore}
+                    onRetry={() => void fetchNextPage()}
+                    loading={isFetchingNextPage}
+                    failed={isFetchNextPageError}
+                    hasMore={shown.length < items.length || q.hasNextPage}
+                    shown={shown.length}
+                    total={narrowed ? items.length : total}
+                  />
                 </>
               )}
             </>

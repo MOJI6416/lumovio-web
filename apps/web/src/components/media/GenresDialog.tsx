@@ -64,7 +64,7 @@ export function GenresDialog({ open, onOpenChange, initial }: { open: boolean; o
       title={t("genresTitle")}
       description={t("genresText")}
     >
-      <QueryState query={genres} loading={<Skeleton shape="md" className="h-24 w-full" />} error={{ title: tr("genresLoadError") }}>
+      <QueryState variant="inline" query={genres} loading={<Skeleton shape="md" className="h-24 w-full" />} error={{ title: tr("genresLoadError") }}>
         {(all) => (
           <div className="flex flex-wrap gap-2">
             {all.map((g) => (

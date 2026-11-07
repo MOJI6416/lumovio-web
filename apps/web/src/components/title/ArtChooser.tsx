@@ -14,6 +14,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Link } from "@/components/ui/Link";
 import { QueryState } from "@/components/ui/QueryState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { api, ApiRequestError } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-errors";
@@ -85,7 +86,7 @@ export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: 
             { value: "logo", label: t("logo") },
           ]}
         />
-        <QueryState query={q}>
+        <QueryState variant="inline" query={q}>
           {() => (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               <li>
@@ -116,7 +117,7 @@ export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: 
             </ul>
           )}
         </QueryState>
-        {q.data && list.length === 0 && <p className="text-body-s text-text-2">{t("empty")}</p>}
+        {q.data && list.length === 0 && <EmptyState variant="inline" title={t("empty")} />}
         {q.data && !kids && <FanartKey set={q.data.ownKey} onChanged={() => void qc.invalidateQueries({ queryKey: key })} />}
       </div>
     </Dialog>

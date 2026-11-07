@@ -82,9 +82,10 @@ export interface AvatarButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
 }
 
 /**
- * The header's account button (7.17, 7.19): the profile's 32 px avatar itself, nothing after it, so it stands on the
- * page's end edge as the logo stands on its start edge (owner, 2026-10-25). Hover and an open menu ring the avatar
- * with --line-2 (as a card, 6.3); the keyboard's ring goes round the avatar too — the button is wider than it, with
+ * The header's account button (7.17, 7.19): the profile's 36 px avatar itself, nothing after it, so it stands on the
+ * page's end edge as the logo stands on its start edge (owner, 2026-10-25) — a step larger than the header's 32 px
+ * actions beside it (search, language and theme): you, not one more button (2026-11-07). Hover and an open menu ring
+ * the avatar with --line-2 (as a card, 6.3); the keyboard's ring goes round the avatar too — the button is wider than it, with
  * the avatar at its end, so a ring round the button stood off-centre. 40 px tall (44 on a phone, the avatar at its
  * end; 48 on a TV). The accessible name comes with `aria-label`.
  */
@@ -107,7 +108,7 @@ export const AvatarButton = forwardRef<HTMLButtonElement, AvatarButtonProps>(fun
         avatar={avatar}
         photo={photo}
         name={name}
-        size={32}
+        size={36}
         className={cn(
           "transition-shadow duration-fast ease-fast group-hover:ring-2 group-hover:ring-line-2 group-data-[state=open]:ring-2 group-data-[state=open]:ring-line-2",
           groupFocusRing,

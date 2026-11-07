@@ -7,7 +7,7 @@
  *    Video bytes never pass through Lumovio's backend.
  * 2. Offline fallback for page navigations.
  */
-const VERSION = "lumovio-sw-4";
+const VERSION = "lumovio-sw-5";
 const creds = new Map();
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -76,8 +76,9 @@ self.addEventListener("fetch", (event) => {
 });
 
 /*
- * The offline page (design-system 11.3, audit SH-10): the Focus template — the logo where the header has it, a card with
- * "No connection" and Retry — in the person's language and theme, with nothing loaded from the network.
+ * The offline page (design-system 11.3, 7.11, audit SH-10): the page state — the logo where the header has it, in the
+ * middle the projector going dark, "No connection" and Retry, the why for a screen reader — in the person's language and
+ * theme, with nothing loaded from the network.
  * Language: the address (/ru/…, /de/…), else the saved choice (cookie), else the browser's; drafts get English (8.11).
  * A language joins OFFLINE_TEXT when it becomes "reviewed" (i18n/locales.ts).
  * Theme: the saved choice; dark by default. The logo paths are those of src/lib/brand.ts.
@@ -136,24 +137,22 @@ async function offlinePage(url) {
 :root[data-theme=light]{${light}}
 @media (prefers-color-scheme:light){:root[data-theme=system]{${light}}}
 *{box-sizing:border-box}
-body{margin:0;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:400 15px/1.5 Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:400 15px/1.5 Onest,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{height:64px;display:flex;align-items:center;padding:0 16px}
 @media (min-width:768px){header{padding:0 32px}}
 @media (min-width:1024px){header{padding:0 48px}}
 @media (min-width:1536px){header{padding:0 64px}}
 header svg{display:block;height:30px;width:auto}
-main{flex:1;display:grid;place-items:center;padding:24px 16px 64px}
-.card{width:100%;max-width:440px;padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--surface);text-align:center}
-@media (min-width:768px){.card{padding:40px}}
-.icon{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 20px;border-radius:50%;background:var(--surface2);color:var(--text2)}
-.icon>svg{width:24px;height:24px}
-h1{margin:0;font-size:24px;font-weight:700;line-height:1.25}
-p{margin:8px 0 0;color:var(--text2)}
-button{margin-top:24px;height:44px;padding:0 24px;border:0;border-radius:8px;background:var(--btn);color:var(--btnfg);font:inherit;font-weight:600;cursor:pointer}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 16px 96px;text-align:center}
+.icon{width:48px;height:48px;margin-bottom:16px}
+.icon>svg{width:48px;height:48px}
+h1{margin:0;max-width:28rem;font-size:24px;font-weight:700;line-height:1.25;text-wrap:balance}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+button{margin-top:32px;height:48px;padding:0 24px;border:0;border-radius:999px;background:var(--btn);color:var(--btnfg);font:inherit;font-weight:600;cursor:pointer}
 button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 </style></head><body>
 <header><svg role="img" aria-label="Lumovio" viewBox="0 0 491 112"><g transform="scale(.875)" fill="var(--mark)">${LOGO_MARK.map((d) => `<path d="${d}"/>`).join("")}</g><path fill="currentColor" d="${LOGO_WORD}"/></svg></header>
-<main><div class="card"><div class="icon" aria-hidden="true">${OFFLINE_MOTION_ART}</div><h1>${t.title}</h1><p>${t.text}</p><button type="button" id="retry" autofocus>${t.retry}</button></div></main>
+<main><div class="icon" aria-hidden="true">${OFFLINE_MOTION_ART}</div><h1>${t.title}</h1><p class="sr">${t.text}</p><button type="button" id="retry" autofocus>${t.retry}</button></main>
 <script>var r=document.getElementById("retry");r.onclick=function(){location.reload()};r.focus();addEventListener("online",function(){location.reload()});setInterval(function(){fetch("/manifest.webmanifest",{cache:"no-store"}).then(function(x){if(x.ok)location.reload()},function(){})},15000);</script>
 </body></html>`;
   return new Response(html, { status: 503, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });

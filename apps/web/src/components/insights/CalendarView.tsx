@@ -53,7 +53,7 @@ export function CalendarView() {
         <EmptyState
           icon={CalendarDays}
           title={t("empty")}
-          text={t("emptyHint")}
+          about={t("emptyHint")}
           action={
             <Link href="/browse/tv" className={buttonClass("primary")}>
               <Tv aria-hidden />
@@ -96,7 +96,7 @@ function Timeline({ events, today }: { events: CalendarEvent[]; today: string })
         {[...days.entries()].map(([day, list]) => (
           <li key={day} className={AXIS}>
             <DayHeading day={day} today={today} />
-            {list.length === 0 ? <p className="text-body text-text-2 lg:py-2">{t("nothingDay")}</p> : <Lines entries={list} />}
+            {list.length === 0 ? <EmptyState variant="inline" className="lg:py-2" title={t("nothingDay")} /> : <Lines entries={list} />}
           </li>
         ))}
       </ol>

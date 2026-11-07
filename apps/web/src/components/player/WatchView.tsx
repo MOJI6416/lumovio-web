@@ -1,6 +1,6 @@
 "use client";
 
-import type { Availability, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
+import type { Availability, CastFailure, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Settings2, X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -18,6 +18,7 @@ import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "@/components/title/CopyActions";
+import { useCastReport } from "@/components/tv/cast-report";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
 import { AccentBadge } from "@/components/ui/Badge";
@@ -61,6 +62,8 @@ import { TorrentFinder } from "./TorrentFinder";
 
 // The TV's composition of the sources screen (tvui/sources), loaded only in the TV shell.
 const TvSources = dynamic<TvSourcesProps>(() => import("@/components/tvui/sources/TvSources").then((m) => m.TvSources), { ssr: false });
+// "Watch on TV" in the player's corner (design-system 8.18): only on the site, after the picture is there.
+const CastButton = dynamic(() => import("@/components/tv/CastButton").then((m) => m.CastButton), { ssr: false });
 import { useWhy } from "./use-why";
 
 interface Candidate {
@@ -106,6 +109,8 @@ type Phase =
       auth?: boolean;
       /** Started from the sources screen: the failure is shown there; otherwise on the player's stage. */
       fromScreen?: boolean;
+      /** What it was, for a phone that sent this viewing to the TV ("Watch on TV", design-system 8.18). */
+      cause?: CastFailure;
     };
 
 const KIND_LABEL = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" } as const;
@@ -132,7 +137,8 @@ const sameCopy = (a: Candidate | null | undefined, b: Candidate) =>
 /** Another episode is another playback: fresh state, its own file, its own progress session. */
 export function WatchView({ details }: { details: TitleDetails }) {
   const params = useSearchParams();
-  return <WatchSession key={`${params.get("s") ?? ""}:${params.get("e") ?? ""}`} details={details} />;
+  // A viewing sent from a phone ("Watch on TV") is a new one too, even of the same episode.
+  return <WatchSession key={`${params.get("s") ?? ""}:${params.get("e") ?? ""}:${params.get("cast") ?? ""}`} details={details} />;
 }
 
 /**
@@ -165,6 +171,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const wanted = params.get("source");
   // "?pick=1": open the sources screen instead of starting playback (from the title page or the player).
   const picking = params.get("pick") === "1";
+  // Sent from a phone ("Watch on TV", design-system 8.18): which sending it is, where the phone was ("?t="), its audio
+  // track ("?audio="); the copy it sent ("?source=") starts or nothing does — never another one in its place.
+  const castId = params.get("cast");
+  const castStart = useRef(Number(params.get("t")) > 5 ? Number(params.get("t")) : null);
+  const castAudio = useRef(params.get("audio") !== null && Number.isInteger(Number(params.get("audio"))) ? Number(params.get("audio")) : undefined);
+  const [castMiss, setCastMiss] = useState<CastFailure | null>(null);
+  // The audio track chosen in this viewing (the phone sends it to a TV with the viewing).
+  const chosenAudio = useRef<number | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   // The player of this viewing: shown while playing, kept paused while the screen is shown over it.
   const [active, setActive] = useState<{ candidate: Candidate; prepared: PreparedPlayback } | null>(null);
@@ -228,7 +242,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   }, [avail.data, season, episode, audioLangs]);
 
   const saved = progress.data?.progress.find((x) => x.season === season && x.episode === episode);
-  const resumeAt = resumeOverride.current ?? (saved && !saved.completed && saved.positionSec > 30 ? saved.positionSec : 0);
+  const resumeAt = resumeOverride.current ?? castStart.current ?? (saved && !saved.completed && saved.positionSec > 30 ? saved.positionSec : 0);
 
   const connOf = useCallback(
     (s: Availability) =>
@@ -298,7 +312,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       const name = s.label || title || "";
       // How this release numbers the seasons, for numbering the series as releases do (kids profiles send nothing).
       if (d.kind === "tv" && !isKids) reportNumbering(d.id, "files", filesNumbering(files, name));
-      const found = d.kind === "tv" && season !== null && episode !== null ? matchEpisode(files, name, season, episode) : pickMovieFile(files);
+      const found = d.kind === "tv" && season !== null && episode !== null ? matchEpisode(files, name, season, episode) : pickMovieFile(files, d.year);
       if (found.status === "match") {
         const externalId = `${s.externalId}:${found.file.id}`;
         // An explicit choice of this torrent replaces the episode's earlier file; an automatic match only fills a gap.
@@ -311,7 +325,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       }
       return { candidate: c, hash: s.externalId, title: name, files: found.candidates, reason: found.status };
     },
-    [connOf, d.kind, d.id, isKids, season, episode, bind],
+    [connOf, d.kind, d.id, d.year, isKids, season, episode, bind],
   );
 
   // In words, never an engine's or a server's own (English) message (8.5, L10N-04).
@@ -469,7 +483,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           const presence = await torrentPresence(c.server.connectionId, hash);
           if (!live()) return;
           if (presence === "gone") {
-            setPhase({ ...base, message: t("errorGone", { server: c.label }), retry: null, gone: { connectionId: c.server.connectionId, hash } });
+            setPhase({ ...base, message: t("errorGone", { server: c.label }), retry: null, gone: { connectionId: c.server.connectionId, hash }, cause: "missing" });
             return;
           }
         }
@@ -480,6 +494,15 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         setPhase({
           ...base,
           message: errorText(e),
+          cause: blocked
+            ? "blocked"
+            : auth
+              ? "auth"
+              : e instanceof TorrentFileMissing || e instanceof ShownError
+                ? "missing"
+                : e instanceof MediaNetError && (e.code === "timeout" || e.code === "unreachable")
+                  ? "unreachable"
+                  : "other",
           auth: auth || blocked,
           // Repeating can't bring back a file the torrent doesn't have, or fix a refused sign-in.
           retry: auth || blocked || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false }),
@@ -590,13 +613,17 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (picking) return setPhase({ kind: "choose" });
     const sameTorrent = (c: Candidate) => Boolean(wanted?.startsWith(`${c.server.connectionId}:${hashOf(c.server.externalId)}`));
     const exact = wanted ? candidates.find((c) => c.key === wanted) : undefined;
-    const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? candidates[0];
+    // A copy sent from a phone that this TV doesn't have: the sources screen here, and the phone is told (8.18).
+    const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
     if (params.has("added")) setUrl({ added: null });
-    if (pick) void prepare(pick, { auto: !exact, added });
-    else setPhase({ kind: "choose" });
-  }, [phase.kind, avail.data, avail.isError, candidates, wanted, picking, prepare, signedIn, progress.isLoading, conns.isLoading, isKids, params, setUrl, t]);
+    if (pick) void prepare(pick, { auto: !exact, added, audioIndex: castAudio.current });
+    else {
+      if (castId) setCastMiss(wanted ? "missing" : "none");
+      setPhase({ kind: "choose" });
+    }
+  }, [phase.kind, avail.data, avail.isError, candidates, wanted, picking, prepare, signedIn, progress.isLoading, conns.isLoading, isKids, params, setUrl, t, castId]);
 
   const playingNow = phase.kind === "playing" ? active : null;
   const report = useCallback(
@@ -829,6 +856,74 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       : undefined,
   };
 
+  // "Watch on TV" (design-system 8.18). On the TV: what plays is said to the phone that sent it, its "Stop on TV" leaves
+  // the player, and where the phone was ("?t=") counts for the first start only (a reload goes on from the progress).
+  useCastReport({
+    on: Boolean(tvNav) && signedIn,
+    castId,
+    title: { titleId: d.id, kind: d.kind, tmdbId: d.tmdbId, title: d.title, season, episode },
+    status:
+      phase.kind === "error"
+        ? { failure: phase.cause ?? "other" }
+        : phase.kind === "external"
+          ? { failure: "external" }
+          : active
+            ? "video"
+            : phase.kind === "choose" && castMiss
+              ? { failure: castMiss }
+              : "preparing",
+    media: active ? `${active.prepared.url}|${active.prepared.type}` : null,
+  });
+  const leaveForTitle = useRef(() => {});
+  leaveForTitle.current = () => {
+    // Where it stopped is kept first: the phone's next "Watch on TV" goes on from there.
+    const v = document.querySelector("video");
+    if (v && v.currentTime > 5) send("pause", v.currentTime, Number.isFinite(v.duration) ? v.duration : last.current.dur);
+    toTitle();
+  };
+  useEffect(() => {
+    if (!tvNav) return;
+    const stop = () => leaveForTitle.current();
+    window.addEventListener("lumovio:cast-stop", stop);
+    return () => window.removeEventListener("lumovio:cast-stop", stop);
+  }, [tvNav]);
+  useEffect(() => {
+    if (phase.kind === "playing" && params.has("t")) setUrl({ t: null, audio: null });
+  }, [phase.kind, params, setUrl]);
+  // On the site: the viewing as it is now — the copy, its dubbing and track, the position — for a TV of the account.
+  const castCopy = active?.candidate ?? null;
+  const castButton =
+    !tvNav && signedIn && castCopy && active
+      ? (now: { position: number; audio: number | null; pause: () => void }) => {
+          const original = active.prepared.audio.find((a) => a.isDefault)?.index ?? null;
+          return (
+            <CastButton
+              titleId={d.id}
+              variant="stage"
+              onSent={now.pause}
+              target={() => {
+                const url = new URL(window.location.href).searchParams;
+                const q = url.get("quality");
+                return {
+                  kind: d.kind,
+                  tmdbId: d.tmdbId,
+                  season,
+                  episode,
+                  source: castCopy.key,
+                  voice: url.get("voice"),
+                  quality: q !== null && Object.hasOwn(QUALITY_MODES, q) ? (q as ReleaseQuality) : null,
+                  // A track the person chose here goes along; the file's own default is the TV's to choose.
+                  audio: chosenAudio.current !== null || now.audio !== original ? now.audio : null,
+                  positionSec: now.position,
+                  title: d.title,
+                  subtitle,
+                };
+              }}
+            />
+          );
+        }
+      : undefined;
+
   const player = active && (
     <LumovioPlayer
       key={`${active.prepared.url}|${active.prepared.type}|${active.prepared.remuxAudio ?? ""}`}
@@ -847,6 +942,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         active.prepared.selectAudio
           ? (i, pos) => {
               resumeOverride.current = pos > 5 ? pos : resumeOverride.current;
+              chosenAudio.current = i;
               void prepare(active.candidate, { auto: false, audioIndex: i });
             }
           : undefined
@@ -941,8 +1037,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 : t("errorUnknown"),
           prepared,
           retry: () => void prepare(c, { auto: false }),
+          cause: code === 3 || code === 4 ? "unsupported" : "other",
         });
       }}
+      castButton={castButton}
     />
   );
 
@@ -1172,10 +1270,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         <section id="prep-error" aria-label={t("errorTitle")} className="w-full max-w-120">
           <ErrorState
             title={t(phase.gone ? "errorGoneTitle" : "errorTitle")}
-            text={phase.message}
+            note={phase.message}
             details={null}
             headingLevel={2}
-            className="[&>div]:py-0"
+            className="py-0 md:py-0"
             action={<div className="flex flex-wrap items-center justify-center gap-3">{errorActions(phase, true)}</div>}
           />
           <p className="mt-4 break-words text-body-s text-text-3">{phase.label}</p>
@@ -1253,7 +1351,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 {/* What went wrong and what can be done (11.1, SRC-19): Retry only when repeating can help. */}
                 <ErrorState
                   title={t(phase.gone ? "errorGoneTitle" : "errorTitle")}
-                  text={phase.message}
+                  note={phase.message}
                   onRetry={phase.retry ?? undefined}
                   details={null}
                   action={errorActions(phase, false)}

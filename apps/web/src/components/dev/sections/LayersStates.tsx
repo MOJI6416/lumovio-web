@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ActionMark, BrandIntro, BrandLoader, SavedCheck } from "@/components/ui/BrandMotion";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Link as ActionLink } from "@/components/ui/Link";
 import { Artwork } from "@/components/media/Artwork";
@@ -200,7 +201,7 @@ function EmptyDemo() {
             icon={ListVideo}
             headingLevel={3}
             title={t("emptyListTitle")}
-            text={t("emptyListText")}
+            about={t("emptyListText")}
             action={
               <Link href="/browse/movie" className={buttonClass("secondary")}>
                 {t("emptyListAction")}
@@ -209,25 +210,19 @@ function EmptyDemo() {
           />
         </div>
       </Cell>
+      <Cell label={t("variantInline")}>
+        <div className="w-full rounded-md border border-line p-4">
+          <EmptyState variant="inline" title={t("emptyTitle")} about={t("emptyText")} />
+        </div>
+      </Cell>
       <Cell label={t("variantPage")}>
-        <div className="w-full rounded-md border border-line">
-          <EmptyState
-            icon={Server}
-            variant="page"
-            headingLevel={3}
-            title={t("emptyTitle")}
-            text={t("emptyText")}
-            action={
-              <Button onClick={() => toast.info(t("demoPressed", { label: t("emptyAction") }))}>
-                {t("emptyAction")}
-              </Button>
-            }
-            secondaryAction={
-              <ActionLink variant="action" href="/dev/ui#empty-state">
-                {t("emptyLink")}
-              </ActionLink>
-            }
-          />
+        <div className="flex w-full flex-wrap gap-4 rounded-md border border-line p-4">
+          <ActionLink variant="action" href="/no-such-page">
+            {t("pageStateLink")}
+          </ActionLink>
+          <Button variant="secondary" onClick={() => toast.info(t("demoPressed", { label: t("emptyAction") }))}>
+            {t("emptyAction")}
+          </Button>
         </div>
       </Cell>
     </Demo>
@@ -284,14 +279,19 @@ function ErrorDemo() {
       <Cell label={t("errorUnavailable")}>
         <div className={cell}>
           <ErrorState
-            variant="page"
             headingLevel={3}
             icon={CloudOff}
             title={te("unavailableTitle")}
-            text={te("unavailableText")}
+            about={te("unavailableText")}
             onRetry={retry}
             retrying={retrying}
           />
+        </div>
+      </Cell>
+      <Cell label={t("errorInline")}>
+        <div className={`${cell} flex flex-col gap-4 p-4`}>
+          <ErrorState variant="inline" error={new Error("demo")} onRetry={retry} retrying={retrying} />
+          <LoadMore failed onMore={retry} loading={retrying} className="flex justify-center" />
         </div>
       </Cell>
     </Demo>
@@ -354,7 +354,7 @@ function QueryDemo() {
             </div>
           }
           isEmpty={(d) => d.length === 0}
-          empty={<EmptyState icon={Server} headingLevel={3} title={t("emptyTitle")} text={t("emptyText")} />}
+          empty={<EmptyState icon={Server} headingLevel={3} title={t("emptyTitle")} about={t("emptyText")} />}
         >
           {(list) => (
             <ul className="flex flex-col divide-y divide-line">

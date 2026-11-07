@@ -14,6 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
 import { InlineAlert } from "@/components/ui/InlineAlert";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { SearchInput } from "@/components/ui/Input";
 import { lazyControl, useLazySwap, useStandIn } from "@/components/ui/lazy-swap";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -283,16 +284,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
       {l.items.length === 0 && q.hasNextPage ? (
         // A first page a kids profile sees nothing of: the next one comes, or the way to ask for it again.
         isFetchNextPageError ? (
-          <InlineAlert
-            tone="danger"
-            action={
-              <Button variant="tertiary" size="sm" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                {tc("retry")}
-              </Button>
-            }
-          >
-            {t("listMoreFailed")}
-          </InlineAlert>
+          <LoadMore failed className="flex justify-center" onMore={() => void fetchNextPage()} loading={isFetchingNextPage} />
         ) : (
           <GridSkeleton />
         )
@@ -304,7 +296,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
         <EmptyState
           icon={ListVideo}
           title={t("rulesEmpty")}
-          text={<span className="sr-only">{isOwner ? t("rulesEmptyHint") : t("emptyListReader")}</span>}
+          about={isOwner ? t("rulesEmptyHint") : t("emptyListReader")}
           action={
             isOwner && (
               <Link href={rulesHref(l.rules.rules, l.id)} className={buttonClass("secondary")}>
@@ -317,7 +309,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
         <EmptyState
           icon={ListVideo}
           title={t("emptyList")}
-          text={<span className="sr-only">{canEdit ? t("emptyListHint") : t("emptyListReader")}</span>}
+          about={canEdit ? t("emptyListHint") : t("emptyListReader")}
           action={
             canEdit && (
               <Link href="/search" className={buttonClass("primary")}>
@@ -393,29 +385,16 @@ export function ListView({ initial }: { initial: ListDetails }) {
                   />
                 ))}
               </ListGrid>
-              {isFetchNextPageError ? (
-                // The next page didn't come: what is here stays, with the way to ask again (8.4).
-                <InlineAlert
-                  tone="danger"
-                  className="mt-8"
-                  action={
-                    <Button variant="tertiary" size="sm" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
-                      {tc("retry")}
-                    </Button>
-                  }
-                >
-                  {t("listMoreFailed")}
-                </InlineAlert>
-              ) : (
-                (items.length > shownItems.length || q.hasNextPage) && (
-                  <div className="mt-8 flex flex-col items-center gap-2">
-                    <Button variant="secondary" loading={isFetchingNextPage} onClick={showMore}>
-                      {tc("showMore")}
-                    </Button>
-                    <p className="text-body-s text-text-2">{t("shownOf", { shown: shownItems.length, total })}</p>
-                  </div>
-                )
-              )}
+              {/* The next page that didn't come: what is here stays, Retry in the button's place (8.4). */}
+              <LoadMore
+                onMore={showMore}
+                onRetry={() => void fetchNextPage()}
+                loading={isFetchingNextPage}
+                failed={isFetchNextPageError}
+                hasMore={items.length > shownItems.length || q.hasNextPage}
+                shown={shownItems.length}
+                total={total}
+              />
             </>
           )}
         </>

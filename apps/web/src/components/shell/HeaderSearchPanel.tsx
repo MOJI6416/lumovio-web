@@ -13,6 +13,7 @@ import { departmentKey } from "@/components/search/search-helpers";
 import { DEBOUNCE_MS, groupResults, isEmpty, looksDescriptive, MIN_CHARS, QUERY_MAX, searchUrl } from "@/components/search/search-model";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
@@ -344,9 +345,8 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
           )}
           {q.trim() && data?.interpreted && <p className="px-3 pt-1 pb-2 text-body-s text-text-2">{t("searchedAs", { q: data.interpreted })}</p>}
           {q.trim() && results.isError && !data ? (
-            <p className="px-3 py-4 text-body text-text-2" role="status">
-              {t("loadError")}
-            </p>
+            // A line in the list's place (7.11 inline); Retry would take the focus from the field — typing again asks again.
+            <EmptyState variant="inline" role="status" className="px-3 py-2" title={t("loadError")} />
           ) : q.trim() && !data ? (
             <div className="flex flex-col gap-2 p-1" aria-hidden>
               {[0, 1, 2].map((i) => (
@@ -362,9 +362,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
           ) : (
             <>
               {q.trim() && data && isEmpty(data) && (
-                <p className="px-3 py-3 text-body text-text-2" role="status">
-                  {tr("ui.nothingFound")}
-                </p>
+                <EmptyState variant="inline" role="status" className="px-3 py-1" title={tr("ui.nothingFound")} />
               )}
               <div id={listId} role="listbox" aria-label={tr("nav.search")}>
                 {options.map((o, i) => (

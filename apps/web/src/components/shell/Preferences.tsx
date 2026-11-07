@@ -7,7 +7,7 @@ import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { interfaceLocaleOptions, isInterfaceLocale } from "@/i18n/locales";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { followSystemTheme, getThemePref, onThemeChange, setTheme, type ThemePref } from "@/lib/prefs";
+import { getThemePref, onThemeChange, setTheme, type ThemePref } from "@/lib/prefs";
 
 /*
  * Theme and interface language, for everyone — the header's "Language and theme" for guests (SH-07), the account menu
@@ -82,10 +82,4 @@ export function LanguageField({ className }: { className?: string }) {
       {(id) => <LanguageSelect id={id} />}
     </Field>
   );
-}
-
-/** Mounted once in the root layout: "As the system" follows the OS while the page is open (X-28). */
-export function ThemeSync() {
-  useEffect(() => followSystemTheme(), []);
-  return null;
 }

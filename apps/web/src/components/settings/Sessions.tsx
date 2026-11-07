@@ -10,14 +10,17 @@ import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { QueryState } from "@/components/ui/QueryState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SettingsLink, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
 import { ApiRequestError, api } from "@/lib/api";
 import { authErrorKey } from "@/lib/api-errors";
-import { authClient } from "@/lib/auth-client";
 import { relativeTime } from "@/lib/format";
 import { sessionsQuery } from "./queries";
+
+/** The auth client (Better Auth) loads with the action that needs it, not in the page's first-load JS (bundle budget). */
+const auth = () => import("@/lib/auth-client").then((m) => m.authClient);
 
 /** Rows before "Show more": the newest sign-ins first. */
 const FIRST = 6;
@@ -111,7 +114,7 @@ export function Sessions() {
       text: t("revokeOthersText", { count }),
       confirmLabel: t("revokeOthers"),
       action: async () => {
-        const r = await authCall(() => authClient.revokeOtherSessions());
+        const r = await authCall(async () => (await auth()).revokeOtherSessions());
         if (r.error) throw new Error(tr(authErrorKey(r.error)));
       },
       error: t("revokeOthersFailed"),
@@ -121,7 +124,7 @@ export function Sessions() {
   };
 
   return (
-    <QueryState
+    <QueryState variant="inline"
       query={q}
       loading={
         <SettingsSection title={t("sessions")}>
@@ -182,7 +185,7 @@ export function Sessions() {
                     onClick={() => void revoke(g)}
                   />
               ))}
-              {count === 0 && <p className="py-4 text-body-s text-text-2">{t("noOtherDevices")}</p>}
+              {count === 0 && <EmptyState variant="inline" title={t("noOtherDevices")} />}
             </SettingsSection>
             {/* The risky one, apart and last: its consequence is said (1.2, principle 6) and it asks first (8.3). */}
             {count > 0 && (

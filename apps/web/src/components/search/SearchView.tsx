@@ -14,7 +14,7 @@ import { FilterChip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { InlineAlert } from "@/components/ui/InlineAlert";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { Progress } from "@/components/ui/Progress";
 import { api } from "@/lib/api";
 import { AI_MAX, AI_MIN, AiPanel, useAiSearch } from "./AiSearch";
@@ -307,6 +307,11 @@ export function SearchView({
             setQ(v);
             ai.run(v);
           }}
+          onTitleSearch={(v) => {
+            setMode("titles");
+            searchFor(v);
+            focusField();
+          }}
         />
       ) : !active ? (
         <SearchStart popular={popular} tiles={tiles} onRecent={searchFor} />
@@ -322,8 +327,9 @@ export function SearchView({
           <EmptyState
             icon={Search}
             title={t("noResults", { q: debounced })}
-            // A kids profile whose search found only what it can't open is told so (PRF-05).
-            text={data?.hidden ? t("hiddenAllForKids") : fix ? t("didYouMean") : undefined}
+            // A kids profile whose search found only what it can't open is told so (PRF-05): a limit, in sight.
+            note={data?.hidden ? t("hiddenAllForKids") : undefined}
+            about={fix ? t("didYouMean") : undefined}
             action={
               fix ? (
                 <Button icon={Search} onClick={() => searchFor(fix)}>
@@ -370,7 +376,7 @@ export function SearchView({
             </div>
           )}
           {/* A failed refresh keeps what was shown, with Retry above it (8.4). */}
-          {lead.isError && <ErrorState error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />}
+          {lead.isError && <ErrorState variant="inline" error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />}
           {scope === "all" && groups && (
             <>
               {aiOffered && looksDescriptive(debounced, data?.clear) && (
@@ -400,28 +406,13 @@ export function SearchView({
               ) : (
                 <EmptyState icon={Search} title={t("noneOfKind")} />
               )}
-              {typed.isFetchNextPageError ? (
-                // The next page didn't come: what is shown stays, with the way to ask again at the same place (8.4).
-                <InlineAlert
-                  tone="danger"
-                  className="mt-8"
-                  action={
-                    <Button variant="tertiary" size="sm" loading={typed.isFetchingNextPage} onClick={() => void typed.fetchNextPage()}>
-                      {tc("retry")}
-                    </Button>
-                  }
-                >
-                  {tc("moreFailed")}
-                </InlineAlert>
-              ) : (
-                typed.hasNextPage && (
-                  <div className="mt-8 flex justify-center">
-                    <Button variant="secondary" loading={typed.isFetchingNextPage} onClick={() => void typed.fetchNextPage()}>
-                      {tc("showMore")}
-                    </Button>
-                  </div>
-                )
-              )}
+              {/* The next page that didn't come: what is shown stays, Retry at the same place (8.4). */}
+              <LoadMore
+                onMore={() => void typed.fetchNextPage()}
+                loading={typed.isFetchingNextPage}
+                failed={typed.isFetchNextPageError}
+                hasMore={typed.hasNextPage}
+              />
             </section>
           )}
         </div>

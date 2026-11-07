@@ -129,6 +129,14 @@ describe("the film's file", () => {
     expect(pickMovieFile(files(["Film/CD1.avi", "Film/CD2.avi"], 0.7 * GB)).status).toBe("ambiguous");
   });
 
+  it("asks about a trilogy with the film's own year first", () => {
+    const pack = files(["Trilogy/The.Matrix.Reloaded.2003.mkv", "Trilogy/The.Matrix.1999.mkv", "Trilogy/The.Matrix.Revolutions.2003.mkv"], 11 * GB);
+    const r = pickMovieFile(pack, 1999);
+    expect(r.status).toBe("ambiguous");
+    expect(r.status === "ambiguous" && r.candidates.map((f) => f.id)).toEqual([2, 1, 3]);
+    expect(pickMovieFile(pack).status === "ambiguous" && pickMovieFile(pack).candidates.map((f) => f.id)).toEqual([1, 2, 3]);
+  });
+
   it("reports a torrent without a video", () => {
     expect(pickMovieFile(files(["readme.txt"])).status).toBe("none");
   });

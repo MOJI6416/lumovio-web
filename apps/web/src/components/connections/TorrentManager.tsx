@@ -116,14 +116,14 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
     retry: false,
   });
 
-  if (kids) return <EmptyState icon={ListVideo} title={t("title")} text={t("kidsOnly")} />;
+  if (kids) return <EmptyState icon={ListVideo} title={t("kidsOnly")} />;
   if (conns.isLoading) return <Skeleton shape="md" className="h-40 w-full" />;
   // The servers didn't load: an error with Retry, not "no such server" (X-14).
   if (!conns.data && conns.isError) return <ErrorState error={conns.error} onRetry={() => void conns.refetch()} retrying={conns.isFetching} />;
-  if (!conn) return <EmptyState icon={ListVideo} title={t("title")} text={t("notFound")} action={<ServersLink />} />;
-  if (conn.kind !== "torrserver") return <EmptyState icon={ListVideo} title={t("title")} text={t("notTorrServer")} action={<ServersLink />} />;
+  if (!conn) return <EmptyState icon={ListVideo} title={t("notFound")} action={<ServersLink />} />;
+  if (conn.kind !== "torrserver") return <EmptyState icon={ListVideo} title={t("notTorrServer")} action={<ServersLink />} />;
   // The list comes through the profile's own access to the server (SRV-03): without it, said — not a failed read.
-  if (!access) return <EmptyState icon={Lock} title={t("noAccessTitle", { profile: me?.activeProfile?.name ?? "" })} text={t("noAccessText", { server: conn.name })} action={<ServersLink />} />;
+  if (!access) return <EmptyState icon={Lock} title={t("noAccessTitle", { profile: me?.activeProfile?.name ?? "" })} about={t("noAccessText", { server: conn.name })} action={<ServersLink />} />;
 
   const titles = data.data?.titles ?? {};
   const all = data.data?.torrents ?? [];
@@ -256,7 +256,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
           <Skeleton shape="md" className="h-24 w-full" />
         </div>
       ) : data.data && all.length === 0 ? (
-        <EmptyState icon={ListVideo} title={t("empty")} text={t("emptyText")} />
+        <EmptyState icon={ListVideo} title={t("empty")} about={t("emptyText")} />
       ) : data.data ? (
         <section aria-label={t("title")} className="flex flex-col gap-2">
           {(unlinkedCount > 0 || watchedCount > 0) && (

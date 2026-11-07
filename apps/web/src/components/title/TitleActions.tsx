@@ -13,6 +13,7 @@ import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
 import { Link as ActionLink, linkClass } from "@/components/ui/Link";
 import { lazyControl, useLazySwap, useStandIn } from "@/components/ui/lazy-swap";
+import { CastButton } from "@/components/tv/CastButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
 import { useTitleAvailability } from "@/hooks/useAvailability";
@@ -166,6 +167,14 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             {sub && <p className="text-body-s text-text-2 tabular-nums max-md:text-center">{sub}</p>}
           </div>
         )}
+        {/* "Watch on TV" (8.18): what "Continue" / "Watch" would start, on a TV of the account with Lumovio open. */}
+        {(plan.primary?.kind === "resume" || plan.primary?.kind === "watch") && (
+          <CastButton
+            titleId={d.id}
+            resume
+            target={() => ({ kind: d.kind, tmdbId: d.tmdbId, season: ep?.season ?? null, episode: ep?.episode ?? null, title: d.title, subtitle: ep ? tc("episode", ep) : d.year ? String(d.year) : null })}
+          />
+        )}
         {watchlist}
         {moreIn.full ? (
           <moreIn.full.TitleMore title={d} initialOpen={more.start.open} focusTrigger={more.start.focus} label={moreLabel} />
@@ -298,6 +307,10 @@ function AvailabilityLine({
     case "nothingFound":
       text = s.offers.length ? `${t("nothingFound")} · ${t("offers", { services: s.offers.join(", ") })}` : t("nothingFound");
       if (s.offers.length) icon = <Tv aria-hidden className="size-4 shrink-0" />;
+      break;
+    case "searchFailed":
+      icon = <CircleAlert aria-hidden className="size-4 shrink-0 text-warning" />;
+      text = s.offers.length ? `${tt("tsFailed", { name: s.name })} ${t("offers", { services: s.offers.join(", ") })}` : tt("tsFailed", { name: s.name });
       break;
     case "offers":
       icon = <Tv aria-hidden className="size-4 shrink-0" />;

@@ -8,7 +8,6 @@ import { buttonClass } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Link, usePathname } from "@/i18n/navigation";
-import { FocusCard } from "./FocusCard";
 
 /*
  * One way in for a guest (design-system 8.6, audit AUTH-02): whatever needs an account — a personal action on a title,
@@ -162,21 +161,14 @@ export function GuestGate({
 }
 
 /**
- * The same invitation in the page: `section` — inside a panel (the sources screen, AI search); `page` — a whole page
- * that needs an account (a closed list, an invitation), on the stage of the Focus template with the page's h1.
+ * The same invitation inside a page's section (AI search; design-system 7.11 "Доступ"): the state's layout with the
+ * reason as the question, "Sign in" and "Create account"; what comes after is for a screen reader. A whole page that
+ * needs an account is library/SignInColumn.
  */
-export function GuestGatePanel({ reason, next, variant = "section" }: { reason: GateReason; next?: string; variant?: "section" | "page" }) {
+export function GuestGatePanel({ reason, next }: { reason: GateReason; next?: string }) {
   const t = useTranslations("shell.gate");
-  const text = t(`${textKey(reason)}Text`);
-  if (variant === "page") {
-    return (
-      <FocusCard icon={LogIn} title={t(reason)} text={text}>
-        <GuestGateLinks next={next} />
-      </FocusCard>
-    );
-  }
   return (
-    <EmptyState icon={LogIn} title={t(reason)} text={text} action={<GuestGateLinks next={next} />}>
+    <EmptyState icon={LogIn} title={t(reason)} about={t(`${textKey(reason)}Text`)} action={<GuestGateLinks next={next} />}>
       {reason === "ai" && (
         <div className="mt-6 w-full max-w-md">
           <AiExamples />

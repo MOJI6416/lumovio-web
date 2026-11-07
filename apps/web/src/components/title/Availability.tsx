@@ -12,6 +12,7 @@ import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
 import { formatSize } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
+import { CastButton } from "@/components/tv/CastButton";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -25,7 +26,7 @@ import { tmdbImage } from "@/lib/images";
 import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
-import { sourcesHref, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
@@ -99,6 +100,16 @@ export function Availability({ title: d }: { title: TitleCore }) {
       match: copyText.audioMatch(s, all, d.originalLanguage),
     };
   };
+  // "Watch on TV" (8.18) beside a copy's "Watch": that copy, from where the profile is.
+  const tcard = useTranslations("card");
+  const ep = d.kind === "tv" ? startEpisode(d, lib?.progress) : null;
+  const cast = (s: Copy, size: "md" | "lg") => (
+    <CastButton
+      titleId={d.id}
+      size={size}
+      target={() => ({ kind: d.kind, tmdbId: d.tmdbId, season: ep?.season ?? null, episode: ep?.episode ?? null, source: `${s.connectionId}:${s.externalId}`, title: d.title, subtitle: ep ? tcard("episode", ep) : d.year ? String(d.year) : null })}
+    />
+  );
   const more = (s: Copy, size: "md" | "lg") => (
     <CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
   );
@@ -128,7 +139,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   } else if (state.kind === "error") {
     main = (
       <section aria-label={t("yourServers")} className="rounded-lg bg-surface-1 p-4 sm:p-6">
-        <ErrorState error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />
+        <ErrorState variant="inline" error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />
       </section>
     );
   } else if (copies.length > 0) {
@@ -149,6 +160,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
                 <Play aria-hidden className="fill-current" />
                 {t("tsWatch")}
               </Link>
+              {cast(first, "lg")}
               {more(first, "lg")}
             </>
           }
@@ -180,6 +192,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
                         <Play aria-hidden className="fill-current" />
                         {t("tsWatch")}
                       </Link>
+                      {cast(s, "md")}
                       {more(s, "md")}
                     </div>
                   </li>

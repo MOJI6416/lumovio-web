@@ -12,6 +12,7 @@ import { Field } from "@/components/ui/Field";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Input, Textarea } from "@/components/ui/Input";
 import { QueryState } from "@/components/ui/QueryState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Select } from "@/components/ui/Select";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ApiRequestError, api } from "@/lib/api";
@@ -249,7 +250,7 @@ export function SupportView({ email }: { email: string | null }) {
           <h2 id="support-mine" className="text-h3 text-text-1">
             {t("mine")}
           </h2>
-          <QueryState query={mine} isEmpty={(d) => d.requests.length === 0} empty={<p className="text-body-s text-text-2">{t("mineEmpty")}</p>}>
+          <QueryState variant="inline" query={mine} isEmpty={(d) => d.requests.length === 0} empty={<EmptyState variant="inline" title={t("mineEmpty")} />}>
             {(d) => (
               <ul className="divide-y divide-line rounded-md border border-line bg-surface-1">
                 {d.requests.map((r) => (

@@ -8,9 +8,9 @@ import { CardRating } from "@/components/media/CardRating";
 import { Poster } from "@/components/media/Poster";
 import { useCardMark, useRatingText } from "@/components/media/PosterCard";
 import { useSession } from "@/components/providers/Providers";
-import { Button } from "@/components/ui/Button";
 import { FilterChip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { Link } from "@/i18n/navigation";
 import { latinLang } from "@/lib/format";
 import { titleHref } from "@/lib/slug";
@@ -45,7 +45,6 @@ function fromParam(v: string | null, present: Group[], main: Group | null): Grou
 export function Filmography({ credits, main, gender }: { credits: RowCredit[]; main: Group | null; gender: "female" | "male" | null }) {
   const t = useTranslations("person");
   const tp = useTranslations("personPage");
-  const tc = useTranslations("common");
   const params = useSearchParams();
   const { me } = useSession();
   const counts = useMemo(() => countGroups(credits), [credits]);
@@ -83,9 +82,7 @@ export function Filmography({ credits, main, gender }: { credits: RowCredit[]; m
       )}
       {list.length === 0 ? (
         // A kids profile sees only the titles it may open (8.10): said so, rather than "nothing here".
-        <div className="mt-6">
-          <EmptyState title={me?.activeProfile?.isKids ? tp("noCreditsKids") : tp("noCredits")} />
-        </div>
+        <EmptyState variant="inline" className="mt-4" title={me?.activeProfile?.isKids ? tp("noCreditsKids") : tp("noCredits")} />
       ) : (
         <>
           {/* Rows across the page's width, as History's (owner, 2026-10-25) and an artist's songs on Apple Music: one column
@@ -95,13 +92,7 @@ export function Filmography({ credits, main, gender }: { credits: RowCredit[]; m
               <CreditRow key={c.id} credit={c} group={group!} />
             ))}
           </ol>
-          {list.length > shown && (
-            <div className="mt-8 flex justify-center">
-              <Button variant="secondary" onClick={() => setShown((n) => n + PAGE)}>
-                {tc("showMore")}
-              </Button>
-            </div>
-          )}
+          <LoadMore onMore={() => setShown((n) => n + PAGE)} shown={rows.length} total={list.length} />
         </>
       )}
     </section>

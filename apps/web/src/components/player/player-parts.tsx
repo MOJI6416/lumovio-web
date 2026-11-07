@@ -6,8 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReleaseText } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLibraryState } from "@/hooks/useLibraryState";
@@ -153,12 +153,7 @@ export function EpisodesBody({ episodes: e, onPick }: { episodes: EpisodesInfo; 
           <Skeleton shape="sm" className="h-18 w-full" />
         </div>
       ) : q.isError ? (
-        <div className="flex flex-col items-start gap-2">
-          <p className="text-body-s text-text-2">{t("episodesFailed")}</p>
-          <Button variant="secondary" size="sm" onClick={() => void q.refetch()}>
-            {tc("retry")}
-          </Button>
-        </div>
+        <ErrorState variant="inline" error={q.error} title={t("episodesFailed")} onRetry={() => void q.refetch()} retrying={q.isFetching} />
       ) : (
         <ol className="-mx-2 flex flex-col gap-1">
           {q.data.episodes.map((ep) => {

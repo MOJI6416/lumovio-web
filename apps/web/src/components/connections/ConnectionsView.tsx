@@ -93,7 +93,7 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
             <EmptyState
               icon={Server}
               title={t("empty")}
-              text={t("emptyText")}
+              about={t("emptyText")}
               action={
                 <Button icon={Plus} onClick={() => setAdding(true)}>
                   {t("add")}

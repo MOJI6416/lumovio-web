@@ -10,6 +10,7 @@ import { netErrorText } from "@/components/connections/net-errors";
 import { profileHasAccess } from "@/components/connections/server-actions";
 import { useSession } from "@/components/providers/Providers";
 import { Button } from "@/components/ui/Button";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Field } from "@/components/ui/Field";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Link } from "@/components/ui/Link";
@@ -56,6 +57,9 @@ export function ServerHistoryRead({ source, busy, onFile }: { source: "jellyfin"
   };
 
   if (conns.isLoading) return null;
+  // The servers didn't load: said with Retry, not "no server" (8.4).
+  if (!conns.data && (conns.isError || conns.fetchStatus === "paused"))
+    return <ErrorState variant="inline" error={conns.error} onRetry={() => void conns.refetch()} retrying={conns.isFetching} />;
   if (servers.length === 0) {
     return (
       <p className="text-body-s text-text-2">

@@ -11,8 +11,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toast";
 import { authErrorKey } from "@/lib/api-errors";
-import { authClient } from "@/lib/auth-client";
 import { type Prefs, usePrefs } from "./prefs";
+
+/** The auth client (Better Auth) loads with the action that needs it, not in the page's first-load JS (bundle budget). */
+const auth = () => import("@/lib/auth-client").then((m) => m.authClient);
 
 /**
  * Settings → Privacy and data (S23, design-system 7.18): what AI search may read, a copy of everything, and — apart and
@@ -78,7 +80,7 @@ function DangerZone() {
       confirmLabel: t("deleteAccount"),
       confirmWord: t("deleteWord"),
       action: async () => {
-        const r = await authCall(() => authClient.deleteUser({ callbackURL: "/?account=deleted" }));
+        const r = await authCall(async () => (await auth()).deleteUser({ callbackURL: "/?account=deleted" }));
         if (r.error) throw new Error(tr(authErrorKey(r.error)));
       },
       error: (e) => (e instanceof Error ? e.message : tr("errors.generic")),

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { buttonClass } from "@/components/ui/Button";
@@ -16,6 +17,10 @@ import { HeaderSearch } from "./HeaderSearch";
 import { useNavigationLoading } from "./NavigationLoading";
 import { PrefsMenu } from "./PrefsMenu";
 import { Wordmark } from "./Wordmark";
+
+// "TV remote" beside search and the account while a TV of the account has Lumovio open (design-system 8.18): after the
+// page, so it adds nothing to any page's first load.
+const RemoteEntry = dynamic(() => import("@/components/tv/RemoteEntry"), { ssr: false });
 
 /** The sections, the same for everyone and on every device (the TV shell's menu has them in this order too). */
 const NAV = [
@@ -197,6 +202,7 @@ export function Header({ overlay }: { overlay: boolean }) {
         <div className="flex items-center justify-end gap-2 lg:gap-3">
           {/* A round search button that opens its field and results right here (HeaderSearch); not on the search page. */}
           {!pathname.startsWith("/search") && <HeaderSearch />}
+          {me && <RemoteEntry />}
           {me ? (
             <AccountMenu />
           ) : (

@@ -230,7 +230,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
         </div>
       </div>
       <div>
-        <QueryState
+        <QueryState variant="inline"
         query={seasonQ}
         loading={
           <div className="flex gap-4 overflow-hidden">

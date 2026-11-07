@@ -1,7 +1,7 @@
 "use client";
 
 import type { Profile } from "@lumovio/contracts";
-import { ChevronLeft, ChevronRight, DoorOpen, Globe, Lock, LogOut, Settings, Shield, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe, Lock, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DropdownMenu as DM } from "radix-ui";
@@ -11,7 +11,7 @@ import { Tag } from "@/components/ui/Badge";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { IconButton } from "@/components/ui/IconButton";
 import { usePhoneLayout } from "@/components/ui/layers";
-import { Menu, MenuCheckboxItem, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Menu";
+import { Menu, MenuCheckboxItem, MenuFace, MenuFaces, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Menu";
 import { usePortalContainer } from "@/components/ui/portal";
 import { toast } from "@/components/ui/Toast";
 import { LOCALE_CODES } from "@/i18n/locales";
@@ -101,7 +101,6 @@ function LanguageSubmenu() {
   return (
     <DM.Sub>
       <DM.SubTrigger ref={trigger} onPointerEnter={measure} onFocus={measure} className={ITEM}>
-        <Globe aria-hidden className="size-5 shrink-0 text-text-2" />
         <span className="min-w-0 flex-1">{t("interfaceLanguage")}</span>
         <span className="truncate text-body-s text-text-2">{current}</span>
         <Chevron aria-hidden className="size-4 shrink-0 text-text-2 rtl:-scale-x-100" />
@@ -160,45 +159,39 @@ export function PrefsMenu({ initialOpen = false, focusTrigger = false }: { initi
     return () => cancelAnimationFrame(id);
   }, [focusTrigger, initialOpen]);
   return (
-    <Menu open={open} onOpenChange={setOpen} label={t("prefs")} trigger={<IconButton id={PREFS_TRIGGER_ID} icon={Globe} label={t("prefs")} size="sm" />}>
+    <Menu
+      panel
+      open={open}
+      onOpenChange={setOpen}
+      label={t("prefs")}
+      trigger={<IconButton id={PREFS_TRIGGER_ID} icon={Globe} label={t("prefs")} size="sm" />}
+    >
       <PrefsItems phone={phone} />
     </Menu>
   );
 }
 
-/**
- * Another profile of the account (7.19): a menu row with its avatar where the other rows have an icon (24, 32 in a
- * phone's sheet), the tag of a kids profile and a lock where it asks for a PIN.
- */
-function ProfileRow({ profile: p, phone, onPick }: { profile: Profile; phone: boolean; onPick: () => void }) {
-  const ts = useTranslations("shell");
+/** A profile's face in the account menu (7.19): the avatar, a lock in its corner where a PIN is asked (as 7.17). */
+function Face({ profile: p, size }: { profile: Profile; size: number }) {
   return (
-    <MenuItem
-      // Centred on the icons' 20 px column, so the names start where the other rows' labels do.
-      lead={
-        <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size={phone ? 32 : 24} className={phone ? "-mx-1.5" : "-mx-0.5"} />
-      }
-      end={
-        (p.isKids || p.hasPin) && (
-          <>
-            {p.isKids && <Tag>{ts("kidsTag")}</Tag>}
-            {p.hasPin && <Lock aria-hidden className="size-4 shrink-0 text-text-3" />}
-          </>
-        )
-      }
-      onSelect={onPick}
-    >
-      <span className="block truncate">{p.name}</span>
-    </MenuItem>
+    <>
+      <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size={size} />
+      {p.hasPin && (
+        <span aria-hidden className="absolute -end-1 -bottom-1 grid size-5 place-items-center rounded-full border-2 border-surface-2 bg-surface-3 text-text-1">
+          <Lock className="size-2.5" />
+        </span>
+      )}
+    </>
   );
 }
 
 /**
- * The account menu (design-system 7.19): the current profile on top, then the account's other profiles — one press and
- * the same page opens as theirs (one behind a PIN asks for it on "Who's watching?" and comes back) — "Manage profiles",
- * the settings, the admin for an admin, sign out. A kids profile has "Leave the kids profile" in place of the others.
- * Theme, site language and TV mode are this device's settings (Settings → Devices), support is in the settings'
- * navigation, calendar and stats are in the library. On a phone it is a sheet.
+ * The account menu (design-system 7.19), a small "Who's watching?": the account's profiles as faces — you ringed first,
+ * one press on another and the same page opens as theirs (one behind a PIN asks for it on "Who's watching?" and comes
+ * back), "+" while there is room — then rows by words alone: "Manage profiles" (a kids profile: "Leave the kids
+ * profile"), the settings, the admin for an admin, and sign out apart. No e-mail (the account's page has it), no icons,
+ * no lines. Theme, site language and TV mode are this device's settings, support is in the settings' navigation,
+ * calendar and stats are in the library. On a phone it is a sheet.
  */
 /** The full menu; ./AccountMenu draws a light trigger until this module arrives, then hands over (open, if pressed). */
 export function AccountMenu({ initialOpen = false, focusTrigger = false }: { initialOpen?: boolean; focusTrigger?: boolean }) {
@@ -206,6 +199,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const ts = useTranslations("shell");
   const tc = useTranslations("common");
   const te = useTranslations("errors");
+  const tp = useTranslations("profiles");
   const { me, locale } = useSession();
   const phone = usePhoneLayout();
   const pathname = usePathname();
@@ -243,6 +237,9 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const here = query ? `${pathname}?${query}` : pathname;
   const back = encodeURIComponent(here);
   const others = kids ? [] : me.profiles.filter((x) => x.id !== p?.id);
+  // The account's limit (profiles/ProfilePicker's MAX_PROFILES, not imported: this menu would carry the whole picker).
+  const limit = me.maxProfiles ?? 8;
+  const size = phone ? 56 : 48;
   const at = (path: string, lang = locale) => (lang === "en" ? path : `/${lang}${path === "/" ? "" : path}`);
 
   // One press: the session takes the profile and this page opens again as theirs, in the profile's own interface
@@ -288,6 +285,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   return (
     <>
       <Menu
+        panel
         open={open}
         onOpenChange={setOpen}
         label={t("account")}
@@ -303,43 +301,56 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
           />
         }
       >
-        <div ref={head} className="flex items-center gap-3 px-3 pt-2 pb-3">
-          <ProfileAvatar avatar={p?.avatar ?? "aurora"} photo={p?.photo} name={name} size={40} />
-          <div className="min-w-0">
-            <p className="truncate text-title text-text-1">{name}</p>
-            {/* A kids profile is marked as one; the parent's e-mail isn't shown there (PRF-01). */}
-            {kids ? <Tag className="mt-1">{ts("kidsTag")}</Tag> : <p className="truncate text-body-s text-text-2">{me.user.email}</p>}
-          </div>
-        </div>
-        <MenuSeparator />
-        {kids ? (
-          <MenuItem icon={DoorOpen} href={`/profiles?next=${back}`}>
-            {t("leaveKids")}
-          </MenuItem>
-        ) : (
-          <>
+        {/* Who's watching, as faces (7.17): you ringed first, the others one press away, "+" while there is room. */}
+        <div ref={head}>
+          <MenuFaces label={tp("sectionProfiles")}>
+            {p && (
+              <MenuFace
+                current
+                face={<Face profile={p} size={size} />}
+                label={name}
+                note={tp("current")}
+                tag={kids && <Tag>{ts("kidsTag")}</Tag>}
+              />
+            )}
             {others.map((x) => (
-              <ProfileRow key={x.id} profile={x} phone={phone} onPick={() => void pick(x)} />
+              <MenuFace
+                key={x.id}
+                face={<Face profile={x} size={size} />}
+                label={x.name}
+                note={x.hasPin ? tp("locked") : undefined}
+                tag={x.isKids && <Tag>{ts("kidsTag")}</Tag>}
+                onSelect={() => void pick(x)}
+              />
             ))}
-            <MenuItem icon={Users} href={`/profiles?manage=1&next=${back}`}>
-              {t("manageProfiles")}
-            </MenuItem>
-          </>
+            {!kids && me.profiles.length < limit && (
+              <MenuFace
+                href={`/profiles?manage=1&next=${back}`}
+                face={
+                  <span className="grid place-items-center rounded-avatar border-2 border-line-2 text-text-2" style={{ width: size, height: size }}>
+                    <Plus aria-hidden className="size-5" />
+                  </span>
+                }
+                label={tc("add")}
+                note={tp("add")}
+              />
+            )}
+          </MenuFaces>
+        </div>
+        <MenuSeparator quiet />
+        {/* Rows by words alone (no icons, no lines between): what to do with the profiles, then the settings. */}
+        {kids ? (
+          <MenuItem href={`/profiles?next=${back}`}>{t("leaveKids")}</MenuItem>
+        ) : (
+          <MenuItem href={`/profiles?manage=1&next=${back}`}>{t("manageProfiles")}</MenuItem>
         )}
-        <MenuSeparator />
-        <MenuItem icon={Settings} href="/settings">
-          {t("settings")}
-        </MenuItem>
+        <MenuItem href="/settings">{t("settings")}</MenuItem>
         {me.user.role === "admin" && !kids && (
           // The admin is another app on this origin (apps/admin at /admin): a full page load, not the site's router.
-          <MenuItem icon={Shield} onSelect={() => window.location.assign("/admin")}>
-            {t("admin")}
-          </MenuItem>
+          <MenuItem onSelect={() => window.location.assign("/admin")}>{t("admin")}</MenuItem>
         )}
-        <MenuSeparator />
-        <MenuItem icon={LogOut} onSelect={() => void signOut()}>
-          {tc("signOut")}
-        </MenuItem>
+        <MenuSeparator quiet />
+        <MenuItem onSelect={() => void signOut()}>{tc("signOut")}</MenuItem>
       </Menu>
       {switching && (
         // While the session changes hands and the page opens again: the chosen profile on the stage, over everything.

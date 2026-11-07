@@ -2,7 +2,7 @@
 
 import type { AiFilters, AiResultTitle, AiSearchResponse } from "@lumovio/contracts";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CircleHelp, Sparkles } from "lucide-react";
+import { CircleHelp, Search, Sparkles } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { PosterCard, PosterCardSkeleton } from "@/components/media/PosterCard";
@@ -128,7 +128,18 @@ export type AiSearchState = ReturnType<typeof useAiSearch>;
  * conditions the model read (Selects and InputChips: a change re-queries the catalog only) and the titles, each with
  * why it is there when that says more than the description. The page keeps its height meanwhile (SRCH-10).
  */
-export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signedIn: boolean; onExample: (text: string) => void }) {
+export function AiPanel({
+  ai,
+  signedIn,
+  onExample,
+  onTitleSearch,
+}: {
+  ai: AiSearchState;
+  signedIn: boolean;
+  onExample: (text: string) => void;
+  /** Searches the text by name instead (a text the model read as no description: «скала» is a title, not a wish). */
+  onTitleSearch: (text: string) => void;
+}) {
   const t = useTranslations("search");
   const tc = useTranslations("common");
   const tg = useTranslations("shell.gate");
@@ -137,8 +148,8 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
 
   if (!signedIn) {
     return (
-      // In the middle of the page, as the empty and error states (no block hangs at the start, owner 2026-10-25).
-      <div className="mx-auto mt-8 max-w-3xl rounded-md border border-line bg-surface-1">
+      // In the middle of the page, as every state (7.11): no frame of its own.
+      <div className="mx-auto mt-8 max-w-3xl">
         <GuestGatePanel reason="ai" next="/search?mode=ai" />
       </div>
     );
@@ -160,11 +171,13 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
         : t(w.role === "director" ? "aiWhyDirector" : w.role === "actor" ? "aiWhyActor" : "aiWhyPerson", { name: w.name });
 
   const examples = (
-    <section className="mt-8" aria-labelledby="ai-examples">
+    // Suggestions stand on the field's axis, as the states above them (one axis: the controls and the grids span the
+    // width, what is said in the middle).
+    <section className="mx-auto mt-8 flex max-w-3xl flex-col items-center text-center" aria-labelledby="ai-examples">
       <h2 id="ai-examples" className="text-title text-text-1">
         {tg("aiExamples")}
       </h2>
-      <ul className="mt-3 flex flex-col items-start gap-2">
+      <ul className="mt-3 flex max-w-full flex-col items-center gap-2">
         {EXAMPLES.map((k) => (
           <li key={k} className="max-w-full">
             {/* Puts the example in the field and searches it. */}
@@ -196,7 +209,18 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
         <ErrorState className="mt-8" error={error} title={t("aiFailed")} onRetry={ai.retry} retrying={busy} />
       ) : data && data.understood === false ? (
         <>
-          <EmptyState icon={CircleHelp} title={t("aiNotUnderstood")} text={t("aiNotUnderstoodText")} className="max-w-3xl" />
+          <EmptyState
+            icon={CircleHelp}
+            title={t("aiNotUnderstood")}
+            about={t("aiNotUnderstoodText")}
+            action={
+              ai.ran && (
+                <Button variant="secondary" icon={Search} onClick={() => onTitleSearch(ai.ran ?? "")}>
+                  {t("searchInstead", { q: ai.ran })}
+                </Button>
+              )
+            }
+          />
           {examples}
         </>
       ) : f && data ? (
@@ -209,7 +233,7 @@ export function AiPanel({ ai, signedIn, onExample }: { ai: AiSearchState; signed
             </Link>
           </div>
           {data.results.length === 0 ? (
-            <EmptyState icon={Sparkles} title={t("aiEmptyTitle")} text={t("aiEmpty")} />
+            <EmptyState icon={Sparkles} title={t("aiEmptyTitle")} about={t("aiEmpty")} />
           ) : (
             <ResultGrid>
               {data.results.map((r) => (

@@ -10,6 +10,7 @@ import { cn } from "./cn";
 import { confirmQueue } from "./confirm-queue";
 import { IconButton } from "./IconButton";
 import { markToastPress, TOAST_REGION_ATTR } from "./layers";
+import { OfflineNotice } from "./OfflineNotice";
 import { type ToastAction, type ToastItem, type ToastOptions, toastStore } from "./toast-store";
 
 export type { ToastAction, ToastOptions } from "./toast-store";
@@ -131,6 +132,7 @@ export function Toaster() {
             onDismiss={() => toastStore.dismiss(item.id)}
           />
         ))}
+        <OfflineNotice />
       </section>
       <LazyConfirmHost />
     </>

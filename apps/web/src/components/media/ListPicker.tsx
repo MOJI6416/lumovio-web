@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DialogActions } from "@/components/ui/Dialog";
 import { Dialog } from "@/components/ui/DialogFrame";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useEditableLists, type usePersonalActions } from "./usePersonalActions";
 
@@ -39,14 +41,9 @@ export function ListPicker({
           <Skeleton className="h-6 w-2/3" />
         </div>
       ) : lists.isError ? (
-        <p className="flex flex-wrap items-center gap-x-2 text-body text-text-2" role="alert">
-          {t("listsFailed")}
-          <Button variant="tertiary" size="sm" loading={lists.isFetching} onClick={() => void lists.refetch()}>
-            {tc("retry")}
-          </Button>
-        </p>
+        <ErrorState variant="inline" error={lists.error} title={t("listsFailed")} onRetry={() => void lists.refetch()} retrying={lists.isFetching} />
       ) : lists.data.length === 0 ? (
-        <p className="text-body text-text-2">{t("noLists")}</p>
+        <EmptyState variant="inline" title={t("noLists")} />
       ) : (
         <ul className="-my-1 flex max-h-80 flex-col gap-1 overflow-y-auto">
           {lists.data.map((l) => (

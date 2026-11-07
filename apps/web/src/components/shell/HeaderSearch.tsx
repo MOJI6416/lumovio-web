@@ -16,7 +16,8 @@ const load = () =>
   }));
 
 /**
- * The header's search button (design-system 7.19): a round button as large as the avatar beside it (32); a press or "/" opens the field and its list in the
+ * The header's search button (design-system 7.19): a round 32 px button, the header's actions' size — a step smaller than
+ * the 36 px avatar beside it; a press or "/" opens the field and its list in the
  * header itself (./HeaderSearchPanel). Every page has the button and few open it, so the field, the list and the search
  * logic load when the pointer comes near it, it gets the focus or the browser is idle, as the account menu (bundle
  * budget). A phone has its Search tab instead.

@@ -112,7 +112,7 @@ export function CopyChoice({
   if (state.kind === "error" && copies.length === 0)
     return (
       <section aria-label={t("yourServers")} className="rounded-lg bg-surface-1 p-4 sm:p-6">
-        <ErrorState error={error} title={t("statusError")} onRetry={onRetry} retrying={retrying} />
+        <ErrorState variant="inline" error={error} title={t("statusError")} onRetry={onRetry} retrying={retrying} />
       </section>
     );
   if (copies.length === 0) {

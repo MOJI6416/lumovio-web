@@ -12,8 +12,10 @@ import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Sett
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
 import { authErrorKey } from "@/lib/api-errors";
-import { authClient } from "@/lib/auth-client";
 import { authCapsQuery } from "./queries";
+
+/** The auth client (Better Auth) loads with the action that needs it, not in the page's first-load JS (bundle budget). */
+const auth = () => import("@/lib/auth-client").then((m) => m.authClient);
 
 const SOCIAL = [
   { id: "google", name: "Google" },
@@ -41,7 +43,7 @@ export function AccountSettings() {
   const linked = new Set(me.linkedProviders);
   const link = async (provider: string) => {
     setLinking(provider);
-    const r = await authCall(() => authClient.linkSocial({ provider: provider as "google", callbackURL: window.location.href }));
+    const r = await authCall(async () => (await auth()).linkSocial({ provider: provider as "google", callbackURL: window.location.href }));
     // Success leaves for the provider's page; only a refusal comes back here.
     if (r.error) {
       setLinking(null);
@@ -51,7 +53,7 @@ export function AccountSettings() {
   // As the account menu's "Sign out": the session ends here only, the home page says so.
   const signOut = async () => {
     setLeaving(true);
-    const r = await authCall(() => authClient.signOut());
+    const r = await authCall(async () => (await auth()).signOut());
     if (r.error) {
       setLeaving(false);
       toast.error(tr(authErrorKey(r.error)));

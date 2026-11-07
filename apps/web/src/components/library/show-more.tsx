@@ -1,8 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { startTransition, useReducer } from "react";
-import { Button } from "@/components/ui/Button";
+import { LoadMore } from "@/components/ui/LoadMore";
 
 /** Cards or rows drawn at a time, as in a list (LIB-14): a 7 000-title Watchlist isn't drawn all at once. */
 export const SHOW_PAGE = 60;
@@ -27,17 +26,7 @@ export function useShowMore(key: string) {
   return { limit, more };
 }
 
-/** "Show more" under the grid, centred (8.4), with "Showing 60 of 7 088" under it; nothing once all are shown. */
+/** "Show more" under the grid, centred (8.4), with "Showing 60 of 7 088" under it; nothing once all are shown (ui/LoadMore). */
 export function ShowMore({ shown, total, onMore }: { shown: number; total: number; onMore: () => void }) {
-  const t = useTranslations("library");
-  const tc = useTranslations("common");
-  if (shown >= total) return null;
-  return (
-    <div className="mt-8 flex flex-col items-center gap-2">
-      <Button variant="secondary" onClick={onMore}>
-        {tc("showMore")}
-      </Button>
-      <p className="text-body-s text-text-2">{t("shownOf", { shown, total })}</p>
-    </div>
-  );
+  return <LoadMore onMore={onMore} shown={shown} total={total} />;
 }

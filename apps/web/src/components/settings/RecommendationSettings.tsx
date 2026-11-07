@@ -16,6 +16,7 @@ import { FilterChip } from "@/components/ui/Chip";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { IconButton } from "@/components/ui/IconButton";
 import { QueryState } from "@/components/ui/QueryState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -168,7 +169,7 @@ function SignalsSection({ taste, onChange }: { taste: TasteQuery; onChange: () =
     );
   return (
     <SettingsSection title={t("signalsTitle")} description={t("signalsText")} save={state}>
-      <QueryState
+      <QueryState variant="inline"
         query={taste}
         loading={
           <div className="space-y-3 py-4">
@@ -178,7 +179,7 @@ function SignalsSection({ taste, onChange }: { taste: TasteQuery; onChange: () =
           </div>
         }
         isEmpty={(d) => d.signals.every((s) => s.signals.every((k) => k === "hide" || k === "opened"))}
-        empty={<p className="py-4 text-body-s text-text-2">{t("signalsEmpty")}</p>}
+        empty={<EmptyState variant="inline" title={t("signalsEmpty")} />}
         error={{ title: t("loadError") }}
       >
         {(d) => {
@@ -238,11 +239,11 @@ function InterestsSection({ taste }: { taste: TasteQuery }) {
   };
   return (
     <SettingsSection title={t("interestsTitle")} description={t("interestsText")} save={state}>
-      <QueryState
+      <QueryState variant="inline"
         query={taste}
         loading={<Skeleton shape="md" className="my-4 h-20 w-full" />}
         isEmpty={(d) => d.interests.genres.length === 0 && d.interests.people.length === 0}
-        empty={<p className="py-4 text-body-s text-text-2">{t("interestsEmpty")}</p>}
+        empty={<EmptyState variant="inline" title={t("interestsEmpty")} />}
         error={{ title: t("loadError") }}
       >
         {(d) => {
@@ -323,9 +324,9 @@ function LikeSection({ taste, onChange }: { taste: TasteQuery; onChange: () => v
         <div>
           <p className="mb-2 text-body-s font-semibold text-text-1">{t("likedGenres")}</p>
           {/* The chips need the profile's genres first: toggling before they load would send a wrong list. */}
-          <QueryState query={taste} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("loadError") }}>
+          <QueryState variant="inline" query={taste} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("loadError") }}>
             {(d) => (
-              <QueryState query={genres} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("genresLoadError") }}>
+              <QueryState variant="inline" query={genres} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("genresLoadError") }}>
                 {(all) => (
                   <div className="flex flex-wrap gap-2">
                     {all.map((g) => (
@@ -339,7 +340,7 @@ function LikeSection({ taste, onChange }: { taste: TasteQuery; onChange: () => v
             )}
           </QueryState>
         </div>
-        <QueryState
+        <QueryState variant="inline"
           query={starter}
           loading={
             <TitleGrid>
@@ -349,7 +350,7 @@ function LikeSection({ taste, onChange }: { taste: TasteQuery; onChange: () => v
             </TitleGrid>
           }
           isEmpty={(d) => d.length === 0}
-          empty={<p className="text-body-s text-text-2">{t("likeEmpty")}</p>}
+          empty={<EmptyState variant="inline" title={t("likeEmpty")} />}
           error={{ title: t("loadError") }}
         >
           {(items) => (
@@ -410,9 +411,9 @@ function MutedSection({ taste, onChange }: { taste: TasteQuery; onChange: () => 
       <div className="space-y-5 py-4">
         <div>
           <p className="mb-2 text-body-s font-semibold text-text-1">{t("mutedGenres")}</p>
-          <QueryState query={taste} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("loadError") }}>
+          <QueryState variant="inline" query={taste} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("loadError") }}>
             {(d) => (
-              <QueryState query={genres} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("genresLoadError") }}>
+              <QueryState variant="inline" query={genres} loading={<Skeleton shape="md" className="h-16 w-full" />} error={{ title: t("genresLoadError") }}>
                 {(all) => (
                   <div className="flex flex-wrap gap-2">
                     {all.map((g) => (
@@ -428,11 +429,11 @@ function MutedSection({ taste, onChange }: { taste: TasteQuery; onChange: () => 
         </div>
         <div>
           <p className="mb-1 text-body-s font-semibold text-text-1">{t("mutedPeople")}</p>
-          <QueryState
+          <QueryState variant="inline"
             query={taste}
             loading={<Skeleton shape="xs" className="h-5 w-48" />}
             isEmpty={(d) => d.prefs.mutedPeople.length === 0}
-            empty={<p className="text-body-s text-text-2">{t("mutedPeopleEmpty")}</p>}
+            empty={<EmptyState variant="inline" title={t("mutedPeopleEmpty")} />}
             error={{ title: t("loadError") }}
           >
             {(d) => (
@@ -451,11 +452,11 @@ function MutedSection({ taste, onChange }: { taste: TasteQuery; onChange: () => 
         </div>
         <div>
           <p className="mb-1 text-body-s font-semibold text-text-1">{t("hiddenTitle")}</p>
-          <QueryState
+          <QueryState variant="inline"
             query={marks}
             loading={<Skeleton shape="md" className="h-16 w-full" />}
             isEmpty={(d) => d.hidden.every((x) => gone.has(x.id))}
-            empty={<p className="text-body-s text-text-2">{t("hiddenEmpty")}</p>}
+            empty={<EmptyState variant="inline" title={t("hiddenEmpty")} />}
             error={{ title: t("loadError") }}
           >
             {(d) => (
@@ -492,7 +493,7 @@ function HowSection({ taste }: { taste: TasteQuery }) {
   const set = (next: Partial<RecommendationPrefs>) => void save(request(next), optimistic(next));
   return (
     <SettingsSection title={t("howTitle")} save={state}>
-      <QueryState query={taste} loading={<Skeleton shape="md" className="my-4 h-24 w-full" />} error={{ title: t("loadError") }}>
+      <QueryState variant="inline" query={taste} loading={<Skeleton shape="md" className="my-4 h-24 w-full" />} error={{ title: t("loadError") }}>
         {(d) => (
           <>
             <SettingsRow label={t("useHistory")} description={t("useHistoryText")}>
@@ -554,7 +555,7 @@ function OpenedSection({ taste, onChange }: { taste: TasteQuery; onChange: () =>
   };
   return (
     <SettingsSection title={t("openedTitle")} description={t("openedText")} save={state}>
-      <QueryState query={taste} loading={<Skeleton shape="md" className="my-4 h-24 w-full" />} error={{ title: t("loadError") }}>
+      <QueryState variant="inline" query={taste} loading={<Skeleton shape="md" className="my-4 h-24 w-full" />} error={{ title: t("loadError") }}>
         {(d) => {
           const list = d.signals.filter((s) => s.signals.length === 1 && s.signals[0] === "opened");
           const shown = all ? list : list.slice(0, FIRST);
@@ -575,7 +576,7 @@ function OpenedSection({ taste, onChange }: { taste: TasteQuery; onChange: () =>
                 />
               </SettingsRow>
               {list.length === 0 ? (
-                <p className="py-4 text-body-s text-text-2">{d.prefs.useOpens ? t("openedEmpty") : t("openedOff")}</p>
+                <EmptyState variant="inline" title={d.prefs.useOpens ? t("openedEmpty") : t("openedOff")} />
               ) : (
                 <ul className="divide-y divide-line">
                   {shown.map((s) => (

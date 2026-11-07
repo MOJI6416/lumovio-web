@@ -99,7 +99,7 @@ export function RatingsTab() {
         <EmptyState
           icon={Star}
           title={t("emptyRatings")}
-          text={<span className="sr-only">{kids ? t("emptyRatingsHintKids") : t("emptyRatingsHint")}</span>}
+          about={kids ? t("emptyRatingsHintKids") : t("emptyRatingsHint")}
           action={
             <Link href="/search" className={buttonClass("primary")}>
               <Search aria-hidden />

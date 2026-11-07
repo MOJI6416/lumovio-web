@@ -52,7 +52,7 @@ export function SupportThread({ id, email }: { id: string; email: string }) {
   };
 
   return (
-    <QueryState query={q} variant="page">
+    <QueryState query={q}>
       {(d) => (
         <div className="space-y-6">
           <h2 className="text-h3 text-text-1">{t(`topics.${d.topic}`)}</h2>

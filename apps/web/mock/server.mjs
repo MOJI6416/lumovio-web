@@ -548,6 +548,11 @@ on("GET", "/api/events", async ({ c, req, res }) => {
   req.on("close", () => clearInterval(ping));
   return STREAM;
 });
+// The account's TVs ("Watch on TV", the remote): none in the mock, so neither shows.
+on("GET", "/api/devices/tv", async ({ c }) => {
+  needUser(c);
+  return { devices: [] };
+});
 on("GET", "/api/ready", async () => ({ ok: true, checks: { db: true, redis: true }, mock: true }));
 on("GET", "/api/auth-capabilities", async () => ({
   emailPassword: true,

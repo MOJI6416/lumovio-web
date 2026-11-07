@@ -7,7 +7,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import type { ReactNode } from "react";
 import "../globals.css";
 import { Providers } from "@/components/providers/Providers";
-import { ThemeSync } from "@/components/shell/Preferences";
+import { ThemeSync } from "@/components/shell/ThemeSync";
 import { ThemeScript } from "@/components/shell/ThemeScript";
 import { DragScroll } from "@/components/ui/DragScroll";
 import { localeInfo } from "@/i18n/locales";

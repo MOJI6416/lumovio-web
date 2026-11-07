@@ -52,6 +52,8 @@ export type Summary =
   | { kind: "searching"; name: string }
   | { kind: "manual"; name: string }
   | { kind: "nothingFound"; offers: string[] }
+  /** The TorrServer didn't answer the search: said as "Where to watch" says it, not as "nothing found". */
+  | { kind: "searchFailed"; name: string; offers: string[] }
   | { kind: "offers"; offers: string[] }
   | { kind: "noServers" }
   | { kind: "notOnServers" }
@@ -92,7 +94,8 @@ export function heroPlan(i: PlanInput): Plan {
   else if (w.kind === "error") summary = { kind: "error" };
   else if (w.kind === "unreachable") summary = { kind: "unreachable", names: w.names };
   else if (t.state === "manual") summary = { kind: "manual", name: t.name };
-  else if (t.state === "nothing" || t.state === "failed") summary = { kind: "nothingFound", offers: i.offers };
+  else if (t.state === "failed") summary = { kind: "searchFailed", name: t.name, offers: i.offers };
+  else if (t.state === "nothing") summary = { kind: "nothingFound", offers: i.offers };
   else if (i.offers.length > 0) summary = { kind: "offers", offers: i.offers };
   else if (w.kind === "guest") summary = { kind: "guest" };
   else if (w.kind === "indexing") summary = { kind: "indexing", names: w.names };

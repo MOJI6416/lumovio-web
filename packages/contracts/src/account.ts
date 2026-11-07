@@ -263,3 +263,86 @@ export interface DeviceSession {
   createdAt: string;
   lastSeenAt: string;
 }
+
+/*
+ * "Watch on TV" (design-system 8.18, TV document §7.3): a phone or a computer sends what it shows to a TV of the same
+ * account where Lumovio is open, the TV starts it, and the sender drives that viewing. The TV says what it plays
+ * (`TvPlayback`) to the senders listening; `failure` is why a viewing didn't start there.
+ */
+export type TvPlaybackState = "preparing" | "playing" | "paused" | "ended" | "failed";
+/**
+ * Why a sent viewing didn't start on the TV: `blocked` — the TV's browser refused an `http://` server; `unreachable` — the
+ * server didn't answer the TV; `auth` — it refused the sign-in; `missing` — the copy sent isn't among the TV's; `none` — no
+ * copy at all; `unsupported` — the file doesn't play there; `external` — only another app plays it; `other`.
+ */
+export type CastFailure = "blocked" | "unreachable" | "auth" | "missing" | "none" | "unsupported" | "external" | "other";
+
+export interface TvPlayback {
+  /** "movie:603". */
+  titleId: string;
+  kind: "movie" | "tv";
+  tmdbId: number;
+  /** The title in the TV's language. */
+  title: string;
+  season: number | null;
+  episode: number | null;
+  state: TvPlaybackState;
+  positionSec: number;
+  durationSec: number | null;
+  /** The sending that opened this viewing (`CastAnswer.castId`); null for one started on the TV. */
+  castId: string | null;
+  failure: CastFailure | null;
+  /** The profile the TV watches in. */
+  profileId: string | null;
+  /** When the TV said it (server time, ms). */
+  at: number;
+}
+
+/** What a TV reports (POST /api/devices/playback): its viewing as it is, or that it has stopped. */
+export type TvPlaybackReport = Omit<TvPlayback, "profileId" | "at"> | { state: "stopped" };
+
+/** A TV of the account (GET /api/devices/tv): `online` — Lumovio is open on it now. */
+export interface TvDevice {
+  id: string;
+  /** English fallback of `device` ("TV · Android"). */
+  label: string;
+  device: DeviceInfo;
+  online: boolean;
+  lastSeenAt: string;
+  /** The profile chosen on the TV; null before one is. */
+  profile: { id: string; name: string; isKids: boolean } | null;
+  /** What it plays now (only while online; for a kids profile only a viewing in its own profile). */
+  playback: TvPlayback | null;
+}
+
+/** What a phone sends to a TV (POST /api/devices/:id/cast): the viewing as the phone has it. */
+export interface CastRequest {
+  kind: "movie" | "tv";
+  tmdbId: number;
+  season?: number | null;
+  episode?: number | null;
+  /** The copy: "connectionId:externalId", as the player's `?source=`. */
+  source?: string | null;
+  /** The dubbing chosen with a TorrServer release (the player's `?voice=`). */
+  voice?: string | null;
+  /** The audio track chosen in the phone's player. */
+  audio?: number | null;
+  quality?: ReleaseQuality | null;
+  /** Where the phone is in it; null — where the profile left it. */
+  positionSec?: number | null;
+  /** The TV is on another profile and the phone said to switch it to its own. */
+  switchProfile?: boolean;
+}
+
+/**
+ * The answer: sent; the TV isn't open; it's on another profile (`profile`; sent again with `switchProfile`); or a kids
+ * phone can't take the TV out of its kids profile (`locked`).
+ */
+export type CastAnswer =
+  | { status: "sent"; castId: string; switched: boolean }
+  | { status: "offline" }
+  | { status: "profile"; profile: { name: string; isKids: boolean } | null }
+  | { status: "locked"; profile: { name: string; isKids: boolean } };
+
+/** The phone's remote of a viewing on the TV (POST /api/devices/:id/playback). */
+export type CastControl = { action: "toggle" | "stop" } | { action: "seek"; delta: number };

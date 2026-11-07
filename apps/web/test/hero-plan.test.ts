@@ -55,6 +55,11 @@ describe("the title's main button (design-system 8.2, TTL-01)", () => {
     expect(plan({ watch: { kind: "noServers" }, kids: true }).summary).toBeNull();
     expect(plan({ watch: { kind: "noServers" } }).summary).toEqual({ kind: "noServers" });
   });
+
+  it("says a TorrServer search that didn't answer as that, not as nothing found", () => {
+    expect(plan({ torrent: { state: "failed", name: "torr" } }).summary).toEqual({ kind: "searchFailed", name: "torr", offers: [] });
+    expect(plan({ torrent: { state: "nothing", name: "torr" } }).summary).toEqual({ kind: "nothingFound", offers: [] });
+  });
 });
 
 describe("where Watch goes", () => {

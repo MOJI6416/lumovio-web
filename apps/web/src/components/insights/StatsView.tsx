@@ -119,6 +119,9 @@ export function StatsView() {
         )}
         {/* A failed load is not an empty year (X-14). */}
         {q.isError && !s && <ErrorState error={q.error} title={t("loadError")} onRetry={() => void q.refetch()} retrying={q.isFetching} />}
+        {/* Offline before anything came: said, not a blank page; a failed refresh keeps the numbers, one line above (7.11). */}
+        {!s && !q.isError && q.fetchStatus === "paused" && <ErrorState error={null} onRetry={() => void q.refetch()} />}
+        {q.isError && s && <ErrorState variant="inline" error={q.error} title={t("loadError")} onRetry={() => void q.refetch()} retrying={q.isFetching} />}
         {s && total === 0 && (
           <EmptyState
             icon={BarChart3}

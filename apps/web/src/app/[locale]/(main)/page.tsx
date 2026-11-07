@@ -50,9 +50,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const me = await getMeState();
   if (me === "unavailable") {
     return (
-      <div className="page-x pt-8">
-        <ServiceUnavailable />
-      </div>
+      <ServiceUnavailable variant="page" />
     );
   }
   const profile = me?.activeProfile ?? null;
@@ -75,9 +73,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   ]);
   if (!home) {
     return (
-      <div className="page-x pt-8">
-        <ServiceUnavailable />
-      </div>
+      <ServiceUnavailable variant="page" />
     );
   }
   // The Top 10 is the week's trend blended with Lumovio's own week (API catalog/top.ts); other lead shelves (kids profiles) render as normal shelves.

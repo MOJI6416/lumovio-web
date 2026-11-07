@@ -11,10 +11,9 @@ import { ListCard } from "@/components/media/ListCard";
 import { PosterCard } from "@/components/media/PosterCard";
 import { Row } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { eventDay, formatDate, hasAired, localDay } from "@/lib/format";
@@ -148,15 +147,8 @@ export function LibraryOverview() {
   return (
     <div className="flex flex-col gap-8">
       {(failed.length > 0 || recent.isError) && (
-        <InlineAlert
-          tone="danger"
-          title={t("loadErrorPart")}
-          action={
-            <Button variant="tertiary" size="sm" loading={retrying} onClick={retry}>
-              {tc("retry")}
-            </Button>
-          }
-        />
+        // Some shelves didn't come: one line with Retry over the rest, which works (7.11).
+        <ErrorState variant="inline" title={t("loadErrorPart")} onRetry={retry} retrying={retrying} />
       )}
       {/* The shelves run to the screen's edges out of the page gutter; each shelf keeps its own edge (5.3). */}
       <div className="-mx-(--gutter) flex flex-col gap-8 md:gap-12">

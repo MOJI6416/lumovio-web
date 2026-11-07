@@ -43,7 +43,8 @@ export function AnimeOff() {
     <EmptyState
       icon={Sparkles}
       title={t("animeOffTitle")}
-      text={kids ? `${t("animeOffText")} ${t("animeOffKids")}` : t("animeOffText")}
+      about={t("animeOffText")}
+      note={kids ? t("animeOffKids") : undefined}
       action={
         kids ? (
           home

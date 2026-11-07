@@ -17,6 +17,7 @@ import { InlineAlert } from "@/components/ui/InlineAlert";
 import { Link } from "@/components/ui/Link";
 import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import { QueryState } from "@/components/ui/QueryState";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Select } from "@/components/ui/Select";
 import { SettingsLink, SettingsRow, SettingsSection } from "@/components/ui/Settings";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -130,7 +131,7 @@ function ServiceSection({ provider, available, accounts }: { provider: Integrati
   return (
     <SettingsSection title={service} description={t(provider)} save={state}>
       {!available ? (
-        <p className="py-4 text-body-s text-text-2">{t("notConfigured", { service })}</p>
+        <EmptyState variant="inline" title={t("notConfigured", { service })} />
       ) : (
         <>
           {accounts.map((a) => (
@@ -144,7 +145,7 @@ function ServiceSection({ provider, available, accounts }: { provider: Integrati
               </Button>
             </SettingsRow>
           ) : (
-            accounts.length > 0 && <p className="py-4 text-body-s text-text-2">{t("allLinked", { service })}</p>
+            accounts.length > 0 && <EmptyState variant="inline" title={t("allLinked", { service })} />
           )}
         </>
       )}
@@ -384,7 +385,7 @@ function SendExisting({ account: a, onClose }: { account: IntegrationAccount; on
   });
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()} title={t("sendTitle", { service })} description={t("sendHint", { service })}>
-      <QueryState query={counts} loading={<Skeleton shape="md" className="h-24 w-full" />} error={{ title: t("countsLoadError") }}>
+      <QueryState variant="inline" query={counts} loading={<Skeleton shape="md" className="h-24 w-full" />} error={{ title: t("countsLoadError") }}>
         {(d) => (
           <div className="flex flex-col gap-1">
             {KINDS.map((k) => (

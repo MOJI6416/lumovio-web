@@ -107,9 +107,7 @@ export default async function TitlePage({ params, searchParams }: { params: Para
     // The API not answering a signed-in person is "temporarily unavailable" with Retry (8.5, C38), not the error page.
     if (meFailure(e) === "unavailable" && (await getMeState()) === "unavailable") {
       return (
-        <div className="page-x pt-8">
-          <ServiceUnavailable />
-        </div>
+        <ServiceUnavailable variant="page" />
       );
     }
     throw e;

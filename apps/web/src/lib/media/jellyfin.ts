@@ -196,13 +196,21 @@ export function deviceProfile(caps: PlaybackCapabilities, maxBitrate: number) {
   };
 }
 
+/**
+ * An address with the token. `ApiKey` is what Jellyfin 10.9+ expects (12.x rejects the legacy `api_key` on some
+ * endpoints, e.g. trickplay); older servers only know `api_key`. Sending both works everywhere — but only once each: a
+ * `TranscodingUrl` already carries `ApiKey`, and its HLS playlist answers 401 to a second one (2026-11-07, every copy
+ * that needed HLS failed to start).
+ */
+export function withJellyfinKey(url: string, token: string): string {
+  const add = ["ApiKey", "api_key"].filter((k) => !new RegExp(`[?&]${k}=`).test(url)).map((k) => `${k}=${encodeURIComponent(token)}`);
+  return add.length ? `${url}${url.includes("?") ? "&" : "?"}${add.join("&")}` : url;
+}
+
 export function jellyfinClient(base: string, auth: { userId: string; accessToken: string }, opts: { maxBitrateKbps?: number | null; syncProgress?: boolean } = {}): ProviderClient {
   const token = auth.accessToken;
   const call = <T>(path: string, init?: RequestInit) => jf<T>(base, path, token, init);
-  // `ApiKey` is what Jellyfin 10.9+ expects (12.x rejects the legacy `api_key` on some endpoints,
-  // e.g. trickplay); older servers only know `api_key`. Sending both works everywhere.
-  const withKey = (path: string) =>
-    `${joinUrl(base, path)}${path.includes("?") ? "&" : "?"}ApiKey=${encodeURIComponent(token)}&api_key=${encodeURIComponent(token)}`;
+  const withKey = (path: string) => withJellyfinKey(joinUrl(base, path), token);
 
   return {
     kind: "jellyfin",
@@ -432,6 +440,9 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
         url,
         type,
         mime: type === "hls" ? "application/vnd.apple.mpegurl" : null,
+        // Its HLS playlist always lists the whole film (StartTimeTicks only starts the transcode there): without a seek
+        // a resume, a source switch or another audio track started over at 0:00 (2026-11-07).
+        seekToStart: type === "hls",
         method,
         methodNote,
         subtitles,

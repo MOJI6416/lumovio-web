@@ -51,7 +51,7 @@ describe("API error words (Ф1)", () => {
     });
     expect(loadErrorKeys(err(500, "internal"), "page")).toEqual({
       title: "errors.serverTitle",
-      text: "errors.serverText",
+      text: "errors.loadText",
     });
     expect(loadErrorKeys(err(403, "kids_restricted"))).toEqual({
       title: "profiles.kidsRestrictedTitle",
