@@ -1,7 +1,6 @@
 "use client";
 
-import type { TitleLibraryState } from "@lumovio/contracts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Bookmark, Heart, ListFilterPlus, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { lazy, memo, Suspense, useState } from "react";
@@ -12,9 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
 import { QueryState } from "@/components/ui/QueryState";
 import { usePlayable } from "@/hooks/useAvailability";
-import { libraryKey } from "@/hooks/useLibraryState";
 import { Link } from "@/i18n/navigation";
-import { api } from "@/lib/api";
 import { formatRuntime } from "@/lib/format";
 import { CollectionToolbar } from "./CollectionToolbar";
 import { sortItems, useTitleSorts } from "./sorting";
@@ -22,6 +19,7 @@ import { readFilters, readSort, useUrlState } from "./url-state";
 import { GridSkeleton } from "./GridSkeleton";
 import { ListGrid } from "./ListGrid";
 import { ShowMore, useShowMore } from "./show-more";
+import { useWatchedIds } from "./watched";
 import { systemListQuery } from "./whole-list";
 import { editListId, libraryRules } from "./rules-url";
 import type { RulesEdit } from "./SaveRulesDialog";
@@ -29,27 +27,6 @@ import type { RulesEdit } from "./SaveRulesDialog";
 // Loaded when used (bundle budget): "Save as list" and "Edit conditions" of a smart list (package F).
 const SaveRulesDialog = lazy(() => import("./SaveRulesDialog").then((m) => ({ default: m.SaveRulesDialog })));
 const EditRulesBar = lazy(() => import("./EditRulesBar").then((m) => ({ default: m.EditRulesBar })));
-
-/** Watched state for every id, 100 per request; also fills the per-card cache. */
-function useWatchedIds(ids: string[], enabled: boolean) {
-  const qc = useQueryClient();
-  return useQuery({
-    queryKey: ["library-watched", ids.join(",")],
-    enabled: enabled && ids.length > 0,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const watched = new Set<string>();
-      for (let i = 0; i < ids.length; i += 100) {
-        const { states } = await api<{ states: TitleLibraryState[] }>(`/api/library/state?ids=${encodeURIComponent(ids.slice(i, i + 100).join(","))}`);
-        for (const st of states) {
-          qc.setQueryData(libraryKey(st.titleId), st);
-          if (st.watchedCount > 0 || (st.progress?.completed && st.titleId.startsWith("movie:"))) watched.add(st.titleId);
-        }
-      }
-      return watched;
-    },
-  });
-}
 
 /** A card that doesn't draw again when "Show more" adds the next ones (./show-more). */
 const Card = memo(PosterCard);

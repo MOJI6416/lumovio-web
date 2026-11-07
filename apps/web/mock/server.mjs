@@ -895,8 +895,10 @@ on("GET", "/api/imports", async () => ({ jobs: [] }));
 
 // Media servers: the browser talks to them directly, the mock only stores what the client sends.
 // Recently added to the profile's servers and arrived from its lists: the mock indexes no server.
-on("GET", "/api/library/on-servers", async ({ c }) => {
+on("GET", "/api/library/on-servers", async ({ c, q }) => {
   needProfile(c);
+  // The library's "On my servers" pages (`offset`, `limit`, `kind`) also get the count and the servers: none here.
+  if (q.offset !== undefined || q.limit !== undefined || q.kind !== undefined) return { items: [], wanted: [], total: 0, sources: [], nextOffset: null };
   return { items: [], wanted: [] };
 });
 // The home page's Watchlist shelves (short films, finished series): the mock keeps no runtimes or statuses.

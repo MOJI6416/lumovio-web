@@ -70,6 +70,6 @@ export function OverviewSkeleton() {
 
 /** The placeholder of a section while its module loads. */
 export function SectionSkeleton({ section }: { section: string | null }) {
-  if (!section || section === "servers") return <OverviewSkeleton />;
+  if (!section) return <OverviewSkeleton />;
   return <GridSkeleton shape={section === "lists" ? "square" : "poster"} toolbar={section !== "history"} />;
 }
