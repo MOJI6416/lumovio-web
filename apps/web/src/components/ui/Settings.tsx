@@ -56,7 +56,7 @@ export function SaveError({ save, className }: { save?: SaveState; className?: s
 /**
  * A group of settings (design-system 7.18, as Apple's grouped lists): a small title (an h2 under the page's h1) over a
  * --surface-1 panel of radius 16 without a border, rows split by --line; the description is for screen readers only. A
- * group may go without a title (a lone action: "Sign out"). Settings that apply at once (8.8) pass `save` from
+ * group may go without a title (a lone action: "Sign out"); in a dialog it is `raised`. Settings that apply at once (8.8) pass `save` from
  * `useSettingsSave()` (lib/use-action): "Saved" appears by the title for a moment; a failure — rolled back already — stays
  * in the group as an InlineAlert with "Retry". `footer` goes under the panel, at its end (a group's own button).
  */
@@ -65,6 +65,7 @@ export function SettingsSection({
   description,
   save,
   footer,
+  raised,
   children,
   className,
 }: {
@@ -73,6 +74,8 @@ export function SettingsSection({
   save?: SaveState;
   /** Under the rows, at the end: the group's own action ("Remove all other devices", a form's "Save"). */
   footer?: ReactNode;
+  /** Inside a dialog (itself --surface-1): the panel one step up, --surface-2, its rows' highlight --surface-3. */
+  raised?: boolean;
   children: ReactNode;
   /** Placement only. */
   className?: string;
@@ -101,7 +104,9 @@ export function SettingsSection({
       )}
       <SaveError save={save} className="mb-3" />
       {/* overflow-hidden: a row's highlight (SettingsLink) follows the panel's corners. */}
-      <div className="divide-y divide-line overflow-hidden rounded-md bg-surface-1 px-4">{children}</div>
+      <div data-raised={raised || undefined} className={cn("divide-y divide-line overflow-hidden rounded-md px-4", raised ? "bg-surface-2" : "bg-surface-1")}>
+        {children}
+      </div>
       {footer && <div className="mt-3 flex flex-wrap justify-end gap-2">{footer}</div>}
     </section>
   );
@@ -240,7 +245,7 @@ export function SettingsLink({
   const look = cn(
     // The panel's px-4 is undone, so the highlight reaches its edges; the ring stays inside (the panel clips).
     "-mx-4 flex min-h-13 w-[calc(100%+2rem)] items-center gap-3 px-4 py-3 text-start transition-colors duration-fast ease-fast focus-visible:-outline-offset-2",
-    disabled ? "cursor-not-allowed opacity-40" : "hover:bg-surface-2",
+    disabled ? "cursor-not-allowed opacity-40" : "hover:bg-surface-2 in-data-raised:hover:bg-surface-3",
   );
   const a11y = { "aria-label": ariaLabel, "aria-describedby": description ? descriptionId : undefined };
   const control =

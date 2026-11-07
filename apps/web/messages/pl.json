@@ -1790,7 +1790,8 @@
     "tvModeHint": "Interfejs telewizora na tym ekranie: duże elementy i sterowanie strzałkami.",
     "newEpisodesSection": "Nowe odcinki",
     "emailRow": "E-mail",
-    "discordOff": "Nie połączono"
+    "discordOff": "Nie połączono",
+    "discordDisconnectHint": "Wiadomości o nowych odcinkach przestaną trafiać na kanał."
   },
   "tv": {
     "linkConfirm": "Zalogować to konto na telewizorze kodem {code}? Zatwierdź tylko wtedy, gdy telewizor pokazuje ten kod.",

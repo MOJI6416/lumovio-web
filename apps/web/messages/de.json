@@ -1790,7 +1790,8 @@
     "tvModeHint": "Die TV-Oberfläche auf diesem Bildschirm: große Elemente, Steuerung mit den Pfeiltasten.",
     "newEpisodesSection": "Neue Folgen",
     "emailRow": "E-Mail",
-    "discordOff": "Nicht verbunden"
+    "discordOff": "Nicht verbunden",
+    "discordDisconnectHint": "Nachrichten zu neuen Folgen kommen dann nicht mehr im Kanal an."
   },
   "tv": {
     "linkConfirm": "Dieses Konto auf dem Fernseher mit dem Code {code} anmelden? Bestätige nur, wenn dein Fernseher diesen Code zeigt.",

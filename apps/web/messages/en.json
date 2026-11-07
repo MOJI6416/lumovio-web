@@ -1790,7 +1790,8 @@
     "tvModeHint": "The TV interface on this screen: large items, moved through with the arrow keys.",
     "newEpisodesSection": "New episodes",
     "emailRow": "Email",
-    "discordOff": "Not connected"
+    "discordOff": "Not connected",
+    "discordDisconnectHint": "Messages about new episodes will stop coming to the channel."
   },
   "tv": {
     "linkConfirm": "Sign this account in on the TV with code {code}? Approve only if your TV shows this code.",

@@ -151,21 +151,26 @@ function DiscordDialog({ prefs, onClose }: { prefs: Prefs; onClose: () => void }
     <Dialog open onOpenChange={(o) => !o && void close()} title={t("discord")} size="sm">
       <p className="sr-only">{t("discordHint")}</p>
       {connected ? (
+        // What can be done with the webhook is rows, not a row of buttons that runs out of the window in a long language
+        // (2026-11-07): the test message, then disconnecting — the risky one last, in red, its consequence under it
+        // (7.18; it can be undone from the toast). At the bottom only "Done".
         <div className="flex flex-col gap-4">
           <p className="text-body text-text-1">{t("discordWebhookName", { name: connected.name })}</p>
-          <DialogActions className="mt-2">
-            <Button
-              variant="danger-tertiary"
+          <SettingsSection raised>
+            <SettingsLink label={t("discordTest")} disabled={test.pending} onClick={() => void test.run()} />
+          </SettingsSection>
+          <SettingsSection raised>
+            <SettingsLink
+              tone="danger"
+              label={tr("services.disconnect")}
+              detail={t("discordDisconnectHint")}
               disabled={disconnect.pending}
               onClick={async () => {
                 if ((await disconnect.run()).ok) onClose();
               }}
-            >
-              {tr("services.disconnect")}
-            </Button>
-            <Button variant="secondary" loading={test.pending} onClick={() => void test.run()}>
-              {t("discordTest")}
-            </Button>
+            />
+          </SettingsSection>
+          <DialogActions className="mt-2">
             <Button onClick={onClose}>{tc("done")}</Button>
           </DialogActions>
         </div>

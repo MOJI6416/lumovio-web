@@ -1790,7 +1790,8 @@
     "tvModeHint": "La interfaz de TV en esta pantalla: elementos grandes y control con las flechas.",
     "newEpisodesSection": "Nuevos episodios",
     "emailRow": "Correo",
-    "discordOff": "Sin conectar"
+    "discordOff": "Sin conectar",
+    "discordDisconnectHint": "Los mensajes de nuevos episodios dejarán de llegar al canal."
   },
   "tv": {
     "linkConfirm": "¿Iniciar sesión con esta cuenta en la TV con el código {code}? Aprueba solo si tu TV muestra este código.",

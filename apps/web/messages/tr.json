@@ -1790,7 +1790,8 @@
     "tvModeHint": "Bu ekranda TV arayüzü: büyük öğeler ve ok tuşlarıyla kontrol.",
     "newEpisodesSection": "Yeni bölümler",
     "emailRow": "E-posta",
-    "discordOff": "Bağlı değil"
+    "discordOff": "Bağlı değil",
+    "discordDisconnectHint": "Yeni bölüm mesajları artık kanala gelmeyecek."
   },
   "tv": {
     "linkConfirm": "Bu hesapla TV’de {code} koduyla oturum açılsın mı? Yalnızca TV’niz bu kodu gösteriyorsa onaylayın.",

@@ -1790,7 +1790,8 @@
     "tvModeHint": "L’interfaccia TV su questo schermo: elementi grandi, comandi con le frecce.",
     "newEpisodesSection": "Nuovi episodi",
     "emailRow": "Email",
-    "discordOff": "Non collegato"
+    "discordOff": "Non collegato",
+    "discordDisconnectHint": "I messaggi sui nuovi episodi non arriveranno più nel canale."
   },
   "tv": {
     "linkConfirm": "Accedere con questo account sulla TV con il codice {code}? Approva solo se la tua TV mostra questo codice.",
