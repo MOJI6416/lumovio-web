@@ -153,7 +153,7 @@ async function route(req: NextRequest) {
     if (removed.pinEnglish) res.cookies.set("lumovio_locale", "en", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
   }
-  // "Watch now" lives in the library since 2026-11-07: people's bookmarks of its old pages lead there.
+  // "Watch now" lives in the library since 2026-11-07: people's bookmarks of its old pages lead there for good.
   const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
   if (old) {
     const url = req.nextUrl.clone();
@@ -161,7 +161,7 @@ async function route(req: NextRequest) {
     const to = new URL(ON_MY_SERVERS_HREF, url);
     url.pathname = `${old[1] ? `/${old[1]}` : ""}${to.pathname}`;
     url.search = to.search;
-    return NextResponse.redirect(url, 307);
+    return NextResponse.redirect(url, 308);
   }
   const m = VANITY.exec(req.nextUrl.pathname);
   if (m) {
