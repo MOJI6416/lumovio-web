@@ -1,9 +1,8 @@
 import type { ListInvitePreview } from "@lumovio/contracts";
-import { Baby, Link2Off, Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { FocusColumn, ListCover } from "@/components/library/FocusColumn";
 import { InviteAccept } from "@/components/library/InviteAccept";
-import { FocusCard } from "@/components/shell/FocusCard";
-import { GuestGatePanel } from "@/components/shell/GuestGate";
+import { SignInColumn } from "@/components/library/SignInColumn";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
 import { buttonClass } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -26,36 +25,38 @@ async function load(token: string): Promise<ListInvitePreview | null | "unavaila
   }
 }
 
+const wide = buttonClass("primary", "lg", "w-full");
+
 /**
- * An invitation to a shared list (S32, Focus template; LIB-19): what it is for — the list, its owner, its size and the
- * role — before "Join"; a link that opens nothing says so at once, with the way on; a kids profile is told the real
- * reason (kids profiles don't join shared lists) and can switch profiles.
+ * An invitation to a shared list (S32; LIB-19; design-system 9 "Library"): one question on the page's background — the
+ * list's cover, "You're invited to «X»", whose it is and how many titles, what joining lets you do — then "Join" and
+ * "Not now". A link that opens nothing says so at once with the way on; a kids profile hears the real reason (kids
+ * profiles don't join shared lists) and can switch profiles; a guest signs in first and comes back here.
  */
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const me = await getMeState();
+  const t = await getTranslations("library");
+  const tc = await getTranslations("common");
   if (!me) {
     // A guest learns at once that a link doesn't work (LIB-30) — the API says only that, nothing of the list; a working
-    // one (or no answer) gets the one sign-in page, back here afterwards (AUTH-02).
+    // one (or no answer) gets the sign-in, back here afterwards (AUTH-02).
     const valid = await serverApi<{ valid: boolean }>(`/api/invites/${encodeURIComponent(token)}/status`).then(
       (s) => s.valid,
       (e) => (e instanceof ApiRequestError && e.status === 400 ? false : null),
     );
     if (valid === false) {
-      const tl = await getTranslations("library");
       const ts = await getTranslations("shell");
       return (
-        <FocusCard icon={Link2Off} title={tl("inviteInvalidTitle")} text={tl("inviteInvalidText")}>
-          <Link href="/" className={buttonClass("primary")}>
+        <FocusColumn title={t("inviteInvalidTitle")} text={t("inviteInvalidText")}>
+          <Link href="/" className={wide}>
             {ts("toHome")}
           </Link>
-        </FocusCard>
+        </FocusColumn>
       );
     }
-    return <GuestGatePanel reason="invite" next={`/invite/${token}`} variant="page" />;
+    return <SignInColumn reason="invite" next={`/invite/${token}`} />;
   }
-  const t = await getTranslations("library");
-  const tc = await getTranslations("common");
   const unavailable = (
     <div className="page-x">
       <div className="mx-auto max-w-tool">
@@ -67,38 +68,38 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (me === "unavailable") return unavailable;
   if (me.activeProfile?.isKids) {
     return (
-      <FocusCard icon={Baby} title={t("inviteKidsTitle")} text={t("inviteKidsText")}>
-        <Link href="/profiles" className={buttonClass("primary")}>
+      <FocusColumn title={t("inviteKidsTitle")} text={t("inviteKidsText")}>
+        <Link href="/profiles" className={wide}>
           {t("switchProfile")}
         </Link>
-      </FocusCard>
+      </FocusColumn>
     );
   }
   const invite = await load(token);
   if (invite === "unavailable") return unavailable;
   if (!invite) {
     return (
-      <FocusCard icon={Link2Off} title={t("inviteInvalidTitle")} text={t("inviteInvalidText")}>
-        <Link href="/library?tab=lists" className={buttonClass("primary")}>
+      <FocusColumn title={t("inviteInvalidTitle")} text={t("inviteInvalidText")}>
+        <Link href="/library?tab=lists" className={wide}>
           {t("toMyLists")}
         </Link>
-      </FocusCard>
+      </FocusColumn>
     );
   }
   const facts = [t("ownerIs", { name: invite.owner }), tc("titlesCount", { count: invite.itemCount })].join(" · ");
+  const cover = <ListCover cover={invite.cover} />;
   if (invite.memberRole) {
     return (
-      <FocusCard icon={Users} title={t("inviteAlreadyTitle", { list: invite.name })} text={facts}>
-        <Link href={`/lists/${invite.listId}`} className={buttonClass("primary")}>
+      <FocusColumn cover={cover} title={t("inviteAlreadyTitle", { list: invite.name })} text={facts}>
+        <Link href={`/lists/${invite.listId}`} className={wide}>
           {t("openList")}
         </Link>
-      </FocusCard>
+      </FocusColumn>
     );
   }
-  // The Focus template (design-system 9): one question on a 440 card over the stage.
   return (
-    <FocusCard
-      icon={Users}
+    <FocusColumn
+      cover={cover}
       title={t("inviteToList", { list: invite.name })}
       text={
         <>
@@ -108,6 +109,6 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       }
     >
       <InviteAccept token={token} />
-    </FocusCard>
+    </FocusColumn>
   );
 }

@@ -6,10 +6,10 @@ import { Bookmark, Heart, ListFilterPlus, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { lazy, memo, Suspense, useState } from "react";
 import { PosterCard } from "@/components/media/PosterCard";
-import { TitleGrid } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { IconButton } from "@/components/ui/IconButton";
 import { QueryState } from "@/components/ui/QueryState";
 import { usePlayable } from "@/hooks/useAvailability";
 import { libraryKey } from "@/hooks/useLibraryState";
@@ -20,6 +20,7 @@ import { CollectionToolbar } from "./CollectionToolbar";
 import { sortItems, useTitleSorts } from "./sorting";
 import { readFilters, readSort, useUrlState } from "./url-state";
 import { GridSkeleton } from "./GridSkeleton";
+import { ListGrid } from "./ListGrid";
 import { ShowMore, useShowMore } from "./show-more";
 import { systemListQuery } from "./whole-list";
 import { editListId, libraryRules } from "./rules-url";
@@ -56,11 +57,10 @@ const Card = memo(PosterCard);
 const SORTS = ["added", "title", "year", "rating"] as const;
 type Sort = (typeof SORTS)[number];
 
-
 /**
- * "Watchlist" and "Favourites" (S09): the compact filter row with the sort (LIB-04, LIB-10, LIB-17) over the grid of
- * Ф3 poster cards, 60 at a time with "Show more" (as a list, LIB-14). Filters work on the whole list (every page of it,
- * LIB-24), at once; their state is in the address and survives a tab change.
+ * "Watchlist" and "Favourites" (S09), each a page of its own: the row of filter pills with the sort (8.4, 7.4) over the
+ * collection's grid edge to edge (5.4), 60 at a time with "Show more" (as a list, LIB-14). Filters work on the whole
+ * list (every page of it, LIB-24), at once; their state is in the address.
  */
 export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites"; locale: string }) {
   const t = useTranslations("library");
@@ -81,6 +81,8 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
   const watched = useWatchedIds(ids, filters.unwatched);
   const kids = Boolean(me?.activeProfile?.isKids);
 
+  // The type chips only where the collection holds both films and series.
+  const mixed = all.some((i) => i.title.kind === "movie") && all.some((i) => i.title.kind === "tv");
   const pending = (filters.onServers && playable.isLoading) || (filters.unwatched && watched.isLoading);
   const items = sortItems(
     all.filter(
@@ -121,13 +123,14 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
       )}
       <QueryState
         query={q}
-        loading={<GridSkeleton />}
+        loading={<GridSkeleton toolbar />}
         isEmpty={(d) => d.items.length === 0}
         empty={
           <EmptyState
             icon={Icon}
             title={kind === "watchlist" ? t("emptyWatchlist") : t("emptyFavorites")}
-            text={kind === "watchlist" ? t("emptyWatchlistHint") : t("emptyFavoritesHint")}
+            // How a title gets here, for a screen reader: the heading and "Find titles" say enough (1.2).
+            text={<span className="sr-only">{kind === "watchlist" ? t("emptyWatchlistHint") : t("emptyFavoritesHint")}</span>}
             action={
               <Link href="/search" className={buttonClass("primary")}>
                 <Search aria-hidden />
@@ -151,6 +154,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
             <CollectionToolbar
               filters={filters}
               set={set}
+              types={mixed}
               runtime
               status
               servers
@@ -160,10 +164,14 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
               total={all.length}
               action={
                 // While a smart list's conditions are edited, the banner above saves them back instead.
+                // On a phone the line under the filters has room for its icon only (named for a screen reader).
                 !editing && (
-                  <Button variant="tertiary" size="sm" icon={ListFilterPlus} onClick={() => setSaving(null)}>
-                    {t("saveAsList")}
-                  </Button>
+                  <>
+                    <IconButton icon={ListFilterPlus} label={t("saveAsList")} onClick={() => setSaving(null)} className="sm:hidden" />
+                    <Button variant="tertiary" size="sm" icon={ListFilterPlus} onClick={() => setSaving(null)} className="max-sm:hidden">
+                      {t("saveAsList")}
+                    </Button>
+                  </>
                 )
               }
             />
@@ -181,7 +189,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
               />
             ) : (
               <>
-                <TitleGrid>
+                <ListGrid>
                   {items.slice(0, limit).map((i) => (
                     <Card
                       key={i.title.id}
@@ -190,7 +198,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
                       subtitle={filters.max && i.runtime ? [i.title.year, minutes(i.runtime)].filter(Boolean).join(" · ") : undefined}
                     />
                   ))}
-                </TitleGrid>
+                </ListGrid>
                 <ShowMore shown={Math.min(limit, items.length)} total={items.length} onMore={more} />
               </>
             )}

@@ -22,9 +22,7 @@ export function useUrlState() {
   return { params, set };
 }
 
-/** The library's filters: kept when another tab is opened (LIB-10); the sort belongs to its tab. */
-export const FILTER_KEYS = ["show", "max", "status", "avail", "unwatched"] as const;
-
+/** A collection's filters (`show`, `max`, `status`, `avail`, `unwatched` in the address); the sort is `sort`. */
 export interface LibraryFilters {
   show: "movie" | "tv" | null;
   max: number | null;

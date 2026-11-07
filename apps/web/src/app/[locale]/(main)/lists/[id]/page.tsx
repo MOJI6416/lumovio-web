@@ -2,7 +2,7 @@ import type { ListDetails } from "@lumovio/contracts";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ListView } from "@/components/library/ListView";
-import { GuestGatePanel } from "@/components/shell/GuestGate";
+import { SignInColumn } from "@/components/library/SignInColumn";
 import { ApiRequestError } from "@/lib/api";
 import { pageSeo } from "@/lib/seo";
 import { getMeState, serverApi } from "@/lib/server-api";
@@ -43,7 +43,7 @@ export default async function ListPage({ params }: { params: Params }) {
   const { id } = await params;
   const list = await load(id);
   // A guest with a link to a list that isn't open to everyone: sign in, then back here (LIB-18, AUTH-02).
-  if (!list && /^[0-9a-f-]{36}$/.test(id) && !(await getMeState())) return <GuestGatePanel reason="listOpen" variant="page" />;
+  if (!list && /^[0-9a-f-]{36}$/.test(id) && !(await getMeState())) return <SignInColumn reason="listOpen" />;
   if (!list) notFound();
   return (
     // The Collection template on the page gutter (5.3, X-02); ListView brings the page header.

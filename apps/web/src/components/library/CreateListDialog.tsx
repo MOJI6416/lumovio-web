@@ -1,6 +1,7 @@
 "use client";
 
 import type { ListSummary, ListVisibility } from "@lumovio/contracts";
+import { Link2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useSession } from "@/components/providers/Providers";
@@ -14,9 +15,10 @@ import { api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 
 /**
- * "New list": name, description, who sees it, shared or not. The one way to create a list (LIB-13); `onFollow` adds
- * the other way to start one — following an external list (MDBList) — as a quiet link inside, not a second button
- * beside "New list".
+ * "New list" (S09, S10; design-system 7.9): its name, who sees it, shared or not — then "Create list". A description
+ * is added later in "Edit list", where it is read. The one way to create a list (LIB-13); `onFollow` adds the other way
+ * to start one — following an MDBList list — as a quiet button under the fields, not a second button beside "New list".
+ * A kids profile's lists stay private and its own (the server refuses anything else), so it isn't asked.
  */
 export function CreateListDialog({
   open,
@@ -34,13 +36,12 @@ export function CreateListDialog({
   const { me } = useSession();
   const kids = me?.activeProfile?.isKids ?? false;
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<ListVisibility>("private");
   const [collaborative, setCollaborative] = useState(false);
   // The new list shows up where it was asked for; a failure says why in a toast (8.3).
   const create = useAction({
     run: async () => {
-      const l = await api<ListSummary>("/api/lists", { method: "POST", json: { name, description: description || null, visibility, collaborative } });
+      const l = await api<ListSummary>("/api/lists", { method: "POST", json: { name: name.trim(), description: null, visibility, collaborative } });
       await onCreated?.(l);
       return l;
     },
@@ -52,16 +53,12 @@ export function CreateListDialog({
     if (!(await create.run()).ok) return;
     onOpenChange(false);
     setName("");
-    setDescription("");
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={t("newList")}>
       <form onSubmit={submit} className="space-y-4">
         <Field label={t("listName")}>{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required autoFocus />}</Field>
-        <Field label={`${t("description")} (${tc("optional")})`}>
-          {(id) => <Input id={id} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />}
-        </Field>
         {!kids && (
           <>
             <Field label={t("visibility")}>
@@ -74,23 +71,27 @@ export function CreateListDialog({
                 />
               )}
             </Field>
-            <Switch checked={collaborative} onCheckedChange={setCollaborative} label={t("collaborative")} description={t("collaborativeHint")} />
+            <Switch
+              checked={collaborative}
+              onCheckedChange={setCollaborative}
+              label={t("collaborative")}
+              description={<span className="sr-only">{t("collaborativeHint")}</span>}
+            />
           </>
         )}
         {onFollow && (
-          <p className="text-body-s text-text-2">
-            {t("followInstead")}{" "}
-            <Button
-              variant="tertiary"
-              size="sm"
-              onClick={() => {
-                onOpenChange(false);
-                onFollow();
-              }}
-            >
-              {t("connectList")}
-            </Button>
-          </p>
+          <Button
+            variant="tertiary"
+            size="sm"
+            icon={Link2}
+            className="-ms-3"
+            onClick={() => {
+              onOpenChange(false);
+              onFollow();
+            }}
+          >
+            {t("connectList")}
+          </Button>
         )}
         <DialogActions>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>

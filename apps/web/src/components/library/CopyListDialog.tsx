@@ -39,7 +39,7 @@ export function CopyListDialog({ list, open, onOpenChange }: { list: { id: strin
     });
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={t("rulesCopy")} description={t("rulesCopyHint")}>
+    <Dialog open={open} onOpenChange={onOpenChange} title={t("rulesCopy")} description={<span className="sr-only">{t("rulesCopyHint")}</span>}>
       <form onSubmit={submit} className="space-y-4">
         <Field label={t("listName")}>{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />}</Field>
         <DialogActions>

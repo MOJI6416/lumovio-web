@@ -1,4 +1,4 @@
-import type { ListDetails } from "@lumovio/contracts";
+import type { ListDetails, TitleSummary } from "@lumovio/contracts";
 import { api } from "@/lib/api";
 
 /** A list's pages as one list of titles: a title seen on two pages (the list changed between them) once. */
@@ -21,3 +21,9 @@ export const systemListQuery = (kind: "watchlist" | "favorites") => ({
   queryKey: ["library", kind],
   queryFn: () => wholeList(`/api/library/${kind}`),
 });
+
+/** What is on the profile's servers, newest first: the library's shelf and its "On my servers" page. */
+export const onServersQuery = {
+  queryKey: ["on-servers"],
+  queryFn: () => api<{ items: TitleSummary[] }>("/api/library/on-servers"),
+};

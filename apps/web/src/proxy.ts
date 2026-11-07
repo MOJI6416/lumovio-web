@@ -157,8 +157,10 @@ async function route(req: NextRequest) {
   const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
   if (old) {
     const url = req.nextUrl.clone();
-    url.pathname = `${old[1] ? `/${old[1]}` : ""}${ON_MY_SERVERS_HREF}`;
-    url.search = "";
+    // The section's address may carry a query (`/library?tab=servers`): its path and its query, not a path with "?".
+    const to = new URL(ON_MY_SERVERS_HREF, url);
+    url.pathname = `${old[1] ? `/${old[1]}` : ""}${to.pathname}`;
+    url.search = to.search;
     return NextResponse.redirect(url, 307);
   }
   const m = VANITY.exec(req.nextUrl.pathname);

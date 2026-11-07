@@ -89,9 +89,10 @@ export function ConnectListDialog({ open, onOpenChange }: { open: boolean; onOpe
         if (!o) reset();
       }}
       title={t("connectList")}
+      // What following does, for a screen reader: the field's example says what to paste (1.2).
+      description={<span className="sr-only">{t("connectListHint")}</span>}
     >
       <form onSubmit={look} className="space-y-4">
-        <p className="text-sm text-text-2">{t("connectListHint")}</p>
         <Field label={t("sourceUrl")}>
           {(id) => (
             <Input
@@ -127,17 +128,18 @@ export function ConnectListDialog({ open, onOpenChange }: { open: boolean; onOpe
       {preview && (
         <section className="mt-4 space-y-3 border-t border-line pt-4" aria-live="polite">
           <div>
-            <p className="font-bold">{preview.name}</p>
-            <p className="text-sm text-text-3">
+            <p className="text-title text-text-1">{preview.name}</p>
+            <p className="text-body-s text-text-2">
               {[preview.owner && t("sourceBy", { name: preview.owner }), t("sourceTotal", { count: preview.total })].filter(Boolean).join(" · ")}
             </p>
-            {preview.description && <p className="mt-1 line-clamp-2 text-sm text-text-2">{preview.description}</p>}
+            {preview.description && <p className="mt-1 line-clamp-2 text-body-s text-text-2">{preview.description}</p>}
           </div>
           {preview.sample.length > 0 && (
             <ul className="grid grid-cols-6 gap-1.5" aria-label={t("sourceFirstTitles")}>
               {preview.sample.slice(0, 6).map((s) => (
                 <li key={`${s.kind}:${s.tmdbId}`}>
                   {s.posterPath ? (
+                    // biome-ignore lint/performance/noImgElement: a 60 px preview poster of TMDB's, no optimisation to gain
                     <img src={tmdbImage(s.posterPath, "w185") ?? undefined} alt={s.year ? `${s.title} (${s.year})` : s.title} loading="lazy" className="aspect-[2/3] w-full rounded-sm bg-surface-2 object-cover" />
                   ) : (
                     <div className="grid aspect-[2/3] w-full place-items-center overflow-hidden break-words rounded-sm bg-surface-2 p-1 text-center text-caption leading-tight text-text-3">{s.title}</div>
@@ -146,23 +148,28 @@ export function ConnectListDialog({ open, onOpenChange }: { open: boolean; onOpe
               ))}
             </ul>
           )}
-          <ul className="space-y-1 text-xs text-text-3">
-            {preview.dynamic && (
-              <li className="flex items-center gap-1.5">
-                <RefreshCw aria-hidden className="size-3.5" />
-                {t("sourceDynamic")}
-              </li>
-            )}
-            <li>{t("sourceRules")}</li>
-            {preview.total > preview.limit && <li>{t("sourceLimit", { limit: preview.limit })}</li>}
-          </ul>
+          {/* What following keeps and takes, said only where it matters: a list longer than is taken. */}
+          <p className="sr-only">
+            {preview.dynamic && t("sourceDynamic")} {t("sourceRules")}
+          </p>
+          {(preview.dynamic || preview.total > preview.limit) && (
+            <ul className="space-y-1 text-body-s text-text-2">
+              {preview.dynamic && (
+                <li className="flex items-center gap-1.5">
+                  <RefreshCw aria-hidden className="size-4" />
+                  <span className="inline-block first-letter:uppercase">{t("sourceDynamicShort")}</span>
+                </li>
+              )}
+              {preview.total > preview.limit && <li>{t("sourceLimit", { limit: preview.limit })}</li>}
+            </ul>
+          )}
           {busy === "connect" && (
-            <p role="status" className="text-xs text-text-3">
+            <p role="status" className="text-body-s text-text-2">
               {t("sourceConnecting")}
             </p>
           )}
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <a href={preview.url} target="_blank" rel="noreferrer noopener" className="me-auto inline-flex items-center gap-1 text-sm text-text-2 hover:text-text-1">
+            <a href={preview.url} target="_blank" rel="noreferrer noopener" className="me-auto inline-flex min-h-11 items-center gap-1 text-body-s text-text-2 hover:text-text-1 sm:min-h-8">
               MDBList
               <ExternalLink aria-hidden className="size-3.5" />
             </a>

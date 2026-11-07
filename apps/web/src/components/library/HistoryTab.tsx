@@ -2,75 +2,56 @@
 
 import type { HistoryEntry } from "@lumovio/contracts";
 import { type InfiniteData, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { Ellipsis, History, Info, Search, Trash2 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import { Poster } from "@/components/media/Poster";
+import { History, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { memo } from "react";
+import { PosterCard } from "@/components/media/PosterCard";
 import { useSession } from "@/components/providers/Providers";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { IconButton } from "@/components/ui/IconButton";
-import { Menu, MenuItem, MenuSeparator } from "@/components/ui/Menu";
 import { QueryState } from "@/components/ui/QueryState";
 import { libraryKey } from "@/hooks/useLibraryState";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { formatDate, localDay } from "@/lib/format";
-import { titleHref } from "@/lib/slug";
-import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
-import { ROW, ROW_GRID, RowsSkeleton } from "./GridSkeleton";
-import { episodesOf, type Group, groupHistory } from "./history";
+import { useAction } from "@/lib/use-action";
+import { GridSkeleton } from "./GridSkeleton";
+import { type Group, groupHistory } from "./history";
+import { useHistoryCaption, useMonthName } from "./history-words";
+import { ListGrid } from "./ListGrid";
 
 type Page = { entries: HistoryEntry[]; nextBefore: string | null };
 type Pages = InfiniteData<Page>;
 
-/** Import sources as their services write their names (LIB-11: "Импорт из trakt"). */
-export const SOURCE_NAMES: Record<string, string> = {
-  trakt: "Trakt",
-  simkl: "Simkl",
-  imdb: "IMDb",
-  letterboxd: "Letterboxd",
-  netflix: "Netflix",
-  lampa: "Lampa",
-  stremio: "Stremio",
-  lumovio: "Lumovio",
-  jellyfin: "Jellyfin",
-  plex: "Plex",
-};
+/** A card that doesn't draw again when "Show more" adds the next ones. */
+const Card = memo(PosterCard);
 
 /**
- * An imported watch that came with a date and no time (Letterboxd, IMDb) is kept at that day's noon UTC — at midnight
- * before 2026-11-06 — and says no time: it read "03:00" (stand QA, 2026-11-06).
- */
-const untimed = (e: { source: string; watchedAt: string }) =>
-  e.source.startsWith("import:") && /T(00|12):00:00\.000Z$/.test(new Date(e.watchedAt).toISOString());
-
-/**
- * History (S09, LIB-05, LIB-11): days, newest first; in a day one row per title — a film watched twice says "2 times",
- * a show's episodes are one row ("Season 1 · episodes 4–6"). Every row has "More" on every screen: "More info" and
- * "Remove from history", gone at once with "Undo" in the toast (8.3).
+ * History (S09, LIB-05, LIB-11): what was watched, as posters by month, newest first — a card per title and day, its
+ * line the day and what of it ("Yesterday · Season 1 · episodes 1–3", a film twice "2 times"), so a title is found by
+ * its art, not read out of rows. "Remove from history" is in the card's "More", seen on touch screens too: gone at
+ * once, with "Undo" in the toast (8.3). The server sends 50 watches a page; "Show more" asks for the next.
  */
 export function HistoryTab() {
   const t = useTranslations("library");
   const tc = useTranslations("common");
-  const tcard = useTranslations("card");
-  const locale = useLocale();
   const kids = Boolean(useSession().me?.activeProfile?.isKids);
   const qc = useQueryClient();
+  const caption = useHistoryCaption();
+  const monthName = useMonthName();
   const q = useInfiniteQuery({
     queryKey: ["history"],
-    queryFn: ({ pageParam }) =>
-      api<Page>(`/api/history?limit=50${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ""}`),
+    queryFn: ({ pageParam }) => api<Page>(`/api/history?limit=50${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ""}`),
     initialPageParam: "",
     getNextPageParam: (last) => last.nextBefore ?? undefined,
   });
 
-  // A row goes in one request, and "Undo" brings all of it back in one (LIB-25): the server keeps what it removed
+  // A card goes in one request, and "Undo" brings all of it back in one (LIB-25): the server keeps what it removed
   // under the key this removal chose.
   const remove = useAction({
     run: async (g: Group) => {
       const undoKey = randomId();
-      // The row's whole local day of this title, so a row the page boundary cut goes whole (LIB-27).
+      // The card's whole local day of this title, so a day the page boundary cut goes whole (LIB-27).
       const from = new Date(`${g.day}T00:00:00`);
       const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
       const span = { titleId: g.title.id, from: from.toISOString(), to: to.toISOString() };
@@ -80,17 +61,10 @@ export function HistoryTab() {
     },
     optimistic: (g: Group) => {
       const ids = new Set(g.entries.map((e) => e.id));
-      // The sync after the request brings the next pages back without the rest of the row.
+      // The sync after the request brings the next pages back without the rest of the day.
       const before = qc.getQueryData<Pages>(["history"]);
       void qc.cancelQueries({ queryKey: ["history"], exact: true });
-      qc.setQueryData<Pages>(
-        ["history"],
-        (d) =>
-          d && {
-            ...d,
-            pages: d.pages.map((p) => ({ ...p, entries: p.entries.filter((x) => !ids.has(x.id)) })),
-          },
-      );
+      qc.setQueryData<Pages>(["history"], (d) => d && { ...d, pages: d.pages.map((p) => ({ ...p, entries: p.entries.filter((x) => !ids.has(x.id)) })) });
       return () => qc.setQueryData<Pages>(["history"], before);
     },
     success: (_, g) => t("entryRemoved", { title: g.title.title }),
@@ -102,65 +76,18 @@ export function HistoryTab() {
     sync: () => qc.invalidateQueries({ queryKey: ["history"] }),
   });
 
-  const today = localDay();
-  const yesterday = localDay(new Date(Date.now() - 864e5));
-  const year = String(new Date().getFullYear());
-  const dayLabel = (day: string) =>
-    day === today
-      ? tc("today")
-      : day === yesterday
-        ? tc("yesterday")
-        : (formatDate(
-            day,
-            locale,
-            day.startsWith(year)
-              ? { weekday: "long", day: "numeric", month: "long" }
-              : { day: "numeric", month: "long", year: "numeric" },
-          ) ?? day);
-  const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
-  const sourceLabel = (s: string) =>
-    s === "manual"
-      ? t("sourceManual")
-      : s.startsWith("lumovio_player")
-        ? t("sourcePlayer")
-        : s === "external_player"
-          ? t("sourceExternal")
-          : s.startsWith("import:")
-            ? t("sourceImport", { source: SOURCE_NAMES[s.slice(7)] ?? s.slice(7) })
-            : (SOURCE_NAMES[s] ?? null);
-  const meta = (g: Group) => {
-    const last = g.entries[0]!;
-    const eps = episodesOf(g.entries);
-    const what =
-      g.title.kind === "movie"
-        ? g.entries.length > 1
-          ? t("historyTimes", { count: g.entries.length })
-          : tc("movie")
-        : eps.kind === "one"
-          ? tcard("episode", { season: eps.season, episode: eps.episode })
-          : eps.kind === "range"
-            ? t("historyEpisodeRange", { season: eps.season, from: eps.from, to: eps.to })
-            : eps.kind === "many"
-              ? tc("episodes", { count: eps.count })
-              : t("historyWholeShow");
-    const sources = new Set(g.entries.map((e) => sourceLabel(e.source)));
-    return [what, untimed(last) ? null : time.format(new Date(last.watchedAt)), sources.size === 1 ? [...sources][0] : null]
-      .filter(Boolean)
-      .join(" · ");
-  };
-
   return (
     <QueryState
       query={q}
-      loading={<RowsSkeleton />}
+      loading={<GridSkeleton />}
       isEmpty={(d) => d.pages.every((p) => p.entries.length === 0)}
       error={{ title: t("loadError") }}
       empty={
         <EmptyState
           icon={History}
           title={t("emptyHistory")}
-          // Import is an adult's tool: a kids profile isn't pointed to it.
-          text={kids ? t("emptyHistoryHintKids") : t("emptyHistoryHint")}
+          // Import is an adult's tool: a kids profile isn't pointed to it. The ways to fill it are the actions.
+          text={<span className="sr-only">{kids ? t("emptyHistoryHintKids") : t("emptyHistoryHint")}</span>}
           action={
             <Link href="/search" className={buttonClass("primary")}>
               <Search aria-hidden />
@@ -177,70 +104,47 @@ export function HistoryTab() {
         />
       }
     >
-      {(d) => (
-        <div className="space-y-8">
-          {groupHistory(d.pages.flatMap((p) => p.entries)).map(({ day, groups }) => (
-            <section key={day} aria-labelledby={`h-${day}`}>
-              <h2 id={`h-${day}`} className="mb-2 text-title text-text-1 first-letter:uppercase">
-                {dayLabel(day)}
-              </h2>
-              {/* Rows across the page's width: two columns from xl, three from 2xl (owner, 2026-10-25). */}
-              <ul className={ROW_GRID}>
-                {groups.map((g) => {
-                  const href = titleHref(g.title.kind, g.title.tmdbId, g.title.title);
-                  return (
-                    <li key={g.key} className={ROW}>
-                      {/* The poster, the name and the line under it are one link to the title; the controls stand beside it. */}
-                      <Link
-                        href={href}
-                        className="group/row flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-sm py-1"
-                      >
-                        <div className="w-10 shrink-0 overflow-hidden rounded-sm">
-                          <Poster path={g.title.posterPath} title="" kind={g.title.kind} sizes="40px" />
-                        </div>
-                        <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 text-title text-text-1 group-hover/row:underline">
-                            {g.title.title}
-                          </span>
-                          <span className="block text-body-s text-text-2">{meta(g)}</span>
-                        </span>
-                      </Link>
-                      <div className="relative">
-                        <Menu
-                          label={t("historyMenu")}
-                          title={g.title.title}
-                          trigger={
-                            <IconButton icon={Ellipsis} label={tcard("more", { title: g.title.title })} />
-                          }
-                        >
-                          <MenuItem icon={Info} href={href}>
-                            {tcard("details")}
-                          </MenuItem>
-                          <MenuSeparator />
-                          <MenuItem icon={Trash2} tone="danger" onSelect={() => void remove.run(g)}>
-                            {t("removeFromHistory")}
-                          </MenuItem>
-                        </Menu>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ))}
-          {q.hasNextPage && (
-            <div className="flex justify-center">
-              <Button
-                variant="secondary"
-                loading={q.isFetchingNextPage}
-                onClick={() => void q.fetchNextPage()}
-              >
-                {tc("showMore")}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {(d) => {
+        // Days, then months: a card per title and day (LIB-11), the days of a month under its name.
+        const months: { month: string; groups: Group[] }[] = [];
+        for (const { day, groups } of groupHistory(d.pages.flatMap((p) => p.entries))) {
+          const month = day.slice(0, 7);
+          const last = months.at(-1);
+          if (last?.month === month) last.groups.push(...groups);
+          else months.push({ month, groups: [...groups] });
+        }
+        return (
+          <div className="flex flex-col gap-10">
+            {months.map(({ month, groups }) => (
+              <section key={month} aria-labelledby={`history-${month}`}>
+                <h2 id={`history-${month}`} className="mb-4 text-h3 text-text-1 first-letter:uppercase">
+                  {monthName(`${month}-01`)}
+                </h2>
+                <ListGrid>
+                  {groups.map((g) => (
+                    <Card
+                      key={g.key}
+                      title={g.title}
+                      subtitle={caption(g)}
+                      // Everything here is watched: the card's own "Watched" mark would only repeat it.
+                      showState={false}
+                      more={{ remove: { label: t("removeFromHistory"), run: () => void remove.run(g) } }}
+                      moreVisibility="always"
+                    />
+                  ))}
+                </ListGrid>
+              </section>
+            ))}
+            {q.hasNextPage && (
+              <div className="flex justify-center">
+                <Button variant="secondary" loading={q.isFetchingNextPage} onClick={() => void q.fetchNextPage()}>
+                  {tc("showMore")}
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      }}
     </QueryState>
   );
 }

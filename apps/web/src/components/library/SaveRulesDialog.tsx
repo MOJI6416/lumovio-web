@@ -104,7 +104,8 @@ export function SaveRulesDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={edit ? t("rulesEditTitle", { list: edit.name }) : t("saveAsList")}
-      description={target.from === "catalog" ? t("rulesCatalogHint", { limit: RULES_CATALOG_LIMIT }) : t("rulesLibraryHint")}
+      // How the list keeps itself up to date, for a screen reader: the conditions say what it is (1.2).
+      description={<span className="sr-only">{target.from === "catalog" ? t("rulesCatalogHint", { limit: RULES_CATALOG_LIMIT }) : t("rulesLibraryHint")}</span>}
     >
       <form onSubmit={submit} className="space-y-5">
         <div>

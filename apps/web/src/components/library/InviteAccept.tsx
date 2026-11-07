@@ -7,8 +7,8 @@ import { ApiRequestError, api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 
 /**
- * "Join" and "Not now" of an invitation (the actions of its FocusCard; a guest gets GuestGate's sign-in page, AUTH-02).
- * Joining opens the list with a toast; a link that stopped working meanwhile, or a refusal, is said in words (LIB-19).
+ * "Join" and "Not now" of an invitation (S32), stacked at the column's width, the main one on top. Joining opens the
+ * list with a toast; a link that stopped working meanwhile, or a refusal, is said in words (LIB-19).
  */
 export function InviteAccept({ token }: { token: string }) {
   const t = useTranslations("library");
@@ -22,6 +22,8 @@ export function InviteAccept({ token }: { token: string }) {
   return (
     <>
       <Button
+        size="lg"
+        className="w-full"
         loading={join.pending}
         onClick={async () => {
           const r = await join.run();
@@ -30,7 +32,7 @@ export function InviteAccept({ token }: { token: string }) {
       >
         {t("join")}
       </Button>
-      <Link href="/library?tab=lists" className={buttonClass("secondary")}>
+      <Link href="/library?tab=lists" className={buttonClass("secondary", "lg", "w-full")}>
         {t("notNow")}
       </Link>
     </>

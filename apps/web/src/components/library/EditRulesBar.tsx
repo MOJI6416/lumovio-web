@@ -61,7 +61,8 @@ export function EditRulesBar({ listId, onSave, className }: { listId: string; on
         </div>
       }
     >
-      {t("rulesEditingText")}
+      {/* What to do, for a screen reader: the title and the two buttons say it (1.2). */}
+      <span className="sr-only">{t("rulesEditingText")}</span>
     </InlineAlert>
   );
 }

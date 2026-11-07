@@ -87,7 +87,9 @@ export function EditListDialog({ list: l, open, onOpenChange, kids }: { list: Li
             )}
           </Field>
         )}
-        {custom && !kids && <Switch checked={collaborative} onCheckedChange={setCollaborative} label={t("collaborative")} description={t("collaborativeHint")} />}
+        {custom && !kids && (
+          <Switch checked={collaborative} onCheckedChange={setCollaborative} label={t("collaborative")} description={<span className="sr-only">{t("collaborativeHint")}</span>} />
+        )}
         <DialogActions>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             {tc("cancel")}
@@ -139,7 +141,8 @@ export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: 
     void refresh();
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={t("members")} description={t("membersHint")}>
+    // Who may change what is the dialog's description for a screen reader: the controls say it (1.2).
+    <Dialog open={open} onOpenChange={onOpenChange} title={t("members")} description={<span className="sr-only">{t("membersHint")}</span>}>
       <ul className="divide-y divide-line">
         {l.members.map((m) => (
           <li key={m.profileId} className="flex items-center gap-3 py-3">

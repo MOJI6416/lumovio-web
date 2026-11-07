@@ -2,12 +2,12 @@
 
 import type { ListDetails, ListSource } from "@lumovio/contracts";
 import { type InfiniteData, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { Ellipsis, ExternalLink, ListVideo, RefreshCw, Search, Share2, Unlink } from "lucide-react";
+import { Ellipsis, ExternalLink, ListVideo, Search, Share2, SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { PosterCard } from "@/components/media/PosterCard";
-import { TitleGrid } from "@/components/media/Row";
 import { useSession } from "@/components/providers/Providers";
+import { sharePage } from "@/components/share/share";
 import { ProfileAvatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -21,18 +21,16 @@ import { toast } from "@/components/ui/Toast";
 import { libraryKey } from "@/hooks/useLibraryState";
 import { Link, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { apiErrorKey } from "@/lib/api-errors";
 import { relativeTime } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
-import { sortItems, useTitleSorts } from "./sorting";
 import { CollectionToolbar } from "./CollectionToolbar";
-import { sourceErrorKey } from "./ConnectListDialog";
-import type { ListDialog } from "./ListMenu";
 import { GridSkeleton } from "./GridSkeleton";
+import { ListGrid } from "./ListGrid";
+import type { ListDialog } from "./ListMenu";
+import { rulesHref } from "./rules-url";
+import { sortItems, useTitleSorts } from "./sorting";
 import { readFilters, readSort, useUrlState } from "./url-state";
 import { mergedItems } from "./whole-list";
-import { rulesHref } from "./rules-url";
-import { sharePage } from "@/components/share/share";
 
 type Item = ListDetails["items"][number];
 type Pages = InfiniteData<ListDetails, number>;
@@ -50,17 +48,19 @@ type Sort = (typeof SORTS)[number];
 const PAGE = 60;
 
 /**
- * A list (S10, Collection template; LIB-06…LIB-08, LIB-14…LIB-16): "← Lists" for its members, the name, the
- * description, and one line with the count, who owns it and who sees it. "Share" (when it isn't private) and "More" —
- * edit, members and roles, invite, delete or leave (confirmed) — instead of a row of controls. A followed MDBList list
- * says so in a banner with "Refresh" and "Unfollow". A search, type chips and the sort over the grid, drawn 60 at a
- * time; a title leaves from its card's "More" with "Undo" (LIB-01). An empty list points to finding titles (LIB-07).
- * The server sends the list page by page (LIB-24): "Show more" goes on to the next one, and a search, a type chip or
- * a sort first loads the rest, so they work on the whole list.
+ * A list (S10, Collection template; LIB-06…LIB-08, LIB-14…LIB-16): "← Lists" for its members, the name, the owner's
+ * description, one line of facts — who sees it (the owner), whose it is (anyone else), the members as faces and names
+ * that open "Members", where a followed list comes from — and the actions: "Share" (when it isn't private), a smart
+ * list's "Edit conditions" (its owner), "More" (edit, members, invite, refresh or unfollow, delete or leave). A smart
+ * list's conditions stand under the heading as labels. The filters, the sort and a search over the grid edge to edge,
+ * drawn 60 at a time; a title leaves from its card's "More" with "Undo" (LIB-01). "Added by" is said only where more
+ * than one person added titles. The server sends the list page by page (LIB-24): "Show more" goes on to the next one,
+ * and a search, a type chip or a sort first loads the rest, so they work on the whole list.
  */
 export function ListView({ initial }: { initial: ListDetails }) {
   const t = useTranslations("library");
   const tc = useTranslations("common");
+  const tr = useTranslations();
   const locale = useLocale();
   const router = useRouter();
   const qc = useQueryClient();
@@ -94,7 +94,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
   const key = ["list", l.id];
   const refresh = () => qc.invalidateQueries({ queryKey: key });
 
-  // A title is removed at once, with "Undo" (LIB-01); the card's state, the lists tab's counts and covers follow.
+  // A title is removed at once, with "Undo" (LIB-01); the card's state, the lists' counts and covers follow.
   const removeTitle = useAction({
     run: (item: Item) => api(`/api/lists/${l.id}/items/${item.title.id}`, { method: "DELETE" }),
     optimistic: (item: Item) => {
@@ -138,9 +138,25 @@ export function ListView({ initial }: { initial: ListDetails }) {
     router.push("/library?tab=lists");
   };
 
-  // A member came here from their library: "← Lists" (or the system list's tab) over the h1 (8.7, LIB-07).
+  // Unfollowing keeps every title as an ordinary list: asked as a question, not as a deletion; "Undo" isn't offered
+  // (following again re-reads the list).
+  const unfollow = async () => {
+    const source = l.source;
+    if (!source) return;
+    const ok = await confirm({
+      title: t("sourceDisconnectTitle", { name: source.name }),
+      text: t("sourceDisconnectConfirm"),
+      confirmLabel: t("sourceDisconnect"),
+      tone: "primary",
+      action: () => api(`/api/lists/${l.id}/source`, { method: "DELETE" }),
+    });
+    if (!ok) return;
+    toast.success(t("sourceDisconnected", { name: source.name }));
+    void refresh();
+  };
+
+  // A member came here from their library: "← Lists" (or the system list's page) over the h1 (8.7, LIB-07).
   const back = !isMember ? undefined : custom ? { href: "/library?tab=lists", label: t("lists") } : { href: `/library?tab=${l.kind}`, label: t(l.kind) };
-  const who = isOwner ? (l.collaborative ? `${t(`visibility_${l.visibility}`)} · ${t("collaborative")}` : t(`visibility_${l.visibility}`)) : t("ownerIs", { name: l.owner.name });
 
   const needle = query.trim().toLocaleLowerCase(locale);
   // A search, a type chip or a sort works on the whole list: the pages not loaded yet come first (LIB-24). So does
@@ -168,10 +184,16 @@ export function ListView({ initial }: { initial: ListDetails }) {
     if (limit + PAGE >= items.length && q.hasNextPage && !isFetchingNextPage) void fetchNextPage();
   };
   const listOrderLabel = l.source ? t("sortSource") : t("sortList");
+  // The type chips only where the list holds both films and series (a page not loaded yet may: then they stay).
+  const mixed = q.hasNextPage || (l.items.some((i) => i.title.kind === "movie") && l.items.some((i) => i.title.kind === "tv"));
+  // "Added by" only says something where more than one person added titles.
+  const adders = new Set(l.items.map((i) => i.addedBy?.profileId).filter(Boolean));
+  const byWhom = l.collaborative && adders.size > 1;
 
   const moreLabel = t("listMoreLabel", { list: l.name });
   const showMenu = (custom || isOwner) && isMember;
-  const menu = showMenu &&
+  const menu =
+    showMenu &&
     (moreIn.full ? (
       <moreIn.full.ListMenu
         list={l}
@@ -182,12 +204,23 @@ export function ListView({ initial }: { initial: ListDetails }) {
         focusTrigger={more.start.focus}
         onDialog={setDialog}
         onDeleteOrLeave={() => void deleteOrLeave()}
+        onUnfollow={() => void unfollow()}
         onChange={refresh}
-        onEditRules={l.rules ? () => router.push(rulesHref(l.rules!.rules, l.id)) : undefined}
       />
     ) : (
       <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" label={moreLabel} aria-haspopup="menu" aria-expanded={false} {...moreIn.handlers} />
     ));
+  const editRules = isOwner && l.rules && (
+    <Link href={rulesHref(l.rules.rules, l.id)} className={buttonClass("secondary")}>
+      <SlidersHorizontal aria-hidden />
+      {t("rulesEdit")}
+    </Link>
+  );
+
+  // The line of facts under the name: who sees it (the owner) or whose it is, a followed list's source.
+  const who = isOwner ? t(`visibility_${l.visibility}`) : t("ownerIs", { name: l.owner.name });
+  const facts = [who, l.collaborative && t("collaborative"), l.source && <SourceFact key="source" source={l.source} />].filter(Boolean);
+  const problem = l.source && (l.source.status === "not_found" ? t("sourceGone") : l.source.status === "unavailable" ? t("sourceUnavailable") : l.source.status === "pending" ? t("sourcePending") : null);
 
   return (
     <div>
@@ -197,14 +230,32 @@ export function ListView({ initial }: { initial: ListDetails }) {
         description={
           <>
             {l.description && <span className="block">{l.description}</span>}
-            <span className={l.description ? "mt-1 block text-body-s" : "block text-body-s"}>
-              {[tc("titlesCount", { count }), who].join(" · ")}
+            <span className={l.description ? "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-s" : "flex flex-wrap items-center gap-x-2 gap-y-1 text-body-s"}>
+              {l.members.length > 1 && (
+                // The members as faces and names: the way to "Members" (roles, removing a profile).
+                <Button variant="tertiary" size="sm" onClick={() => setDialog("members")} aria-label={`${t("members")}: ${l.members.map((m) => m.name).join(", ")}`} className="-ms-3">
+                  <span className="flex -space-x-1.5">
+                    {l.members.slice(0, 4).map((m) => (
+                      <ProfileAvatar key={m.profileId} avatar={m.avatar} photo={m.photo} name={m.name} size={20} className="ring-2 ring-bg" />
+                    ))}
+                  </span>
+                  <span className="max-w-64 truncate">{l.members.map((m) => m.name).join(", ")}</span>
+                </Button>
+              )}
+              {facts.map((f, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: a fixed line of facts
+                <span key={i} className="inline-flex items-center gap-2">
+                  {(i > 0 || l.members.length > 1) && <span aria-hidden>·</span>}
+                  {f}
+                </span>
+              ))}
             </span>
           </>
         }
         actions={
-          (l.visibility !== "private" || menu) && (
+          (l.visibility !== "private" || editRules || menu) && (
             <>
+              {editRules}
               {l.visibility !== "private" && (
                 <Button variant="secondary" icon={Share2} onClick={() => void share()}>
                   {tc("share")}
@@ -216,27 +267,17 @@ export function ListView({ initial }: { initial: ListDetails }) {
         }
       />
 
-      {l.source && <SourceNotice listId={l.id} source={l.source} isOwner={isOwner} onChange={refresh} />}
+      {problem && <InlineAlert tone={l.source?.status === "pending" ? "info" : "warning"} className="mb-6" title={problem} />}
       {l.rules && (
         <Suspense>
           <RulesNotice list={l} isOwner={isOwner} canEdit={canEdit} />
         </Suspense>
       )}
-
-      {l.members.length > 1 && (
-        <section className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2" aria-label={t("members")}>
-          <ul className="flex -space-x-2">
-            {l.members.slice(0, 6).map((m) => (
-              <li key={m.profileId}>
-                <ProfileAvatar avatar={m.avatar} photo={m.photo} name={m.name} size={28} className="ring-2 ring-bg" />
-              </li>
-            ))}
-          </ul>
-          <p className="text-body-s text-text-2">{l.members.map((m) => m.name).join(", ")}</p>
-          <Button variant="tertiary" size="sm" onClick={() => setDialog("members")}>
-            {isOwner ? t("manageMembers") : t("showMembers")}
-          </Button>
-        </section>
+      {/* What a followed list does with titles, for a screen reader (1.2). */}
+      {l.source && (
+        <p className="sr-only">
+          {tr("library.sourceRules")} {l.source.total !== null && l.source.total > l.source.limit ? t("sourceLimit", { limit: l.source.limit }) : ""}
+        </p>
       )}
 
       {l.items.length === 0 && q.hasNextPage ? (
@@ -256,14 +297,14 @@ export function ListView({ initial }: { initial: ListDetails }) {
           <GridSkeleton />
         )
       ) : l.items.length === 0 && l.rules?.status === "pending" ? (
-        // A smart list being filled by its conditions: its titles come in a moment (the banner says so).
+        // A smart list being filled by its conditions: its titles come in a moment (the line above says so).
         <GridSkeleton />
       ) : l.items.length === 0 && l.rules ? (
         // A smart list whose conditions match nothing now: they can be changed, or it fills by itself later.
         <EmptyState
           icon={ListVideo}
           title={t("rulesEmpty")}
-          text={isOwner ? t("rulesEmptyHint") : t("emptyListReader")}
+          text={<span className="sr-only">{isOwner ? t("rulesEmptyHint") : t("emptyListReader")}</span>}
           action={
             isOwner && (
               <Link href={rulesHref(l.rules.rules, l.id)} className={buttonClass("secondary")}>
@@ -276,7 +317,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
         <EmptyState
           icon={ListVideo}
           title={t("emptyList")}
-          text={canEdit ? t("emptyListHint") : t("emptyListReader")}
+          text={<span className="sr-only">{canEdit ? t("emptyListHint") : t("emptyListReader")}</span>}
           action={
             canEdit && (
               <Link href="/search" className={buttonClass("primary")}>
@@ -290,6 +331,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
         <>
           <CollectionToolbar
             filters={filters}
+            types={mixed}
             set={(patch) => {
               setLimit(PAGE);
               set(patch);
@@ -339,18 +381,18 @@ export function ListView({ initial }: { initial: ListDetails }) {
             />
           ) : (
             <>
-              <TitleGrid>
+              <ListGrid>
                 {shownItems.map((i) => (
                   <PosterCard
                     key={i.title.id}
                     title={i.title}
-                    subtitle={i.addedBy && l.collaborative ? t("addedBy", { name: i.addedBy.name }) : (l.source || l.rules) && !i.fromSource ? t("sourceOwnAddition") : undefined}
+                    subtitle={byWhom && i.addedBy ? t("addedBy", { name: i.addedBy.name }) : (l.source || l.rules) && !i.fromSource ? t("sourceOwnAddition") : undefined}
                     // Removing is in the card's "More", seen on touch screens too (LIB-01, 8.3).
                     more={canEdit ? { remove: { label: t("removeFromList"), run: () => void removeTitle.run(i) } } : true}
                     moreVisibility={canEdit ? "always" : undefined}
                   />
                 ))}
-              </TitleGrid>
+              </ListGrid>
               {isFetchNextPageError ? (
                 // The next page didn't come: what is here stays, with the way to ask again (8.4).
                 <InlineAlert
@@ -391,79 +433,32 @@ export function ListView({ initial }: { initial: ListDetails }) {
 }
 
 /**
- * A list that follows an MDBList list (LIB-08, C23): one banner — where the titles come from, when it last synced, a
- * problem if there is one — with "Refresh" and "Unfollow" for the owner. Unfollowing keeps every title as an ordinary
- * list, so it is asked as a question, not as a deletion; "Undo" isn't offered (following again re-reads the list).
+ * Where a followed list comes from, as one fact of the line under its name (LIB-08, C23): "MDBList · by snoak · updated
+ * 23 Oct", the source's own page as a link (44 px on a phone). Refreshing and unfollowing are in "More"; a problem is
+ * a warning over the grid.
  */
-function SourceNotice({ listId, source, isOwner, onChange }: { listId: string; source: ListSource; isOwner: boolean; onChange: () => unknown }) {
+function SourceFact({ source }: { source: ListSource }) {
   const t = useTranslations("library");
   const tr = useTranslations();
   const locale = useLocale();
-  const confirm = useConfirm();
-  const words = (e: unknown) => {
-    const k = sourceErrorKey(e);
-    return k ? t(k) : tr(apiErrorKey(e));
-  };
-  const refresh = useAction({
-    run: () => api<{ sync: { added: number; removed: number } | null }>(`/api/lists/${listId}/source/refresh`, { method: "POST", json: {} }),
-    success: (r) => (r.sync ? t("sourceSynced", { added: r.sync.added, removed: r.sync.removed }) : t("sourceUpToDate")),
-    error: words,
-    sync: onChange,
-  });
-  const unfollow = async () => {
-    const ok = await confirm({
-      title: t("sourceDisconnectTitle", { name: source.name }),
-      text: t("sourceDisconnectConfirm"),
-      confirmLabel: t("sourceDisconnect"),
-      tone: "primary",
-      action: () => api(`/api/lists/${listId}/source`, { method: "DELETE" }),
-    });
-    if (!ok) return;
-    toast.success(t("sourceDisconnected", { name: source.name }));
-    void onChange();
-  };
-
-  const problem = source.status === "not_found" ? t("sourceGone") : source.status === "unavailable" ? t("sourceUnavailable") : source.status === "pending" ? t("sourcePending") : null;
-  const facts = [
+  const parts = [
     source.owner && t("sourceBy", { name: source.owner }),
     source.lastSyncedAt ? t("sourceLastSync", { when: relativeTime(source.lastSyncedAt, locale, tr("common.justNow")) }) : null,
     source.dynamic ? t("sourceDynamicShort") : null,
   ].filter(Boolean);
-
   return (
-    <InlineAlert
-      tone={problem && source.status !== "pending" ? "warning" : "info"}
-      className="mb-6"
-      title={t("sourceFollowsMdb", { name: source.name })}
-      action={
-        isOwner && (
-          <div className="flex flex-wrap gap-1">
-            <Button variant="tertiary" size="sm" icon={RefreshCw} loading={refresh.pending} onClick={() => void refresh.run()}>
-              {t("sourceRefresh")}
-            </Button>
-            <Button variant="tertiary" size="sm" icon={Unlink} onClick={() => void unfollow()}>
-              {t("sourceDisconnect")}
-            </Button>
-          </div>
-        )
-      }
-    >
-      {problem && <span className="block text-text-1">{problem}</span>}
-      {facts.length > 0 && <span className="block">{facts.join(" · ")}</span>}
-      <span className="block">
-        {t("sourceRules")}{" "}
-        {source.total !== null && source.total > source.limit && `${t("sourceLimit", { limit: source.limit })} `}
-        {/* A 44 px target on a phone, 32+ on a computer (5.6, LIB-28): padding taken back by a negative margin, so the line stays as it is. */}
-        <a
-          href={source.url}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="-my-3.5 inline-flex items-center gap-1 py-3.5 underline underline-offset-3 hover:text-text-1 md:-my-2 md:py-2"
-        >
-          {t("sourceOpen")}
-          <ExternalLink aria-hidden className="size-3.5" />
-        </a>
-      </span>
-    </InlineAlert>
+    <span className="inline-flex flex-wrap items-center gap-x-2">
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        aria-label={`${t("sourceOpen")}: ${source.name}`}
+        className="-my-3.5 inline-flex items-center gap-1 py-3.5 text-text-1 underline underline-offset-3 md:-my-2 md:py-2"
+      >
+        MDBList
+        <ExternalLink aria-hidden className="size-3.5" />
+      </a>
+      {parts.length > 0 && <span>{parts.join(" · ")}</span>}
+    </span>
   );
 }
