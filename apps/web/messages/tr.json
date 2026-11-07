@@ -1035,9 +1035,6 @@
     "joined": "Listeye katıldınız",
     "joinFailed": "Katılınamadı. Lütfen tekrar deneyin",
     "notNow": "Şimdi değil",
-    "theirRating": "Puan: {value}",
-    "publicEmpty": "Burada henüz bir şey yok",
-    "publicEmptyText": "Sahibi favorilerini, puanlarını veya listelerini paylaştığında burada görünür.",
     "overview": "Genel bakış"
   },
   "player": {
@@ -1510,8 +1507,6 @@
     "intro": "Diğer hizmetlerdeki yılların geçmişini getirin. Bir şey kaydedilmeden önce önizlemeyi görür ve eşleşmeleri düzeltebilirsiniz.",
     "chooseSource": "Kaynak seçin",
     "toProfile": "İçe aktarılacak profil",
-    "dropHere": "Dosyayı buraya bırakın veya seçin",
-    "howToExport": "Dosya nasıl alınır",
     "parsing": "Dosya okunuyor…",
     "review": "İnceleme",
     "unmatched": "Bulunamadı",
@@ -1565,13 +1560,8 @@
     "errTooLarge": "Dosya 50 MB’tan büyük. Arşivden yalnızca geçmiş dosyalarını yükleyin.",
     "failedMatch": "İçerikler eşleştirilemedi. Profile henüz hiçbir şey eklenmedi.",
     "failedApply": "Kayıtların hepsi kaydedilemedi. Kaydedilenler kalır – tamamlamak için tekrar deneyin.",
-    "methodFile": "Dosya {types}",
-    "methodAccount": "veya hizmette oturum açın",
-    "accountHint": "Trakt ve Simkl oturum açılarak bağlanabilir – o zaman geçmiş kendiliğinden gelir:",
-    "accountHintLink": "Ayarlar → Senkronizasyon",
     "uploadFrom": "İçe aktar: {source}",
     "chooseFile": "Dosya seç",
-    "acceptedTypes": "Dosyalar: {types}",
     "errWrongType": "Bu dosya olmaz: {source} için {types} dosyası gerekir.",
     "sharedImports": "İçe aktarmalar hesapta ortaktır: her yetişkin profil onları görür ve geri alabilir.",
     "kidsProfile": "{name} (çocuk)",
@@ -1613,8 +1603,6 @@
     "searchMatchFor": "“{title}” için doğru içeriği bulun",
     "seasonOnly": "{season}. Sezon",
     "chooseThis": "Bunu seç: “{title}”",
-    "methodServer": "Sunucunuzdan",
-    "whatItReads": "Neyi okur",
     "help_jellyfin": "Bu profilin Jellyfin sunucusundaki oturumunun izledikleri: filmler ve bölümler, her birinin en son izlendiği günle. Bu cihaz bunları doğrudan sunucudan okur; kalınan yerler orada kalır.",
     "help_plex": "Plex hesabının o sunucuda izledikleri: filmler ve bölümler, her birinin en son izlendiği günle. Bu cihaz bunları doğrudan sunucudan okur; kalınan yerler orada kalır. Henüz gerçek bir Plex sunucusuyla denenmedi.",
     "fromServer": "Sunucu",
@@ -1624,7 +1612,14 @@
     "noServer": "Bu profilin kullanabileceği bir {source} sunucusu bağlı değil.",
     "nothingPlayed": "“{server}” üzerinde henüz hiçbir şey izlenmedi.",
     "readFailed": "“{server}” geçmişi okunamadı. {reason}",
-    "originServer": "{source} geçmişi"
+    "originServer": "{source} geçmişi",
+    "openExport": "{source} sitesini aç",
+    "orDrop": "veya bir {types} dosyasını buraya sürükleyin",
+    "accountSync": "Böylece geçmişiniz kendiliğinden aktarılır.",
+    "accountLinked": "{source}, {profile} profiline bağlı.",
+    "orFile": "Ya da bir dışa aktarma dosyası yükleyin",
+    "lumovioExport": "Verilerinizin bir kopyasını indirin",
+    "sourcesError": "Kaynaklar yüklenemedi"
   },
   "settings": {
     "sectionLanguageKids": "Dil",
@@ -1817,7 +1812,7 @@
     "intro": "İzlediğiniz veya bildirim aldığınız dizilerin yaklaşan bölümleri ve İzleneceklerinizdeki filmler.",
     "empty": "Planlanmış bir şey yok",
     "loadError": "Takvim yüklenemedi",
-    "emptyHint": "Bir dizinin sayfasında Diğer → Yeni bölümleri bildir seçeneğini seçin veya diziyi İzleneceklere ekleyin – yeni bölümler burada görünür.",
+    "emptyHint": "İzleneceklerdeki diziler ve yeni bölüm bildirimi aldığınız diziler burada görünür.",
     "today": "Bugün",
     "tomorrow": "Yarın",
     "premiere": "Prömiyer",
@@ -1825,10 +1820,12 @@
     "finale": "Final",
     "special": "Özel bölüm",
     "scheduleCredit": "Yayın saatleri ve değişen tarihlerin kaynağı:",
-    "earlier": "Daha önce · {count}",
     "findSeries": "Dizi bul",
-    "nothingComing": "Yaklaşan bir şey yok.",
-    "nothingToday": "Bugün bir şey çıkmıyor."
+    "out": "Yeni çıkanlar",
+    "later": "Daha sonra",
+    "nothingDay": "Bir şey çıkmıyor",
+    "episodeRange": "S{season} · B{from}–{to}",
+    "episodeCount": "S{season} · {count, plural, one {# bölüm} other {# bölüm}}"
   },
   "stats": {
     "title": "İstatistikler",
@@ -1842,9 +1839,6 @@
     "streak": "En uzun seri, gün",
     "topGenres": "En çok izlenen türler",
     "byMonth": "Aylara göre",
-    "empty": "İstatistiklerinizi görmek için bir şey izleyin veya içe aktarın.",
-    "yearSoFar": "{year} şimdiye kadar – 1 Ocak’tan bugüne",
-    "yearWrapped": "{year} yılınızın özeti",
     "allTimeSince": "İlk izleme: {date}",
     "badYear": "Böyle bir yıl yok – {year} gösteriliyor",
     "emptyYear": "{year} yılında hiçbir şey izlenmedi",
@@ -1853,7 +1847,8 @@
     "importHistory": "Geçmişi içe aktar",
     "byMonthLabel": "Aylara göre izlemeler",
     "topTitles": "En çok izlenenler",
-    "timesWatched": "{count, plural, one {# izleme} other {# izleme}}"
+    "timesWatched": "{count, plural, one {# izleme} other {# izleme}}",
+    "summary": "Özet"
   },
   "legal": {
     "terms": "Kullanım koşulları",
@@ -2715,5 +2710,12 @@
     "keyInvalid": "Bir fanart.tv anahtarı 32 harf ve rakamdan oluşur.",
     "keyUnknown": "fanart.tv bu anahtarı kabul etmiyor.",
     "keyRemoved": "Anahtar kaldırıldı"
+  },
+  "publicProfile": {
+    "rating": "Puan: {value}",
+    "empty": "Burada henüz bir şey yok",
+    "emptyOwner": "Favorilerinizi, Puanlarınızı veya Listelerinizi burada gösterin.",
+    "notFoundTitle": "Böyle bir profil yok",
+    "notFoundText": "Kapatılmış olabilir ya da adreste bir hata var."
   }
 }

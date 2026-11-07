@@ -1035,9 +1035,6 @@
     "joined": "Te has unido a la lista",
     "joinFailed": "No has podido unirte. Inténtalo de nuevo",
     "notNow": "Ahora no",
-    "theirRating": "Valoración: {value}",
-    "publicEmpty": "Aún no hay nada aquí",
-    "publicEmptyText": "Cuando el propietario comparta Favoritos, valoraciones o listas, aparecerán aquí.",
     "overview": "Resumen"
   },
   "player": {
@@ -1510,8 +1507,6 @@
     "intro": "Trae años de historial de otros servicios. Verás una vista previa y podrás corregir las coincidencias antes de que se guarde nada.",
     "chooseSource": "Elige el origen",
     "toProfile": "Importar al perfil",
-    "dropHere": "Suelta el archivo aquí o elígelo",
-    "howToExport": "Cómo obtener el archivo",
     "parsing": "Leyendo el archivo…",
     "review": "Revisión",
     "unmatched": "No encontrado",
@@ -1565,13 +1560,8 @@
     "errTooLarge": "El archivo supera los 50 MB. Sube solo los archivos de historial del archivo comprimido.",
     "failedMatch": "No se pudieron emparejar los títulos. Aún no se ha añadido nada al perfil.",
     "failedApply": "No se pudieron guardar todas las entradas. Las guardadas se mantienen: reintenta para terminar.",
-    "methodFile": "Archivo {types}",
-    "methodAccount": "o inicia sesión en el servicio",
-    "accountHint": "Trakt y Simkl se pueden conectar iniciando sesión; así el historial llega solo:",
-    "accountHintLink": "Ajustes → Sincronización",
     "uploadFrom": "Importar de {source}",
     "chooseFile": "Elegir archivo",
-    "acceptedTypes": "Archivos: {types}",
     "errWrongType": "Ese archivo no sirve: {source} necesita un archivo {types}.",
     "sharedImports": "Las importaciones son de toda la cuenta: todos los perfiles adultos las ven y pueden deshacerlas.",
     "kidsProfile": "{name} (infantil)",
@@ -1613,8 +1603,6 @@
     "searchMatchFor": "Buscar el título correcto para «{title}»",
     "seasonOnly": "Temporada {season}",
     "chooseThis": "Elegir «{title}»",
-    "methodServer": "Desde tu servidor",
-    "whatItReads": "Qué se lee",
     "help_jellyfin": "Lo que la sesión de este perfil en el servidor de Jellyfin ha visto: películas y episodios, con el día en que se vio cada uno por última vez. Este dispositivo lo lee directamente del servidor; los puntos donde te quedaste siguen allí.",
     "help_plex": "Lo que la cuenta de Plex ha visto en ese servidor: películas y episodios, con el día en que se vio cada uno por última vez. Este dispositivo lo lee directamente del servidor; los puntos donde te quedaste siguen allí. Aún no se ha probado con un servidor de Plex real.",
     "fromServer": "Servidor",
@@ -1624,7 +1612,14 @@
     "noServer": "No hay conectado ningún servidor de {source} que este perfil pueda usar.",
     "nothingPlayed": "Todavía no se ha visto nada en «{server}».",
     "readFailed": "No se pudo leer el historial de «{server}». {reason}",
-    "originServer": "Historial de {source}"
+    "originServer": "Historial de {source}",
+    "openExport": "Abrir {source}",
+    "orDrop": "o arrastra aquí un archivo {types}",
+    "accountSync": "Así tu historial llegará solo.",
+    "accountLinked": "{source} está conectado a {profile}.",
+    "orFile": "O sube un archivo de exportación",
+    "lumovioExport": "Descargar una copia de tus datos",
+    "sourcesError": "No se pudieron cargar las fuentes"
   },
   "settings": {
     "sectionLanguageKids": "Idioma",
@@ -1817,7 +1812,7 @@
     "intro": "Próximos episodios de las series que ves o de las que recibes avisos, y películas de tus Pendientes.",
     "empty": "Nada programado",
     "loadError": "No se pudo cargar el calendario",
-    "emptyHint": "En la página de una serie, elige Más → Avisarme de nuevos episodios, o añádela a Pendientes: los nuevos episodios aparecerán aquí.",
+    "emptyHint": "Aquí aparecen las series de Pendientes y las que te avisan de nuevos episodios.",
     "today": "Hoy",
     "tomorrow": "Mañana",
     "premiere": "Estreno",
@@ -1825,10 +1820,12 @@
     "finale": "Final",
     "special": "Especial",
     "scheduleCredit": "Horarios de emisión y fechas cambiadas, de",
-    "earlier": "Antes · {count}",
     "findSeries": "Buscar series",
-    "nothingComing": "No hay nada próximamente.",
-    "nothingToday": "Hoy no se estrena nada."
+    "out": "Recién estrenados",
+    "later": "Más adelante",
+    "nothingDay": "No se estrena nada",
+    "episodeRange": "T{season} · E{from}–{to}",
+    "episodeCount": "T{season} · {count, plural, one {# episodio} many {# de episodios} other {# episodios}}"
   },
   "stats": {
     "title": "Estadísticas",
@@ -1842,9 +1839,6 @@
     "streak": "Racha más larga, días",
     "topGenres": "Géneros principales",
     "byMonth": "Por mes",
-    "empty": "Ve o importa algo para ver tus estadísticas.",
-    "yearSoFar": "{year} hasta ahora: del 1 de enero a hoy",
-    "yearWrapped": "Tu {year} en resumen",
     "allTimeSince": "Primer visionado: {date}",
     "badYear": "Ese año no existe: se muestra {year}",
     "emptyYear": "Nada visto en {year}",
@@ -1853,7 +1847,8 @@
     "importHistory": "Importar historial",
     "byMonthLabel": "Visionados por mes",
     "topTitles": "Lo más visto",
-    "timesWatched": "{count, plural, one {# visionado} many {# de visionados} other {# visionados}}"
+    "timesWatched": "{count, plural, one {# visionado} many {# de visionados} other {# visionados}}",
+    "summary": "Resumen"
   },
   "legal": {
     "terms": "Términos",
@@ -2715,5 +2710,12 @@
     "keyInvalid": "Una clave de fanart.tv tiene 32 letras y dígitos.",
     "keyUnknown": "fanart.tv no acepta esta clave.",
     "keyRemoved": "Clave quitada"
+  },
+  "publicProfile": {
+    "rating": "Valoración: {value}",
+    "empty": "Aquí todavía no hay nada",
+    "emptyOwner": "Muestra aquí tus Favoritos, Valoraciones o Listas.",
+    "notFoundTitle": "Este perfil no existe",
+    "notFoundText": "Puede que lo hayan cerrado o que la dirección tenga un error."
   }
 }

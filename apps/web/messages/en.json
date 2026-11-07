@@ -1035,9 +1035,6 @@
     "joined": "You've joined the list",
     "joinFailed": "Couldn't join. Please try again",
     "notNow": "Not now",
-    "theirRating": "Rated {value}",
-    "publicEmpty": "Nothing here yet",
-    "publicEmptyText": "When the owner shares favourites, ratings or lists, they'll show up here.",
     "overview": "Overview"
   },
   "player": {
@@ -1510,8 +1507,6 @@
     "intro": "Bring years of history from other services. You'll see a preview and can fix matches before anything is saved.",
     "chooseSource": "Choose a source",
     "toProfile": "Import into profile",
-    "dropHere": "Drop the file here or choose it",
-    "howToExport": "How to get the file",
     "parsing": "Reading file…",
     "review": "Review",
     "unmatched": "Not found",
@@ -1565,13 +1560,8 @@
     "errTooLarge": "The file is over 50 MB. Upload only the history files from the archive.",
     "failedMatch": "Titles couldn't be matched. Nothing has been added to the profile yet.",
     "failedApply": "Not every entry could be saved. The saved ones stay — retry to finish.",
-    "methodFile": "File {types}",
-    "methodAccount": "or sign in to the service",
-    "accountHint": "Trakt and Simkl can be connected by signing in — then the history comes over on its own:",
-    "accountHintLink": "Settings → Sync",
     "uploadFrom": "Import from {source}",
     "chooseFile": "Choose file",
-    "acceptedTypes": "Files: {types}",
     "errWrongType": "That file won't do: {source} needs a {types} file.",
     "sharedImports": "Imports are shared by the account: every adult profile sees them and can undo them.",
     "kidsProfile": "{name} (kids)",
@@ -1613,8 +1603,6 @@
     "searchMatchFor": "Find the right title for “{title}”",
     "seasonOnly": "Season {season}",
     "chooseThis": "Choose “{title}”",
-    "methodServer": "From your server",
-    "whatItReads": "What it reads",
     "help_jellyfin": "What this profile's sign-in on the Jellyfin server has played: films and episodes, with the day each was last played. This device reads it straight from the server; resume positions stay there.",
     "help_plex": "What the Plex account has played on that server: films and episodes, with the day each was last played. This device reads it straight from the server; resume positions stay there. Not yet checked with a real Plex server.",
     "fromServer": "Server",
@@ -1624,7 +1612,14 @@
     "noServer": "No {source} server this profile can use is connected.",
     "nothingPlayed": "Nothing has been played on “{server}” yet.",
     "readFailed": "Couldn't read the history from “{server}”. {reason}",
-    "originServer": "History from {source}"
+    "originServer": "History from {source}",
+    "openExport": "Open {source}",
+    "orDrop": "or drop a {types} file here",
+    "accountSync": "Then your history keeps coming by itself.",
+    "accountLinked": "{source} is connected to {profile}.",
+    "orFile": "Or upload an export file",
+    "lumovioExport": "Download a copy of your data",
+    "sourcesError": "Couldn't load the sources"
   },
   "settings": {
     "sectionLanguageKids": "Language",
@@ -1817,7 +1812,7 @@
     "intro": "Upcoming episodes of shows you watch or get notified about, and films from your Watchlist.",
     "empty": "Nothing scheduled",
     "loadError": "Couldn't load the calendar",
-    "emptyHint": "On a series' page, choose More → Notify me about new episodes, or add it to your Watchlist — new episodes will show up here.",
+    "emptyHint": "Series on your Watchlist and those you get new-episode alerts for show up here.",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "premiere": "Premiere",
@@ -1825,10 +1820,12 @@
     "finale": "Finale",
     "special": "Special",
     "scheduleCredit": "Air times, and dates that moved, from",
-    "earlier": "Earlier · {count}",
     "findSeries": "Find series",
-    "nothingComing": "Nothing is coming up.",
-    "nothingToday": "Nothing comes out today."
+    "out": "Just out",
+    "later": "Later",
+    "nothingDay": "Nothing comes out",
+    "episodeRange": "S{season} · E{from}–{to}",
+    "episodeCount": "S{season} · {count, plural, one {# episode} other {# episodes}}"
   },
   "stats": {
     "title": "Stats",
@@ -1842,9 +1839,6 @@
     "streak": "Longest streak, days",
     "topGenres": "Top genres",
     "byMonth": "By month",
-    "empty": "Watch or import something to see your stats.",
-    "yearSoFar": "{year} so far — from 1 January to today",
-    "yearWrapped": "Your {year} in review",
     "allTimeSince": "First watch: {date}",
     "badYear": "There's no such year — showing {year}",
     "emptyYear": "Nothing watched in {year}",
@@ -1853,7 +1847,8 @@
     "importHistory": "Import history",
     "byMonthLabel": "Watches by month",
     "topTitles": "Watched most",
-    "timesWatched": "{count, plural, one {# watch} other {# watches}}"
+    "timesWatched": "{count, plural, one {# watch} other {# watches}}",
+    "summary": "Summary"
   },
   "legal": {
     "terms": "Terms",
@@ -3067,5 +3062,12 @@
     "keyInvalid": "A fanart.tv key is 32 letters and digits.",
     "keyUnknown": "fanart.tv doesn't take this key.",
     "keyRemoved": "Key removed"
+  },
+  "publicProfile": {
+    "rating": "Rated {value}",
+    "empty": "Nothing here yet",
+    "emptyOwner": "Show your Favourites, Ratings or Lists here.",
+    "notFoundTitle": "No such profile",
+    "notFoundText": "It may have been closed, or the address has a typo."
   }
 }

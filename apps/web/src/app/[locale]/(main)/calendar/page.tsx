@@ -14,13 +14,14 @@ export default async function CalendarPage() {
   const me = await getMeState();
   if (!me) redirect({ href: "/auth/sign-in?next=/calendar", locale: await getLocale() });
   const t = await getTranslations("calendar");
+  const tn = await getTranslations("nav");
   return (
-    // The Tool template (design-system 9): the tool width, centred on the page — no block left against the start
-    // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
+    // The Tool template (design-system 9), centred; a schedule's column is narrower than the tool width (56rem), so a
+    // line's time stays near its name — no half-empty rows on a wide screen. The h1 is in the same column.
     <div className="page-x">
-      <div className="mx-auto max-w-tool">
-        {/* No intro on the screen (redesign-2026-11.md 2); a screen reader still hears what the page is. */}
-        <PageHeader title={t("title")} />
+      <div className="mx-auto max-w-4xl">
+        {/* Its parent is the library, where it is opened from (8.7). No intro on the screen; a screen reader hears it. */}
+        <PageHeader back={{ href: "/library", label: tn("library") }} title={t("title")} />
         <p className="sr-only">{t("intro")}</p>
         {me === "unavailable" ? <ServiceUnavailable /> : <CalendarView />}
       </div>

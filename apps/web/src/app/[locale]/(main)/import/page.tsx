@@ -15,6 +15,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const me = await getMeState();
   if (!me) redirect({ href: "/auth/sign-in?next=/import", locale: await getLocale() });
   const t = await getTranslations("import");
+  const ts = await getTranslations("services");
   const { job } = await searchParams;
   // An import has an address of its own (/import?job=…, IMP-04): its page brings "← Import history" and its own h1.
   const jobId = typeof job === "string" ? job : null;
@@ -24,8 +25,8 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
     <div className="page-x">
       <div className="mx-auto max-w-tool">
-        {/* No intro on the screen (redesign-2026-11.md 2); a screen reader still hears what the page is. */}
-        {!jobView && <PageHeader title={t("title")} />}
+        {/* Its parent is Settings → Sync, where it is listed (8.7). No intro on the screen; a screen reader hears it. */}
+        {!jobView && <PageHeader back={{ href: "/settings/services", label: ts("title") }} title={t("title")} />}
         {!jobView && <p className="sr-only">{t("intro")}</p>}
         {me === "unavailable" ? (
           <ServiceUnavailable />

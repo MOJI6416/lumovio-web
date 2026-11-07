@@ -15,6 +15,7 @@ export default async function StatsPage() {
   const me = await getMeState();
   if (!me) redirect({ href: "/auth/sign-in?next=/stats", locale: await getLocale() });
   const t = await getTranslations("stats");
+  const tn = await getTranslations("nav");
   return (
     // The Tool template (design-system 9): the tool width, centred on the page — no block left against the start
     // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
@@ -22,7 +23,7 @@ export default async function StatsPage() {
       <div className="mx-auto max-w-tool">
         {me === "unavailable" ? (
           <>
-            <PageHeader title={t("title")} />
+            <PageHeader back={{ href: "/library", label: tn("library") }} title={t("title")} />
             <ServiceUnavailable />
           </>
         ) : (

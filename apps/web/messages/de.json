@@ -1035,9 +1035,6 @@
     "joined": "Du bist der Liste beigetreten",
     "joinFailed": "Beitritt fehlgeschlagen. Versuche es erneut",
     "notNow": "Nicht jetzt",
-    "theirRating": "Bewertung: {value}",
-    "publicEmpty": "Hier ist noch nichts",
-    "publicEmptyText": "Wenn der Eigentümer Favoriten, Bewertungen oder Listen teilt, erscheinen sie hier.",
     "overview": "Übersicht"
   },
   "player": {
@@ -1510,8 +1507,6 @@
     "intro": "Übertrage jahrelangen Verlauf aus anderen Diensten. Vor dem Speichern siehst du eine Vorschau und kannst Zuordnungen korrigieren.",
     "chooseSource": "Quelle auswählen",
     "toProfile": "In Profil importieren",
-    "dropHere": "Datei hierher ziehen oder auswählen",
-    "howToExport": "So bekommst du die Datei",
     "parsing": "Datei wird gelesen…",
     "review": "Überprüfung",
     "unmatched": "Nicht gefunden",
@@ -1565,13 +1560,8 @@
     "errTooLarge": "Die Datei ist größer als 50 MB. Lade nur die Verlaufsdateien aus dem Archiv hoch.",
     "failedMatch": "Die Titel konnten nicht zugeordnet werden. Dem Profil wurde noch nichts hinzugefügt.",
     "failedApply": "Nicht alle Einträge wurden gespeichert. Die gespeicherten bleiben – versuche es erneut, um abzuschließen.",
-    "methodFile": "Datei {types}",
-    "methodAccount": "oder beim Dienst anmelden",
-    "accountHint": "Trakt und Simkl lassen sich per Anmeldung verbinden – dann kommt der Verlauf von selbst:",
-    "accountHintLink": "Einstellungen → Synchronisierung",
     "uploadFrom": "Import aus {source}",
     "chooseFile": "Datei auswählen",
-    "acceptedTypes": "Dateien: {types}",
     "errWrongType": "Diese Datei passt nicht: {source} braucht {types}.",
     "sharedImports": "Importe gelten fürs ganze Konto: Alle Erwachsenenprofile sehen sie und können sie rückgängig machen.",
     "kidsProfile": "{name} (Kinder)",
@@ -1613,8 +1603,6 @@
     "searchMatchFor": "Passenden Titel für „{title}“ suchen",
     "seasonOnly": "Staffel {season}",
     "chooseThis": "„{title}“ auswählen",
-    "methodServer": "Von deinem Server",
-    "whatItReads": "Was gelesen wird",
     "help_jellyfin": "Was die Anmeldung dieses Profils auf dem Jellyfin-Server gesehen hat: Filme und Folgen, jeweils mit dem Tag, an dem sie zuletzt liefen. Dieses Gerät liest es direkt vom Server; Fortsetzungspunkte bleiben dort.",
     "help_plex": "Was das Plex-Konto auf diesem Server gesehen hat: Filme und Folgen, jeweils mit dem Tag, an dem sie zuletzt liefen. Dieses Gerät liest es direkt vom Server; Fortsetzungspunkte bleiben dort. Noch nicht mit einem echten Plex-Server geprüft.",
     "fromServer": "Server",
@@ -1624,7 +1612,14 @@
     "noServer": "Kein {source}-Server, den dieses Profil nutzen kann, ist verbunden.",
     "nothingPlayed": "Auf „{server}“ wurde noch nichts gesehen.",
     "readFailed": "Der Verlauf von „{server}“ konnte nicht gelesen werden. {reason}",
-    "originServer": "Verlauf aus {source}"
+    "originServer": "Verlauf aus {source}",
+    "openExport": "{source} öffnen",
+    "orDrop": "oder eine {types}-Datei hierher ziehen",
+    "accountSync": "Dann kommt dein Verlauf von selbst nach.",
+    "accountLinked": "{source} ist mit {profile} verbunden.",
+    "orFile": "Oder eine Exportdatei hochladen",
+    "lumovioExport": "Kopie deiner Daten herunterladen",
+    "sourcesError": "Quellen konnten nicht geladen werden"
   },
   "settings": {
     "sectionLanguageKids": "Sprache",
@@ -1817,7 +1812,7 @@
     "intro": "Kommende Folgen von Serien, die du schaust oder zu denen du Benachrichtigungen bekommst, und Filme von deiner Merkliste.",
     "empty": "Nichts geplant",
     "loadError": "Kalender konnte nicht geladen werden",
-    "emptyHint": "Wähle auf der Seite einer Serie „Mehr“ → „Über neue Folgen benachrichtigen“ oder setze sie auf die Merkliste – neue Folgen erscheinen dann hier.",
+    "emptyHint": "Hier erscheinen Serien von deiner Merkliste und solche, über deren neue Folgen du benachrichtigt wirst.",
     "today": "Heute",
     "tomorrow": "Morgen",
     "premiere": "Premiere",
@@ -1825,10 +1820,12 @@
     "finale": "Finale",
     "special": "Special",
     "scheduleCredit": "Sendezeiten und verschobene Termine von",
-    "earlier": "Vergangen · {count}",
     "findSeries": "Serien finden",
-    "nothingComing": "Demnächst erscheint nichts.",
-    "nothingToday": "Heute erscheint nichts."
+    "out": "Neu erschienen",
+    "later": "Später",
+    "nothingDay": "Nichts erscheint",
+    "episodeRange": "S{season} · F{from}–{to}",
+    "episodeCount": "S{season} · {count, plural, one {# Folge} other {# Folgen}}"
   },
   "stats": {
     "title": "Statistik",
@@ -1842,9 +1839,6 @@
     "streak": "Rekord: Tage in Folge",
     "topGenres": "Top-Genres",
     "byMonth": "Nach Monat",
-    "empty": "Schau oder importiere etwas, um deine Statistik zu sehen.",
-    "yearSoFar": "{year} bisher – vom 1. Januar bis heute",
-    "yearWrapped": "Dein Jahr {year} im Rückblick",
     "allTimeSince": "Erstmals geschaut: {date}",
     "badYear": "Dieses Jahr gibt es nicht – angezeigt wird {year}",
     "emptyYear": "Im Jahr {year} nichts geschaut",
@@ -1853,7 +1847,8 @@
     "importHistory": "Verlauf importieren",
     "byMonthLabel": "Geschaut pro Monat",
     "topTitles": "Meistgeschaut",
-    "timesWatched": "{count, plural, one {# Mal} other {# Mal}}"
+    "timesWatched": "{count, plural, one {# Mal} other {# Mal}}",
+    "summary": "Überblick"
   },
   "legal": {
     "terms": "Nutzungsbedingungen",
@@ -2715,5 +2710,12 @@
     "keyInvalid": "Ein fanart.tv-Schlüssel besteht aus 32 Buchstaben und Ziffern.",
     "keyUnknown": "fanart.tv nimmt diesen Schlüssel nicht an.",
     "keyRemoved": "Schlüssel entfernt"
+  },
+  "publicProfile": {
+    "rating": "Bewertung: {value}",
+    "empty": "Hier ist noch nichts",
+    "emptyOwner": "Zeige hier deine Favoriten, Bewertungen oder Listen.",
+    "notFoundTitle": "Dieses Profil gibt es nicht",
+    "notFoundText": "Vielleicht wurde es geschlossen, oder die Adresse enthält einen Tippfehler."
   }
 }

@@ -1035,9 +1035,6 @@
     "joined": "Ora fai parte della lista",
     "joinFailed": "Impossibile unirsi. Riprova",
     "notNow": "Non ora",
-    "theirRating": "Voto: {value}",
-    "publicEmpty": "Ancora niente qui",
-    "publicEmptyText": "Quando il proprietario condividerà preferiti, voti o liste, compariranno qui.",
     "overview": "Panoramica"
   },
   "player": {
@@ -1510,8 +1507,6 @@
     "intro": "Porta qui anni di cronologia da altri servizi. Vedrai un’anteprima e potrai correggere le corrispondenze prima che venga salvato qualcosa.",
     "chooseSource": "Scegli una fonte",
     "toProfile": "Importa nel profilo",
-    "dropHere": "Trascina qui il file o sceglilo",
-    "howToExport": "Come ottenere il file",
     "parsing": "Lettura del file…",
     "review": "Revisione",
     "unmatched": "Non trovati",
@@ -1565,13 +1560,8 @@
     "errTooLarge": "Il file supera i 50 MB. Carica solo i file della cronologia contenuti nell’archivio.",
     "failedMatch": "Impossibile abbinare i titoli. Nel profilo non è stato ancora aggiunto nulla.",
     "failedApply": "Non tutte le voci sono state salvate. Quelle salvate restano – riprova per completare.",
-    "methodFile": "File {types}",
-    "methodAccount": "oppure accedi al servizio",
-    "accountHint": "Trakt e Simkl si possono collegare con l’accesso – così la cronologia arriva da sola:",
-    "accountHintLink": "Impostazioni → Sincronizzazione",
     "uploadFrom": "Importa da {source}",
     "chooseFile": "Scegli file",
-    "acceptedTypes": "File: {types}",
     "errWrongType": "Questo file non va bene: per {source} serve un file {types}.",
     "sharedImports": "Le importazioni sono condivise nell’account: ogni profilo adulto le vede e può annullarle.",
     "kidsProfile": "{name} (bambini)",
@@ -1613,8 +1603,6 @@
     "searchMatchFor": "Trova il titolo giusto per «{title}»",
     "seasonOnly": "Stagione {season}",
     "chooseThis": "Scegli «{title}»",
-    "methodServer": "Dal tuo server",
-    "whatItReads": "Cosa viene letto",
     "help_jellyfin": "Ciò che l’accesso di questo profilo al server Jellyfin ha visto: film ed episodi, con il giorno in cui ognuno è stato visto l’ultima volta. Questo dispositivo lo legge direttamente dal server; i punti di ripresa restano lì.",
     "help_plex": "Ciò che l’account Plex ha visto su quel server: film ed episodi, con il giorno in cui ognuno è stato visto l’ultima volta. Questo dispositivo lo legge direttamente dal server; i punti di ripresa restano lì. Non ancora verificato con un vero server Plex.",
     "fromServer": "Server",
@@ -1624,7 +1612,14 @@
     "noServer": "Non è collegato nessun server {source} che questo profilo possa usare.",
     "nothingPlayed": "Su «{server}» non è stato ancora visto niente.",
     "readFailed": "Impossibile leggere la cronologia da «{server}». {reason}",
-    "originServer": "Cronologia da {source}"
+    "originServer": "Cronologia da {source}",
+    "openExport": "Apri {source}",
+    "orDrop": "o trascina qui un file {types}",
+    "accountSync": "Così la cronologia arriverà da sola.",
+    "accountLinked": "{source} è collegato a {profile}.",
+    "orFile": "Oppure carica un file di esportazione",
+    "lumovioExport": "Scarica una copia dei tuoi dati",
+    "sourcesError": "Impossibile caricare le fonti"
   },
   "settings": {
     "sectionLanguageKids": "Lingua",
@@ -1817,7 +1812,7 @@
     "intro": "I prossimi episodi delle serie che guardi o di cui ricevi notifiche, e i film della tua lista Da guardare.",
     "empty": "Niente in programma",
     "loadError": "Impossibile caricare il calendario",
-    "emptyHint": "Nella pagina di una serie scegli Altro → Avvisami dei nuovi episodi, oppure aggiungila a Da guardare – i nuovi episodi compariranno qui.",
+    "emptyHint": "Qui compaiono le serie di Da guardare e quelle di cui ricevi avvisi sui nuovi episodi.",
     "today": "Oggi",
     "tomorrow": "Domani",
     "premiere": "Prima visione",
@@ -1825,10 +1820,12 @@
     "finale": "Finale",
     "special": "Speciale",
     "scheduleCredit": "Orari di messa in onda e date spostate da",
-    "earlier": "Precedenti · {count}",
     "findSeries": "Trova serie",
-    "nothingComing": "Non è in arrivo niente.",
-    "nothingToday": "Oggi non esce niente."
+    "out": "Usciti di recente",
+    "later": "Più avanti",
+    "nothingDay": "Non esce niente",
+    "episodeRange": "S{season} · E{from}–{to}",
+    "episodeCount": "S{season} · {count, plural, one {# episodio} many {# di episodi} other {# episodi}}"
   },
   "stats": {
     "title": "Statistiche",
@@ -1842,9 +1839,6 @@
     "streak": "Record di giorni di fila",
     "topGenres": "Generi principali",
     "byMonth": "Per mese",
-    "empty": "Guarda o importa qualcosa per vedere le tue statistiche.",
-    "yearSoFar": "{year} finora – dal 1° gennaio a oggi",
-    "yearWrapped": "Il tuo {year} in sintesi",
     "allTimeSince": "Primo titolo visto: {date}",
     "badYear": "Questo anno non c’è – mostro il {year}",
     "emptyYear": "Niente visto nel {year}",
@@ -1853,7 +1847,8 @@
     "importHistory": "Importa cronologia",
     "byMonthLabel": "Visioni per mese",
     "topTitles": "I più visti",
-    "timesWatched": "{count, plural, one {# visione} many {# di visioni} other {# visioni}}"
+    "timesWatched": "{count, plural, one {# visione} many {# di visioni} other {# visioni}}",
+    "summary": "Riepilogo"
   },
   "legal": {
     "terms": "Termini",
@@ -2715,5 +2710,12 @@
     "keyInvalid": "Una chiave fanart.tv è fatta di 32 lettere e cifre.",
     "keyUnknown": "fanart.tv non accetta questa chiave.",
     "keyRemoved": "Chiave rimossa"
+  },
+  "publicProfile": {
+    "rating": "Voto: {value}",
+    "empty": "Qui non c’è ancora niente",
+    "emptyOwner": "Mostra qui i tuoi Preferiti, Voti o Liste.",
+    "notFoundTitle": "Questo profilo non esiste",
+    "notFoundText": "Forse è stato chiuso, oppure l’indirizzo contiene un errore."
   }
 }

@@ -251,15 +251,40 @@ export function JobReview({ jobId }: { jobId: string }) {
         </InlineAlert>
       )}
 
+      {j.status === "review" && (
+        // What goes into the profile, decided before the rows (they are what is checked): kinds and the ratings rule.
+        <section aria-labelledby="kinds-h" className="flex flex-col gap-3">
+          <h2 id="kinds-h" className="text-h3 text-text-1">
+            {t("includeKinds")}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {(["watch", "rating", "watchlist", "favorite", "list_item"] as const)
+              .filter((k) => (j.stats.byKind[k] ?? 0) > 0)
+              .map((k) => {
+                const on = kinds.includes(k);
+                return (
+                  <FilterChip key={k} selected={on} count={j.stats.byKind[k]} onClick={() => setKinds(on ? kinds.filter((x) => x !== k) : [...kinds, k])}>
+                    {t(`kind_${k}`)}
+                  </FilterChip>
+                );
+              })}
+          </div>
+          <Switch checked={keepRatings} onCheckedChange={setKeepRatings} label={t("keepRatings")} className="max-w-xl" />
+        </section>
+      )}
+
       {!running && chips.length > 0 && (
         <>
-          <div className="scroll-row -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter)" role="group" aria-label={t("rowsFilter")}>
+          {/* Under "What to import" the rows have a heading of their own: two rows of chips read as one otherwise. */}
+          {j.status === "review" && <h2 className="-mb-3 text-h3 text-text-1">{t("rowsFilter")}</h2>}
+          {/* A fieldset names the chips as one group; min-w-0, or a fieldset grows to its content and the row can't scroll. */}
+          <fieldset className="scroll-row -mx-(--gutter) flex min-w-0 gap-2 overflow-x-auto px-(--gutter)" aria-label={t("rowsFilter")}>
             {chips.map((s) => (
               <FilterChip key={s} selected={effective === s} count={count(s)} onClick={() => setFilter(s)}>
                 {t(`rows_${s}`)}
               </FilterChip>
             ))}
-          </div>
+          </fieldset>
           <QueryState
             query={rows}
             loading={<Skeleton shape="md" className="h-40 w-full" />}
@@ -284,22 +309,16 @@ export function JobReview({ jobId }: { jobId: string }) {
       )}
 
       {j.status === "review" && (
-        <div className="sticky bottom-20 z-sticky space-y-3 rounded-md border border-line bg-surface-1 p-4 shadow-float md:bottom-4 md:p-5">
-          <p className="text-title text-text-1">{t("includeKinds")}</p>
-          <div className="flex flex-wrap gap-2">
-            {(["watch", "rating", "watchlist", "favorite", "list_item"] as const)
-              .filter((k) => (j.stats.byKind[k] ?? 0) > 0)
-              .map((k) => {
-                const on = kinds.includes(k);
-                return (
-                  <FilterChip key={k} selected={on} count={j.stats.byKind[k]} onClick={() => setKinds(on ? kinds.filter((x) => x !== k) : [...kinds, k])}>
-                    {t(`kind_${k}`)}
-                  </FilterChip>
-                );
-              })}
-          </div>
-          <Switch checked={keepRatings} onCheckedChange={setKeepRatings} label={t("keepRatings")} />
-          <Button disabled={kinds.length === 0 || j.stats.matched === 0} loading={applyAll.pending} onClick={() => void applyAll.run()}>
+        // Only the button stays at hand while the rows scroll: on a phone the whole panel took a third of the screen
+        // over the rows it was about (2026-11-07). A floating pill over the content, above the phone's tab bar.
+        <div className="pointer-events-none sticky bottom-24 z-sticky flex md:bottom-6">
+          <Button
+            size="lg"
+            className="pointer-events-auto shadow-float"
+            disabled={kinds.length === 0 || j.stats.matched === 0}
+            loading={applyAll.pending}
+            onClick={() => void applyAll.run()}
+          >
             {t("apply", { count: j.stats.matched })}
           </Button>
         </div>
@@ -330,6 +349,7 @@ function ImportRowItem({
   onChoose: () => void;
 }) {
   const t = useTranslations("import");
+  const tc = useTranslations("common");
   const tcard = useTranslations("card");
   const locale = useLocale();
   // Simkl's TheTVDB numbering that TMDB's seasons don't confirm: the choice covers the whole title.
@@ -363,19 +383,28 @@ function ImportRowItem({
           </>
         ) : r.candidates.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {r.candidates.slice(0, 3).map((c) => (
-              <Button
-                key={c.id}
-                variant="secondary"
-                size="sm"
-                disabled={!editable}
-                onClick={() => onResolve([r.id], "choose", c.id, tvdb)}
-                // TheTVDB numbering: the choice is for every episode of the title, as the line above says.
-                aria-label={tvdb ? `${c.title}${c.year ? ` (${c.year})` : ""} — ${t("useForAll")}` : undefined}
-              >
-                {c.title} {c.year ? `(${c.year})` : ""}
-              </Button>
-            ))}
+            {r.candidates.slice(0, 3).map((c) => {
+              // Three "Flow (2024)" can't be told apart by name: each choice shows its poster and whether it is a film
+              // or a series.
+              const name = [`${c.title}${c.year ? ` (${c.year})` : ""}`, c.kind === "tv" ? tc("series") : tc("movie")].join(" · ");
+              return (
+                <Button
+                  key={c.id}
+                  variant="secondary"
+                  disabled={!editable}
+                  onClick={() => onResolve([r.id], "choose", c.id, tvdb)}
+                  // TheTVDB numbering: the choice is for every episode of the title, as the line above says.
+                  aria-label={tvdb ? `${name} — ${t("useForAll")}` : name}
+                >
+                  {c.posterPath ? (
+                    <img src={tmdbImage(c.posterPath, "w92") ?? undefined} alt="" className="-ms-2 h-7 w-5 shrink-0 rounded-xs bg-surface-3 object-cover" />
+                  ) : (
+                    <span aria-hidden className="-ms-2 h-7 w-5 shrink-0 rounded-xs bg-surface-3" />
+                  )}
+                  {name}
+                </Button>
+              );
+            })}
           </div>
         ) : (
           <span className="text-body-s text-text-2">{r.status === "restricted" ? t("rows_restricted") : t("unmatched")}</span>

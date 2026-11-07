@@ -20,6 +20,44 @@ export const LABEL: Record<ImportSource, string> = {
   plex: "Plex",
 };
 
+/**
+ * Each source's official mark (IMP-10; trademarks of their owners, credited on the Credits page). An app icon with its
+ * own square (Trakt, Simkl, Lampa, Plex) fills the tile; the others sit in it at 24 px. Decorative: the name is written next to it.
+ */
+const LOGO: Record<ImportSource, { src: string; fill?: boolean }> = {
+  trakt: { src: "/brands/trakt.svg", fill: true },
+  simkl: { src: "/brands/simkl.png", fill: true },
+  imdb: { src: "/brands/imdb.svg" },
+  letterboxd: { src: "/brands/letterboxd-dots.svg" },
+  netflix: { src: "/brands/netflix.svg" },
+  lampa: { src: "/brands/lampa.png", fill: true },
+  stremio: { src: "/brands/stremio.svg" },
+  lumovio: { src: "/brand/mark.svg" },
+  jellyfin: { src: "/brands/jellyfin.svg" },
+  plex: { src: "/brands/plex.png", fill: true },
+};
+
+/** The source's mark in its 40 tile (`--surface-2`, radius sm): the source grid and past imports. */
+export function SourceLogo({ source }: { source: ImportSource }) {
+  const logo = LOGO[source];
+  return (
+    <span aria-hidden className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-sm bg-surface-2">
+      <img src={logo.src} alt="" draggable={false} className={logo.fill ? "size-full object-cover" : "max-h-6 max-w-8 object-contain"} />
+    </span>
+  );
+}
+
+/**
+ * Where each service hands out its export (public pages; the person signs in there). Simkl, Lampa and Stremio have no
+ * page of their own for it — their path is in the window's line; Lumovio's own copy is on Privacy and data.
+ */
+export const EXPORT_PAGE: Partial<Record<ImportSource, string>> = {
+  trakt: "https://app.trakt.tv/settings/data",
+  letterboxd: "https://letterboxd.com/settings/data/",
+  imdb: "https://www.imdb.com/list/ratings",
+  netflix: "https://www.netflix.com/settings/viewing-history",
+};
+
 /** The file name for an upload; Trakt/Simkl imports are named by what started them (IMP-02). */
 export function JobName({ job }: { job: ImportJob }) {
   const t = useTranslations("import");
