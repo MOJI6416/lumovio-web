@@ -91,11 +91,6 @@
       "cssGzip": 20624,
       "jsChunks": 16
     },
-    "/[locale]/maintenance": {
-      "jsGzip": 171951,
-      "cssGzip": 26057,
-      "jsChunks": 11
-    },
     "/[locale]/open": {
       "jsGzip": 184839,
       "cssGzip": 20624,
