@@ -27,9 +27,13 @@ export const fieldFocusVisible =
 export type FieldSize = "md" | "lg";
 export const FIELD_HEIGHT: Record<FieldSize, string> = { md: "h-11 in-data-[tv=1]:h-12", lg: "h-12" };
 
-/** The box of every field: --surface-2, a --line-2 border (--danger with aria-invalid), 15 px text. */
+/**
+ * The box of every field: --surface-2, a --line-2 border (--danger with aria-invalid), 15 px text — 16 on a touch
+ * screen: iOS Safari zooms the page into a field of smaller text a finger taps (seen on the owner's iPhone, 2026-11-07)
+ * and leaves it zoomed. Only `text-body` grows; a field with its own size (a PIN's `text-h3`) keeps it.
+ */
 export const fieldBox =
-  "w-full rounded-sm border border-line-2 bg-surface-2 text-body text-text-1 placeholder:text-text-3 transition-[border-color,box-shadow] duration-fast ease-fast aria-invalid:border-danger disabled:cursor-not-allowed disabled:opacity-40";
+  "w-full rounded-sm border border-line-2 bg-surface-2 text-body pointer-coarse:[--type-body:1rem] text-text-1 placeholder:text-text-3 transition-[border-color,box-shadow] duration-fast ease-fast aria-invalid:border-danger disabled:cursor-not-allowed disabled:opacity-40";
 
 /** Classes of a one-line text field. */
 export const inputClass = cn(fieldBox, fieldFocus, "h-11 px-3");
