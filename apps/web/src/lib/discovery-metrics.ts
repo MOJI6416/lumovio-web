@@ -39,19 +39,18 @@ function track(e: DiscoveryEvent) {
 }
 
 /**
- * The page a shelf is on: home, the section landings ("_now" in the watch-now mode), a title page, or other. A page the
- * API built in a C5 comparison arm (`variant`, "lift_a" / "lift_b": API catalog/variants.ts) carries it at the end, so
- * the same anonymous sums can be compared by arm ("home_lift_b").
+ * The page a shelf is on: home, the section landings, a title page, or other. A page the API built in a C5 comparison
+ * arm (`variant`, "lift_a" / "lift_b": API catalog/variants.ts) carries it at the end, so the same anonymous sums can be
+ * compared by arm ("home_lift_b").
  */
-export function discoveryPage(pathname: string, search: string, variant?: string): string {
+export function discoveryPage(pathname: string, variant?: string): string {
   // Every interface language's prefix ("/de/browse/movie" counted as "other" before, 2026-11-01).
   const path = withoutLocale(pathname);
-  const now = new URLSearchParams(search).get("watch") === "now" ? "_now" : "";
   const arm = variant && /^lift_[ab]$/.test(variant) ? `_${variant}` : "";
-  if (path === "/") return `home${now}${arm}`;
-  if (path === "/browse/movie") return `movie${now}${arm}`;
-  if (path === "/browse/tv") return `tv${now}${arm}`;
-  if (path === "/anime") return `anime${now}${arm}`;
+  if (path === "/") return `home${arm}`;
+  if (path === "/browse/movie") return `movie${arm}`;
+  if (path === "/browse/tv") return `tv${arm}`;
+  if (path === "/anime") return `anime${arm}`;
   if (path.startsWith("/title/")) return "title";
   return "other";
 }

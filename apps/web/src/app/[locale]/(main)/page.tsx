@@ -1,6 +1,5 @@
 import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
 import { clsx } from "clsx";
-import { Server } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Billboard } from "@/components/media/Billboard";
 import { cardRow, cardShelf, forCard } from "@/components/media/card-data";
@@ -14,13 +13,10 @@ import { shelfHref, shelfInfo } from "@/components/media/shelf-copy";
 import { StarterRow } from "@/components/media/StarterRow";
 import { Top10Card } from "@/components/media/Top10Card";
 import { TorrentFindsRow } from "@/components/media/TorrentFindsRow";
-import { WatchNowToggle } from "@/components/media/WatchNowToggle";
 import { GuestGateLinks } from "@/components/shell/GuestGate";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
-import { buttonClass } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Link } from "@/i18n/navigation";
 import { meFailure } from "@/lib/me-state";
+import { ON_MY_SERVERS_HREF } from "@/lib/on-my-servers";
 import { optional } from "@/lib/optional";
 import { pageSeo } from "@/lib/seo";
 import { getMeState, serverApi } from "@/lib/server-api";
@@ -40,15 +36,13 @@ const LANDSCAPE_ROWS = new Set(["popular_tv", "on_air", "miniseries"]);
  * (never both, HOME-04) — the Top 10 (the page's only one, HOME-14) and the curated shelves (no editorial block: the
  * owner took "Lumovio's pick" out on 2026-10-25), with the other personal shelves ("Because you watched", a person's
  * titles, new in the profile's genres) between them and no title repeated from a personal shelf's first cards.
- * Shelves with fewer than three cards are not shown (Row); no filter chips inside shelves: "Watch now" is the server
- * shelf's "All" page (HOME-05).
+ * Shelves with fewer than three cards are not shown (Row); no filter chips inside shelves (HOME-05).
  *
  * The first screen (2026-11-06): the billboard and, in either theme, the first shelf under it — "Continue watching"
  * when there is something to continue — on a phone, a desktop and a wide screen. No explanatory lines: a guest's welcome
- * is its heading and the way in, "Watch now" says what it is to a screen reader only, and a "Watch now" with nothing to
- * show is an empty state with the way to a server.
+ * is its heading and the way in.
  */
-export default async function HomePage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
@@ -62,11 +56,10 @@ export default async function HomePage({ params, searchParams }: { params: Promi
     );
   }
   const profile = me?.activeProfile ?? null;
-  const { watch } = await searchParams;
   const empty = { items: [] as TitleSummary[], wanted: [] as TitleSummary[] };
   const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
     // A guest has no session to tell an outage by (getMeState): the home's own data not coming is the same screen.
-    serverApi<CatalogPage>(`/api/catalog/home${watch === "now" && profile ? "?watch=now" : ""}`).catch((e) => {
+    serverApi<CatalogPage>("/api/catalog/home").catch((e) => {
       if (meFailure(e) === "unavailable") return null;
       throw e;
     }),
@@ -77,8 +70,8 @@ export default async function HomePage({ params, searchParams }: { params: Promi
     profile ? serverApi<typeof empty>("/api/library/on-servers").catch(() => empty) : Promise.resolve(empty),
     // Picks from this profile's own favorites and ratings; guests get none (no taste is claimed for them).
     profile ? optional(serverApi<Recommendations>("/api/recommendations"), null) : Promise.resolve(null),
-    // Shelves of the profile's own Watchlist (short films, finished series); none in "watch now".
-    profile && watch !== "now" ? optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] }) : Promise.resolve({ rows: [] as CatalogRow[] }),
+    // Shelves of the profile's own Watchlist (short films, finished series).
+    profile ? optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] }) : Promise.resolve({ rows: [] as CatalogRow[] }),
   ]);
   if (!home) {
     return (
@@ -87,13 +80,10 @@ export default async function HomePage({ params, searchParams }: { params: Promi
       </div>
     );
   }
-  // "Watch now": every shelf keeps only titles with a copy on the profile's servers (the API decides).
-  const now = home.mode === "now";
-  // The Top 10 is the week's trend blended with Lumovio's own week (API catalog/top.ts); other lead shelves (kids profiles) render as normal shelves,
-  // and so does a "watch now" page, where ranks of a thinned list would mislead.
+  // The Top 10 is the week's trend blended with Lumovio's own week (API catalog/top.ts); other lead shelves (kids profiles) render as normal shelves.
   // Cards get their titles without the overviews no card shows (./card-data: a lighter page to download).
   const rows = home.rows.map(cardRow);
-  const trending = rows[0]?.key === "trending" && !now ? rows[0] : null;
+  const trending = rows[0]?.key === "trending" ? rows[0] : null;
   const catalogRows = trending ? rows.slice(1) : rows;
   const top10 = (trending?.items ?? []).slice(0, 10);
   // One shelf of the profile's servers (HOME-05): what arrived from its own lists first, then other recent copies.
@@ -102,13 +92,12 @@ export default async function HomePage({ params, searchParams }: { params: Promi
   const wanted = new Set(arrived.map((x) => x.id));
   const servers = [...arrived, ...onServers.items.filter((x) => !wanted.has(x.id)).map(forCard)];
   // The personal shelves: "For you" (and the next parts of a film series) where "For you" always was, the others between
-  // the catalog shelves; the catalog shelves don't repeat their first cards. In "watch now" only titles with a copy.
-  const shelves = personalShelves(recs, now);
+  // the catalog shelves; the catalog shelves don't repeat their first cards.
+  const shelves = personalShelves(recs);
   const personal = { lead: shelves.lead.map(cardShelf), later: shelves.later.map(cardShelf) };
   const forYou = personal.lead.some((s) => s.kind === "for_you");
   // "For you" is a shelf only with three picks (Row); the starter stands in for it until then, never beside it.
-  const starter = Boolean(recs && !now && !forYou && !recs.startDismissed && recs.seeds.length < 3);
-  const nothing = now && !cont.items.length && !servers.length && !personal.lead.length && !rows.length;
+  const starter = Boolean(recs && !forYou && !recs.startDismissed && recs.seeds.length < 3);
   // The Watchlist's shelves go first among the ones placed between the catalog shelves.
   const rest = interleave(withoutPersonal(catalogRows, [...personal.lead, ...personal.later]), [...library.rows.map(cardRow), ...personal.later]);
   const genres = [...movieGenres.genres, ...tvGenres.genres];
@@ -172,15 +161,6 @@ export default async function HomePage({ params, searchParams }: { params: Promi
           featured && !guest ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-8" : "mt-8 md:mt-12",
         )}
       >
-        {now && (
-          // The switch says what the page is; what it holds is its description for a screen reader.
-          <div className="page-x">
-            <WatchNowToggle on href="/" label={t("rows.watchNow")} describedBy="watch-now-note" />
-            <p id="watch-now-note" className="sr-only">
-              {t("rows.watchNowNote")}
-            </p>
-          </div>
-        )}
         {cont.items.length > 0 && <ContinueRow items={cont.items} />}
         {servers.length > 0 && (
           <Row
@@ -189,8 +169,8 @@ export default async function HomePage({ params, searchParams }: { params: Promi
             title={t("rows.inYourLibraries")}
             note={t("rows.inYourLibrariesNote")}
             rules={arrived.length > 0 ? t("rows.fromYourListsNote") : undefined}
-            // "Watch now" — the whole catalog with a copy on the servers — is this shelf's "All" page (HOME-05).
-            href={!now && home.servers > 0 ? "/?watch=now" : null}
+            // Its "All" is the library's "On my servers": every title with a copy (HOME-05).
+            href={ON_MY_SERVERS_HREF}
           >
             {servers.map((item) => (
               <PosterCard key={item.id} title={item} />
@@ -204,21 +184,6 @@ export default async function HomePage({ params, searchParams }: { params: Promi
         ))}
         {/* Nothing or little to start from: offer the optional starter until it is finished or put off (HOME-03). */}
         {starter && <StarterRow likedGenres={recs?.likedGenres ?? []} />}
-        {nothing && (
-          // Nothing with a copy on the servers (7.11): the empty state, with the way to a server when there is none; the
-          // switch above is the way back to the whole catalog. Its sentence is the heading (no full stop on a heading).
-          <EmptyState
-            icon={Server}
-            title={(home.servers > 0 ? t("rows.watchNowEmpty") : t("title.noServers")).replace(/\.$/, "")}
-            action={
-              home.servers === 0 ? (
-                <Link href="/settings/connections" className={buttonClass("primary")}>
-                  {t("title.connectServer")}
-                </Link>
-              ) : undefined
-            }
-          />
-        )}
         {top10.length > 0 && (
           <Row title={t("rows.top10")} note={t("rows.top10Note")} id="top10" kind="top10" min={3}>
             {top10.map((item, i) => (

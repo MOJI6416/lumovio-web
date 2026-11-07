@@ -7,7 +7,6 @@ import { PosterCard } from "@/components/media/PosterCard";
 import { Row } from "@/components/media/Row";
 import { shelfHref, shelfInfo } from "@/components/media/shelf-copy";
 import { Top10Card } from "@/components/media/Top10Card";
-import { Link } from "@/components/ui/Link";
 import { LinkTabPanel, LinkTabs } from "@/components/ui/Tabs";
 import { optional } from "@/lib/optional";
 import { getMe, serverApi } from "@/lib/server-api";
@@ -16,11 +15,10 @@ import { SectionNav } from "./SectionNav";
 
 /**
  * Movies / Series / Anime landing (design-system 9, Media; S02, S03). As the home page (owner, 2026-10-25): the billboard's
- * art under the transparent header, and the section's name, its switch (phone) and its controls — the genre picker,
- * "All films", "Watch now" — compact over the top of the art, on its scrim (3.5), not a solid band above it that takes the
- * first screen; then the section's Top 10 (one per page) and curated and genre shelves of ordinary poster cards (CAT-10),
- * each linking to its grid. With `watchNow`, only titles with a copy on the profile's servers, and no ranks. Without
- * featured titles there is no art: the name and controls head the page.
+ * art under the transparent header, and the section's name, its switch (phone) and its controls — the genre picker and
+ * "All films" — compact over the top of the art, on its scrim (3.5), not a solid band above it that takes the first
+ * screen; then the section's Top 10 (one per page) and curated and genre shelves of ordinary poster cards (CAT-10), each
+ * linking to its grid. Without featured titles there is no art: the name and controls head the page.
  */
 export async function SectionLanding({
   kind,
@@ -29,7 +27,6 @@ export async function SectionLanding({
   allLabel,
   base,
   genres,
-  watchNow = false,
 }: {
   kind: MediaKind;
   anime: boolean;
@@ -37,19 +34,14 @@ export async function SectionLanding({
   allLabel: string;
   base: string;
   genres: Genre[];
-  watchNow?: boolean;
 }) {
   const t = await getTranslations();
   const locale = await getLocale();
-  const query = [anime && "anime=1", watchNow && "watch=now"].filter(Boolean).join("&");
-  const [data, me] = await Promise.all([serverApi<CatalogPage>(`/api/catalog/section/${kind}${query ? `?${query}` : ""}`), optional(getMe(), null)]);
-  const now = data.mode === "now";
+  const [data, me] = await Promise.all([serverApi<CatalogPage>(`/api/catalog/section/${kind}${anime ? "?anime=1" : ""}`), optional(getMe(), null)]);
   const cap = (s: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
   // Cards get their titles without the overviews no card shows (media/card-data: a lighter page to download).
   const rows = data.rows.map(cardRow);
-  const popular = now ? undefined : rows[0];
-  const rest = now ? rows : rows.slice(1);
-  const toggle = data.servers > 0 || now ? { on: now, label: t("rows.watchNow") } : undefined;
+  const [popular, ...rest] = rows;
   const heading = (r: CatalogRow) => (r.title ? cap(r.title) : t(r.titleKey as "rows.popular"));
   const featured = data.featured.length > 0;
   const active = anime ? "anime" : kind;
@@ -76,7 +68,7 @@ export async function SectionLanding({
               panelId="catalog-section"
               className="mb-3 md:hidden"
             />
-            <SectionNav title={title} base={base} genres={genres} allLabel={allLabel} watchNow={toggle} />
+            <SectionNav title={title} base={base} genres={genres} allLabel={allLabel} />
           </div>
         </div>
         {featured && <Billboard items={data.featured} genres={genres} under="section" />}
@@ -90,15 +82,6 @@ export async function SectionLanding({
           featured ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-12" : "mt-2 md:mt-4",
         )}
       >
-        {now && (
-          <p className="page-x text-body-s text-text-2">
-            {/* The section shows only what its own shelves chose; everything on the servers is on the home page. */}
-            {data.rows.length > 0 ? t("rows.watchNowNote") : t("rows.watchNowEmpty")}{" "}
-            <Link variant="action" arrow href="/?watch=now">
-              {t("rows.watchNowHome")}
-            </Link>
-          </p>
-        )}
         {popular && (
           <Row title={t("rows.top10Section", { section: title })} note={t("rows.top10SectionNote")} id="top10" kind="top10" min={3}>
             {popular.items.slice(0, 10).map((item, i) => (

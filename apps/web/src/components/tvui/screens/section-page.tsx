@@ -59,13 +59,12 @@ export async function SectionPage({
     );
   }
   const data = await serverApi<CatalogPage>(`/api/catalog/section/${kind}${anime ? "?anime=1" : ""}`);
-  // The section's Top 10 (one per page) unless "watch now" thinned the list, then its shelves.
-  const now = data.mode === "now";
-  const [popular, ...rest] = now ? [undefined, ...data.rows] : data.rows;
+  // The section's Top 10 (one per page), then its shelves.
+  const [popular, ...rest] = data.rows;
   const top = popular ? catalogShelf(popular, t, true) : null;
   const shelves = [
     top && { ...top, title: t("rows.top10Section", { section: title }) },
-    ...rest.map((r) => (r ? catalogShelf(r, t) : null)),
+    ...rest.map((r) => catalogShelf(r, t)),
   ].filter((s): s is TvShelfData => Boolean(s));
   const hero = data.featured[0] ? trimOverview(data.featured[0]) : null;
   return (

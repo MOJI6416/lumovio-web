@@ -2,7 +2,6 @@
 
 import type { Genre } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
-import { WatchNowToggle } from "@/components/media/WatchNowToggle";
 import { Combobox } from "@/components/ui/Combobox";
 import { Link } from "@/components/ui/Link";
 import { useRouter } from "@/i18n/navigation";
@@ -10,22 +9,10 @@ import { useRouter } from "@/i18n/navigation";
 /**
  * A section's heading row, over the top of its billboard's art (owner, 2026-10-25): the name (on a phone the section
  * switch above names it; the h1 stays for screen readers), the genre picker — a Combobox, so ↑/↓ move through the list
- * and only Enter opens a genre (CAT-01) — "All films" as an action link (CAT-10), and the "Watch now" switch. Compact:
- * one line; on a phone the controls scroll sideways in it rather than wrap down over the art.
+ * and only Enter opens a genre (CAT-01) — and "All films" as an action link (CAT-10). Compact: one line; on a phone the
+ * controls scroll sideways in it rather than wrap down over the art.
  */
-export function SectionNav({
-  title,
-  base,
-  genres,
-  allLabel,
-  watchNow,
-}: {
-  title: string;
-  base: string;
-  genres: Genre[];
-  allLabel: string;
-  watchNow?: { on: boolean; label: string };
-}) {
+export function SectionNav({ title, base, genres, allLabel }: { title: string; base: string; genres: Genre[]; allLabel: string }) {
   const t = useTranslations("browse");
   const locale = useLocale();
   const router = useRouter();
@@ -46,7 +33,6 @@ export function SectionNav({
         <Link variant="action" arrow href={`${base}?view=all`}>
           {allLabel}
         </Link>
-        {watchNow && <WatchNowToggle on={watchNow.on} href={watchNow.on ? base : `${base}?watch=now`} label={watchNow.label} />}
       </div>
     </div>
   );

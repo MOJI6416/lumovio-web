@@ -10,19 +10,16 @@ const KEEP = new Set(["now_playing", "upcoming", "top_movies", "on_air", "new_se
 /**
  * The profile's personal shelves for the home page (HOME-04): `lead` — the next parts of its film series and "For
  * you", shown where "For you" always was; `later` — "Because you watched", a person's titles and new titles in its
- * genres, placed between the catalog shelves. In "Watch now" every shelf keeps only titles with a copy. Shelves under
- * three cards are dropped (Row).
+ * genres, placed between the catalog shelves. Shelves under three cards are dropped (Row).
  */
-export function personalShelves(recs: Recommendations | null, watchNow: boolean): { lead: RecommendationShelf[]; later: RecommendationShelf[] } {
+export function personalShelves(recs: Recommendations | null): { lead: RecommendationShelf[]; later: RecommendationShelf[] } {
   if (!recs || recs.state !== "personal") return { lead: [], later: [] };
   // An API from before the shelves (a deploy rolling out) sends "For you" only.
   const all: RecommendationShelf[] = recs.shelves ?? [{ key: "for_you", kind: "for_you", items: recs.items }];
-  const shelves = all
-    .map((s) => (watchNow ? { ...s, items: s.items.filter((i) => i.title.onServer) } : s))
-    .filter((s) => s.items.length >= 3);
+  const shelves = all.filter((s) => s.items.length >= 3);
   return {
     lead: shelves.filter((s) => s.kind === "franchise" || s.kind === "for_you"),
-    later: watchNow ? [] : shelves.filter((s) => s.kind !== "franchise" && s.kind !== "for_you"),
+    later: shelves.filter((s) => s.kind !== "franchise" && s.kind !== "for_you"),
   };
 }
 

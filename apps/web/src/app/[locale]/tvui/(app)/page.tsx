@@ -31,13 +31,13 @@ export default async function TvHomePage({ params }: { params: Promise<{ locale:
   const rows = home.rows;
   const trending = rows[0]?.key === "trending" ? rows[0] : null;
   const catalogRows = trending ? rows.slice(1) : rows;
-  const shelves = personalShelves(recs, false);
+  const shelves = personalShelves(recs);
   const wanted = new Set((onServers.wanted ?? []).map((x) => x.id));
   const servers = [...(onServers.wanted ?? []), ...onServers.items.filter((x) => !wanted.has(x.id))];
 
   const list: (TvShelfData | null)[] = [
     continueShelf(cont.items, t),
-    servers.length >= 3 ? { key: "servers", title: t("rows.inYourLibraries"), shape: "poster", items: servers.map((x) => ({ title: trimOverview(x) })), href: "/browse/movie?view=all&watch=now" } : null,
+    servers.length >= 3 ? { key: "servers", title: t("rows.inYourLibraries"), shape: "poster", items: servers.map((x) => ({ title: trimOverview(x) })) } : null,
     ...shelves.lead.map((s) => personalShelf(s, t, genres)),
     trending ? catalogShelf(trending, t, true) : null,
     // The Watchlist's shelves (short films, finished series) without "Show all": the TV's library has no such filters.

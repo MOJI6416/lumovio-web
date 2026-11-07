@@ -182,7 +182,7 @@ export function Row({
     if (!shown || !el || !id) return;
     // The page's C5 comparison arm, when the API built it in one (`data-discovery-variant` on the page's shelves).
     const variant = el.closest<HTMLElement>("[data-discovery-variant]")?.dataset.discoveryVariant;
-    return observeShelf(el, discoveryPage(window.location.pathname, window.location.search, variant), id);
+    return observeShelf(el, discoveryPage(window.location.pathname, variant), id);
   }, [id, shown]);
   useRovingCards(ref, shown);
 

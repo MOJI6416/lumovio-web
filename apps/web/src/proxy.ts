@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { interfaceAcceptLanguage, LOCALE_CODES, pickInterfaceLocale, removedLocaleRedirect } from "./i18n/locales";
 import { routing } from "./i18n/routing";
+import { ON_MY_SERVERS_HREF } from "./lib/on-my-servers";
 import { isTvMode, TV_COOKIE, TV_PATH_HEADER, TV_SHELL_HEADER, tvShellPath } from "./lib/tv";
 
 const intl = createMiddleware(routing);
 
 /** Public profile vanity URLs: /@handle and /uk/@handle → the /u/[handle] route. */
 const VANITY = /^(?:\/([a-zA-Z-]{2,5}))?\/@([a-zA-Z0-9_]{3,24})\/?$/;
+
+/** The home page and the catalog sections in any language: with `?watch=now`, the old addresses of "Watch now". */
+const WATCH_NOW_PAGE = new RegExp(`^(?:/(${LOCALE_CODES.join("|")}))?(?:/browse/(?:movie|tv)|/anime)?/?$`);
 
 /** Alternate and former hosts (www, the old staging domain) permanently redirect to the site URL. */
 const CANONICAL = process.env.SITE_URL ? new URL(process.env.SITE_URL) : null;
@@ -148,6 +152,14 @@ async function route(req: NextRequest) {
     const res = NextResponse.redirect(url, 308);
     if (removed.pinEnglish) res.cookies.set("lumovio_locale", "en", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
+  }
+  // "Watch now" lives in the library since 2026-11-07: people's bookmarks of its old pages lead there.
+  const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
+  if (old) {
+    const url = req.nextUrl.clone();
+    url.pathname = `${old[1] ? `/${old[1]}` : ""}${ON_MY_SERVERS_HREF}`;
+    url.search = "";
+    return NextResponse.redirect(url, 307);
   }
   const m = VANITY.exec(req.nextUrl.pathname);
   if (m) {

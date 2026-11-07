@@ -50,7 +50,6 @@ export default async function BrowsePage({ params, searchParams }: { params: Par
         allLabel={kind === "tv" ? t("allSeries") : t("allMovies")}
         base={`/browse/${kind}`}
         genres={genres}
-        watchNow={get("watch") === "now"}
       />
     );
   }

@@ -43,7 +43,7 @@ export default async function AnimePage({ params, searchParams }: { params: Prom
   const animeGenres = genres.filter((g) => ANIME_GENRES.has(g.id));
 
   if (!wantsGrid(get)) {
-    return <SectionLanding kind="tv" anime title={t("titleAnime")} allLabel={t("allAnime")} base="/anime" genres={animeGenres} watchNow={get("watch") === "now"} />;
+    return <SectionLanding kind="tv" anime title={t("titleAnime")} allLabel={t("allAnime")} base="/anime" genres={animeGenres} />;
   }
 
   const kind = get("kind") === "movie" ? "movie" : "tv";
