@@ -8,7 +8,6 @@ import { SITE_URL } from "@/lib/seo";
  * and the legal pages stay open.
  */
 const PRIVATE = [
-  "admin", // the admin console
   "auth", // sign-in, sign-up, password reset, two-factor
   "calendar", // a profile's release calendar
   "dev", // the component showcase

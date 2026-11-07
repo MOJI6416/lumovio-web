@@ -38,8 +38,6 @@ const config: NextConfig = {
     // lumovio.app/apk — the short address to type into a TV's Downloader: the newest APK, else the page about the app.
     return [
       { source: "/apk", destination: tvAppApk ? `/${tvAppApk}` : "/android-tv", permanent: false },
-      // The admin is its own app at /admin (apps/admin, Traefik sends it there); a language's old /ru/admin leads to it.
-      { source: "/:locale([a-z]{2}|[a-z]{2}-[A-Z]{2})/admin/:path*", destination: "/admin/:path*", permanent: false },
     ];
   },
   async rewrites() {

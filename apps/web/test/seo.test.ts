@@ -57,7 +57,9 @@ describe("robots.txt and sitemap.xml", () => {
   it("closes personal pages in every language but keeps the catalogue open", () => {
     const rules = robots().rules;
     const disallow = (Array.isArray(rules) ? rules[0]! : rules).disallow as string[];
-    for (const path of ["/api/", "/library", "/ru/settings", "/uk/watch", "/de/tv", "/dev", "/admin", "/ru/auth"]) expect(disallow).toContain(path);
+    for (const path of ["/api/", "/library", "/ru/settings", "/uk/watch", "/de/tv", "/dev", "/ru/auth"]) expect(disallow).toContain(path);
+    // No private console is named: robots.txt would tell where it lives.
+    expect(disallow.some((d) => d.includes("admin"))).toBe(false);
     // Robots rules are prefixes: none may cover a public address.
     for (const open of ["/browse/tv", "/ru/browse/tv", "/title/tv/1399", "/ru/title/movie/1", "/u/library", "/lists/x", "/ru/legal/terms", "/anime", "/search"]) {
       expect(disallow.some((d) => open.startsWith(d))).toBe(false);
