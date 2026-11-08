@@ -1080,6 +1080,7 @@
     "trackers": "Trackery",
     "moreResults": "Pokaż jeszcze {count}",
     "addFailed": "TorrServer nie dodał tego wydania.",
+    "addRetrying": "Próbujemy innego wydania…",
     "refreshing": "Odświeżamy wyniki…",
     "searchKept": "Wcześniejsze wyniki zostają ({minutes, plural, =0 {przed chwilą} one {# min temu} few {# min temu} many {# min temu} other {# min temu}}).",
     "searchAge": "Znaleziono {minutes, plural, =0 {przed chwilą} one {# min temu} few {# min temu} many {# min temu} other {# min temu}} dla „{query}”",

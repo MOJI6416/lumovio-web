@@ -72,6 +72,8 @@ export interface FinderPick {
   linked: boolean;
   /** The release in words ("1080p · WEB-DL · Russian · dubbed"), for the stages of starting it. */
   version: string;
+  /** Releases of the same audio and picture to add instead if the server doesn't take this one (item 3). */
+  fallbacks: TsSearchResult[];
 }
 
 /**
@@ -364,7 +366,18 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const x = view?.byLink.get(r.link);
     return x ? [text.picture(x.info), heard(x)].filter(Boolean).join(" · ") : r.title;
   };
-  const pick = (r: TsSearchResult, anchor: Element | null) => onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r) }, anchor);
+  // Two releases a failed add falls back on (item 3, S3): the same audio and picture, alive, in the list's order.
+  const fallbacks = (r: TsSearchResult): TsSearchResult[] => {
+    const x = view?.byLink.get(r.link);
+    if (!x || !view) return [];
+    const keys = voiceKeys(x);
+    return view.ranked
+      .filter((y) => y !== x && !y.dead && !y.info.cam && y.holds !== false && y.picture === x.picture && voiceKeys(y).some((k) => keys.includes(k)))
+      .slice(0, 2)
+      .map((y) => y.result);
+  };
+  const pick = (r: TsSearchResult, anchor: Element | null) =>
+    onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r), fallbacks: isLinked(r) ? [] : fallbacks(r) }, anchor);
 
   const minutes = found ? Math.max(0, Math.round((Date.now() - found.at) / 60_000)) : 0;
   // "Russian · HDrezka Studio · 32": the language first, so one studio in two languages is two clear options (SRC-04).

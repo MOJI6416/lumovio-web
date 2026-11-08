@@ -98,3 +98,43 @@ describe("a launch cancelled while its release was added (A16, P7)", () => {
     expect(torrents).toEqual([owners()]);
   });
 });
+
+describe("a launch that heals itself (item 3, S3)", () => {
+  beforeEach(() => {
+    torrents = [owners()];
+    calls.length = 0;
+  });
+
+  it("adds the next release of the same audio and picture when the server refuses the first, and says so", async () => {
+    const { addFirst } = await import("../src/lib/media/torrent-source");
+    const add = fake.add;
+    let n = 0;
+    fake.add = async (...a: Parameters<typeof add>) => {
+      if (n++ === 0) throw new Error("TorrServer answered 400");
+      return add(...a);
+    };
+    addsHash = NEW;
+    const said: string[] = [];
+    const second = { ...result, title: "Money Heist S05 2160p WEB-DL HEVC (other tracker)" };
+    const got = await addFirst("c1", { id: "tv:71446", title: "Бумажный дом", year: 2017, posterPath: null }, 5, [result as never, second as never], { onNext: () => said.push("next") });
+    fake.add = add;
+    expect([got?.hash, got?.release.title, said]).toEqual([NEW, second.title, ["next"]]);
+  });
+
+  it("stops trying once the launch was cancelled, and throws the last failure when none was added", async () => {
+    const { addFirst } = await import("../src/lib/media/torrent-source");
+    const add = fake.add;
+    fake.add = async () => {
+      throw new Error("TorrServer answered 400");
+    };
+    let tries = 0;
+    const counting = () => {
+      tries++;
+      return true;
+    };
+    await expect(addFirst("c1", { id: "x", title: "X", year: null, posterPath: null }, null, [result as never, result as never], { live: counting })).rejects.toThrow("400");
+    await expect(addFirst("c1", { id: "x", title: "X", year: null, posterPath: null }, null, [result as never, result as never], { live: () => false })).rejects.toThrow("400");
+    fake.add = add;
+    expect(tries).toBe(1);
+  });
+});

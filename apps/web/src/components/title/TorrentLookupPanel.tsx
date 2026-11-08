@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Info, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
-import { endLaunch, startLaunch } from "@/components/player/launch";
+import { endLaunch, setLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize, knownVersions, QUALITY_MODES, ReleaseLine, useReleaseText, VersionName } from "@/components/sources/release-text";
@@ -20,7 +20,7 @@ import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLook
 import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { pictureReasons, type RankedRelease } from "@/lib/media/releases";
-import { addTorrentSource, dropAdded } from "@/lib/media/torrent-source";
+import { addFirst, dropAdded } from "@/lib/media/torrent-source";
 import { startHref, useWatchStart } from "./chosen-season";
 import { sourcesHref, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
@@ -118,19 +118,16 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
     // The launch's scene from the press (11.1 «Запуск»): the add is its first step, the player's page goes on with it;
     // "←" drops it before the player is asked for.
     let dropped = false;
-    startLaunch(
-      {
-        status: tpl("stage_add"),
-        onBack: () => {
-          dropped = true;
-          setAdding(false);
-          endLaunch();
-        },
-      },
-      true,
-    );
+    const onBack = () => {
+      dropped = true;
+      setAdding(false);
+      endLaunch();
+    };
+    startLaunch({ status: tpl("stage_add"), onBack }, true);
     try {
-      const added = await addTorrentSource(source.id, d, null, x.result);
+      // Another release of the same audio and picture when the server doesn't take this one (item 3, S3).
+      const others = pick.pool.filter((y) => y !== x && y.picture === x.picture).slice(0, 2).map((y) => y.result);
+      const added = await addFirst(source.id, d, null, [x.result, ...others], { live: () => !dropped, onNext: () => setLaunch({ status: tpl("addRetrying"), onBack }) });
       if (!added) throw new Error(tpl("addFailed"));
       if (dropped) return dropAdded(source.id, added);
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });

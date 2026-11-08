@@ -58,6 +58,36 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
 }
 
 /**
+ * Adds the first of these releases the server takes (item 3, S3): one indexer's link out of date or a tracker refusing
+ * doesn't end the launch while another release of the same audio and picture is there. `onNext` says so before each
+ * next try; `live` stops the tries once the launch was cancelled. Null when the server added none and said nothing; the
+ * last failure is thrown otherwise.
+ */
+export async function addFirst(
+  connectionId: string,
+  d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">,
+  season: number | null,
+  releases: TsSearchResult[],
+  { onNext, live = () => true }: { onNext?: () => void; live?: () => boolean } = {},
+) {
+  let failure: unknown = null;
+  for (const [i, r] of releases.entries()) {
+    if (i > 0) {
+      if (!live()) break;
+      onNext?.();
+    }
+    try {
+      const added = await addTorrentSource(connectionId, d, season, r);
+      if (added) return { ...added, release: r };
+    } catch (e) {
+      failure = e;
+    }
+  }
+  if (failure) throw failure;
+  return null;
+}
+
+/**
  * A launch cancelled while its release was being added (A16, P7): what it added goes, from the server and the index;
  * a torrent that was on the server before stays — only `fresh` is ever removed.
  */

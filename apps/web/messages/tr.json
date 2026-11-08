@@ -1080,6 +1080,7 @@
     "trackers": "Tracker’lar",
     "moreResults": "{count} tane daha göster",
     "addFailed": "TorrServer bu sürümü eklemedi.",
+    "addRetrying": "Başka bir sürüm deneniyor…",
     "refreshing": "Sonuçlar yenileniyor…",
     "searchKept": "Önceki sonuçlar kalıyor ({minutes, plural, =0 {az önce} one {# dk önce} other {# dk önce}}).",
     "searchAge": "“{query}” için {minutes, plural, =0 {az önce} one {# dk önce} other {# dk önce}} bulundu",

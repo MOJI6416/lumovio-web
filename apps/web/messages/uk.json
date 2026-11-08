@@ -1080,6 +1080,7 @@
     "trackers": "Трекери",
     "moreResults": "Показати ще {count}",
     "addFailed": "TorrServer не додав цю роздачу.",
+    "addRetrying": "Пробуємо іншу роздачу…",
     "refreshing": "Оновлюємо результати…",
     "searchKept": "Показано попередні результати ({minutes, plural, =0 {щойно} other {# хв тому}}).",
     "searchAge": "Знайдено {minutes, plural, =0 {щойно} other {# хв тому}} за запитом «{query}»",

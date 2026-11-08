@@ -49,7 +49,7 @@ import { otherSeasonsOnly, voiceWish } from "@/lib/media/releases";
 import { orderedSources, sourceRank, startCandidate } from "@/lib/media/source-order";
 import { mediaFailure } from "@/lib/media/stream-break";
 import { forgetTorrents, invalidateAvailability, markPlayed, torrentPresence } from "@/lib/media/torrent-manage";
-import { addTorrentSource, dropAdded } from "@/lib/media/torrent-source";
+import { addFirst, dropAdded } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
@@ -611,7 +611,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const prep: Prep = { stages: stagesFor({ provider: "torrserver", bound: false }, { added: true, episode: d.kind === "tv" }), at: "add", facts: {} };
         setPhase({ kind: "preparing", candidate: null, label: `${pick.version} — ${server}`, prep, fromScreen: true });
         try {
-          const added = await addTorrentSource(pick.connectionId, d, season, pick.result);
+          // Another release of the same audio and picture when the server doesn't take this one (item 3, S3).
+          const added = await addFirst(pick.connectionId, d, season, [pick.result, ...pick.fallbacks], {
+            live: () => attempt.current === my,
+            onNext: () => setPhase({ kind: "preparing", candidate: null, label: `${t("addRetrying")} · ${pick.version} — ${server}`, prep, fromScreen: true }),
+          });
           if (attempt.current !== my) return dropAdded(pick.connectionId, added);
           if (!added) throw new ShownError(t("addFailed"));
           ({ hash, label } = added);

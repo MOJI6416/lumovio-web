@@ -1080,6 +1080,7 @@
     "trackers": "Trackers",
     "moreResults": "Afficher {count} de plus",
     "addFailed": "TorrServer n’a pas ajouté cette release.",
+    "addRetrying": "On essaie une autre version…",
     "refreshing": "Actualisation des résultats…",
     "searchKept": "Les résultats précédents restent ({minutes, plural, =0 {à l’instant} other {il y a # min}}).",
     "searchAge": "Trouvé {minutes, plural, =0 {à l’instant} other {il y a # min}} pour « {query} »",
