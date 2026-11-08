@@ -48,15 +48,20 @@ describe("SlideClock", () => {
 });
 
 describe("hold reasons are independent", () => {
-  const none: HoldReasons = { paused: false, hover: false, focus: false, hidden: false, reduced: false };
+  const none: HoldReasons = { paused: false, hover: false, focus: false, hidden: false, offscreen: false, reduced: false };
 
   it("rotates only with more than one slide and no reason to hold", () => {
     expect(rotates(5, none)).toBe(true);
     expect(rotates(1, none)).toBe(false);
   });
 
-  it("the pointer leaving does not resume while focus, the pause button or a hidden tab still holds it", () => {
-    for (const reason of ["focus", "paused", "hidden", "reduced"] as const) {
+  it("scrolled mostly away, the carousel holds; back in view, it goes on", () => {
+    expect(rotates(5, { ...none, offscreen: true })).toBe(false);
+    expect(rotates(5, { ...none, offscreen: false })).toBe(true);
+  });
+
+  it("the pointer leaving does not resume while focus, the pause button, a hidden tab or a scrolled-away carousel still holds it", () => {
+    for (const reason of ["focus", "paused", "hidden", "offscreen", "reduced"] as const) {
       expect(rotates(5, { ...none, hover: false, [reason]: true })).toBe(false);
     }
   });

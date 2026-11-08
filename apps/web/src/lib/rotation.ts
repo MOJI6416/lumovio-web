@@ -48,10 +48,12 @@ export interface HoldReasons {
   focus: boolean;
   /** The tab is not visible. */
   hidden: boolean;
+  /** The carousel is mostly scrolled out of view: back up, the same slide is there. */
+  offscreen: boolean;
   /** prefers-reduced-motion: nothing moves on its own. */
   reduced: boolean;
 }
 
 export function rotates(slides: number, r: HoldReasons): boolean {
-  return slides > 1 && !r.paused && !r.hover && !r.focus && !r.hidden && !r.reduced;
+  return slides > 1 && !r.paused && !r.hover && !r.focus && !r.hidden && !r.offscreen && !r.reduced;
 }

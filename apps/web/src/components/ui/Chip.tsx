@@ -1,8 +1,9 @@
 "use client";
 
-import { type LucideIcon, X } from "lucide-react";
+import { ChevronRight, type LucideIcon, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
+import { Link as IntlLink } from "@/i18n/navigation";
 import { cn } from "./cn";
 import { groupFocusRing } from "./styles";
 
@@ -52,6 +53,30 @@ export const FilterChip = forwardRef<HTMLButtonElement, FilterChipProps>(functio
     </button>
   );
 });
+
+/**
+ * A link of the pill family (design-system 7.4 "LinkChip"): where a row of pills also leads to a page — a catalog
+ * section's "All films ›" beside its genres pill. FilterChip's look at rest and a chevron that says it goes somewhere;
+ * a link, never `aria-pressed`. 44 tall on a phone, as FilterChip.
+ */
+export function LinkChip({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  return (
+    <IntlLink
+      href={href}
+      className={cn("group inline-flex shrink-0 select-none items-center justify-center focus-visible:outline-none focus-visible:shadow-none max-sm:min-h-11", className)}
+    >
+      <span
+        className={cn(
+          "inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-full border border-line-2 ps-3 pe-2 text-body-s font-semibold text-text-1 transition-colors duration-base ease-base group-hover:bg-surface-2 max-sm:h-9",
+          groupFocusRing,
+        )}
+      >
+        {children}
+        <ChevronRight aria-hidden className="size-4 shrink-0 text-text-2" />
+      </span>
+    </IntlLink>
+  );
+}
 
 export interface InputChipProps {
   /** What the chip stands for; also names its remove button ("Remove «Horror»"). */

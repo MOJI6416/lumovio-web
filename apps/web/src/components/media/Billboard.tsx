@@ -18,6 +18,8 @@ import { HeroActions } from "./HeroActions";
 import { TitleLogo } from "./TitleLogo";
 
 const INTERVAL_MS = 8000;
+/** How long a slide asked for waits for its art before it is shown anyway (a slow network). */
+const WAIT_MS = 2500;
 /** A finger's sideways move that turns the slide: this far, and mostly sideways. */
 const SWIPE_PX = 48;
 
@@ -26,8 +28,11 @@ const SWIPE_PX = 48;
  * dark in either theme), the title's logo or name, one metadata line (rating · year · type · genres), three lines of
  * overview (not on a phone), and the actions of 8.2 (./HeroActions: "Watch" where a copy plays, else "More info", HOME-02).
  *
- * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab or the pause button hold the
- * current one where it is (its time and its progress segment are kept), and reduced motion turns it off. The pause
+ * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab, the billboard scrolled mostly
+ * away or the pause button hold the current one where it is (its time and its progress segment are kept), and reduced
+ * motion turns it off. A new slide fades in over the old one, which stays whole under it (no dip to the stage between
+ * two pictures), and only once its art has loaded (at most 2.5 s on a slow network): the neighbours' art is fetched
+ * after the page has loaded, every slide's once a pointer or focus reaches the billboard (2026-11-08). The pause
  * button (a toggle with the pause icon, never a ▶ that reads as "Watch", HOME-12) and the progress segments sit at the
  * end of the actions' row, 44 px to tap on a phone; the segments are one Tab stop, ←/→ move between slides.
  *
@@ -48,11 +53,19 @@ const SWIPE_PX = 48;
 export function Billboard({ items, genres, under = "header" }: { items: FeaturedTitle[]; genres: Genre[]; under?: "header" | "section" }) {
   const t = useTranslations();
   const locale = useLocale();
-  const [index, setIndex] = useState(0);
+  // The slide shown and the one before it, which stays drawn under the new one while that fades in (a cross-fade,
+  // not a dip to the stage between two pictures: the outgoing art used to leave at once, 2026-11-08).
+  const [{ index, prev }, setSlide] = useState<{ index: number; prev: number | null }>({ index: 0, prev: null });
+  // A slide asked for whose art hasn't loaded yet: shown once it has (or after WAIT_MS), never as an empty frame.
+  const [pending, setPending] = useState<number | null>(null);
+  const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
+  // Someone reached for the carousel (a pointer over it, focus in it): every slide's art is fetched.
+  const [warm, setWarm] = useState(false);
   const [paused, setPaused] = useState(false);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [offscreen, setOffscreen] = useState(false);
   const [reduced, setReduced] = useState(false);
   const root = useRef<HTMLElement>(null);
   const bar = useRef<HTMLSpanElement>(null);
@@ -64,10 +77,11 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   const swiped = useRef(false);
   // "Watch" only where something can actually play; otherwise the details page is the main action.
   const playable = usePlayable(items.map((f) => f.id));
-  // The next slide's art is fetched once the page has loaded, not beside the first slide's (the largest image of the
+  // The neighbours' art is fetched once the page has loaded, not beside the first slide's (the largest image of the
   // first screen) on a slow network.
   const [loaded, setLoaded] = useState(false);
   useEffect(() => afterPageLoad(() => setLoaded(true)), []);
+  const markReady = useCallback((id: string) => setReady((s) => (s.has(id) ? s : new Set(s).add(id))), []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -77,13 +91,45 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     visibility();
     mq.addEventListener("change", motion);
     document.addEventListener("visibilitychange", visibility);
+    // Scrolled mostly away, the slide holds: back up, the same title is there, and nothing is fetched meanwhile.
+    const io = root.current
+      ? new IntersectionObserver((seen) => seen[0] && setOffscreen(seen[0].intersectionRatio < 0.35), { threshold: [0, 0.35] })
+      : null;
+    if (root.current) io?.observe(root.current);
     return () => {
       mq.removeEventListener("change", motion);
       document.removeEventListener("visibilitychange", visibility);
+      io?.disconnect();
     };
   }, []);
 
-  const running = rotates(items.length, { paused, hover, focus, hidden, reduced });
+  const n = items.length;
+  const show = useCallback((to: number) => {
+    setSlide((s) => (s.index === to ? s : { index: to, prev: s.index }));
+    setPending(null);
+  }, []);
+  // Choosing the slide already shown keeps its time; another slide starts its own interval — once its art is there.
+  const go = useCallback(
+    (i: number) => {
+      const to = ((i % n) + n) % n;
+      const id = items[to]?.id;
+      if (to === index || id === undefined) return setPending(null);
+      if (ready.has(id)) show(to);
+      else setPending(to);
+    },
+    [n, items, index, ready, show],
+  );
+  const goRef = useRef(go);
+  goRef.current = go;
+  useEffect(() => {
+    if (pending === null) return;
+    const id = items[pending]?.id;
+    if (id !== undefined && ready.has(id)) return show(pending);
+    const timer = window.setTimeout(() => show(pending), WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [pending, ready, items, show]);
+
+  const running = rotates(n, { paused, hover, focus, hidden, offscreen, reduced });
   useEffect(() => {
     if (slide.current !== index) {
       slide.current = index;
@@ -102,16 +148,19 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
       return () => progress?.cancel();
     }
     clock.resume(performance.now());
-    const timer = window.setTimeout(() => setIndex((i) => (i + 1) % items.length), clock.remaining(performance.now()));
+    // One round on its own (as Apple TV's and Prime Video's): after the last slide the first comes back and holds — the
+    // pause button then says so, and it goes on with a press.
+    const timer = window.setTimeout(() => {
+      if (index + 1 >= n) setPaused(true);
+      goRef.current(index + 1);
+    }, clock.remaining(performance.now()));
     return () => {
       window.clearTimeout(timer);
       clock.pause(performance.now());
       progress?.cancel();
     };
-  }, [running, index, items.length, clock]);
+  }, [running, index, n, clock]);
 
-  // Choosing the slide already shown keeps its time; another slide starts its own interval.
-  const go = useCallback((i: number) => setIndex(((i % items.length) + items.length) % items.length), [items.length]);
   // The segments are one stop: ←/→ (Home/End) choose the slide and keep the focus on its segment.
   const onSegmentKey = (e: KeyboardEvent) => {
     const rtl = root.current ? getComputedStyle(root.current).direction === "rtl" : false;
@@ -162,10 +211,17 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
       ref={root}
       aria-roledescription="carousel"
       aria-label={t("home.featured")}
-      onPointerEnter={(e) => e.pointerType !== "touch" && setHover(true)}
+      // A pointer over the billboard or focus in it: someone may choose a slide, so every slide's art is fetched.
+      onPointerEnter={(e) => {
+        setWarm(true);
+        if (e.pointerType !== "touch") setHover(true);
+      }}
       onPointerLeave={() => setHover(false)}
       // Keyboard focus holds the slide; a tap on a phone does not freeze the rotation.
-      onFocusCapture={(e) => (e.target as HTMLElement).matches(":focus-visible") && setFocus(true)}
+      onFocusCapture={(e) => {
+        setWarm(true);
+        if ((e.target as HTMLElement).matches(":focus-visible")) setFocus(true);
+      }}
       onBlurCapture={(e) => {
         if (!root.current?.contains(e.relatedTarget as Node | null)) setFocus(false);
       }}
@@ -208,11 +264,25 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
         )}
       >
         {items.map((f, i) => {
-          const near = i === index || (loaded && i === (index + 1) % items.length);
+          // Drawn: the slide shown, the one it replaced (under it while it fades in), one asked for, and once the page
+          // has loaded both neighbours (the next one comes on its own, a swipe goes either way); all of them once someone
+          // reaches for the carousel.
+          const near = i === index || i === prev || i === pending || warm || (loaded && (i === (index + 1) % n || i === (index - 1 + n) % n));
           return (
-            <div key={f.id} aria-hidden={i !== index} className={clsx("absolute inset-0 transition-opacity duration-scene ease-scene", i === index ? "opacity-100" : "opacity-0")}>
+            <div
+              key={f.id}
+              aria-hidden={i !== index}
+              // The new slide fades in over the old one, which stays whole under it until it is covered (at once with
+              // reduced motion).
+              className={clsx("absolute inset-0", i === index ? "z-1 opacity-100 transition-opacity duration-scene ease-scene motion-reduce:transition-none" : i === prev ? "opacity-100" : "opacity-0")}
+            >
               {near && f.backdropPath && (
                 <img
+                  // Art already there before the page came alive (the first slide, from the server) has no load event.
+                  ref={(el) => {
+                    if (el?.complete && el.naturalWidth > 0) markReady(f.id);
+                  }}
+                  onLoad={() => markReady(f.id)}
                   src={tmdbImage(f.backdropPath, "w1280") ?? undefined}
                   srcSet={backdropSrcSet(f.backdropPath)}
                   sizes={BACKDROP_SIZES}
@@ -226,7 +296,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
             </div>
           );
         })}
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent art-over:hidden" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 z-2 h-1/3 bg-linear-to-t from-stage to-transparent art-over:hidden" />
       </Link>
       {/* Scrims: header legibility, the text column (--scrim-start: what keeps a logo or a name legible, with no glow
           around it), and the hand-off into the page. Always dark over artwork (3.5). */}
