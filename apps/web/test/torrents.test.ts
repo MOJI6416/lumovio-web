@@ -29,6 +29,22 @@ describe("TorrServer search results (T2a)", () => {
     expect(skipped).toBe(0);
   });
 
+  it("reads an indexer that gives every result the same non-zero numbers as not counting them (LostFilm: 1 seeder, 2 peers)", () => {
+    const lf = (n: number) => ({ Title: `Dexter: Resurrection - S2E${n} - rus 1080p WEBDL (LostFilm)`, Magnet: "", Link: `https://jackett.example/dl/lostfilm/?path=${n}`, Tracker: "LostFilm.tv", Seed: 1, Peer: 2 });
+    const { results } = normalizeTorznab([lf(1), lf(2), lf(3), lf(4), linkOnly]);
+    expect(results.map((r) => [r.tracker, r.seeders, r.peers])).toEqual([
+      ["LostFilm.tv", null, null],
+      ["LostFilm.tv", null, null],
+      ["LostFilm.tv", null, null],
+      ["LostFilm.tv", null, null],
+      ["RuTracker.org", 312, 332],
+    ]);
+    // Three results prove nothing, and an indexer whose releases all have no seeders still has none.
+    expect(normalizeTorznab([lf(1), lf(2), lf(3)]).results.map((r) => r.seeders)).toEqual([1, 1, 1]);
+    const dead = (n: number) => ({ ...lf(n), Seed: 0, Peer: 0 });
+    expect(normalizeTorznab([dead(1), dead(2), dead(3), dead(4)]).results.map((r) => r.seeders)).toEqual([0, 0, 0, 0]);
+  });
+
   it("works with no Mazepa at all, counts unusable entries, and treats null as an empty answer", () => {
     const { results, skipped } = normalizeTorznab([linkOnly, { Title: "No link", Magnet: "", Link: "" }, { Title: "", Link: "https://x/dl/1" }]);
     expect(results).toHaveLength(1);

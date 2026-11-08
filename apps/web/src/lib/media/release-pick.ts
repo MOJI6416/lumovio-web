@@ -51,16 +51,17 @@ export interface ReleasePick {
 
 /**
  * Audio options for the profile, in the ranking's own order: the ones in its audio languages first, in their order;
- * then the ones with an HD release (`RankedRelease.hd`); then its studios, in their order; else as their best releases
- * rank. A release lists its tracks in its own order ("7 x MVO (HDrezka Studio, NewStudio, …, LostFilm)"), so the
- * first option of the best release may not be the profile's: "1 — LostFilm, 2 — HDRezka" offers LostFilm first.
+ * then by the floor of their best release (`RankedRelease.floor`: plays here, then HD); then its studios, in their
+ * order; else as their best releases rank. A release lists its tracks in its own order ("7 x MVO (HDrezka Studio,
+ * NewStudio, …, LostFilm)"), so the first option of the best release may not be the profile's: "1 — LostFilm,
+ * 2 — HDRezka" offers LostFilm first.
  */
 export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "languages" | "studios">): VoiceOption[] {
   const lang = (o: VoiceOption) => {
     const i = o.language ? prefs.languages.indexOf(o.language) : -1;
     return i < 0 ? prefs.languages.length : i;
   };
-  const hd = (o: VoiceOption) => (o.best.hd ? 0 : 1);
+  const hd = (o: VoiceOption) => 2 - o.best.floor;
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
   const studio = (o: VoiceOption) => {
     const i = o.studio ? prefs.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
@@ -75,8 +76,25 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
 const cutOf = (x: RankedRelease, any: boolean) => editionOf(x.result.title) ?? (any ? "theatrical" : null);
 
 /**
- * The release to watch for `choice`: the audio option (the profile's first, unless chosen), its cut (the best
- * release's, unless chosen), the picture version (the mode's pick — `ranked` comes ranked by the quality mode — unless
+ * The cut to start with nothing chosen: the one most seeded among the audio's releases — the version viewers keep, the
+ * director's where that is the film (Blade Runner: The Final Cut), the theatrical one where the others are for fans —
+ * among the cuts whose best release reaches the best one's floor (`RankedRelease.floor`: an SD-only cut never wins);
+ * a tie goes to the theatrical cut, then the best release's. The others are offered right beside it in the "Version"
+ * pill. `editions` come best first; `pool` is the audio's releases.
+ */
+function defaultCut(editions: EditionOption[], pool: RankedRelease[]): Edition {
+  const top = editions[0]!.best.floor;
+  const seeded = (key: Edition) => pool.filter((x) => cutOf(x, true) === key).reduce((n, x) => n + (x.result.seeders ?? 0), 0);
+  const order = editions
+    .filter((e) => e.best.floor === top)
+    .map((e, i) => ({ key: e.key, n: seeded(e.key), i }))
+    .sort((a, b) => b.n - a.n || Number(b.key === "theatrical") - Number(a.key === "theatrical") || a.i - b.i);
+  return order[0]!.key;
+}
+
+/**
+ * The release to watch for `choice`: the audio option (the profile's first, unless chosen), its cut (`defaultCut`,
+ * unless chosen), the picture version (the mode's pick — `ranked` comes ranked by the quality mode — unless
  * chosen). A release without a cut in its name is the theatrical one once some release of the audio names another
  * cut. Releases of other seasons only, cinema recordings and dead ones are never picked.
  *
@@ -107,11 +125,15 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   for (const e of editions) e.resolutions.sort((a, b) => (b ?? 0) - (a ?? 0));
   const many = editions.length > 1;
   const anyCut = many && choice.edition === ANY;
-  const edition = many && !anyCut ? (editions.find((e) => e.key === choice.edition)?.key ?? editions[0]!.key) : named && pool[0] ? cutOf(pool[0], false) : null;
+  const preferred = many ? defaultCut(editions, pool) : null;
+  const edition = many && !anyCut ? (editions.find((e) => e.key === choice.edition)?.key ?? preferred) : named && pool[0] ? cutOf(pool[0], false) : null;
   const inCut = many && !anyCut ? pool.filter((x) => cutOf(x, true) === edition) : pool;
   const versions = pictureVersions(inCut);
-  const version = versions.find((v) => v.key === choice.picture) ?? versions.find((v) => v.key === inCut[0]?.picture);
-  const chosen = version?.best ?? inCut[0];
+  // Every cut listed (the sources screen): the card still starts the default cut's release, as "Where to watch" does
+  // with nothing chosen, unless a picture version was chosen by hand.
+  const lead = anyCut ? (pool.find((x) => cutOf(x, true) === preferred) ?? inCut[0]) : inCut[0];
+  const version = versions.find((v) => v.key === choice.picture) ?? versions.find((v) => v.key === lead?.picture);
+  const chosen = anyCut && !choice.picture ? lead : (version?.best ?? inCut[0]);
   // Every cut: the one shown is the chosen release's own (a release without a cut in its name is the theatrical one).
   return { options, option, editions: many ? editions : [], edition: anyCut && chosen ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
 }

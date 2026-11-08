@@ -218,12 +218,12 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   // rest follow by seeders (the indexer's numbers; unknown ones last), so a custom query still shows everything.
   const view = useMemo(() => {
     if (!found) return null;
-    // An episode is wanted: a release whose name holds other seasons only sinks.
-    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null);
+    // An episode is wanted: a release whose name holds other seasons (or other episodes of the season) only sinks.
+    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null);
     const mine = new Set(ranked.map((x) => x.result.link));
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
-  }, [found, d, prefs, season]);
+  }, [found, d, prefs, season, episode]);
   // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
   const options = useMemo(() => {
     // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
@@ -267,7 +267,10 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     : [];
   // The recommendation follows the rank, whatever order the list is sorted in.
   const shownLinks = new Set(visible.map((r) => r.link));
-  const recommended = view?.ranked.find((x) => shownLinks.has(x.result.link) && !x.dead && !x.info.cam && x.holds !== false);
+  // The release "Where to watch" and the hero start (`pickRelease`: the profile's audio, the default cut, the mode's
+  // picture), when the list shows it; else the first one shown that could be.
+  const picked = view ? pickRelease(view.ranked, prefs).chosen : undefined;
+  const recommended = picked && shownLinks.has(picked.result.link) ? picked : view?.ranked.find((x) => shownLinks.has(x.result.link) && !x.dead && !x.info.cam && x.holds !== false);
   const server = connections.find((c) => c.id === connId)?.name ?? "TorrServer";
   /** An audio, picture or tracker filter: the list starts again from its first part. */
   const filter = (kind: "voice" | "picture" | "tracker", value: string | null) => {

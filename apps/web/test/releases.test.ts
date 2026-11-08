@@ -187,9 +187,9 @@ describe("the profile's order of studios: 1 — LostFilm, 2 — HDRezka (Dexter:
     const unstated = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL] MVO (LostFilm) + Original", 50);
     const hd = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (HDRezka Studio) + Original", 5);
     expect(rankReleases([sd, unstated, hd], show, order)[0]!.result).toBe(hd);
-    expect(rankReleases([sd, hd], show, order).map((x) => [x.studio, x.hd])).toEqual([
-      ["HDrezka Studio", true],
-      ["LostFilm", false],
+    expect(rankReleases([sd, hd], show, order).map((x) => [x.studio, x.floor])).toEqual([
+      ["HDrezka Studio", 2],
+      ["LostFilm", 1],
     ]);
     // "Smaller file" asks for no quality: the order alone decides.
     expect(rankReleases([sd, hd], show, prefsOf({ studios: ["LostFilm", "HDrezka Studio"], quality: "small" }))[0]!.studio).toBe("LostFilm");
@@ -491,8 +491,8 @@ describe("season packs by the name (TS5)", () => {
   it("reads seasons, episode ranges and totals as trackers write them, and nothing that isn't there", () => {
     expect(packOf("Во все тяжкие / Breaking Bad / Сезон: 2 / Серии: 1-13 из 13 [2009, WEB-DL 1080p]")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 1, to: 13, of: 13 } });
     expect(packOf("Breaking.Bad.S01-S05.Complete.1080p")).toEqual({ seasons: { from: 1, to: 5 }, cours: false, episodes: null });
-    expect(packOf("Arcane S02E01-09 2160p")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 1, to: 9, of: null } });
-    expect(packOf("Arcane.S02E03.1080p.WEB-DL")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 3, to: 3, of: null } });
+    expect(packOf("Arcane S02E01-09 2160p")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 1, to: 9, of: null, bySeason: true } });
+    expect(packOf("Arcane.S02E03.1080p.WEB-DL")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 3, to: 3, of: null, bySeason: true } });
     expect(packOf("Сёгун / Shogun [1-3 сезоны] WEB-DL 1080p")).toEqual({ seasons: { from: 1, to: 3 }, cours: false, episodes: null });
     expect(packOf("Магічна битва / Jujutsu Kaisen [S01-02] 1080p Ukr | Amanogawa").seasons).toEqual({ from: 1, to: 2 });
     // Anime cours are not TMDB's seasons; episode numbers run across them.
@@ -507,21 +507,21 @@ describe("season packs by the name (TS5)", () => {
     expect(packOf("Бумажный дом / La Casa de Papel / S1-8E1-73 [2017-2021, WEB-DL 1080p] MVO (LostFilm)")).toEqual({
       seasons: { from: 1, to: 8 },
       cours: false,
-      episodes: { from: 1, to: 73, of: null },
+      episodes: { from: 1, to: 73, of: null, bySeason: true },
     });
-    expect(packOf("Lost.S01E01-S06E18.1080p.BluRay")).toEqual({ seasons: { from: 1, to: 6 }, cours: false, episodes: { from: 1, to: 18, of: null } });
-    expect(packOf("Show S01-S03E01-E36 of 36 WEB-DL").episodes).toEqual({ from: 1, to: 36, of: 36 });
+    expect(packOf("Lost.S01E01-S06E18.1080p.BluRay")).toEqual({ seasons: { from: 1, to: 6 }, cours: false, episodes: { from: 1, to: 18, of: null, bySeason: true } });
+    expect(packOf("Show S01-S03E01-E36 of 36 WEB-DL").episodes).toEqual({ from: 1, to: 36, of: 36, bySeason: true });
     expect(holdsSeason(packOf("La Casa de Papel S1-8E1-73"), 5)).toBe(true);
     // "of 10" right after the range: the season's length (it was read only without an S…E mark).
     expect(packOf("La casa de papel / Money Heist / S5E1-5 of 10 [2021, HDR, WEBRip 2160p]")).toEqual({
       seasons: { from: 5, to: 5 },
       cours: false,
-      episodes: { from: 1, to: 5, of: 10 },
+      episodes: { from: 1, to: 5, of: 10, bySeason: true },
     });
-    expect(packOf("Сёгун / Shogun / S01E01-08 из 10 [2024]").episodes).toEqual({ from: 1, to: 8, of: 10 });
-    expect(packOf("Arcane.S02E03.of.9.1080p").episodes).toEqual({ from: 3, to: 3, of: 9 });
+    expect(packOf("Сёгун / Shogun / S01E01-08 из 10 [2024]").episodes).toEqual({ from: 1, to: 8, of: 10, bySeason: true });
+    expect(packOf("Arcane.S02E03.of.9.1080p").episodes).toEqual({ from: 3, to: 3, of: 9, bySeason: true });
     // A number later in the name isn't a total.
-    expect(packOf("Arcane S02E01-09 2160p 10bit").episodes).toEqual({ from: 1, to: 9, of: null });
+    expect(packOf("Arcane S02E01-09 2160p 10bit").episodes).toEqual({ from: 1, to: 9, of: null, bySeason: true });
   });
 
   it("says a pack lacks a season only when it names other seasons, never for anime cours or episode numbers", () => {
@@ -535,7 +535,7 @@ describe("season packs by the name (TS5)", () => {
     expect(packOf("Ведьмак / The Witcher [04x01-08 из 08] (2025) WEB-DL 1080p | LostFilm")).toEqual({
       seasons: { from: 4, to: 4 },
       cours: false,
-      episodes: { from: 1, to: 8, of: 8 },
+      episodes: { from: 1, to: 8, of: 8, bySeason: true },
     });
     expect(packOf("The Bear 2x05 720p").seasons).toEqual({ from: 2, to: 2 });
     expect(holdsSeason(packOf("Ведьмак / The Witcher [04x01-08 из 08] (2025)"), 2)).toBe(false);

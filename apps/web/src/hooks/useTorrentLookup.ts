@@ -27,7 +27,7 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
       languagesFromProfile: own.length > 0,
       studios: p?.voiceStudios ?? [],
       quality: p?.releaseQuality ?? "auto",
-      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth },
+      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth, av1: caps ? caps.video.av1 : undefined },
     };
   }, [p, locale, uhdSmooth]);
 }
@@ -66,10 +66,10 @@ export type LookupResult = SearchAnswer;
  * follows the profile's preferences, or `quality` for this viewing, without searching again.
  */
 /**
- * A series' `season` is the one the viewing is for: a release whose name holds only other seasons sinks and is never
- * recommended (`rankReleases`).
+ * A series' `season` and `episode` are the ones the viewing is for: a release whose name holds only other seasons (or
+ * other episodes of that season) sinks and is never recommended (`rankReleases`).
  */
-export function useTorrentLookup(d: TitleSummary, source: SourceState | null, enabled = true, quality?: ReleaseQuality, season: number | null = null) {
+export function useTorrentLookup(d: TitleSummary, source: SourceState | null, enabled = true, quality?: ReleaseQuality, season: number | null = null, episode: number | null = null) {
   const { me } = useSession();
   const base = useReleasePrefs();
   const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
@@ -78,11 +78,11 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
       connectionId: source?.id ?? "",
       connectionName: source?.name ?? "",
       total: r.results.length,
-      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null),
+      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null),
       at: r.at,
       emptyAt: r.emptyAt,
     }),
-    [source, d, prefs, season],
+    [source, d, prefs, season, episode],
   );
   const qc = useQueryClient();
   const key = lookupKey(me?.activeProfile?.id ?? null, source?.id ?? null, d.id);

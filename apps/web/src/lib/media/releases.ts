@@ -73,8 +73,12 @@ export interface PackInfo {
   seasons: { from: number; to: number } | null;
   /** The numbers are anime cours ("TV-2"), which trackers count apart from TMDB's seasons. */
   cours: boolean;
-  /** Episodes the name states: a range (1-47 из 47, E01-E05, S02E01-05) or one (S02E03); `of`: the total it gives, if any. */
-  episodes: { from: number; to: number; of: number | null } | null;
+  /**
+   * Episodes the name states: a range (1-47 из 47, E01-E05, S02E01-05) or one (S02E03); `of`: the total it gives, if
+   * any; `open`: a range that runs on ("S2E1- из 10", an updating pack); `bySeason`: numbered within a season (SxxEyy,
+   * 2x05), never across the series as an anime's "1-47 из 47" may be.
+   */
+  episodes: { from: number; to: number; of: number | null; open?: true; bySeason?: true } | null;
 }
 
 const spanOf = (nums: number[]) => (nums.length ? { from: Math.min(...nums), to: Math.max(...nums) } : null);
@@ -85,8 +89,9 @@ const spanOf = (nums: number[]) => (nums.length ? { from: Math.min(...nums), to:
  */
 export function packOf(name: string): PackInfo {
   const t = name.replace(/[._]/g, " ");
-  // "S02E01-09", "S02E01-E09", a whole series "S1-8E1-73" or "S01E01-S08E73" (episodes counted across its seasons).
-  const se = /(?<![\p{L}\d])s(\d{1,2})(?:\s*[-–]\s*s?(\d{1,2}))?\s?e(\d{1,4})(?:\s*[-–]\s*(?:e|s(\d{1,2})\s?e)?(\d{1,4}))?(?!\d)/iu.exec(t);
+  // "S02E01-09", "S02E01-E09", a whole series "S1-8E1-73" or "S01E01-S08E73" (episodes counted across its seasons);
+  // never a year after a dash as the range's end (Kinozal's "S2E1 - 2026" is one episode).
+  const se = /(?<![\p{L}\d])s(\d{1,2})(?:\s*[-–]\s*s?(\d{1,2}))?\s?e(\d{1,4})(?:\s*[-–]\s*(?:e|s(\d{1,2})\s?e)?(?!(?:19|20)\d\d(?!\d))(\d{1,4}))?(?!\d)/iu.exec(t);
   // "02x01-10", "2x05": season × episode, as some trackers write it (never a "1920x1080" frame size).
   const sx = se ? null : /(?<![\p{L}\d])(\d{1,2})x(\d{2,3})(?:\s*[-–]\s*(?:\d{1,2}x)?(\d{2,3}))?(?!\d)/iu.exec(t);
   let seasons: number[] = [];
@@ -94,13 +99,17 @@ export function packOf(name: string): PackInfo {
   let episodes: PackInfo["episodes"] = null;
   if (se) {
     seasons = [Number(se[1]), Number(se[2] ?? se[4] ?? se[1])];
-    // The total right after the range: "S5E1-5 of 10", "S02E01-08 из 10".
-    const of = /^\s*(?:из|of|з)\s*(\d{1,4})(?!\d)/iu.exec(t.slice(se.index + se[0].length));
-    episodes = { from: Number(se[3]), to: Number(se[5] ?? se[3]), of: of ? Number(of[1]) : null };
+    const after = t.slice(se.index + se[0].length);
+    // A range that runs on, as an updating pack writes it: "S2E1- из 10", "(S2E1-)" — a dash right after the number with
+    // nothing after it, never a separator ("S2E1 - Risky Business").
+    const open = se[5] === undefined && /^[-–]\s*(?:(?:из|of|з)\s*\d|[)\]]|$)/iu.test(after);
+    // The total right after the range: "S5E1-5 of 10", "S02E01-08 из 10", "S2E1- из 10".
+    const of = /^\s*(?:[-–]\s*)?(?:из|of|з)\s*(\d{1,4})(?!\d)/iu.exec(after);
+    episodes = { from: Number(se[3]), to: Number(se[5] ?? se[3]), of: of ? Number(of[1]) : null, ...(open ? { open: true as const } : {}), bySeason: true };
   } else if (sx) {
     seasons = [Number(sx[1])];
     const of = /^\s*(?:из|of|з)\s*(\d{1,4})(?!\d)/iu.exec(t.slice(sx.index + sx[0].length));
-    episodes = { from: Number(sx[2]), to: Number(sx[3] ?? sx[2]), of: of ? Number(of[1]) : null };
+    episodes = { from: Number(sx[2]), to: Number(sx[3] ?? sx[2]), of: of ? Number(of[1]) : null, bySeason: true };
   } else {
     for (const m of t.matchAll(/(?<![\p{L}\d])s(\d{1,2})(?:\s*[-–]\s*s?(\d{1,2}))?(?![\p{L}\d])/giu)) seasons.push(Number(m[1]), Number(m[2] ?? m[1]));
     for (const m of t.matchAll(/(?:seasons?|сезоны?|сезони|сезон)\s*:?\s*(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?(?!\d)/giu)) seasons.push(Number(m[1]), Number(m[2] ?? m[1]));
@@ -125,12 +134,17 @@ export function packOf(name: string): PackInfo {
 
 /**
  * Whether a release holds a season by its name: false only when it names seasons (not anime cours)
- * and the wanted one isn't among them, null when the name doesn't say. Episode numbers decide nothing:
- * packs number them per season or across the whole series. The file itself is matched when it's read.
+ * and the wanted one isn't among them, null when the name doesn't say. With a wanted `episode`, also false when the
+ * name numbers one season's episodes as SxxEyy and the episode isn't among them ("S2E1 of 10" — an updating pack's
+ * first episode — for the third); other numbering decides nothing (packs count across the whole series, an open
+ * range runs on). The file itself is matched when it's read.
  */
-export function holdsSeason(pack: PackInfo, season: number): boolean | null {
+export function holdsSeason(pack: PackInfo, season: number, episode: number | null = null): boolean | null {
   if (!pack.seasons || pack.cours) return null;
-  return season >= pack.seasons.from && season <= pack.seasons.to;
+  if (season < pack.seasons.from || season > pack.seasons.to) return false;
+  const e = pack.episodes;
+  if (episode !== null && e?.bySeason && !e.open && pack.seasons.from === pack.seasons.to && (episode < e.from || episode > e.to)) return false;
+  return true;
 }
 
 // Word boundaries that work for Cyrillic too (`\b` is ASCII-only).
@@ -484,6 +498,11 @@ const EXTRAS = W("саундтрек|soundtrack|ost|making of|бонус\\p{L}*|
  */
 export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv"): boolean {
   if (EXTRAS.test(release)) return false;
+  // A film is never a release that names seasons: "Avatar: The Last Airbender - S1 - rus 1080p" is not "Avatar" (2009).
+  if (kind === "movie") {
+    const pack = packOf(release);
+    if (pack.seasons && !pack.cours) return false;
+  }
   const parts = norm(release).split(/\s*[/|]\s*/);
   const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
   const starts = parts.some((p) => wanted.some((n) => p.startsWith(n) && !/[\p{L}\d]/u.test(p.charAt(n.length))));
@@ -512,9 +531,9 @@ export interface ReleasePrefs {
   /**
    * This device: decodes HEVC (most 4K releases are HEVC), shows HDR, has a 4K screen, decodes Dolby Vision without an
    * HDR10 base; and whether 4K HEVC plays smoothly by the browser's MediaCapabilities (`uhdSmoothNow`; null or left out:
-   * not known, which changes nothing).
+   * not known, which changes nothing); decodes AV1 (left out: not known).
    */
-  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null };
+  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null; av1?: boolean };
 }
 
 /** Dynamic range as the name states it: HDR (HDR10/HLG-style, Dolby Vision with such a base too), Dolby Vision alone, or SDR. */
@@ -539,13 +558,14 @@ export function pictureKey(info: Pick<ReleaseInfo, "resolution" | "hdrFormats" |
 
 /**
  * Whether this device plays the picture, as far as the name tells: "poor" when it shows it can't
- * (HEVC without a decoder, Dolby Vision alone without support), "unknown" for 4K that names no codec
+ * (HEVC or AV1 without a decoder, Dolby Vision alone without support), "unknown" for 4K that names no codec
  * on a device without HEVC (most 4K is HEVC). The file itself is checked only when it is prepared.
  */
 export type Fit = "ok" | "unknown" | "poor";
 
 export function fitOf(info: ReleaseInfo, device: ReleasePrefs["device"]): Fit {
   if (info.codec === "hevc" && !device.hevc) return "poor";
+  if (info.codec === "av1" && device.av1 === false) return "poor";
   if (rangeOf(info) === "dv" && !device.dolbyVision) return "poor";
   if (info.resolution === 2160 && info.codec === null && !device.hevc) return "unknown";
   return "ok";
@@ -561,10 +581,10 @@ export interface RankedRelease {
   /** The release's `pictureKey`. */
   picture: string;
   /**
-   * HD for the profile's order of studios (`hdFloor`): a studio further down the order wins only by this — HD (720p
-   * and up) over SD or a picture the name doesn't state; in "Smaller file" every release counts as HD (size decides).
+   * The floor the profile's order of studios holds within (`floorOf`): 2 — plays here and HD, 1 — plays here in SD or
+   * a picture the name doesn't state, 0 — this device can't play it. A studio further down the order wins only by this.
    */
-  hd: boolean;
+  floor: 0 | 1 | 2;
   fit: Fit;
   /** The indexer reports no seeders: listed last and never recommended. Unknown seeders are not zero. */
   dead: boolean;
@@ -579,12 +599,29 @@ const FIT_SCORE: Record<Fit, number> = { ok: 2, unknown: 1, poor: 0 };
 const UNKNOWN_SIZE = -Number.MAX_SAFE_INTEGER;
 
 /**
- * The quality floor the profile's order of studios holds within (`RankedRelease.hd`): its first studio wins over its
- * second at any comparable picture — 720p, 1080p and 4K are all comparable, so a 1080p LostFilm beats a 4K HDRezka —
- * but a release in HD wins over one in SD or of a picture its name doesn't state (a studio's only DVDRip loses to
- * another studio's 1080p). "Smaller file" asks for no quality, so it holds no floor.
+ * The floor the profile's order of studios holds within (`RankedRelease.floor`): its first studio wins over its second
+ * at any comparable picture — 720p, 1080p and 4K are all comparable, so a 1080p LostFilm beats a 4K HDRezka — but a
+ * release this device plays wins over one it can't (`fitOf` "poor"), and one in HD over one in SD or of a picture its
+ * name doesn't state (a studio's only DVDRip loses to another studio's 1080p). "Smaller file" asks for no quality, so
+ * it holds only the first.
  */
-const hdFloor = (info: Pick<ReleaseInfo, "resolution">, prefs: Pick<ReleasePrefs, "quality">) => prefs.quality === "small" || (info.resolution ?? 0) >= 720;
+function floorOf(info: Pick<ReleaseInfo, "resolution">, fit: Fit, prefs: Pick<ReleasePrefs, "quality">): 0 | 1 | 2 {
+  if (fit === "poor") return 0;
+  return prefs.quality === "small" || (info.resolution ?? 0) >= 720 ? 2 : 1;
+}
+
+/**
+ * A swarm too weak to stream from: the indexer counts one or two seeders. It sinks below the same picture's healthy
+ * releases in every mode (an unknown count is not weak), never below another picture version.
+ */
+const WEAK_SWARM = 3;
+
+/**
+ * Where the picture comes from, as "auto" wants it — "what loads at your speed" (Settings → quality): a disc's encode,
+ * then a streaming service's file, and only then the disc untouched, whose 30–40 Mbit/s at 1080p (60–90 at 4K) stalls
+ * where an encode of the same picture plays (Remux 1080p of a film: 35–55 GB, its BDRip 8–15). "Best" keeps `SOURCES`.
+ */
+const AUTO_SOURCES: PictureSource[] = ["bluray", "webdl", "remux", "webrip", "hdtv", "dvd"];
 
 /** Whether "auto" puts 4K first: the screen shows it, the device decodes HEVC, and the browser doesn't say it stutters. */
 const uhdFits = (d: ReleasePrefs["device"]) => d.uhd && d.hevc && d.uhdSmooth !== false;
@@ -596,19 +633,22 @@ function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
 
 /**
  * The picture part of the rank, by the quality mode. "auto" and "best": resolution in the mode's order,
- * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then the source; "best"
+ * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then a healthy swarm (`WEAK_SWARM`),
+ * then the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
  * also takes a film's bigger file (an episode's bitrate can't be told from a season pack's size).
- * "small": the smallest known size, unknown sizes last.
+ * "small": a healthy swarm, then the smallest known size, unknown sizes last.
  */
-function pictureRank(info: ReleaseInfo, size: number | null, prefs: ReleasePrefs, movie: boolean): number[] {
+function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | null, prefs: ReleasePrefs, movie: boolean): number[] {
   const order = resolutionOrder(prefs);
   const res = order.length - order.indexOf(info.resolution);
   const range = rangeOf(info);
   const dynamic = range === "hdr" || range === "dv" ? (prefs.device.hdr ? 2 : 0) : 1;
-  const source = info.source ? SOURCES.length - SOURCES.indexOf(info.source) : 0;
-  if (prefs.quality === "small") return [size ? -size : UNKNOWN_SIZE, res, dynamic, source];
-  if (prefs.quality === "best") return [res, dynamic, source, movie && size ? size : 0];
-  return [res, dynamic, source];
+  const healthy = seeders === null || seeders >= WEAK_SWARM ? 1 : 0;
+  const sources = prefs.quality === "auto" ? AUTO_SOURCES : SOURCES;
+  const source = info.source ? sources.length - sources.indexOf(info.source) : 0;
+  if (prefs.quality === "small") return [healthy, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
+  if (prefs.quality === "best") return [res, dynamic, healthy, source, movie && size ? size : 0];
+  return [res, dynamic, healthy, source];
 }
 
 function compareRank(a: number[], b: number[]): number {
@@ -618,19 +658,22 @@ function compareRank(a: number[], b: number[]): number {
 
 /**
  * Releases of this title, best for this profile and device first. In order: alive (no seeders sinks to
- * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, HD (`hdFloor`), one of
- * its studios (earlier ones first), the kind of translation (only where no studio of the profile is credited: a
- * studio's own track is heard whatever kind the name writes, or doesn't, beside it), a picture this device plays, the
- * picture by the quality mode, and seeders as the indexer reports them for releases equal in all of that; the sort is
- * stable after that. Seeders never outweigh a picture version, and a 4K release is never swapped for 1080p by them.
- * Results for other titles are left out. With a wanted `season`, a release whose name says it holds
- * other seasons only sinks below the rest, like one without seeders, and is never recommended.
+ * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, the floor (`floorOf`:
+ * plays here, then HD), one of its studios (earlier ones first), the kind of translation (only where no studio of the
+ * profile is credited: a studio's own track is heard whatever kind the name writes, or doesn't, beside it), a picture
+ * this device surely plays, the picture by the quality mode (`pictureRank`: resolution, dynamic range, a healthy swarm,
+ * the source or the size), for a series a pack before a single episode (the next episodes come with it), and
+ * seeders as the indexer reports them for releases equal in all of that; the sort is stable after that. Seeders never
+ * outweigh a picture version, and a 4K release is never swapped for 1080p by them. Results for other titles are left
+ * out. With a wanted `season` (and `episode`), a release whose name says it holds other seasons (or other episodes of
+ * that season) only sinks below the rest, like one without seeders, and is never recommended.
  */
 export function rankReleases(
   results: TsSearchResult[],
   d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage">,
   prefs: ReleasePrefs,
   season: number | null = null,
+  episode: number | null = null,
 ): RankedRelease[] {
   const names = [d.originalTitle ?? "", d.title];
   return results
@@ -643,22 +686,26 @@ export function rankReleases(
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
       const kind = j >= 0 ? null : ((i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice);
-      const hd = hdFloor(info, prefs);
       const fit = fitOf(info, prefs.device);
+      const floor = floorOf(info, fit, prefs);
       const dead = result.seeders === 0;
-      const holds = season !== null ? holdsSeason(info.pack, season) : null;
+      const holds = season !== null ? holdsSeason(info.pack, season, episode) : null;
+      // A pack before a single episode (the next ones are there too); how big a pack is decides nothing.
+      const e = info.pack.episodes;
+      const held = season === null ? 0 : e?.bySeason && !e.open && e.from === e.to ? 0 : 1;
       const rank = [
         dead || holds === false ? 0 : 1,
         i >= 0 ? prefs.languages.length - i : 0,
         info.cam ? 0 : 1,
-        hd ? 1 : 0,
+        floor,
         j >= 0 ? prefs.studios.length - j : 0,
         kind ? VOICE_SCORE[kind] : 0,
         FIT_SCORE[fit],
-        ...pictureRank(info, result.size, prefs, d.kind === "movie"),
+        ...pictureRank(info, result.size, result.seeders, prefs, d.kind === "movie"),
+        held,
         result.seeders ?? -1,
       ];
-      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), hd, fit, dead, holds, rank };
+      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, fit, dead, holds, rank };
     })
     .sort((a, b) => compareRank(a.rank, b.rank));
 }

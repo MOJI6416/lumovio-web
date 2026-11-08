@@ -149,12 +149,29 @@ const ADDABLE = /^(magnet:|https?:\/\/)/i;
  * came from, each origin keeping its own link (a fallback for adding it) and numbers; its seeders are
  * the highest one reported, never a sum of the same swarm. Without a hash nothing is taken to be the
  * same release, however alike the names: only an identical link is.
+ *
+ * An indexer that gives every one of its results the same non-zero seeders and peers (`placeholderTrackers`) doesn't
+ * count them — LostFilm's says 1 seeder for each of its releases — so its numbers are unknown, never a weak swarm.
  */
+/** Indexers whose 4+ results all report the same non-zero seeders and peers: a filler, not a count. */
+function placeholderTrackers(raw: RawTorznab): Set<string> {
+  const by = new Map<string, Set<string>>();
+  const count = new Map<string, number>();
+  for (const r of raw) {
+    const tracker = r.Tracker || "";
+    if (!tracker) continue;
+    count.set(tracker, (count.get(tracker) ?? 0) + 1);
+    by.set(tracker, (by.get(tracker) ?? new Set()).add(`${r.Seed}|${r.Peer}`));
+  }
+  return new Set([...by].filter(([t, seen]) => (count.get(t) ?? 0) >= 4 && seen.size === 1 && !seen.has("0|0") && ![...seen][0]!.startsWith("0|")).map(([t]) => t));
+}
+
 export function normalizeTorznab(raw: RawTorznab | null): { results: TsSearchResult[]; skipped: number } {
   const results: TsSearchResult[] = [];
   let skipped = 0;
   const byHash = new Map<string, { result: TsSearchResult; first: TsOrigin }>();
   const links = new Set<string>();
+  const placeholder = placeholderTrackers(raw ?? []);
   for (const r of raw ?? []) {
     const title = (r.Title || r.Name || "").trim();
     const link = [r.Magnet, r.Link].find((x): x is string => typeof x === "string" && ADDABLE.test(x));
@@ -165,11 +182,12 @@ export function normalizeTorznab(raw: RawTorznab | null): { results: TsSearchRes
     if (links.has(link)) continue;
     links.add(link);
     const hash = (r.Hash || /xt=urn:btih:([a-z0-9]+)/i.exec(link)?.[1] || "").toLowerCase() || null;
+    const counted = !placeholder.has(r.Tracker || "");
     const origin: TsOrigin = {
       tracker: r.Tracker || null,
       link,
-      seeders: typeof r.Seed === "number" ? r.Seed : null,
-      peers: typeof r.Peer === "number" ? r.Peer : null,
+      seeders: counted && typeof r.Seed === "number" ? r.Seed : null,
+      peers: counted && typeof r.Peer === "number" ? r.Peer : null,
       published: r.PublishDate ?? r.CreateDate ?? null,
     };
     const same = hash ? byHash.get(hash) : undefined;

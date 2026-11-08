@@ -101,6 +101,98 @@ describe("pickRelease with the profile's order of studios (1 — LostFilm, 2 —
   });
 });
 
+describe("what plays by default: the whole pick on the owner's torr answers (2026-11-08)", () => {
+  const GB = 1024 ** 3;
+  const dune2 = { title: "Dune: Part Two", originalTitle: null, kind: "movie" as const, year: 2024, originalLanguage: "en" };
+  const dexter = { title: "Декстер: Воскрешение", originalTitle: "Dexter: Resurrection", kind: "tv" as const, year: 2025, originalLanguage: "en" };
+  const ru = (p: Partial<ReleasePrefs> = {}) => prefs({ languages: ["ru"], ...p });
+  const remux = result("Dune: Part Two [2024, BDRemux 1080p] Dub (iTunes, RHS, HDrezka, Jaskier) + MVO (LostFilm, Jaskier, TVShows) + AVO + VO + Dub Ukr + Original Eng", 113, 34.4 * GB);
+  const bdrip = result("Dune: Part Two [2024, BDRip 1080p] Dub (iTunes, RHS, HDrezka, Jaskier) + MVO (LostFilm, Jaskier, TVShows) + AVO + VO + Dub (Ukr) + Original (Eng)", 302, 20.7 * GB);
+  const webdl = result("Dune: Part Two [2024, WEB-DL 1080p] Dub (iTunes, RHS, HDrezka, Jaskier) + MVO (LostFilm 5.1, TVShows, Jaskier) + AVO + Dub (Ukr) + Original (Eng)", 76, 21.1 * GB);
+
+  it("'Auto' (what loads at your speed) starts an encode, not the untouched disc; 'Best' the disc", () => {
+    expect(pickRelease(rankReleases([remux, webdl, bdrip], dune2, ru()), ru()).chosen?.result).toBe(bdrip);
+    expect(pickRelease(rankReleases([remux, webdl], dune2, ru()), ru()).chosen?.result).toBe(webdl);
+    expect(pickRelease(rankReleases([remux, webdl, bdrip], dune2, ru({ quality: "best" })), ru({ quality: "best" })).chosen?.result).toBe(remux);
+  });
+
+  it("sinks a swarm of one or two seeders below the same picture's healthy releases, never below another picture", () => {
+    const weak = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 2, 14 * GB, "Kinozal");
+    const healthy = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 40, 9 * GB, "Kinozal");
+    expect(rankReleases([weak, healthy], dune2, ru())[0]!.result).toBe(healthy);
+    // 4K on a 4K screen stays 4K with two seeders; unknown seeders are not weak.
+    const uhd = { hevc: true, hdr: true, uhd: true, dolbyVision: false };
+    const weak4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 2, 30 * GB, "Kinozal");
+    expect(rankReleases([healthy, weak4k], dune2, ru({ device: uhd }))[0]!.result).toBe(weak4k);
+    expect(rankReleases([weak, result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", null, 9 * GB, "LostFilm.tv")], dune2, ru())[0]!.result.tracker).toBe("LostFilm.tv");
+    // "Smaller file": the healthy one before the smaller one.
+    const tiny = result("Dune: Part Two [2024, WEB-DL 720p] Dub + Original (Eng)", 1, 2 * GB, "Kinozal");
+    expect(rankReleases([tiny, healthy], dune2, ru({ quality: "small" }))[0]!.result).toBe(healthy);
+  });
+
+  it("starts what this device plays: a studio's HEVC- or AV1-only release gives way to another studio's playable one", () => {
+    const studios = ["LostFilm", "HDrezka Studio"];
+    const lostHevc = result("Dune: Part Two [2024, WEB-DL 1080p] HEVC MVO (LostFilm) + Original (Eng)", 50, 6 * GB);
+    const rezkaAvc = result("Dune: Part Two [2024, WEB-DL 1080p] H.264 MVO (HDrezka Studio) + Original (Eng)", 50, 8 * GB);
+    const noHevc = ru({ studios, device: { hevc: false, hdr: false, uhd: false, dolbyVision: false } });
+    expect(pickRelease(rankReleases([lostHevc, rezkaAvc], dune2, noHevc), noHevc).option?.studio).toBe("HDrezka Studio");
+    const withHevc = ru({ studios });
+    expect(pickRelease(rankReleases([lostHevc, rezkaAvc], dune2, withHevc), withHevc).option?.studio).toBe("LostFilm");
+    const av1 = result("Начало / Inception (2010) BDRip [AV1/1080p] Dub", 16, 9 * GB, "NoNaMe ClubL");
+    const inception = { ...dune2, title: "Inception", year: 2010 };
+    const avc = result("Inception (2010) BDRip 720p Dub", 5, 4 * GB, "Kinozal");
+    expect(rankReleases([av1, avc], inception, ru({ device: { hevc: true, hdr: false, uhd: false, dolbyVision: false, av1: false } }))[0]!.result).toBe(avc);
+    expect(rankReleases([av1, avc], inception, ru({ device: { hevc: true, hdr: false, uhd: false, dolbyVision: false, av1: true } }))[0]!.result).toBe(av1);
+  });
+
+  it("never takes a series named like the film for it (Avatar 2009 vs Avatar: The Last Airbender by LostFilm)", () => {
+    const avatar = { title: "Avatar", originalTitle: null, kind: "movie" as const, year: 2009, originalLanguage: "en" };
+    const airbender = result("Avatar: The Last Airbender - S1 - rus 1080p WEBDL (LostFilm)", null, 21 * GB, "LostFilm.tv");
+    const film = result("Аватар / Avatar (2009) BDRip 1080p | Dub", 40, 15 * GB, "RuTracker.org");
+    const p = ru({ studios: ["LostFilm"] });
+    expect(rankReleases([airbender, film], avatar, p).map((x) => x.result)).toEqual([film]);
+  });
+
+  it("holds the episode the viewing is for: an updating pack's first episode isn't the third", () => {
+    const p = ru({ studios: ["LostFilm", "HDrezka Studio"] });
+    const lost1 = result("Dexter: Resurrection - S2E1 - Risky Business - rus 1080p WEBDL (LostFilm)", null, 2 * GB, "LostFilm.tv");
+    const kinozal1 = result("Dexter: Resurrection - S2E1 - 2026  MVO (LostFilm), Sub WEBDL 1080p - RUSSIAN", 13, 3 * GB, "Kinozal");
+    const updating = result("Декстер: Воскрешение / Dexter: Resurrection (2026) WEB-DL [H.264/1080p] (S2E1- из 10) HDrezka (обновляемая)", 32, 6 * GB, "NoNaMe ClubL");
+    const third = pickRelease(rankReleases([lost1, kinozal1, updating], dexter, p, 2, 3), p);
+    expect(third.option?.studio).toBe("HDrezka Studio");
+    expect(third.chosen?.result).toBe(updating);
+    // The first episode: LostFilm, the release with counted seeders before the one whose indexer counts none.
+    const first = pickRelease(rankReleases([lost1, kinozal1, updating], dexter, p, 2, 1), p);
+    expect(first.option?.studio).toBe("LostFilm");
+    expect(first.chosen?.result).toBe(kinozal1);
+  });
+
+  it("starts a season pack before a single episode of the same picture", () => {
+    const one = result("Dexter: Resurrection / S1E1 of 10 [2025, WEB-DL 1080p] MVO (TVShows) + Original", 90, 2 * GB);
+    const pack = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (TVShows) + Original", 20, 20 * GB);
+    expect(rankReleases([one, pack], dexter, ru(), 1, 1)[0]!.result).toBe(pack);
+  });
+
+  it("starts the cut viewers seed most, among the cuts at the best floor; a tie goes to the theatrical one", () => {
+    const blade = { title: "Blade Runner", originalTitle: null, kind: "movie" as const, year: 1982, originalLanguage: "en" };
+    const final4k = result("Blade Runner [1982, UHD BDRemux 2160p, HDR10, Dolby Vision] [The Final Cut] Dub + Original", 144, 66 * GB);
+    const final1080 = result("Blade Runner [1982, BDRip 1080p] [The Final Cut] Dub + Original", 61, 20 * GB);
+    const theatrical = result("Blade Runner [1982, BDRip 1080p] [Theatrical Cut] Dub + Original", 22, 21 * GB);
+    const x = pickRelease(rankReleases([theatrical, final1080, final4k], blade, ru()), ru());
+    expect(x.edition).toBe("final");
+    expect(x.chosen?.result).toBe(final1080);
+    // A cut seeded more but only in SD never wins over an HD one.
+    const sdFinal = result("Blade Runner [1982, DVDRip] [The Final Cut] Dub + Original", 900, 2 * GB);
+    expect(pickRelease(rankReleases([theatrical, sdFinal], blade, ru()), ru()).chosen?.result).toBe(theatrical);
+    // As many seeders: the film as released.
+    const ext = result(name("[2001, BDRip 1080p] [Extended Edition] Dub + Original Eng"), 20, 15 * GB);
+    const th = result(name("[2001, BDRip 1080p] [Theatrical Cut] Dub + Original Eng"), 20, 12 * GB);
+    expect(pickRelease(rankReleases([ext, th], lotr, ru()), ru()).edition).toBe("theatrical");
+    // The sources screen's "any cut" card starts the same release as "Where to watch".
+    expect(pickRelease(rankReleases([theatrical, final1080, final4k], blade, ru()), ru(), { voice: ANY, edition: ANY, picture: null }).chosen?.result).toBe(final1080);
+  });
+});
+
 describe("pickRelease", () => {
   const releases = [
     result(name("[2001, BDRemux 2160p, HDR10] [Extended Edition] Dub (Ukr) + Original Eng"), 80, 90e9),
@@ -112,12 +204,14 @@ describe("pickRelease", () => {
   const p = prefs({ languages: ["uk"] });
   const ranked = rankReleases(releases, lotr, p);
 
-  it("recommends the profile's audio, the best release's cut and the mode's picture", () => {
+  it("recommends the profile's audio, the most seeded cut and the mode's picture", () => {
     const x = pickRelease(ranked, p, NO_CHOICE);
     expect(x.option?.key).toBe("uk|dub");
+    // Extended: 80 + 40 seeders, theatrical 30 + 20; the pill offers the other.
     expect(x.editions.map((e) => e.key)).toEqual(["extended", "theatrical"]);
     expect(x.edition).toBe("extended");
     expect(x.chosen?.result.title).toContain("BDRip 1080p] [Extended");
+    expect(pickRelease(ranked, p, { voice: null, edition: "theatrical", picture: null }).chosen?.result.title).toContain("BDRip 1080p] [Theatrical");
     expect(x.versions.map((v) => v.key)).toEqual(["1080", "2160-hdr"]);
     expect(x.editions[0]!.resolutions).toEqual([2160, 1080]);
   });
@@ -129,7 +223,7 @@ describe("pickRelease", () => {
   });
 
   it("follows a picture chosen by hand, and the mode's pick again when it is not there", () => {
-    expect(pickRelease(ranked, p, { voice: null, edition: null, picture: "2160-hdr" }).chosen?.result.title).toContain("2160p");
+    expect(pickRelease(ranked, p, { voice: null, edition: "extended", picture: "2160-hdr" }).chosen?.result.title).toContain("2160p");
     expect(pickRelease(ranked, p, { voice: null, edition: "theatrical", picture: "2160-hdr" }).chosen?.result.title).toContain("1080p");
   });
 

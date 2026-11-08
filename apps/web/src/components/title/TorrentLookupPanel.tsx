@@ -47,7 +47,8 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const [mode, setMode] = useState<ReleaseQuality>(prefs.quality);
   const { data: state } = useLibraryState(d.id);
   // "Watch" opens the episode the title's Play would (resume, else the next): the release has to hold its season.
-  const lookup = useTorrentLookup(d, source, true, mode, d.kind === "tv" ? startEpisode(d, state?.progress).season : null);
+  const start = d.kind === "tv" ? startEpisode(d, state?.progress) : null;
+  const lookup = useTorrentLookup(d, source, true, mode, start?.season ?? null, start?.episode ?? null);
   const text = useReleaseText();
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
