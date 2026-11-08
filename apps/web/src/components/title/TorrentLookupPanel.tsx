@@ -36,7 +36,7 @@ const ID = "torrserver-h";
  * when there is something to choose. Choosing changes the card and nothing else: nothing is added before "Watch".
  * The hero starts the same release (lib/media/release-pick, TorrentProbe).
  */
-export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; source: SourceState }) {
+export function TorrentLookupPanel({ title: d, source, onClose }: { title: TitleCore; source: SourceState; onClose?: () => void }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tpl = useTranslations("player");
@@ -74,11 +74,14 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   // What the search does, for a screen reader (no explanation on screen, 2026-11-06).
   const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
-  if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} />;
+  // Opened by "Another release": every state of the card closes (× and Esc).
+  const closable = onClose ? { onClose, closeLabel: tc("close") } : {};
+  if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} {...closable} />;
   if (lookup.isError)
     return (
       <WatchCard
         id={ID}
+        {...closable}
         mark={<CardMark kind="torrserver" />}
         heading={t("tsFailed", { name: source.name })}
         where={mediaError(lookup.error)}
@@ -100,6 +103,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
         {about}
         <WatchCard
           id={ID}
+          {...closable}
           mark={<CardMark kind="torrserver" />}
           heading={<span aria-live="polite">{t(ranked?.some((x) => x.info.cam && !x.dead && x.holds !== false) ? "tsCamOnly" : "tsNothing")}</span>}
           where={via}
@@ -171,6 +175,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
       {about}
       <WatchCard
         id={ID}
+        {...closable}
         mark={<CardMark kind="torrserver" />}
         tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: text.studio(chosen.studio!) })}</Tag> : undefined}
         heading={heard}

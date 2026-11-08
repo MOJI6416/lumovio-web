@@ -8,7 +8,7 @@ import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
+import { type Edition, pickRelease, sourcesPick } from "@/lib/media/release-pick";
 import { isDubStudio, optionIsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
 import { lookupTracks } from "@/lib/media/release-tracks";
 import { torrServerFor } from "@/lib/media/torrent-source";
@@ -308,7 +308,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   // screen of "All releases" lists every audio (the card is the same release either way).
   const titleDefault = useMemo(() => (view && !modeInSort ? (pickRelease(view.ranked, base).option?.key ?? null) : null), [view, base, modeInSort]);
   const siteVoice = voice !== null && voice === startVoice.current && voice === titleDefault ? null : voice;
-  const choice = useMemo(() => (modeInSort || !view ? null : pickRelease(view.ranked, base, { voice: siteVoice ?? ANY, edition: (edition as Edition | null) ?? ANY, picture }, 40)), [modeInSort, view, base, siteVoice, edition, picture]);
+  const choice = useMemo(() => (modeInSort || !view ? null : sourcesPick(view.ranked, base, { voice: siteVoice, edition: edition as Edition | null, picture })), [modeInSort, view, base, siteVoice, edition, picture]);
   /** The site's choices, each narrowing the next and starting the list again (the ones after it go back to "any"). */
   const choose = (next: { voice?: string | null; edition?: string | null; picture?: string | null; mode?: ReleaseQuality }) => {
     // The title page's audio is read once: whatever is chosen here keeps it as it is shown now (a new mode reranks the

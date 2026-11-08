@@ -665,10 +665,13 @@ function floorOf(info: Pick<ReleaseInfo, "resolution">, fit: Fit, prefs: Pick<Re
 }
 
 /**
- * A swarm too weak to stream from: the indexer counts one or two seeders. It sinks below the same picture's healthy
- * releases in every mode (an unknown count is not weak), never below another picture version.
+ * A swarm too weak to stream from: the indexer counts fewer than five seeders (the owner, 2026-11-08: "4K with 2 peers is
+ * worse than 1080p with 20"). Below it the picture doesn't win: a weak release sinks below every healthy one of the same
+ * audio in every mode — a 4K that stalls is worse than a 1080p that plays; between weak ones the picture decides. An
+ * unknown count is not weak. Five: a stream needs a few seeders at once to keep ahead of playback (one or two leave or
+ * throttle, and the start waits for metadata from them).
  */
-const WEAK_SWARM = 3;
+export const WEAK_SWARM = 5;
 
 /**
  * Where the picture comes from, as "auto" wants it — "what loads at your speed" (Settings → quality): a disc's encode,
@@ -686,9 +689,9 @@ function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
 }
 
 /**
- * The picture part of the rank, by the quality mode. "auto" and "best": resolution in the mode's order,
- * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then a healthy swarm (`WEAK_SWARM`),
- * then the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
+ * The picture part of the rank, by the quality mode. "auto" and "best": a healthy swarm first (`WEAK_SWARM`), then
+ * resolution in the mode's order, then HDR only on a screen that shows it (an SDR screen gets the SDR version), then
+ * the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
  * also takes a film's bigger file (an episode's bitrate can't be told from a season pack's size).
  * "small": a healthy swarm, then the smallest known size, unknown sizes last.
  */
@@ -701,8 +704,8 @@ function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | n
   const sources = prefs.quality === "auto" ? AUTO_SOURCES : SOURCES;
   const source = info.source ? sources.length - sources.indexOf(info.source) : 0;
   if (prefs.quality === "small") return [healthy, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
-  if (prefs.quality === "best") return [res, dynamic, healthy, source, movie && size ? size : 0];
-  return [res, dynamic, healthy, source];
+  if (prefs.quality === "best") return [healthy, res, dynamic, source, movie && size ? size : 0];
+  return [healthy, res, dynamic, source];
 }
 
 function compareRank(a: number[], b: number[]): number {

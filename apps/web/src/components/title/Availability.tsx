@@ -3,7 +3,7 @@
 import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
 import { ExternalLink, Magnet, Play, Server, Tv } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
@@ -68,6 +68,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // "Another release": the search card under the copy, its pills and "Watch" (a release is chosen right here) — on the
   // TorrServer that searches by itself, else on one that answers: the press is the person's own request to search.
   const [another, setAnother] = useState(false);
+  const anotherButton = useRef<HTMLButtonElement>(null);
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
@@ -208,11 +209,20 @@ export function Availability({ title: d }: { title: TitleCore }) {
             </ul>
           </section>
         )}
-        {anotherSource && another && <TorrentLookupPanel title={d} source={anotherSource} />}
+        {anotherSource && another && (
+          <TorrentLookupPanel
+            title={d}
+            source={anotherSource}
+            onClose={() => {
+              setAnother(false);
+              requestAnimationFrame(() => anotherButton.current?.focus());
+            }}
+          />
+        )}
         {torrServers.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {anotherSource && !another && (
-              <Button variant="secondary" size="md" icon={Magnet} onClick={() => setAnother(true)}>
+              <Button ref={anotherButton} variant="secondary" size="md" icon={Magnet} onClick={() => setAnother(true)}>
                 {tp("otherRelease")}
               </Button>
             )}

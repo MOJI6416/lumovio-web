@@ -147,3 +147,24 @@ describe("T2: an abbreviation after the name is still the series", () => {
     expect(isSameTitle("House Hunters International [2014, HDTV 1080i]", ["House", "Доктор Хаус"], 2004, "tv", 2013)).toBe(false);
   });
 });
+
+describe("the title and its sources screen recommend one release (the owner, 2026-11-08)", () => {
+  it("makes the screen's card the title's pick while nothing is chosen there, and lists every audio", async () => {
+    const { pickRelease, sourcesPick } = await import("../src/lib/media/release-pick");
+    const f1 = { title: "F1", originalTitle: "F1", kind: "movie" as const, year: 2025, originalLanguage: "en" };
+    const p = { ...prefs(["ru"]), studios: ["LostFilm"], device: { hevc: true, hdr: true, uhd: true, dolbyVision: false } };
+    // The best release overall is a Ukrainian dub in 4K; the profile's audio is Russian (LostFilm).
+    const ranked = rankReleases(
+      [result("F1 (2025) WEB-DL 2160p HDR | Ukr Dub", 300), result("F1 (2025) WEB-DL 1080p | MVO (LostFilm)", 40), result("F1 (2025) WEB-DL 1080p | Dub", 90)],
+      f1,
+      p,
+    );
+    const title = pickRelease(ranked, p).chosen;
+    const screen = sourcesPick(ranked, p, { voice: null, edition: null, picture: null });
+    expect(screen.chosen?.result.title).toBe(title?.result.title);
+    expect(screen.pool.length).toBe(3);
+    // Something chosen on the screen picks within it.
+    const ukr = screen.options.find((o) => o.language === "uk")!;
+    expect(sourcesPick(ranked, p, { voice: ukr.key, edition: null, picture: null }).chosen?.result.title).toContain("Ukr");
+  });
+});

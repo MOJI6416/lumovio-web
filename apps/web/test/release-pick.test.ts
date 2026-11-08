@@ -116,14 +116,18 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
     expect(pickRelease(rankReleases([remux, webdl, bdrip], dune2, ru({ quality: "best" })), ru({ quality: "best" })).chosen?.result).toBe(remux);
   });
 
-  it("sinks a swarm of one or two seeders below the same picture's healthy releases, never below another picture", () => {
+  it("sinks a swarm of fewer than five seeders below every healthy release, whatever its picture (the owner, 2026-11-08)", () => {
     const weak = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 2, 14 * GB, "Kinozal");
     const healthy = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 40, 9 * GB, "Kinozal");
     expect(rankReleases([weak, healthy], dune2, ru())[0]!.result).toBe(healthy);
-    // 4K on a 4K screen stays 4K with two seeders; unknown seeders are not weak.
+    // "4K with 2 peers is worse than 1080p with 20": on a 4K screen too, in "Auto" and "Best"; a healthy 4K still wins.
     const uhd = { hevc: true, hdr: true, uhd: true, dolbyVision: false };
     const weak4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 2, 30 * GB, "Kinozal");
-    expect(rankReleases([healthy, weak4k], dune2, ru({ device: uhd }))[0]!.result).toBe(weak4k);
+    expect(rankReleases([weak4k, healthy], dune2, ru({ device: uhd }))[0]!.result).toBe(healthy);
+    expect(rankReleases([weak4k, healthy], dune2, ru({ device: uhd, quality: "best" }))[0]!.result).toBe(healthy);
+    const alive4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 6, 30 * GB, "Kinozal");
+    expect(rankReleases([healthy, alive4k], dune2, ru({ device: uhd }))[0]!.result).toBe(alive4k);
+    // Unknown seeders are not weak.
     expect(rankReleases([weak, result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", null, 9 * GB, "LostFilm.tv")], dune2, ru())[0]!.result.tracker).toBe("LostFilm.tv");
     // "Smaller file": the healthy one before the smaller one.
     const tiny = result("Dune: Part Two [2024, WEB-DL 720p] Dub + Original (Eng)", 1, 2 * GB, "Kinozal");

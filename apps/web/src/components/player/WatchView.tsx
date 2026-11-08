@@ -1095,8 +1095,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const prepared = active.prepared;
         // After the first frame a decoder's or network error is the stream that broke, not the file (S1): once per
         // place it restarts quietly from there; a second break there says so, with a retry from that moment.
-        const pos = Math.max(at, last.current.pos);
-        const broke = mediaFailure(code, pos, resumedAt.current.get(c.key) ?? null);
+        const played = Math.max(at, last.current.pos);
+        const broke = mediaFailure(code, played, resumedAt.current.get(c.key) ?? null);
+        // Where a restart starts: where it played to, else where this viewing was to start (a continuation at 20:00
+        // that failed before its first frame starts at 20:00 again, not at 0:00 — torr-speed, 2026-11-08).
+        const pos = played || (resumeOverride.current ?? resumeAt);
         if (broke === "resume") {
           resumedAt.current.set(c.key, pos);
           resumeOverride.current = pos;
@@ -1108,7 +1111,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         // failed): once, it is rebuilt in the browser from the same position, where it can be — no loop.
         if (broke === "file" && c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
           rebuilt.current.add(c.key);
-          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
+          resumeOverride.current = pos > 5 ? pos : resumeOverride.current;
           setActive(null);
           void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index, rebuild: true });
           return;
@@ -1138,7 +1141,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                   : t("errorUnknown"),
           prepared,
           retry: () => {
-            if (broke === "broke") resumeOverride.current = pos;
+            // "Retry" starts where it was meant to: the place it broke, else the continuation's start.
+            resumeOverride.current = pos > 5 ? pos : resumeOverride.current;
             void prepare(c, { auto: false });
           },
           retryLabel: broke === "broke" ? t("retryFrom", { time: formatClock(pos) }) : undefined,

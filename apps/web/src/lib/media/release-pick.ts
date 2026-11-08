@@ -155,3 +155,15 @@ export function foldReleases(ranked: RankedRelease[]): RankedRelease[] {
     return true;
   });
 }
+
+/**
+ * The sources screen's pick (its card) and list (`pool`): every audio and cut listed until one is chosen, and the card
+ * the release "Where to watch" recommends while nothing is — one function for both, so the title and its sources never
+ * recommend different releases (the owner, 2026-11-08). A choice made on the screen picks within it.
+ */
+export function sourcesPick(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "languages" | "studios">, chosen: { voice: string | null; edition: Edition | null; picture: string | null }, max = 40): ReleasePick {
+  const pick = pickRelease(ranked, prefs, { voice: chosen.voice ?? ANY, edition: chosen.edition ?? ANY, picture: chosen.picture }, max);
+  if (chosen.voice !== null || chosen.edition !== null || chosen.picture !== null) return pick;
+  const title = pickRelease(ranked, prefs).chosen;
+  return title ? { ...pick, chosen: title } : pick;
+}
