@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, knownVersions, QUALITY_MODES, ReleaseLine, useReleaseText, VersionName } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -144,12 +144,6 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   };
 
   const choose = (next: Partial<ReleaseChoice>) => setChoice((c) => ({ ...c, ...next }));
-  // "4K, 1080p, 720p": highest first, "quality not stated" last.
-  const resolutions = (list: RankedRelease["info"]["resolution"][]) =>
-    [...new Set(list)]
-      .sort((a, b) => (b ?? -1) - (a ?? -1))
-      .map((r) => (r ? RESOLUTION[r] : t("tsNoResolution")))
-      .join(", ");
   const editionName = (e: Edition) => t(`edition_${e}`);
   // The mode's reasons explain its own pick; a version the person picked needs none.
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
@@ -159,7 +153,15 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const kept = lookup.data?.emptyAt ? t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) }) : null;
   const versionName = version ? text.version(version.resolution, version.range) : "";
   const qualityValue = choice.picture ? versionName : [t(`tsQuality_${mode}`), versionName].filter(Boolean).join(" · ");
-  const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : "";
+  // The pill shows the version as its marks (4K, HDR, Dolby Vision), the mode in words before it.
+  const qualityShown = (
+    <>
+      {choice.picture ? null : `${t(`tsQuality_${mode}`)}${version ? " · " : ""}`}
+      {version && <VersionName resolution={version.resolution} range={version.range} />}
+    </>
+  );
+  const versions = knownVersions(pick.versions);
+  const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] && (option.studio || option.voice) ? text.language(option.language) : null].filter(Boolean).join(", ") : "";
 
   return (
     <>
@@ -167,7 +169,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
-        tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: chosen.studio! })}</Tag> : undefined}
+        tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: text.studio(chosen.studio!) })}</Tag> : undefined}
         heading={heard}
         quality={
           <>
@@ -214,7 +216,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
                   <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => choose({ voice: o.key, edition: null, picture: null })}>
                     <PickItem
                       name={text.option(o)}
-                      sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
+                      sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, text.resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
                     />
                   </MenuCheckboxItem>
                 ))}
@@ -228,7 +230,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
               >
                 {pick.editions.map((e) => (
                   <MenuCheckboxItem key={e.key} checked={e.key === edition} onCheckedChange={() => choose({ edition: e.key, picture: null })}>
-                    <PickItem name={editionName(e.key)} sub={resolutions(e.resolutions)} />
+                    <PickItem name={editionName(e.key)} sub={text.resolutions(e.resolutions)} />
                   </MenuCheckboxItem>
                 ))}
               </Menu>
@@ -237,7 +239,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
               <Menu
                 label={t("pickQuality")}
                 align="start"
-                trigger={<PickPill name={t("pickQuality")} value={qualityValue} disabled={adding} aria-label={t("pickValue", { name: t("pickQuality"), value: qualityValue })} />}
+                trigger={<PickPill name={t("pickQuality")} value={qualityShown} disabled={adding} aria-label={t("pickValue", { name: t("pickQuality"), value: qualityValue })} />}
               >
                 {/* The mode picks the version for this screen (Auto), the best one or the smallest file; a version by hand overrides it. */}
                 {QUALITY_MODES.map((m) => (
@@ -252,12 +254,12 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
                     {t(`tsQuality_${m}`)}
                   </MenuCheckboxItem>
                 ))}
-                {pick.versions.length > 1 && (
+                {versions.length > 1 && (
                   <>
                     <MenuSeparator />
-                    {[...pick.versions].reverse().sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1)).map((v) => (
+                    {[...versions].reverse().sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1)).map((v) => (
                       <MenuCheckboxItem key={v.key} checked={choice.picture === v.key} onCheckedChange={() => choose({ picture: v.key })}>
-                        <PickItem name={text.version(v.resolution, v.range)} sub={formatSize(v.best.result.size, locale)} />
+                        <PickItem name={<VersionName resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
                       </MenuCheckboxItem>
                     ))}
                   </>

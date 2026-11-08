@@ -1,7 +1,7 @@
 "use client";
 
 import type { ConnectionSummary, ReleaseQuality, TitleDetails } from "@lumovio/contracts";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
@@ -9,7 +9,8 @@ import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
-import { creditsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
+import { isDubStudio, optionIsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
+import { lookupTracks } from "@/lib/media/release-tracks";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -218,15 +219,23 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
 
   // Releases of this title first, best for the profile's languages, studios, mode and this device; the
   // rest follow by seeders (the indexer's numbers; unknown ones last), so a custom query still shows everything.
+  // The shared cache of releases' file tracks (7.15 «Чтение дорожек заранее»), under a copy's own read.
+  const shared = useQuery({
+    queryKey: ["releaseTracks", ...lookupKey(profileId, connId, d.id), found?.at ?? 0, found?.query ?? ""],
+    enabled: Boolean(profileId && found?.results.length),
+    staleTime: 30 * 60_000,
+    queryFn: () => lookupTracks(found?.results ?? []),
+  }).data;
+  const fileOf = useMemo(() => (shared ? (r: TsSearchResult) => fileTracks?.(r) ?? shared.get(r.title) : (fileTracks ?? null)), [shared, fileTracks]);
   const view = useMemo(() => {
     if (!found) return null;
     // An episode is wanted: a release whose name holds other seasons (or other episodes of the season) only sinks.
     // A result that is a copy already on the server: its studios as its file's tracks name them ("6x MVO").
-    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileTracks ?? null);
+    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileOf);
     const mine = new Set(ranked.map((x) => x.result.link));
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
-  }, [found, d, prefs, season, episode, fileTracks]);
+  }, [found, d, prefs, season, episode, fileOf]);
   // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
   const options = useMemo(() => {
     // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
@@ -237,7 +246,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     };
     // In a language, the profile's studios first, in their order ("1 — LostFilm, 2 — HDRezka"), as "Where to watch" offers them.
     const studio = (o: VoiceOption) => {
-      const i = o.studio ? base.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+      const i = base.studios.findIndex((s) => optionIsStudio(o, s));
       return i >= 0 ? i : base.studios.length;
     };
     return all
@@ -341,6 +350,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     if (!x) return null;
     const keys = voiceKeys(x);
     if (voice !== null && keys.includes(voice)) return voice;
+    if (x.studio && isDubStudio(x.studio)) return keys.find((k) => k.endsWith("|dub")) ?? null;
     if (x.studio) return keys.find((k) => k.endsWith(`|${x.studio}`)) ?? `${x.language ?? ""}|${x.studio}`;
     if (x.info.studios.length === 1) return keys.find((k) => k.endsWith(`|${x.info.studios[0]}`)) ?? null;
     return x.language ? (keys.find((k) => k.startsWith(`${x.language}|`)) ?? null) : null;

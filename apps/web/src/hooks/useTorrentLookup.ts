@@ -2,11 +2,12 @@
 
 import type { ReleaseQuality, SourceState, TitleSummary } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
+import { hidesStudios, lookupTracks } from "@/lib/media/release-tracks";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
@@ -73,20 +74,29 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
   const { me } = useSession();
   const base = useReleasePrefs();
   const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
+  const qc = useQueryClient();
+  const key = lookupKey(me?.activeProfile?.id ?? null, source?.id ?? null, d.id);
+  const answer = qc.getQueryData<LookupResult>(key);
+  // The shared cache of releases' tracks read from their files (7.15 «Чтение дорожек заранее»): "6x MVO" names its studios.
+  const tracks = useQuery({
+    queryKey: ["releaseTracks", ...key, answer?.at ?? 0],
+    enabled: Boolean(me?.activeProfile && answer?.results.length),
+    staleTime: 30 * 60_000,
+    queryFn: () => lookupTracks(answer?.results ?? []),
+  });
+  const known = tracks.data;
   const select = useCallback(
     (r: LookupResult): TorrentLookup => ({
       connectionId: source?.id ?? "",
       connectionName: source?.name ?? "",
       total: r.results.length,
-      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null),
+      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, known ? (x) => known.get(x.title) : null),
       at: r.at,
       emptyAt: r.emptyAt,
     }),
-    [source, d, prefs, season, episode],
+    [source, d, prefs, season, episode, known],
   );
-  const qc = useQueryClient();
-  const key = lookupKey(me?.activeProfile?.id ?? null, source?.id ?? null, d.id);
-  return useQuery({
+  const lookup = useQuery({
     queryKey: key,
     enabled: enabled && source !== null && isOut(d),
     staleTime: 30 * 60_000,
@@ -101,4 +111,39 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
     },
     select,
   });
+  // Read ahead only on suspicion: a profile with studios (adults), names that hide theirs, among the best pictures found
+  // — the ones at least as good as what would play now. The read itself loads only then (lib/media/read-ahead).
+  const ranked = lookup.data?.ranked;
+  const kids = Boolean(me?.activeProfile?.isKids);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one round per answer and profile
+  useEffect(() => {
+    if (!ranked || !known || !source || kids || prefs.studios.length === 0) return;
+    const alive = ranked.filter((x) => !x.dead && !x.info.cam && x.holds !== false && x.fit !== "poor");
+    const top = alive[0]?.info.resolution ?? 0;
+    const suspects = alive
+      .filter((x) => hidesStudios(x) && !known.has(x.result.title) && (x.info.resolution ?? 0) >= top)
+      .sort((a, b) => (b.info.resolution ?? 0) - (a.info.resolution ?? 0) || (b.result.seeders ?? -1) - (a.result.seeders ?? -1))
+      .map((x) => x.result);
+    if (suspects.length === 0) return;
+    let cancel: (() => void) | null = null;
+    let gone = false;
+    void import("@/lib/media/read-ahead").then(({ readAhead }) => {
+      if (gone) return;
+      cancel = readAhead({
+        connectionId: source.id,
+        releases: suspects,
+        originalLanguage: d.originalLanguage ?? null,
+        movie: d.kind === "movie",
+        year: d.year ?? null,
+        season: d.kind === "tv" ? season : null,
+        episode: d.kind === "tv" ? episode : null,
+        onRead: () => void qc.invalidateQueries({ queryKey: ["releaseTracks", ...key] }),
+      });
+    });
+    return () => {
+      gone = true;
+      cancel?.();
+    };
+  }, [ranked, known, source?.id, kids, prefs.studios.length]);
+  return lookup;
 }

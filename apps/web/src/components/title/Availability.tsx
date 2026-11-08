@@ -1,7 +1,7 @@
 "use client";
 
 import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
-import { ExternalLink, Play, Server, Tv } from "lucide-react";
+import { ExternalLink, Magnet, Play, Server, Tv } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
@@ -63,6 +63,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const { data: lib } = useLibraryState(d.id);
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
+  // "Another release": the search card under the copy, its pills and "Watch" (a release is chosen right here).
+  const [another, setAnother] = useState(false);
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
@@ -72,10 +74,6 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
-  // A torrent's files bound to episodes of this series (they are not copies of their own).
-  const hashOf = (s: { externalId: string }) => s.externalId.split(":")[0]!.toLowerCase();
-  const episodeFilesOf = (copy: Copy) =>
-    (raw?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.episode !== null && x.connectionId === copy.connectionId && hashOf(x) === hashOf(copy));
   const resume = watchHref(d, lib?.progress);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
@@ -96,7 +94,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
       heard: heard ?? q.words[0] ?? s.connectionName,
       // The marks and what they don't say; without marks, the version in words unless the heading already says it.
       quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      // A release already added to the profile's TorrServer says so in one phrase, not "On «Earth» · TorrServer".
+      where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, d.originalLanguage),
     };
   };
@@ -111,7 +110,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
     />
   );
   const more = (s: Copy, size: "md" | "lg") => (
-    <CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
+    <CopyActions copy={s} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
   );
 
   let main: ReactNode = null;
@@ -201,10 +200,18 @@ export function Availability({ title: d }: { title: TitleCore }) {
             </ul>
           </section>
         )}
+        {search && another && <TorrentLookupPanel title={d} source={search} />}
         {torrServers.length > 0 && (
-          <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
-            {tp("allSources")}
-          </ActionLink>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {search && !another && (
+              <Button variant="secondary" size="md" icon={Magnet} onClick={() => setAnother(true)}>
+                {tp("otherRelease")}
+              </Button>
+            )}
+            <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)}>
+              {tp("allSources")}
+            </ActionLink>
+          </div>
         )}
       </>
     );

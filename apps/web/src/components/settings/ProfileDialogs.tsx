@@ -17,7 +17,7 @@ import { toast } from "@/components/ui/Toast";
 import { ApiRequestError, api } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-errors";
 import { languageName } from "@/lib/format";
-import { VOICE_STUDIOS } from "@/lib/media/releases";
+import { DUB_STUDIO, VOICE_STUDIOS } from "@/lib/media/releases";
 import { useSettingsSave } from "@/lib/use-action";
 import { capital } from "./locale-options";
 import { OrderedChoice } from "./OrderedChoice";
@@ -80,6 +80,7 @@ function useLanguageOptions() {
 export function AudioDialog({ value, change, onClose, kids }: Common & { kids: boolean }) {
   const t = useTranslations("profiles");
   const ts = useTranslations("settings");
+  const tt = useTranslations("title");
   const locale = useLocale();
   const save = useSettingsSave();
   const langs = useLanguageOptions();
@@ -90,11 +91,15 @@ export function AudioDialog({ value, change, onClose, kids }: Common & { kids: b
     void save.save(c.request, c.optimistic);
   };
   const audio = value.audioLanguages;
-  const studios = VOICE_STUDIOS.filter((s) => audio.length === 0 || audio.includes(s.lang)).map((s) => ({
-    value: s.name,
-    label: s.name,
-    keywords: [languageName(s.lang, locale) ?? s.lang, ...(s.anime ? [t("studiosAnime")] : [])],
-  }));
+  // Dubbing first: not a studio, but wanted as one — any dubbed track, whoever made it (DUB_STUDIO).
+  const studios = [
+    { value: DUB_STUDIO, label: capital(tt("voice_dub"), locale), keywords: ["Dub", "Dubbing", "Дубляж"] },
+    ...VOICE_STUDIOS.filter((s) => audio.length === 0 || audio.includes(s.lang)).map((s) => ({
+      value: s.name,
+      label: s.name,
+      keywords: [languageName(s.lang, locale) ?? s.lang, ...(s.anime ? [t("studiosAnime")] : [])],
+    })),
+  ];
   const addCustom = (e: FormEvent) => {
     e.preventDefault();
     const n = custom.trim();

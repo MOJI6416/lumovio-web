@@ -23,10 +23,17 @@ export async function torrServerFor(connectionId: string) {
 export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
   const ts = await torrServerFor(connectionId);
   const links = r.origins?.map((o) => o.link) ?? [r.link];
+  // What is there already: a torrent the server had before this add is never marked to be swept as unplayed.
+  const before = await ts.list().then(
+    (list) => new Set(list.map((t) => t.hash.toLowerCase())),
+    () => null,
+  );
+  const known = r.hash ? before?.has(r.hash.toLowerCase()) : false;
+  const data = { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, ...(before && !known ? { addedAt: Date.now(), played: false } : {}) };
   let tor: Awaited<ReturnType<typeof ts.add>> | null = null;
   for (const [i, link] of links.entries()) {
     try {
-      tor = await ts.add(link, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}` }, tmdbImage(d.posterPath, "w342"));
+      tor = await ts.add(link, r.title.slice(0, 250), data, tmdbImage(d.posterPath, "w342"));
       if (tor?.hash) break;
     } catch (e) {
       if (i === links.length - 1) throw e;
@@ -34,6 +41,13 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
   }
   if (!tor?.hash) return null;
   const hash = tor.hash.toLowerCase();
+  // It was there before (an indexer gives no hash to check first): its mark goes back to one that is never swept.
+  if (before?.has(hash) && "played" in data) {
+    const { addedAt: _a, played: _p, ...plain } = data;
+    await ts.set(hash, tor.title || r.title.slice(0, 250), tor.poster ?? "", JSON.stringify({ lumovio: plain })).catch(() => {}); // ui-lint-ignore swallowed-error: only the sweep mark is wrong then; the add itself succeeded
+  }
+  // What Lumovio added before and never played goes now (UNPLAYED_MINUTES), off the way of this viewing.
+  void import("./torrent-manage").then((m) => m.sweepUnplayed(connectionId, hash)).catch(() => {}); // ui-lint-ignore swallowed-error: the sweep is housekeeping in the background; the next add tries again
   const label = r.title.slice(0, 190);
   await api(`/api/connections/${connectionId}/index`, {
     method: "POST",

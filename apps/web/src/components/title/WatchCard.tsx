@@ -117,7 +117,7 @@ const NOT_TOGGLE = { "aria-pressed": undefined };
  * value and a chevron — the catalog's filter pill (7.4), never "selected", since a value is always there. It opens a
  * Menu (`menu`), whose items are MenuCheckboxItems with the current one ticked.
  */
-export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">>(function PickPill(
+export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: ReactNode } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "value">>(function PickPill(
   { name, value, ...rest },
   ref,
 ) {
@@ -132,7 +132,7 @@ export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: str
 });
 
 /** A menu item's two lines: the option, then what it comes in. */
-export function PickItem({ name, sub }: { name: string; sub?: string | null }) {
+export function PickItem({ name, sub }: { name: ReactNode; sub?: string | null }) {
   return (
     <>
       <span className="block">{name}</span>

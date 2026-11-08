@@ -7,6 +7,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate, takeGuestIntent } from "@/components/shell/GuestGate";
+import { useCopyText } from "@/components/sources/copy-text";
 import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
@@ -91,6 +92,9 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const onProbe = useCallback((r: ProbeResult) => setProbe(r), []);
 
   const first = avail.data ? orderedSources(titleCopies(avail.data), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
+  // A TorrServer copy is said as a found release is ("On «Earth» · [4K] Russian · LostFilm"): its release's marks and sound.
+  const copyText = useCopyText();
+  const told = first?.kind === "torrserver" ? copyText.quality(first, avail.data?.servers ?? [], d.originalLanguage) : null;
   const offers = (d.watchProviders?.providers ?? []).filter((p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads");
   // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads"; TTL-26).
   const offerNames = [...new Set((offers.length ? offers : (d.watchProviders?.providers ?? [])).map((p) => serviceOf(p.name).name))].slice(0, 3);
@@ -104,9 +108,10 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       first && avail.state.kind === "playable"
         ? {
             server: first.connectionName,
-            resolution: first.quality?.resolution ?? null,
-            // Its marks by its server's data (a TorrServer copy's release name is read only in "Where to watch").
-            marks: first.quality ? copyMarks(first.quality) : [],
+            resolution: told ? null : (first.quality?.resolution ?? null),
+            // Its marks by its server's data; a TorrServer copy's by its release's name and file, with what is heard.
+            marks: told ? told.marks : first.quality ? copyMarks(first.quality) : [],
+            summary: told ? told.words.filter(Boolean).join(" · ") || null : null,
             others: avail.state.copies - 1,
           }
         : null,
@@ -284,10 +289,10 @@ function AvailabilityLine({
         <>
           {[t("onServer", { server: s.server }), resolutionBesideMarks(s.resolution)].filter(Boolean).join(" · ")}
           <QualityBadges className="ms-2 me-1.5" marks={s.marks} />
-          {others && `· ${others}`}
+          {[s.summary, others].filter(Boolean).join(" · ")}
         </>
       ) : (
-        [t("onServer", { server: s.server }), s.resolution, others].filter(Boolean).join(" · ")
+        [t("onServer", { server: s.server }), s.resolution, s.summary, others].filter(Boolean).join(" · ")
       );
       break;
     }

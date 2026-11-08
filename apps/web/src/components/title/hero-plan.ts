@@ -25,7 +25,7 @@ export interface PlanInput {
   /** Part-way through it (more than 30 s, not finished). */
   resume: boolean;
   /** The copy the player starts with, when the profile's servers have one; `marks` — its quality marks (QualityBadges). */
-  copy: { server: string; resolution: string | null; marks?: QualityMark[]; others: number } | null;
+  copy: { server: string; resolution: string | null; marks?: QualityMark[]; summary?: string | null; others: number } | null;
   torrent: TorrentState;
   trailer: boolean;
   /** Legal streaming services for the region, subscriptions and free ones first. */
@@ -47,7 +47,7 @@ export type Primary =
   | null;
 
 export type Summary =
-  | { kind: "copy"; server: string; resolution: string | null; marks?: QualityMark[]; others: number }
+  | { kind: "copy"; server: string; resolution: string | null; marks?: QualityMark[]; summary?: string | null; others: number }
   | { kind: "release"; name: string; summary: string; marks?: QualityMark[] }
   | { kind: "searching"; name: string }
   | { kind: "manual"; name: string }

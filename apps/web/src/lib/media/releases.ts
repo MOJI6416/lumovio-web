@@ -219,8 +219,16 @@ export const VOICE_STUDIOS: { name: string; lang: "ru" | "uk"; anime?: boolean; 
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Whether a release name credits a studio: a known one by its spellings, any other as written. */
+/**
+ * "Dubbing" in a profile's studios (Settings → Audio): not a studio but the kind, wanted the way a studio is — any
+ * dubbed track, whoever made it. Kept as this word in the profile, shown in the interface's language.
+ */
+export const DUB_STUDIO = "Dub";
+export const isDubStudio = (studio: string) => studio.trim().toLowerCase() === "dub";
+
+/** Whether a release name credits a studio: a known one by its spellings, any other as written; `DUB_STUDIO` — any dubbing. */
 export function creditsStudio(release: string, studio: string): boolean {
+  if (isDubStudio(studio)) return VOICE_WORDS.dub.test(release.replace(/[._]/g, " "));
   const known = VOICE_STUDIOS.find((s) => s.name.toLowerCase() === studio.toLowerCase());
   return (known?.match ?? W(escapeRe(studio.trim()))).test(release.replace(/[._]/g, " "));
 }
@@ -684,7 +692,11 @@ export function rankReleases(
     .map((result) => {
       const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
-      const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))));
+      const j = prefs.studios.findIndex((s) =>
+        isDubStudio(s)
+          ? info.tracks.some((t) => t.voice === "dub" && (i < 0 || t.language === null || t.language === prefs.languages[i]))
+          : creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))),
+      );
       // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
@@ -746,8 +758,20 @@ export function audioMatch(x: RankedRelease): { kind: "studio"; studio: string }
  */
 export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[] {
   const tracks = namedTracks(x.info);
-  if (tracks.length === 0) return [`${x.language ?? ""}|${x.info.voice ?? ""}`];
-  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? t.voice ?? ""}`))];
+  if (tracks.length === 0) return [`${x.language ?? ""}|${kindKey(x.info.voice)}`];
+  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? kindKey(t.voice)}`))];
+}
+
+/**
+ * A kind of translation as an audio option: "multi-voice" is none — it says only that studios are there, not which
+ * (the owner, 2026-11-08), so an unnamed one is an option of its language ("Russian"), as a name listing no kind is.
+ */
+const kindKey = (voice: Voice | null) => (voice && voice !== "mvo" ? voice : "");
+
+/** Whether an audio option is one of a profile's studios: by its studio, `DUB_STUDIO` by its kind (a studio's dub too). */
+export function optionIsStudio(o: Pick<VoiceOption, "studio" | "voice">, studio: string): boolean {
+  if (isDubStudio(studio)) return o.voice === "dub";
+  return o.studio !== null && creditsStudio(o.studio, studio);
 }
 
 export interface PictureVersion {

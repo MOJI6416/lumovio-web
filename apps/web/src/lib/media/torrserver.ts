@@ -328,6 +328,10 @@ export function episodeFiles(files: TsFile[], torrentTitle: string, season: numb
 export function torrServerClient(base: string, auth: TsAuth, opts: { connectionId?: string } = {}): ProviderClient & {
   list(): Promise<TsTorrent[]>;
   add(link: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
+  set(hash: string, title: string, poster: string, data: string): Promise<void>;
+  peek(link: string, title: string): Promise<TsTorrent>;
+  stat(hash: string, timeoutMs: number, signal?: AbortSignal): Promise<TsTorrent>;
+  ffprobe(hash: string, fileId: number, timeoutMs: number, signal?: AbortSignal): Promise<{ streams?: { codec_type: string; codec_name?: string; tags?: { language?: string; title?: string }; disposition?: { forced?: number } }[] } | null>;
   get(hash: string): Promise<TsTorrent>;
   files(hash: string): Promise<{ title: string; files: TsFile[] }>;
   remove(hash: string): Promise<void>;
@@ -383,6 +387,17 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     /** `link`: a magnet or a .torrent URL; TorrServer fetches the file itself. */
     async add(link: string, title: string, data: Record<string, unknown>, poster?: string | null) {
       return post<TsTorrent>("/torrents", { action: "add", link, title, poster: poster ?? "", data: JSON.stringify({ lumovio: data }), save_to_db: true });
+    },
+    /** Adds a torrent for a moment, never saved in TorrServer's database: to read its file's header ahead (read-ahead). */
+    peek: (link: string, title: string) => post<TsTorrent>("/torrents", { action: "add", link, title, poster: "", data: JSON.stringify({ lumovio: { peek: true } }), save_to_db: false }),
+    /** Starts the torrent and waits for its metadata (its files). */
+    stat: (hash: string, timeoutMs: number, signal?: AbortSignal) => get<TsTorrent>(`/stream?link=${hash}&stat`, timeoutMs, signal),
+    /** ffprobe of one file, as TorrServer runs it. */
+    ffprobe: (hash: string, fileId: number, timeoutMs: number, signal?: AbortSignal) =>
+      get<{ streams?: { codec_type: string; codec_name?: string; tags?: { language?: string; title?: string }; disposition?: { forced?: number } }[] } | null>(`/ffp/${hash}/${fileId}`, timeoutMs, signal),
+    /** Rewrites a torrent's title, poster and data in TorrServer's database (MatriX "set"). */
+    async set(hash: string, title: string, poster: string, data: string) {
+      await post("/torrents", { action: "set", hash, title, poster, data });
     },
     async remove(hash: string) {
       await post("/torrents", { action: "rem", hash });

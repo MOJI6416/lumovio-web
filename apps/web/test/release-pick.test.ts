@@ -311,3 +311,34 @@ describe("pickRelease for the sources screen (ANY)", () => {
     expect(pickRelease(ranked, p, NO_CHOICE).option?.key).toBe("uk|dub");
   });
 });
+
+describe("audio options without multi-voice, Dubbing as a studio (torr-system 2026-11-08)", () => {
+  it("offers no 'multi-voice' option: an unnamed MVO is an option of its language", () => {
+    const ranked = rankReleases([result(name("[2001, BDRip 1080p] 6x MVO")), result(name("[2001, BDRip 720p] MVO (LostFilm)"))], lotr, prefs({ languages: ["ru"] }));
+    const keys = voiceOptions(ranked).map((o) => o.key);
+    expect(keys).toContain("ru|");
+    expect(keys).toContain("ru|LostFilm");
+    expect(keys.some((k) => k.endsWith("|mvo"))).toBe(false);
+  });
+
+  it("ranks a dubbed release first for a profile whose first 'studio' is Dubbing, and offers it first", () => {
+    const list = [result(name("[2001, BDRip 1080p] MVO (LostFilm)"), 90), result(name("[2001, BDRip 1080p] Dub (Невафильм)"), 10)];
+    const ranked = rankReleases(list, lotr, prefs({ languages: ["ru"], studios: ["Dub", "LostFilm"] }));
+    expect(ranked[0]!.result.title).toContain("Dub (Невафильм)");
+    expect(ranked[0]!.studio).toBe("Dub");
+    const pick = pickRelease(ranked, prefs({ languages: ["ru"], studios: ["Dub", "LostFilm"] }));
+    expect(pick.option?.voice).toBe("dub");
+    expect(pick.chosen!.result.title).toContain("Dub (Невафильм)");
+  });
+
+  it("finds Dubbing and every studio in a file whose name says only 'многоголосый' (the owner's screenshot)", () => {
+    const r = result(name("[2001, WEB-DL 1080p] многоголосый"));
+    const file = ["rus|MVO, HDRezka Studio", "rus|MVO, LostFilm", "rus|MVO, NewComers", "rus|MVO, TVShows", "rus|MVO, Red Head Sound", "rus|Дубляж, HDRezka Studio", "eng|Original"];
+    const ranked = rankReleases([r], lotr, prefs({ languages: ["ru"], studios: ["LostFilm"] }), null, null, () => file);
+    expect(ranked[0]!.studio).toBe("LostFilm");
+    const keys = voiceOptions(ranked).map((o) => o.key);
+    expect(keys).toEqual(expect.arrayContaining(["ru|HDrezka Studio", "ru|LostFilm", "ru|TVShows", "ru|Red Head Sound"]));
+    const dub = rankReleases([r], lotr, prefs({ languages: ["ru"], studios: ["Dub"] }), null, null, () => file);
+    expect(dub[0]!.studio).toBe("Dub");
+  });
+});
