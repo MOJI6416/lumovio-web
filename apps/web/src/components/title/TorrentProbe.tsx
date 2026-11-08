@@ -4,6 +4,7 @@ import type { SourceState } from "@lumovio/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo } from "react";
+import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
 import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
@@ -87,14 +88,29 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
     onChange({
       state: { state: "found", name: source.name, summary, marks },
       play: async () => {
+        // The launch's scene from the press, the add its first step (11.1 «Запуск»), as "Where to watch" starts it.
+        let dropped = false;
+        startLaunch(
+          {
+            status: tp("stage_add"),
+            onBack: () => {
+              dropped = true;
+              endLaunch();
+            },
+          },
+          true,
+        );
         try {
           const added = await addTorrentSource(source.id, d, null, chosen.result);
           if (!added) throw new Error(tp("addFailed"));
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
+          if (dropped) return false;
           // The chosen dubbing goes along, so the player starts that studio's track (as "Where to watch" does).
           router.push(`${href}${href.includes("?") ? "&" : "?"}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
           return true;
         } catch (e) {
+          if (dropped) return false;
+          endLaunch();
           toast.error(t("releaseAddFailed", { error: mediaError(e) }));
           return false;
         }

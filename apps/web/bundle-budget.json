@@ -47,7 +47,7 @@
       "jsChunks": 17
     },
     "/[locale]/calendar": {
-      "jsGzip": 195810,
+      "jsGzip": 196821,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -97,7 +97,7 @@
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 201321,
+      "jsGzip": 202332,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -127,7 +127,7 @@
       "jsChunks": 15
     },
     "/[locale]/settings/connections": {
-      "jsGzip": 201573,
+      "jsGzip": 202584,
       "cssGzip": 20624,
       "jsChunks": 15
     },
@@ -157,7 +157,7 @@
       "jsChunks": 15
     },
     "/[locale]/settings/recommendations": {
-      "jsGzip": 216151,
+      "jsGzip": 217162,
       "cssGzip": 20624,
       "jsChunks": 17
     },
@@ -167,7 +167,7 @@
       "jsChunks": 15
     },
     "/[locale]/settings/services": {
-      "jsGzip": 203406,
+      "jsGzip": 204417,
       "cssGzip": 20624,
       "jsChunks": 15
     },

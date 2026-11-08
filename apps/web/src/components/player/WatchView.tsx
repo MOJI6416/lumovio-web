@@ -2,7 +2,7 @@
 
 import type { Availability, CastFailure, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Settings2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Settings2 } from "lucide-react";
 import type { ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
@@ -22,11 +22,10 @@ import { useCastReport } from "@/components/tv/cast-report";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
 import { AccentBadge } from "@/components/ui/Badge";
-import { BrandLoader } from "@/components/ui/BrandMotion";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { IconButton } from "@/components/ui/IconButton";
-import { type Step, Steps } from "@/components/ui/Progress";
+import type { Step } from "@/components/ui/Progress";
 import { PortalContainerContext } from "@/components/ui/portal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "@/components/ui/Toast";
@@ -56,6 +55,7 @@ import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
 import { ExternalPlayerPanel } from "./ExternalPlayerPanel";
+import { startLaunch, useLaunch } from "./launch";
 import { LumovioPlayer } from "./LumovioPlayer";
 import type { FinderPick, FinderProps } from "./finder";
 import { TorrentFinder } from "./TorrentFinder";
@@ -186,6 +186,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Availability | null>(null);
   const [marked, setMarked] = useState<"pending" | "done" | "failed" | null>(null);
+  // The player whose first frame has come (or a press it waits for), and what its torrent's server said before: the launch's.
+  const [startedFor, setStartedFor] = useState<PreparedPlayback | null>(null);
+  const [launchDetail, setLaunchDetail] = useState<string | null>(null);
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
@@ -779,12 +782,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     onPick: (pick, anchor) => void addAndPlay(pick, anchor),
   };
 
-  // A preparation started from the sources screen is shown from the top; the screen's place is kept
-  // for going back to it ("another source" after a failure).
+  // On a TV a preparation started from the sources screen is shown there, from the top; the screen's place is kept
+  // for going back to it ("another source" after a failure). The site's goes to the launch scene (./launch).
   const prepFromScreen = phase.kind === "preparing" && phase.fromScreen;
   useEffect(() => {
-    if (prepFromScreen) window.scrollTo({ top: 0 });
-  }, [prepFromScreen]);
+    if (prepFromScreen && tvNav) window.scrollTo({ top: 0 });
+  }, [prepFromScreen, tvNav]);
   useEffect(() => {
     if (phase.kind === "playing") savedPlace.current = null;
   }, [phase.kind]);
@@ -932,6 +935,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
 
   const player = active && (
     <LumovioPlayer
+      onLaunch={(l) => {
+        setLaunchDetail(l.detail);
+        if (l.started) setStartedFor(active.prepared);
+      }}
       key={`${active.prepared.url}|${active.prepared.type}|${active.prepared.remuxAudio ?? ""}`}
       prepared={active.prepared}
       hidden={phase.kind !== "playing"}
@@ -957,7 +964,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         nextEp
           ? {
               label: [t("episodeLabel", nextEp), nextName].filter(Boolean).join(" · "),
-              go: () => router.replace(epHref(nextEp.season, nextEp.episode)),
+              // The launch's scene from the press (or the countdown's end), as any "Watch" (11.1 «Запуск»).
+              go: () => {
+                if (!tvNav) startLaunch();
+                router.replace(epHref(nextEp.season, nextEp.episode));
+              },
               still: tmdbImage(nextData?.stillPath, "w300"),
               blur: spoilers.stills && !nextOpen,
             }
@@ -1048,6 +1059,42 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       }}
       castButton={castButton}
     />
+  );
+
+  // The launch (11.1 «Запуск»): from "Watch" to the first frame one scene — the black stage, the loader and what is done
+  // now — whichever way the viewing was started: a link from the title or home (the scene came with the press), the
+  // sources screen, the next episode, another source or audio from the player. The TV shell keeps its own.
+  const launching =
+    !tvNav &&
+    ((phase.kind === "loading" && !picking) || phase.kind === "preparing" || (phase.kind === "playing" && active !== null && startedFor !== active.prepared));
+  const prepNow = phase.kind === "preparing" ? phase.prep.stages.find((x) => stageState(phase.prep, x) === "current") : undefined;
+  const alternatives = candidates.length > 1 || finderShown;
+  useLaunch(
+    launching
+      ? {
+          // The page's own loading keeps the words already there (an add on the title page went before it).
+          status: prepNow ? (prepNow === "file" && season !== null && episode !== null ? t("stage_episode", { season, episode }) : t(`stage_${prepNow}`)) : phase.kind === "loading" ? undefined : null,
+          detail: phase.kind === "preparing" ? phase.label : phase.kind === "playing" ? launchDetail : null,
+          onBack: toTitle,
+          backLabel: t("backToTitle", { title: d.title }),
+          // When it takes a while: back to what played (a switch from the player), another source.
+          actions:
+            (phase.kind === "preparing" && active) || alternatives ? (
+              <>
+                {phase.kind === "preparing" && active && (
+                  <Button variant="secondary" icon={Play} onClick={() => toWatching.current()}>
+                    {t("backToWatching")}
+                  </Button>
+                )}
+                {alternatives && (
+                  <Button variant="secondary" onClick={phase.kind === "preparing" ? cancel : anotherSource}>
+                    {t("anotherSource")}
+                  </Button>
+                )}
+              </>
+            ) : undefined,
+        }
+      : null,
   );
 
   if (phase.kind === "playing") return player;
@@ -1200,10 +1247,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     );
   }
 
-  // After "Watch" the way to the picture stays on the player's stage (11.1): the start, its failure, another app. What
-  // was started from the sources screen keeps its stages and failures there (the screen's own place, SRC-18/19).
-  const onStage = (phase.kind === "loading" && !picking) || (phase.kind === "preparing" && !phase.fromScreen) || (phase.kind === "error" && !phase.fromScreen) || phase.kind === "external";
-  const alternatives = candidates.length > 1 || finderShown;
+  // A launch that failed or needs another app stays on the player's stage (11.1), wherever it was started; the sources
+  // screen lies under it with its search, filters and place, for "Another source".
+  const onStage = phase.kind === "error" || phase.kind === "external";
   const errorActions = (p: Extract<Phase, { kind: "error" }>, primaryRetry: boolean) => (
     <>
       {primaryRetry && p.retry && (
@@ -1246,32 +1292,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     </>
   );
   const stage = onStage ? (
-    <StartStage art={tmdbImage(d.backdropPath, "w1280")} title={d.title} subtitle={subtitle} backLabel={t("backToTitle", { title: d.title })} onBack={toTitle}>
-      {(phase.kind === "loading" || phase.kind === "preparing") && (
-        <>
-          <div role="status" aria-live="polite" className="flex flex-col items-center gap-3">
-            <BrandLoader size="lg" />
-            <p className="text-body font-semibold text-text-1">
-              {phase.kind === "preparing" ? (steps(phase.prep, false).find((x) => x.state === "current")?.label ?? t("preparingTitle")) : t("loading")}
-            </p>
-            {phase.kind === "preparing" && <p className="max-w-120 break-words text-body-s text-text-2">{phase.label}</p>}
-          </div>
-          {phase.kind === "preparing" && (alternatives || active) && (
-            <div className="flex flex-wrap justify-center gap-3">
-              {active && (
-                <Button variant="secondary" icon={Play} onClick={() => toWatching.current()}>
-                  {t("backToWatching")}
-                </Button>
-              )}
-              {alternatives && (
-                <Button variant="secondary" onClick={cancel}>
-                  {t("anotherSource")}
-                </Button>
-              )}
-            </div>
-          )}
-        </>
-      )}
+    <StartStage title={d.title} subtitle={subtitle} backLabel={t("backToTitle", { title: d.title })} onBack={toTitle}>
       {phase.kind === "error" && (
         <section id="prep-error" aria-label={t("errorTitle")} className="w-full max-w-120">
           <ErrorState
@@ -1304,7 +1325,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       {stage}
       {/* The sources screen is a stage (3.5, SRC-02): dark roles in either theme; its lists and dialogs open inside it.
           Kept under the player's stage (its search, filters and place stay for "Another source"). */}
-      <main ref={setStageEl} hidden={onStage} className="stage min-h-dvh bg-stage text-text-1">
+      <main ref={setStageEl} hidden={onStage || launching} className="stage min-h-dvh bg-stage text-text-1">
         <PortalContainerContext.Provider value={stageEl}>
           {/* Immersive (9): "←" and the title, no poster circle (SRC-13). Opened from the player, the way back is to it. */}
           <header className="sticky top-0 z-sticky border-b border-line bg-stage pt-[env(safe-area-inset-top)]">
@@ -1328,41 +1349,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 <Skeleton shape="md" className="h-22 w-full" />
                 <Skeleton shape="md" className="h-22 w-full" />
               </div>
-            )}
-
-            {phase.kind === "preparing" && phase.fromScreen && (
-              <section aria-labelledby="prep-h" className="flex flex-col gap-4 rounded-md border border-line bg-surface-1 p-4 md:p-6">
-                <div>
-                  <h2 id="prep-h" className="text-h3">
-                    {t("preparingTitle")}
-                  </h2>
-                  <p className="mt-1 break-words text-body-s text-text-2">{phase.label}</p>
-                </div>
-                <Steps
-                  steps={steps(phase.prep, false)}
-                  label={t("preparingTitle")}
-                  action={
-                    <Button variant="secondary" icon={X} onClick={cancel}>
-                      {tc("cancel")}
-                    </Button>
-                  }
-                />
-              </section>
-            )}
-
-            {phase.kind === "error" && phase.fromScreen && (
-              <section id="prep-error" aria-label={t("errorTitle")} className="flex flex-col gap-4 rounded-md border border-line bg-surface-1 p-4 md:p-6">
-                <p className="break-words text-body-s text-text-2">{phase.label}</p>
-                <Steps steps={steps(phase.prep, true)} label={t("errorTitle")} />
-                {/* What went wrong and what can be done (11.1, SRC-19): Retry only when repeating can help. */}
-                <ErrorState
-                  title={t(phase.gone ? "errorGoneTitle" : "errorTitle")}
-                  note={phase.message}
-                  onRetry={phase.retry ?? undefined}
-                  details={null}
-                  action={errorActions(phase, false)}
-                />
-              </section>
             )}
 
             {phase.kind === "pickFile" && (
@@ -1489,15 +1475,13 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
 }
 
 /**
- * The way to the picture after "Watch" on the site (design-system 11.1): the player's stage — the title's art dimmed,
- * "←" to the title, the title and episode where the player shows them — while the source starts, when it fails, and
- * when it needs another app. So "Watch" leads to the picture, not to a screen of sources nobody asked for.
+ * A launch that failed or needs another app (design-system 11.1): the launch's own black stage, "←" to the title, the
+ * title and episode where the player shows them. So "Watch" leads to the picture or to why not, never to a screen of
+ * sources nobody asked for.
  */
-function StartStage({ art, title, subtitle, backLabel, onBack, children }: { art: string | null; title: string; subtitle: string | null; backLabel: string; onBack: () => void; children: ReactNode }) {
+function StartStage({ title, subtitle, backLabel, onBack, children }: { title: string; subtitle: string | null; backLabel: string; onBack: () => void; children: ReactNode }) {
   return (
     <div className="stage fixed inset-0 z-player overflow-y-auto bg-stage text-text-1">
-      {art && <img src={art} alt="" className="fixed inset-0 size-full object-cover opacity-35" />}
-      <div aria-hidden className="fixed inset-0 bg-linear-to-t from-stage via-stage/70 to-stage/30" />
       <div className="fixed start-4 top-[max(1rem,env(safe-area-inset-top))] z-10 md:start-8 md:top-8">
         <IconButton icon={ArrowLeft} label={backLabel} variant="stage" size="lg" onClick={onBack} className="[&_svg]:rtl:-scale-x-100" />
       </div>

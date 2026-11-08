@@ -6,6 +6,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import "../globals.css";
+import { LaunchHost } from "@/components/player/launch";
 import { Providers } from "@/components/providers/Providers";
 import { ThemeSync } from "@/components/shell/ThemeSync";
 import { ThemeScript } from "@/components/shell/ThemeScript";
@@ -112,6 +113,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             {children}
             <ThemeSync />
             <DragScroll />
+            {/* The launch of a viewing: one scene from "Watch" to the first frame, over the pages it passes (11.1). */}
+            <LaunchHost />
           </Providers>
         </NextIntlClientProvider>
       </body>

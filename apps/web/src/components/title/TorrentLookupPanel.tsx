@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Info, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
@@ -112,14 +113,31 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const play = async (x: RankedRelease, voice: string | null) => {
     setAdding(true);
     setError(null);
+    // The launch's scene from the press (11.1 «Запуск»): the add is its first step, the player's page goes on with it;
+    // "←" drops it before the player is asked for.
+    let dropped = false;
+    startLaunch(
+      {
+        status: tpl("stage_add"),
+        onBack: () => {
+          dropped = true;
+          setAdding(false);
+          endLaunch();
+        },
+      },
+      true,
+    );
     try {
       const added = await addTorrentSource(source.id, d, null, x.result);
       if (!added) throw new Error(tpl("addFailed"));
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
+      if (dropped) return;
       // The chosen dubbing goes along, so the player starts that studio's track once the file is read;
       // "added" lets the watch page show this add as the first of its stages.
       router.push(`${playHref}${join}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
     } catch (e) {
+      if (dropped) return;
+      endLaunch();
       setError(mediaError(e));
       setAdding(false);
     }

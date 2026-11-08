@@ -65,6 +65,11 @@ export interface PlayerEvents {
 
 export interface PlayerProps extends PlayerEvents {
   prepared: PreparedPlayback;
+  /**
+   * The site's launch (./launch): until the first frame — or a press the browser waits for — the launch's scene covers
+   * the player and says what it does; `detail` is a torrent's peers, speed and what is loaded. Not on a TV.
+   */
+  onLaunch?: (l: { started: boolean; detail: string | null }) => void;
   title: string;
   subtitle: string | null;
   poster: string | null;
@@ -500,6 +505,24 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const id = window.setTimeout(() => setRefused(true), 1500);
     return () => window.clearTimeout(id);
   }, [started, canPlay, paused, hidden]);
+
+  // A torrent's peers, speed and what is loaded: under the loader while it waits for data, and on the site's launch
+  // scene, which covers the player until its first frame (or the press autoplay waits for) and goes then.
+  const torrentLine =
+    torrent && (torrent.peers !== null || torrent.speedBps !== null)
+      ? [
+          torrent.peers !== null ? t("torrentPeers", { count: torrent.peers }) : null,
+          torrent.speedBps !== null ? t("torrentSpeed", { speed: formatSize(torrent.speedBps, locale) ?? "0" }) : null,
+          torrent.preloadedBytes ? t("torrentLoaded", { size: formatSize(torrent.preloadedBytes, locale) ?? "" }) : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
+  const onLaunch = useRef(props.onLaunch);
+  onLaunch.current = props.onLaunch;
+  useEffect(() => {
+    if (!tvNav && !hidden) onLaunch.current?.({ started: started || refused, detail: started ? null : torrentLine });
+  }, [tvNav, hidden, started, refused, torrentLine]);
 
   // A plain stream that never gets as far as its metadata while the torrent already holds plenty (a browser that takes
   // the file and then neither plays nor fails, as Firefox did with HEVC through the service worker): after 30 s it
@@ -1064,7 +1087,6 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     );
 
   // The site.
-  const loading = buffering && !refused && !started;
   const VolIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
   const known = duration > 0;
   const hint = seekHint
@@ -1088,22 +1110,13 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
         {/* Paused for a moment, or not yet playing: the whole frame steps back. */}
         <div aria-hidden className={clsx("pointer-events-none absolute inset-0 bg-stage/50 transition-opacity duration-slower ease-slow", resting || !started ? "opacity-100" : "opacity-0")} />
 
-        {(loading || (buffering && started)) && (
+        {/* Before the first frame the site's launch scene covers the player and says it (./launch); the TV's own is TvChrome's. */}
+        {buffering && started && (
           <div className="pointer-events-none absolute inset-0 grid place-items-center" role="status" aria-live="polite">
             <div className="flex flex-col items-center gap-3 text-center">
               <BrandLoader size="lg" />
-              <p className="text-body font-semibold text-text-1">{started ? t("buffering", { percent: Math.min(99, Math.round((bufferedAhead / 10) * 100)) }) : t("loading")}</p>
-              {torrent && (torrent.peers !== null || torrent.speedBps !== null) && (
-                <p className="text-body-s text-text-2 tabular-nums">
-                  {[
-                    torrent.peers !== null ? t("torrentPeers", { count: torrent.peers }) : null,
-                    torrent.speedBps !== null ? t("torrentSpeed", { speed: formatSize(torrent.speedBps, locale) ?? "0" }) : null,
-                    torrent.preloadedBytes ? t("torrentLoaded", { size: formatSize(torrent.preloadedBytes, locale) ?? "" }) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              )}
+              <p className="text-body font-semibold text-text-1">{t("buffering", { percent: Math.min(99, Math.round((bufferedAhead / 10) * 100)) })}</p>
+              {torrentLine && <p className="text-body-s text-text-2 tabular-nums">{torrentLine}</p>}
             </div>
           </div>
         )}
