@@ -7,7 +7,7 @@ import { getMeState } from "@/lib/server-api";
 
 /**
  * A title closed to this profile by its age limit (design-system 8.10, PRF-04): said plainly in the page state (7.11)
- * — the limit is its one visible line — with the way out: "Switch profile" (the picker, PIN or password) and "Home". Shared by the title page, /watch and the person page (`person` words it for a person).
+ * — the limit is its one visible line — with the way out: "Switch profile" — "Leave the kids profile" in a kids one (the picker, PIN or password) — and "Home". Shared by the title page, /watch and the person page (`person` words it for a person).
  */
 export async function MaturityBlocked({ from, person = false }: { from: string; person?: boolean }) {
   const t = await getTranslations();
@@ -21,7 +21,8 @@ export async function MaturityBlocked({ from, person = false }: { from: string; 
       note={kids ? t("titlePage.blockedKidsText") : t("title.maturityBlockedText")}
       action={
         <Link href={`/profiles?next=${encodeURIComponent(from)}`} className={buttonClass("primary", "lg")}>
-          {t("nav.profiles")}
+          {/* A kids profile leaves in the account menu's words, as "Not available in a kids profile" does; an adult one switches. */}
+          {kids ? t("nav.leaveKids") : t("nav.profiles")}
         </Link>
       }
       secondaryAction={
