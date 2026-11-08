@@ -64,6 +64,8 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const join = playHref.includes("?") ? "&" : "?";
   const via = tp("viaTorrServer", { name: source.name });
   const { option, edition, version, chosen } = pick;
+  // What "Watch" asks the player to start: a studio's track, or a language's alone ("Ukrainian · MVO").
+  const voice = option && (option.studio || option.language) ? option.key : null;
   const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
   // What the search does, for a screen reader (no explanation on screen, 2026-11-06).
   const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
@@ -171,7 +173,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
         }
         actions={
           <>
-            <Button size="lg" loading={adding} onClick={() => void play(chosen, option?.studio ? option.key : null)}>
+            <Button size="lg" loading={adding} onClick={() => void play(chosen, voice)}>
               <Play aria-hidden className="fill-current" />
               {t("tsWatch")}
             </Button>
@@ -257,7 +259,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
           onClose={() => setDetails(null)}
           onWatch={() => {
             setDetails(null);
-            if (details) void play(details, option?.studio ? option.key : null);
+            if (details) void play(details, voice);
           }}
         />
       </WatchCard>

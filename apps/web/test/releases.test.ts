@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { audioMatch, bestOf, creditsStudio, holdsSeason, isSameTitle, packOf, parseRelease, pictureReasons, type ReleasePrefs, rankReleases, torrentQuery, voiceOptions, voiceTrack, voiceWish } from "../src/lib/media/releases";
+import {
+  audioMatch,
+  bestOf,
+  creditsStudio,
+  holdsSeason,
+  isSameTitle,
+  packOf,
+  parseRelease,
+  pictureReasons,
+  profileNameTrack,
+  profileTrack,
+  type ReleasePrefs,
+  rankReleases,
+  torrentQuery,
+  voiceOptions,
+  voiceTrack,
+  voiceWish,
+} from "../src/lib/media/releases";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
 
 const device = { hevc: false, hdr: false, uhd: false, dolbyVision: false };
@@ -9,6 +26,25 @@ const prefsOf = (p: Partial<ReleasePrefs> & { hevc?: boolean }): ReleasePrefs =>
   quality: p.quality ?? "auto",
   device: { ...device, ...(p.hevc !== undefined ? { hevc: p.hevc } : {}), ...p.device },
 });
+
+/**
+ * The audio of "Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] 7 x MVO (HDrezka Studio, NewStudio, TVShows,
+ * Novamedia, LostFilm, WStudio, LE-Production) + 2 x MVO Ukr + Original" as TorrServer's ffprobe read its first file
+ * (the owner's torr, 2026-11-08): HDrezka Studio is the default, LostFilm the fifth, HDrezka again as its "18+" cut.
+ */
+const dexter = [
+  { index: 1, title: "MVO [HDrezka Studio]", language: "rus", default: true },
+  { index: 2, title: "MVO [NewStudio] 18+", language: "rus" },
+  { index: 3, title: "MVO [TVShows]", language: "rus" },
+  { index: 4, title: "MVO [Novamedia]", language: "rus" },
+  { index: 5, title: "MVO [LostFilm]", language: "rus" },
+  { index: 6, title: "MVO [HDrezka Studio] 18+", language: "rus" },
+  { index: 7, title: "MVO [WStudio] 18+", language: "rus" },
+  { index: 8, title: "MVO [LE-Production]", language: "rus" },
+  { index: 9, title: "MVO [Sunnysiders]", language: "ukr" },
+  { index: 10, title: "MVO [DniproFilm]", language: "ukr" },
+  { index: 11, title: "Original", language: "eng" },
+];
 
 describe("parseRelease", () => {
   it("reads a RuTracker name: picture, dubbing first, Russian implied, original English, subtitles ignored", () => {
@@ -81,6 +117,82 @@ describe("torrentQuery", () => {
   it("uses the original title and a film's year, or the localized title for another script", () => {
     expect(torrentQuery({ title: "Интерстеллар", originalTitle: "Interstellar", kind: "movie", year: 2014 })).toBe("Interstellar 2014");
     expect(torrentQuery({ title: "Фрирен, провожающая в последний путь", originalTitle: "葬送のフリーレン", kind: "tv", year: 2023 })).toBe("Фрирен, провожающая в последний путь");
+  });
+});
+
+describe("the profile's order of studios: 1 — LostFilm, 2 — HDRezka (Dexter: Resurrection)", () => {
+  const show = { title: "Декстер: Воскрешение", originalTitle: "Dexter: Resurrection", kind: "tv" as const, year: 2025, originalLanguage: "en" };
+  const r = (title: string, seeders: number | null = 20, tracker: string | null = "RuTracker.org", size: number | null = null): TsSearchResult => ({
+    title,
+    link: `magnet:?xt=urn:btih:${title.length}${seeders}${tracker}`,
+    hash: null,
+    size,
+    seeders,
+    peers: null,
+    tracker,
+    published: null,
+  });
+  const order = prefsOf({ studios: ["LostFilm", "HDrezka Studio"], hevc: true });
+
+  it("reads both studios as trackers write them, each a Russian track of its own", () => {
+    for (const [name, tracker] of [
+      ["Dexter: Resurrection - S1 - rus 1080p WEBDL (LostFilm)", "LostFilm.tv"],
+      ["Dexter.Resurrection.S01E01.1080p.rus.LostFilm.TV.mkv", null],
+      ["Декстер: Воскрешение / Dexter: Resurrection / S1E1-10 of 10 (2025) WEB-DL  LostFilm", "NoNaMe ClubL"],
+      ["Dexter: Resurrection - S1E1-10 - 2025  MVO (Lostfilm) WEBDL 1080p - RUSSIAN", "Kinozal"],
+    ] as const)
+      expect(parseRelease(name, tracker, "en").tracks.filter((t) => t.studio === "LostFilm").map((t) => t.language), name).toEqual(["ru"]);
+    for (const name of ["Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 1080p] MVO (HDRezka Studio) + Original", "S2E1 [2026] MVO (HDrezka) + Original", "(S2E1- из 10) HDrezka (обновляемая)", "P (Rezka)"])
+      expect(parseRelease(name, "RuTracker.org", "en").studios, name).toEqual(["HDrezka Studio"]);
+    const both = parseRelease("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (LostFilm, HDRezka) + Original", "RuTracker.org", "en");
+    expect(both.tracks.filter((t) => !t.original).map((t) => [t.voice, t.studio, t.language])).toEqual([
+      ["mvo", "LostFilm", "ru"],
+      ["mvo", "HDrezka Studio", "ru"],
+    ]);
+    // A release listing HDRezka first is still the profile's first studio's.
+    const many = rankReleases([r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] 7 x MVO (HDrezka Studio, NewStudio, TVShows, Novamedia, LostFilm, WStudio, LE-Production) + 2 x MVO Ukr + Original")], show, order);
+    expect(many[0]!.studio).toBe("LostFilm");
+  });
+
+  it("puts the first studio above the second, and a release with both counts as the first's", () => {
+    const ranked = rankReleases(
+      [
+        r("Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 1080p] MVO (HDRezka Studio) + Original", 300),
+        r("Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 1080p] MVO (LostFilm) + Original", 5),
+        r("Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 1080p] MVO (NewStudio) + Original", 900),
+      ],
+      show,
+      order,
+    );
+    expect(ranked.map((x) => x.studio)).toEqual(["LostFilm", "HDrezka Studio", null]);
+    expect(rankReleases(ranked.map((x) => x.result).reverse(), show, prefsOf({ studios: ["HDrezka Studio", "LostFilm"] })).map((x) => x.studio)).toEqual(["HDrezka Studio", "LostFilm", null]);
+  });
+
+  it("tells a studio's releases apart by the picture, not by the kind its name writes or leaves out", () => {
+    const ranked = rankReleases(
+      [r("Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 720p] MVO (LostFilm) + Original"), r("Dexter: Resurrection - S2E1 - Risky Business - rus 1080p WEBDL (LostFilm)", 20, "LostFilm.tv")],
+      show,
+      order,
+      2,
+    );
+    expect(ranked[0]!.info.resolution).toBe(1080);
+    expect(ranked[0]!.result.tracker).toBe("LostFilm.tv");
+  });
+
+  it("holds the order at any comparable picture: a 1080p LostFilm beats a 4K HDRezka, an SD one loses to a 720p", () => {
+    const uhd = r("Dexter: Resurrection / S1E1-10 of 10 [2025, HDR10, WEB-DL 2160p] MVO (HDRezka Studio) + Original", 200);
+    const fhd = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (LostFilm) + Original", 10);
+    expect(rankReleases([uhd, fhd], show, prefsOf({ studios: ["LostFilm", "HDrezka Studio"], hevc: true, device: { hevc: true, hdr: true, uhd: true, dolbyVision: false } }))[0]!.result).toBe(fhd);
+    const sd = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEBRip] MVO (LostFilm) + Original", 50);
+    const unstated = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL] MVO (LostFilm) + Original", 50);
+    const hd = r("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (HDRezka Studio) + Original", 5);
+    expect(rankReleases([sd, unstated, hd], show, order)[0]!.result).toBe(hd);
+    expect(rankReleases([sd, hd], show, order).map((x) => [x.studio, x.hd])).toEqual([
+      ["HDrezka Studio", true],
+      ["LostFilm", false],
+    ]);
+    // "Smaller file" asks for no quality: the order alone decides.
+    expect(rankReleases([sd, hd], show, prefsOf({ studios: ["LostFilm", "HDrezka Studio"], quality: "small" }))[0]!.studio).toBe("LostFilm");
   });
 });
 
@@ -324,12 +436,27 @@ describe("the chosen dubbing's track (TS5)", () => {
     expect(voiceTrack([{ index: 4, title: "P (HDRezka)", language: null }, ...tracks.slice(0, 1)], { studio: "HDrezka Studio", language: null })).toBe(4);
     expect(voiceTrack(tracks, { studio: "Пифагор", language: "ru" })).toBe(1);
   });
-  it("guesses nothing when no track or several tracks credit it; a single track is that track", () => {
+  it("guesses nothing when no track credits it; a single track is that track", () => {
     expect(voiceTrack(tracks, { studio: "LostFilm", language: "ru" })).toBeNull();
     expect(voiceTrack([{ index: 1, title: null, language: "rus" }, { index: 2, title: null, language: "rus" }], { studio: "LostFilm", language: "ru" })).toBeNull();
     expect(voiceTrack([{ index: 1, title: "LostFilm", language: "rus" }, { index: 2, title: "LostFilm", language: "ukr" }], { studio: "LostFilm", language: "uk" })).toBe(2);
-    expect(voiceTrack([{ index: 1, title: "LostFilm", language: "rus" }, { index: 2, title: "LostFilm", language: "rus" }], { studio: "LostFilm", language: "ru" })).toBeNull();
     expect(voiceTrack([{ index: 1, title: null, language: null }], { studio: "LostFilm", language: "ru" })).toBe(1);
+  });
+  it("takes several tracks of one studio in one language as its versions ('18+'): the default among them, else the first", () => {
+    expect(voiceTrack([{ index: 1, title: "LostFilm", language: "rus" }, { index: 2, title: "LostFilm", language: "rus" }], { studio: "LostFilm", language: "ru" })).toBe(1);
+    expect(voiceTrack(dexter, { studio: "HDrezka Studio", language: "ru" })).toBe(1);
+    expect(voiceTrack(dexter.map((t) => ({ ...t, default: t.index === 6 })), { studio: "HDrezka Studio", language: "ru" })).toBe(6);
+    expect(voiceTrack(dexter, { studio: "LostFilm", language: "ru" })).toBe(5);
+  });
+  it("finds a studio on a file whose tracks credit none (LostFilm's own: 'RUS', 'ENG') by the wished language", () => {
+    const own = [
+      { index: 1, title: "RUS", language: null, default: true },
+      { index: 2, title: "ENG", language: null },
+    ];
+    expect(voiceTrack(own, { studio: "LostFilm", language: "ru" })).toBe(1);
+    expect(voiceTrack(own, { studio: "LostFilm", language: "uk" })).toBeNull();
+    // A file that credits other studios says nothing of one it doesn't credit.
+    expect(voiceTrack([{ index: 1, title: "MVO [NewStudio]", language: "rus" }, ...own.slice(1)], { studio: "LostFilm", language: "ru" })).toBeNull();
   });
 });
 
@@ -507,16 +634,68 @@ describe("audio tracks, each in its own language (SRC-04, SRC-05)", () => {
 });
 
 describe("a dubbing chosen by its language alone", () => {
-  it("plays the one track tagged with that language, and guesses nothing when several or none are", () => {
-    const tracks = [
-      { index: 1, title: "Dub", language: "rus" },
-      { index: 2, title: "Dub", language: "ukr" },
-      { index: 3, title: "Original", language: "eng" },
-    ];
+  const tracks = [
+    { index: 1, title: "Dub", language: "rus" },
+    { index: 2, title: "Dub", language: "ukr" },
+    { index: 3, title: "Original", language: "eng" },
+  ];
+  it("plays a track in that language, and guesses nothing when none is", () => {
     expect(voiceTrack(tracks, { studio: null, language: "uk" })).toBe(2);
     expect(voiceTrack(tracks, { studio: null, language: "ja" })).toBeNull();
-    expect(voiceTrack([...tracks, { index: 4, title: "MVO", language: "ukr" }], { studio: null, language: "uk" })).toBeNull();
     expect(voiceTrack(tracks, { studio: null, language: null })).toBeNull();
     expect(voiceWish("uk|dub")).toEqual({ studio: null, language: "uk" });
+  });
+  it("of several in that language: the profile's first studio's, else the default, else the first", () => {
+    const more = [...tracks, { index: 4, title: "MVO [Sunnysiders]", language: "ukr" }, { index: 5, title: "MVO [DniproFilm]", language: "ukr", default: false }];
+    expect(voiceTrack(more, { studio: null, language: "uk" })).toBe(2);
+    expect(voiceTrack(more.map((t) => ({ ...t, default: t.index === 4 })), { studio: null, language: "uk" })).toBe(4);
+    expect(voiceTrack(more, { studio: null, language: "uk" }, ["DniproFilm"])).toBe(5);
+    // "Russian · multi-voice" from a release whose file starts with HDRezka: the profile's LostFilm among the Russian tracks.
+    expect(voiceTrack(dexter, { studio: null, language: "ru" }, ["LostFilm", "HDrezka Studio"])).toBe(5);
+    expect(voiceTrack(dexter, { studio: null, language: "ru" })).toBe(1);
+  });
+});
+
+describe("the track the profile hears when nothing was chosen (profileTrack)", () => {
+  const order = { languages: ["ru"], studios: ["LostFilm", "HDrezka Studio"] };
+  it("plays the profile's first studio, not the file's default: 1 — LostFilm, 2 — HDRezka on Dexter: Resurrection", () => {
+    expect(profileTrack(dexter, order)).toBe(5);
+    expect(profileTrack(dexter, { languages: ["ru"], studios: ["HDrezka Studio", "LostFilm"] })).toBe(1);
+    // A studio typed by hand is matched by its spellings.
+    expect(profileTrack(dexter, { languages: ["ru"], studios: ["Novamedia"] })).toBe(4);
+  });
+  it("goes by the profile's languages first, as 'Where to watch' offers audio", () => {
+    // Ukrainian first: a Ukrainian track (none of the studios is Ukrainian), the first one as none is the default.
+    expect(profileTrack(dexter, { languages: ["uk", "ru"], studios: ["LostFilm"] })).toBe(9);
+    expect(profileTrack(dexter, { languages: ["en"], studios: ["LostFilm"] })).toBe(11);
+    // A language the file doesn't have: the next one, then the studios anywhere.
+    expect(profileTrack(dexter, { languages: ["de", "ru"], studios: ["LostFilm"] })).toBe(5);
+    expect(profileTrack(dexter, { languages: [], studios: ["LostFilm"] })).toBe(5);
+  });
+  it("keeps the file's default when it is the language's own track, and finds nothing when the profile says nothing", () => {
+    expect(profileTrack(dexter, { languages: ["ru"], studios: [] })).toBe(1);
+    expect(profileTrack(dexter, { languages: ["ja"], studios: [] })).toBeNull();
+    expect(profileTrack(dexter, { languages: [], studios: [] })).toBeNull();
+    expect(profileTrack([], order)).toBeNull();
+  });
+  it("reads an untagged track's language from its title or its studio", () => {
+    const untagged = [
+      { index: 1, title: "MVO [HDrezka Studio]", language: null, default: true },
+      { index: 2, title: "MVO [LostFilm]", language: "und" },
+      { index: 3, title: "Eng", language: null },
+    ];
+    expect(profileTrack(untagged, order)).toBe(2);
+    expect(profileTrack(untagged, { languages: ["en"], studios: [] })).toBe(3);
+  });
+  it("says which track of a release's name a copy plays (profileNameTrack)", () => {
+    const info = parseRelease(
+      "Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] 7 x MVO (HDrezka Studio, NewStudio, TVShows, Novamedia, LostFilm, WStudio, LE-Production) + 2 x MVO Ukr + Original + Sub (Rus, Eng)",
+      "RuTracker.org",
+      "en",
+    );
+    expect(profileNameTrack(info, order)).toMatchObject({ studio: "LostFilm", language: "ru" });
+    expect(profileNameTrack(info, { languages: ["ru"], studios: [] })).toMatchObject({ studio: "HDrezka Studio" });
+    expect(profileNameTrack(info, { languages: ["uk", "ru"], studios: ["LostFilm"] })).toMatchObject({ language: "uk", voice: "mvo" });
+    expect(profileNameTrack(info, { languages: ["ja"], studios: [] })).toBeNull();
   });
 });

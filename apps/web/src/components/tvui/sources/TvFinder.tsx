@@ -246,6 +246,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
                   key={r.link}
                   r={r}
                   x={f.view!.byLink.get(r.link)}
+                  heard={f.heard}
                   index={i}
                   initial={first && r.link === initialLink}
                   recommended={r.link === recommendedLink}
@@ -343,6 +344,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
 function TvReleaseRow({
   r,
   x,
+  heard,
   index,
   initial,
   recommended,
@@ -354,6 +356,8 @@ function TvReleaseRow({
 }: {
   r: TsSearchResult;
   x: RankedRelease | undefined;
+  /** What OK plays, in words (`Finder.heard`): the profile's studio, not every track the name lists. */
+  heard: (x: RankedRelease) => string;
   index: number;
   initial: boolean;
   recommended: boolean;
@@ -399,7 +403,7 @@ function TvReleaseRow({
               {x && <ReleaseTag x={x} linked={linked} season={season} />}
             </span>
           )}
-          <span className="break-words text-body-l">{x ? text.audio(x) || text.option({ studio: null, voice: null, language: null }) : r.title}</span>
+          <span className="break-words text-body-l">{x ? heard(x) || text.option({ studio: null, voice: null, language: null }) : r.title}</span>
           <span className="font-normal opacity-75">
             {meta}
             {other && <span className="block">{other}</span>}

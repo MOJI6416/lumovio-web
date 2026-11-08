@@ -55,6 +55,50 @@ describe("forProfile", () => {
     const mine = forProfile(raw, { languages: ["uk", "ru"], studios: ["Jaskier"] });
     expect(mine.map((o) => o.key)).toEqual(["uk|dub", "ru|Jaskier", "ru|dub"]);
   });
+
+  it("puts the profile's studios in their order, not in the order a release lists them", () => {
+    const ranked = rankReleases([result(name("[2001, WEB-DL 1080p] MVO (HDrezka Studio, Jaskier, LostFilm) + Original Eng"))], lotr, prefs({ languages: ["ru"] }));
+    const raw = voiceOptions(ranked);
+    expect(raw.map((o) => o.studio)).toEqual(["HDrezka Studio", "Jaskier", "LostFilm"]);
+    expect(forProfile(raw, { languages: ["ru"], studios: ["LostFilm", "HDrezka Studio"] }).map((o) => o.studio)).toEqual(["LostFilm", "HDrezka Studio", "Jaskier"]);
+    expect(forProfile(raw, { languages: ["ru"], studios: ["Jaskier", "LostFilm"] }).map((o) => o.studio)).toEqual(["Jaskier", "LostFilm", "HDrezka Studio"]);
+  });
+});
+
+describe("pickRelease with the profile's order of studios (1 — LostFilm, 2 — HDRezka)", () => {
+  const dexter = { title: "Декстер: Воскрешение", originalTitle: "Dexter: Resurrection", kind: "tv" as const, year: 2025, originalLanguage: "en" };
+  const both = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] 7 x MVO (HDrezka Studio, NewStudio, TVShows, Novamedia, LostFilm, WStudio, LE-Production) + 2 x MVO Ukr + Original", 99);
+  const order = prefs({ languages: ["ru"], studios: ["LostFilm", "HDrezka Studio"] });
+
+  it("offers the first studio first even when the one release lists the second first, and picks that release", () => {
+    const x = pickRelease(rankReleases([both], dexter, order), order);
+    expect(x.options.slice(0, 2).map((o) => o.studio)).toEqual(["LostFilm", "HDrezka Studio"]);
+    expect(x.option?.key).toBe("ru|LostFilm");
+    expect(x.chosen?.result).toBe(both);
+    const reversed = prefs({ languages: ["ru"], studios: ["HDrezka Studio", "LostFilm"] });
+    expect(pickRelease(rankReleases([both], dexter, reversed), reversed).option?.key).toBe("ru|HDrezka Studio");
+  });
+
+  it("matches a studio typed by hand ('HDRezka') to the known one", () => {
+    const typed = prefs({ languages: ["ru"], studios: ["HDRezka", "LostFilm"] });
+    expect(pickRelease(rankReleases([both], dexter, typed), typed).option?.key).toBe("ru|HDrezka Studio");
+  });
+
+  it("starts the first studio's best release among separate ones, whatever their seeders", () => {
+    const rezka = result("Dexter: Resurrection / S2E1 of 10 [2026, WEB-DL 1080p] MVO (HDRezka Studio) + Original + Sub (Rus, Eng)", 400);
+    const lost = result("Dexter: Resurrection - S2E1 - Risky Business - rus 1080p WEBDL (LostFilm)", 3, 2e9, "LostFilm.tv");
+    const x = pickRelease(rankReleases([rezka, lost], dexter, order, 2), order);
+    expect(x.option?.key).toBe("ru|LostFilm");
+    expect(x.chosen?.result).toBe(lost);
+  });
+
+  it("lets the second studio's HD win over the first studio's SD only", () => {
+    const sd = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEBRip] MVO (LostFilm) + Original", 80);
+    const rezka720 = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (HDRezka Studio) + Original", 8);
+    expect(pickRelease(rankReleases([sd, rezka720], dexter, order), order).option?.key).toBe("ru|HDrezka Studio");
+    const lost720 = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (LostFilm) + Original", 2);
+    expect(pickRelease(rankReleases([sd, rezka720, lost720], dexter, order), order).chosen?.result).toBe(lost720);
+  });
 });
 
 describe("pickRelease", () => {

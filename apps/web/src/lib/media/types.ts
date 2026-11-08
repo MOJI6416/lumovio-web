@@ -131,8 +131,12 @@ export interface ProviderClient {
   /** Full library scan for the availability index. */
   scan?(onProgress: (p: ScanProgress) => void): Promise<LibraryIndexEntry[]>;
   /** `voice`: the dubbing chosen with a TorrServer release, matched to the file's tracks when no `audioIndex` is given. */
+  /** `profile`: the profile's audio languages and studios, in order: the track they find plays when nothing was chosen (TorrServer). */
   /** `rebuild`: the plain stream failed to start here: rebuild the file in the browser when it can be (TorrServer). */
-  prepare(externalId: string, opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean }): Promise<PreparedPlayback>;
+  prepare(
+    externalId: string,
+    opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean },
+  ): Promise<PreparedPlayback>;
   /** Locate an episode's file id on the server (episode-level playback). */
   findEpisode?(seriesExternalId: string, season: number, episode: number): Promise<string | null>;
   /** What the signed-in account has played on the server (films and episodes; an episode with its series' ids): Import history. */

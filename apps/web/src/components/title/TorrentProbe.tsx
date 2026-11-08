@@ -46,7 +46,8 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   // What "Where to watch" recommends with nothing chosen: the profile's first audio option, its best release's cut,
   // the mode's picture (lib/media/release-pick, the same function).
   const { option, chosen } = useMemo(() => pickRelease(ranked ?? [], prefs), [ranked, prefs]);
-  const voice = option?.studio ? option.key : null;
+  // A studio's option or a language's alone ("Ukrainian · MVO"): the player starts that track, not the file's default.
+  const voice = option && (option.studio || option.language) ? option.key : null;
 
   // A search for a watchlist title counts for the profile's other devices too (and spares them one for 12 hours).
   const profileId = me?.activeProfile?.id ?? null;

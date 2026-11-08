@@ -197,6 +197,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const resumeOverride = useRef<number | null>(null);
   // The dubbing chosen with a TorrServer release ("?voice=ru|HDrezka Studio"): its track plays once the file is read.
   const wishedVoice = useRef(voiceWish(params.get("voice")));
+  // With no dubbing chosen, a TorrServer file plays the track of the profile's languages and studios, in their order.
+  const heard = useRef<{ languages: string[]; studios: string[] } | null>(null);
+  heard.current = me?.activeProfile ? { languages: me.activeProfile.audioLanguages, studios: me.activeProfile.voiceStudios } : null;
   // The source that last played in this session (with its dubbing): a failed replacement can go back to it.
   const lastGood = useRef<{ candidate: Candidate; voice: string | null } | null>(null);
   // The stages of the source playing now, for a failure in the player itself.
@@ -441,6 +444,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             startSec: resumeOverride.current ?? resumeAt,
             audioIndex: opts.audioIndex,
             voice: c.provider === "torrserver" ? wishedVoice.current : null,
+            profile: c.provider === "torrserver" ? heard.current : null,
             rebuild: opts.rebuild,
           });
         }
@@ -731,7 +735,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const episodeLabel = d.kind === "tv" && season !== null && episode !== null ? t("episodeLabel", { season, episode }) : null;
   const subtitle = episodeLabel ? [episodeLabel, episodeName].filter(Boolean).join(" · ") : d.year ? String(d.year) : null;
   const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
-  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}`;
+  // The dubbing chosen for this viewing goes on to the series' other episodes (their files have the same tracks).
+  const voiceParam = params.get("voice");
+  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}`;
   // Why there is nothing to play, in the same words as the title page.
   const ws = avail.state;
   const whyNothing =

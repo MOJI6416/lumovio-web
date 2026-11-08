@@ -1,5 +1,5 @@
 import { type Edition, editionOf } from "./editions";
-import { type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
+import { creditsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
 
 export { type Edition, editionOf };
 
@@ -50,19 +50,25 @@ export interface ReleasePick {
 }
 
 /**
- * Audio options for the profile: the ones in its audio languages first, in their order, then its studios (the
- * ranking's own order: language before studio), else as their best releases rank. A release lists its tracks in its
- * own order ("Dub (rus) + Dub (ukr)"), so the first option of the best release may not be the profile's.
+ * Audio options for the profile, in the ranking's own order: the ones in its audio languages first, in their order;
+ * then the ones with an HD release (`RankedRelease.hd`); then its studios, in their order; else as their best releases
+ * rank. A release lists its tracks in its own order ("7 x MVO (HDrezka Studio, NewStudio, …, LostFilm)"), so the
+ * first option of the best release may not be the profile's: "1 — LostFilm, 2 — HDRezka" offers LostFilm first.
  */
 export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "languages" | "studios">): VoiceOption[] {
   const lang = (o: VoiceOption) => {
     const i = o.language ? prefs.languages.indexOf(o.language) : -1;
     return i < 0 ? prefs.languages.length : i;
   };
-  const studio = (o: VoiceOption) => (o.studio && prefs.studios.includes(o.studio) ? 0 : 1);
+  const hd = (o: VoiceOption) => (o.best.hd ? 0 : 1);
+  // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
+  const studio = (o: VoiceOption) => {
+    const i = o.studio ? prefs.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+    return i < 0 ? prefs.studios.length : i;
+  };
   return options
     .map((o, i) => ({ o, i }))
-    .sort((a, b) => lang(a.o) - lang(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
+    .sort((a, b) => lang(a.o) - lang(b.o) || hd(a.o) - hd(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
     .map((x) => x.o);
 }
 

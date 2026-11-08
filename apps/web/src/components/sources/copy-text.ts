@@ -3,7 +3,7 @@
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
-import { creditsStudio, parseRelease } from "@/lib/media/releases";
+import { creditsStudio, parseRelease, profileNameTrack } from "@/lib/media/releases";
 import { copyMarks, type QualityMark, resolutionBesideMarks } from "./QualityBadges";
 import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 
@@ -75,12 +75,19 @@ export function useCopyText() {
     const info = parseRelease(name, null, originalLanguage);
     return releaseMarks(info);
   };
-  /** What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)"). */
+  /**
+   * What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)") — of
+   * a TorrServer copy, the track the player starts for this profile (`profileNameTrack`, as `profileTrack` picks the
+   * file's): "Russian · multi-voice (LostFilm)" from "7 x MVO (HDrezka Studio, …, LostFilm)" for "1 — LostFilm".
+   */
   const sound = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
     const own = languagesOf(s);
     if (own) return own;
     const name = releaseName(s, all);
-    return name ? text.audio({ info: parseRelease(name, null, originalLanguage), language: null }) || null : null;
+    if (!name) return null;
+    const info = parseRelease(name, null, originalLanguage);
+    const heard = profileNameTrack(info, { languages: langs, studios });
+    return text.audio({ info, language: heard?.language ?? null }, heard?.studio) || null;
   };
 
   return {

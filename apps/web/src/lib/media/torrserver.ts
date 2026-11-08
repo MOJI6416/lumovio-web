@@ -1,7 +1,7 @@
 import { canRemuxInBrowser, detectCapabilities } from "./capabilities";
 import { optional } from "../optional";
 import { joinUrl, MediaNetError, mediaFetch, targetAddressSpace } from "./net";
-import { type VoiceWish, voiceTrack } from "./releases";
+import { profileTrack, type VoiceWish, voiceTrack } from "./releases";
 import type { AudioOption, MediaSegment, PreparedPlayback, ProviderClient, SubtitleTrack } from "./types";
 
 /** A chapter as ffprobe gives it (`-show_chapters`; seconds as strings). */
@@ -386,9 +386,10 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * `matchEpisode` or the person). A file the browser can't play as it is — AC-3/E-AC-3 audio, or
      * Matroska where the browser has no Matroska — is rebuilt in the browser when it can be ("remux");
      * so is any audio track other than the file's default, which a plain stream can't choose. A dubbing
-     * chosen with the release (`voice`) plays the track that credits it, when one track does.
+     * chosen with the release (`voice`) plays the track that credits it, when one can be told to; with nothing chosen,
+     * the track the profile's languages and studios find first (`profileTrack`), else the file's default.
      */
-    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; rebuild?: boolean } = {}) {
+    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean } = {}) {
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
@@ -426,8 +427,11 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const container = probe?.format?.format_name ?? (file.path.split(".").pop() ?? null);
       const bitDepth = vs?.pix_fmt?.includes("10") ? 10 : vs?.bits_per_raw_sample ? Number(vs.bits_per_raw_sample) : 8;
       const wish = choice.audioIndex === undefined && (choice.voice?.studio || choice.voice?.language) ? choice.voice! : null;
-      const wished = wish ? voiceTrack(as.map((s) => ({ index: s.index, title: s.tags?.title ?? null, language: s.tags?.language ?? null })), wish) : null;
-      const pickedIndex = choice.audioIndex ?? wished ?? undefined;
+      const tracks = as.map((s) => ({ index: s.index, title: s.tags?.title ?? null, language: s.tags?.language ?? null, default: s === defaultAudio }));
+      const wished = wish ? voiceTrack(tracks, wish, choice.profile?.studios) : null;
+      // Nothing chosen (a copy already here, the next episode): the profile's order, as "Where to watch" offers audio.
+      const preferred = choice.audioIndex === undefined && !wish && choice.profile ? profileTrack(tracks, choice.profile) : null;
+      const pickedIndex = choice.audioIndex ?? wished ?? preferred ?? undefined;
       const picked = pickedIndex === undefined ? undefined : as.find((s) => s.index === pickedIndex);
       const chosenAudio = picked ?? defaultAudio;
       const file0 = { container, videoCodec: vs?.codec_name ?? null, audioCodec: chosenAudio?.codec_name ?? null, bitDepth, width: vs?.width ?? null, height: vs?.height ?? null, probed: Boolean(probe) };

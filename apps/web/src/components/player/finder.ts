@@ -9,7 +9,7 @@ import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
-import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions } from "@/lib/media/releases";
+import { creditsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -232,8 +232,16 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
       const i = o.language ? base.languages.indexOf(o.language) : -1;
       return i >= 0 ? i : o.language ? base.languages.length : base.languages.length + 1;
     };
-    return all.map((o, i) => ({ o, i })).sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || a.i - b.i).map((x) => x.o);
-  }, [view, base.languages]);
+    // In a language, the profile's studios first, in their order ("1 — LostFilm, 2 — HDRezka"), as "Where to watch" offers them.
+    const studio = (o: VoiceOption) => {
+      const i = o.studio ? base.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+      return i >= 0 ? i : base.studios.length;
+    };
+    return all
+      .map((o, i) => ({ o, i }))
+      .sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || studio(a.o) - studio(b.o) || a.i - b.i)
+      .map((x) => x.o);
+  }, [view, base.languages, base.studios]);
   const inVoice = (x: RankedRelease) => voice === null || voiceKeys(x).includes(voice);
   const versions = useMemo(
     () => pictureVersions((view?.ranked ?? []).filter((x) => !x.dead && x.holds !== false && (voice === null || voiceKeys(x).includes(voice)))),
@@ -331,10 +339,13 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     if (x.info.studios.length === 1) return keys.find((k) => k.endsWith(`|${x.info.studios[0]}`)) ?? null;
     return x.language ? (keys.find((k) => k.startsWith(`${x.language}|`)) ?? null) : null;
   };
+  // What a release plays when picked here, in words: the studio `voiceFor` starts ("Russian · multi-voice (LostFilm)"),
+  // not every track its name lists in its own order (HDrezka Studio first on RuTracker).
+  const heard = (x: RankedRelease) => text.audio(x, voiceWish(voiceFor(x.result))?.studio);
   const isLinked = (r: TsSearchResult) => r.hash !== null && existing.has(`${connId}:${r.hash}`);
   const versionOf = (r: TsSearchResult) => {
     const x = view?.byLink.get(r.link);
-    return x ? [text.picture(x.info), text.audio(x)].filter(Boolean).join(" · ") : r.title;
+    return x ? [text.picture(x.info), heard(x)].filter(Boolean).join(" · ") : r.title;
   };
   const pick = (r: TsSearchResult, anchor: Element | null) => onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r) }, anchor);
 
@@ -381,6 +392,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     recommended,
     isLinked,
     versionOf,
+    heard,
     pick,
     minutes,
     optionLabel,

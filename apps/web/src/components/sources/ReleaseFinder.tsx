@@ -243,7 +243,8 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
       .sort((a, b) => (b ?? -1) - (a ?? -1))
       .map((r) => (r ? RESOLUTION[r] : tt("tsNoResolution")))
       .join(", ");
-  const heard = text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio) || text.option({ studio: null, voice: null, language: null });
+  // "Any" audio: what "Watch" plays of the release (the profile's studio), not every track it lists.
+  const heard = (option ? text.audio({ info: chosen.info, language: option.language ?? chosen.language }, option.studio) : f.heard(chosen)) || text.option({ studio: null, voice: null, language: null });
   const size = formatSize(chosen.result.size, locale);
   const pack = tv ? packWords(t, chosen.info.pack) : "";
   // The cut in words, unless its pill names it.
@@ -443,7 +444,7 @@ function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResul
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-lg bg-surface-1">
       {rows.map(({ r, x }) => (
-        <ReleaseItem key={r.link} r={r} x={x} cuts={cuts} linked={f.isLinked(r)} tv={tv} season={season} locale={locale} onWatch={(el) => f.pick(r, el)} onDetails={() => f.setDetailed(r)} />
+        <ReleaseItem key={r.link} r={r} x={x} heard={x ? f.heard(x) : ""} cuts={cuts} linked={f.isLinked(r)} tv={tv} season={season} locale={locale} onWatch={(el) => f.pick(r, el)} onDetails={() => f.setDetailed(r)} />
       ))}
     </ul>
   );
@@ -457,6 +458,7 @@ function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResul
 function ReleaseItem({
   r,
   x,
+  heard,
   cuts,
   linked,
   tv,
@@ -467,6 +469,8 @@ function ReleaseItem({
 }: {
   r: TsSearchResult;
   x: RankedRelease | undefined;
+  /** What "Watch" plays, in words (`Finder.heard`). */
+  heard: string;
   cuts: "named" | "several" | "chosen";
   linked: boolean;
   tv: boolean;
@@ -503,7 +507,7 @@ function ReleaseItem({
       <div className="min-w-0 flex-1">
         {tag && <div className="mb-1.5 flex flex-wrap gap-1.5">{tag}</div>}
         <p id={head} className="text-title break-words text-text-1">
-          {x ? text.audio(x) || text.option({ studio: null, voice: null, language: null }) : <span className="line-clamp-2">{r.title}</span>}
+          {x ? heard || text.option({ studio: null, voice: null, language: null }) : <span className="line-clamp-2">{r.title}</span>}
         </p>
         <p className="mt-0.5 text-body break-words text-text-1">{x ? <ReleaseLine info={x.info} rest={[editionWord(tt, r.title, cuts), pack || null, sized]} /> : sized}</p>
         <p className="mt-0.5 text-body-s break-words text-text-2">{where}</p>

@@ -560,6 +560,11 @@ export interface RankedRelease {
   studio: string | null;
   /** The release's `pictureKey`. */
   picture: string;
+  /**
+   * HD for the profile's order of studios (`hdFloor`): a studio further down the order wins only by this — HD (720p
+   * and up) over SD or a picture the name doesn't state; in "Smaller file" every release counts as HD (size decides).
+   */
+  hd: boolean;
   fit: Fit;
   /** The indexer reports no seeders: listed last and never recommended. Unknown seeders are not zero. */
   dead: boolean;
@@ -572,6 +577,14 @@ export interface RankedRelease {
 const VOICE_SCORE: Record<Voice, number> = { dub: 5, mvo: 4, dvo: 3, avo: 2, vo: 1 };
 const FIT_SCORE: Record<Fit, number> = { ok: 2, unknown: 1, poor: 0 };
 const UNKNOWN_SIZE = -Number.MAX_SAFE_INTEGER;
+
+/**
+ * The quality floor the profile's order of studios holds within (`RankedRelease.hd`): its first studio wins over its
+ * second at any comparable picture — 720p, 1080p and 4K are all comparable, so a 1080p LostFilm beats a 4K HDRezka —
+ * but a release in HD wins over one in SD or of a picture its name doesn't state (a studio's only DVDRip loses to
+ * another studio's 1080p). "Smaller file" asks for no quality, so it holds no floor.
+ */
+const hdFloor = (info: Pick<ReleaseInfo, "resolution">, prefs: Pick<ReleasePrefs, "quality">) => prefs.quality === "small" || (info.resolution ?? 0) >= 720;
 
 /** Whether "auto" puts 4K first: the screen shows it, the device decodes HEVC, and the browser doesn't say it stutters. */
 const uhdFits = (d: ReleasePrefs["device"]) => d.uhd && d.hevc && d.uhdSmooth !== false;
@@ -605,10 +618,11 @@ function compareRank(a: number[], b: number[]): number {
 
 /**
  * Releases of this title, best for this profile and device first. In order: alive (no seeders sinks to
- * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, one of its
- * studios, the kind of translation, a picture this device plays, the picture by the quality mode, and
- * seeders as the indexer reports them for releases equal in all of that; the sort is stable after that.
- * Seeders never outweigh a picture version, and a 4K release is never swapped for 1080p by them.
+ * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, HD (`hdFloor`), one of
+ * its studios (earlier ones first), the kind of translation (only where no studio of the profile is credited: a
+ * studio's own track is heard whatever kind the name writes, or doesn't, beside it), a picture this device plays, the
+ * picture by the quality mode, and seeders as the indexer reports them for releases equal in all of that; the sort is
+ * stable after that. Seeders never outweigh a picture version, and a 4K release is never swapped for 1080p by them.
  * Results for other titles are left out. With a wanted `season`, a release whose name says it holds
  * other seasons only sinks below the rest, like one without seeders, and is never recommended.
  */
@@ -625,9 +639,11 @@ export function rankReleases(
       const info = parseRelease(result.title, result.tracker, d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
       const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s));
-      // The translation the profile's studio does here, when the name pairs them; else the best one in the profile's
-      // language the release has (its tracks say which); else the release's best one.
-      const kind = (j >= 0 ? kindOf(info, prefs.studios[j]!) : null) ?? (i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice;
+      // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
+      // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
+      // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
+      const kind = j >= 0 ? null : ((i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice);
+      const hd = hdFloor(info, prefs);
       const fit = fitOf(info, prefs.device);
       const dead = result.seeders === 0;
       const holds = season !== null ? holdsSeason(info.pack, season) : null;
@@ -635,13 +651,14 @@ export function rankReleases(
         dead || holds === false ? 0 : 1,
         i >= 0 ? prefs.languages.length - i : 0,
         info.cam ? 0 : 1,
+        hd ? 1 : 0,
         j >= 0 ? prefs.studios.length - j : 0,
         kind ? VOICE_SCORE[kind] : 0,
         FIT_SCORE[fit],
         ...pictureRank(info, result.size, prefs, d.kind === "movie"),
         result.seeders ?? -1,
       ];
-      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), fit, dead, holds, rank };
+      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), hd, fit, dead, holds, rank };
     })
     .sort((a, b) => compareRank(a.rank, b.rank));
 }
@@ -789,29 +806,108 @@ export function voiceWish(key: string | null): VoiceWish | null {
   return { studio: rest && !(VOICES as string[]).includes(rest) ? rest : null, language: language || null };
 }
 
-const ISO_639_2: Record<string, string> = { ru: "rus", uk: "ukr", en: "eng", ja: "jpn" };
+/** ISO 639-2 codes (bibliographic and terminology) files tag their tracks with, by ISO 639-1. */
+const ISO_639_2: Record<string, string[]> = {
+  ru: ["rus"],
+  uk: ["ukr"],
+  en: ["eng"],
+  ja: ["jpn"],
+  de: ["ger", "deu"],
+  fr: ["fre", "fra"],
+  es: ["spa"],
+  it: ["ita"],
+  pl: ["pol"],
+  pt: ["por"],
+  tr: ["tur"],
+};
+
+/** An audio track as ffprobe reads a file: its tags, and whether the file plays it by default. */
+export interface FileTrack {
+  index: number;
+  title: string | null;
+  language: string | null;
+  default?: boolean;
+}
 
 /**
- * The audio track a chosen studio is on, by the titles a file gives its tracks ("MVO (HDrezka Studio)"):
- * the one track crediting the studio, in the wished language when several do. A wish of a language alone (a
- * Ukrainian dub no studio is credited with) is the one track tagged with that language. A file with a single
- * track is that track. Null when no track can be told to be it — nothing is guessed then.
+ * Whether a file's track is in a language: by its language tag; untagged ("und" too), by a language its title names
+ * ("RUS", "Ukr") or else by the studio it credits ("MVO [LostFilm]" is Russian).
  */
-export function voiceTrack(tracks: { index: number; title: string | null; language: string | null }[], wish: VoiceWish): number | null {
+function speaks(t: FileTrack, language: string): boolean {
+  const tag = t.language?.toLowerCase() ?? null;
+  const base = language.split("-")[0]!;
+  if (tag && tag !== "und") return tag === base || (ISO_639_2[base] ?? []).includes(tag);
+  if (!t.title) return false;
+  const title = t.title.replace(/[._]/g, " ");
+  const named = LANG_WORDS.find(([, re]) => re.test(title))?.[0] ?? VOICE_STUDIOS.find((s) => s.match.test(title))?.lang ?? null;
+  return named === base;
+}
+
+/** Of several tracks that are all it (one studio's "MVO [HDrezka Studio]" and its "… 18+" cut): the default one, else the first. */
+const firstOf = (tracks: FileTrack[]) => (tracks.find((t) => t.default) ?? tracks[0])?.index ?? null;
+
+const credits = (t: FileTrack, studio: string) => t.title !== null && creditsStudio(t.title, studio);
+
+/**
+ * The audio track a chosen studio is on, by the titles a file gives its tracks ("MVO (HDrezka Studio)"): a track
+ * crediting the studio, in the wished language when several do; when several are left they are that studio's own
+ * versions ("18+"), and the file's default among them plays, else the first. A file whose tracks credit no studio at
+ * all (LostFilm's own: "RUS", "ENG") has it on its one track in the wished language. A wish of a language alone (a
+ * Ukrainian dub no studio is credited with) is a track in that language: the one of the profile's first `studios`
+ * there is, else the default, else the first. A file with a single track is that track. Null when no track can be
+ * told to be it — nothing is guessed then.
+ */
+export function voiceTrack(tracks: FileTrack[], wish: VoiceWish, studios: string[] = []): number | null {
   const studio = wish.studio;
   if (tracks.length === 0) return null;
-  if (!studio) {
-    if (!wish.language) return null;
-    const codes = [wish.language, ISO_639_2[wish.language]];
-    const inLanguage = tracks.filter((t) => t.language !== null && codes.includes(t.language.toLowerCase()));
-    return inLanguage.length === 1 ? inLanguage[0]!.index : null;
-  }
+  if (!studio) return wish.language && tracks.some((t) => speaks(t, wish.language!)) ? profileTrack(tracks, { languages: [wish.language], studios }) : null;
   if (tracks.length === 1) return tracks[0]!.index;
-  let hits = tracks.filter((t) => t.title !== null && creditsStudio(t.title, studio));
+  let hits = tracks.filter((t) => credits(t, studio));
   if (hits.length > 1 && wish.language) {
-    const codes = [wish.language, ISO_639_2[wish.language]];
-    const inLanguage = hits.filter((t) => t.language !== null && codes.includes(t.language.toLowerCase()));
+    const inLanguage = hits.filter((t) => speaks(t, wish.language!));
     if (inLanguage.length > 0) hits = inLanguage;
   }
-  return hits.length === 1 ? hits[0]!.index : null;
+  if (hits.length > 0) return firstOf(hits);
+  if (wish.language && !tracks.some((t) => t.title !== null && VOICE_STUDIOS.some((s) => s.match.test(t.title!.replace(/[._]/g, " "))))) {
+    const inLanguage = tracks.filter((t) => speaks(t, wish.language!));
+    if (inLanguage.length === 1) return inLanguage[0]!.index;
+  }
+  return null;
+}
+
+/**
+ * The track a profile hears first when no audio was chosen for this file (a copy already on the server, the next
+ * episode, a viewing sent to a TV): the order "Where to watch" offers audio in (`forProfile`) — the first of the
+ * profile's languages a track is in, and in it the track of the profile's first studio there is, else that language's
+ * default or first track; with no track in its languages, the track of its first studio there is. Null when neither
+ * finds a track: the file's default plays. A file that lists "MVO [HDrezka Studio]" first and "MVO [LostFilm]" fifth
+ * plays LostFilm for "1 — LostFilm, 2 — HDRezka".
+ */
+export function profileTrack(tracks: FileTrack[], prefs: Pick<ReleasePrefs, "languages" | "studios">): number | null {
+  for (const language of prefs.languages) {
+    const inLanguage = tracks.filter((t) => speaks(t, language));
+    if (inLanguage.length === 0) continue;
+    for (const studio of prefs.studios) {
+      const hits = inLanguage.filter((t) => credits(t, studio));
+      if (hits.length > 0) return firstOf(hits);
+    }
+    return firstOf(inLanguage);
+  }
+  for (const studio of prefs.studios) {
+    const hits = tracks.filter((t) => credits(t, studio));
+    if (hits.length > 0) return firstOf(hits);
+  }
+  return null;
+}
+
+/**
+ * The track of a release's name the profile hears first (`profileTrack` over the name's tracks, its first listed as
+ * the file's default — names list tracks in the file's order): what a copy already on the server says it plays.
+ */
+export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<ReleasePrefs, "languages" | "studios">): ReleaseTrack | null {
+  const i = profileTrack(
+    info.tracks.map((t, index) => ({ index, title: t.studio ?? t.credit, language: t.language, default: index === 0 })),
+    prefs,
+  );
+  return i === null ? null : (info.tracks[i] ?? null);
 }
