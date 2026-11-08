@@ -86,3 +86,26 @@ describe("T5: a season's pack holds only its episodes", () => {
     expect(ranked[0]?.result).toBe(single);
   });
 });
+
+describe("item 5: the short list folds releases a person can't tell apart", () => {
+  const f1 = { title: "F1", originalTitle: "F1", kind: "movie" as const, year: 2025, originalLanguage: "en" };
+  it("keeps one of each audio, picture and source, the first in the list's order", async () => {
+    const { foldReleases } = await import("../src/lib/media/release-pick");
+    const ranked = rankReleases(
+      [
+        result("F1 (2025) WEB-DL 1080p | Дубляж", 90),
+        result("F1 / F1 (2025) WEB-DL 1080p | Дубляж", 40),
+        result("F1 (2025) WEB-DL 1080p | Дубляж", 10),
+        result("F1 (2025) WEB-DL 2160p | Дубляж", 30),
+        result("F1 (2025) BDRip 1080p | Дубляж", 20),
+        result("F1 (2025) WEB-DL 1080p | MVO (LostFilm)", 20),
+      ],
+      f1,
+      prefs(["ru"]),
+    );
+    const folded = foldReleases(ranked);
+    expect(folded.length).toBe(4);
+    // The 1080p WEB-DL dubs with 40 and 10 seeders fold into the one with 90.
+    expect(folded.map((x) => x.result.seeders).sort((a, b) => (b ?? 0) - (a ?? 0))).toEqual([90, 30, 20, 20]);
+  });
+});

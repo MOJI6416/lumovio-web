@@ -163,6 +163,8 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   // The profile's own interface language, when it has one, is the site's language from here on (L10N-06).
   const go = (p: Profile) => {
     const lang = p.uiLocale && (LOCALE_CODES as readonly string[]).includes(p.uiLocale) ? p.uiLocale : locale;
+    // The service worker's TorrServer password was the last profile's (A9): the new one asks for its own.
+    navigator.serviceWorker?.controller?.postMessage({ type: "lumovio:forget-credentials" });
     window.location.href = to(next, lang);
   };
   const manageHref = viewHref(next, { manage: "1" });

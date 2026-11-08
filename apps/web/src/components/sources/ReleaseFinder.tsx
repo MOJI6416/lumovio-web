@@ -18,6 +18,7 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
+import { foldReleases } from "@/lib/media/release-pick";
 import { type RankedRelease, releaseKey } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
@@ -25,6 +26,8 @@ import { useMediaErrorText } from "./media-error";
 import { formatSize, isPack, knownVersions, packWords, QUALITY_MODES, ReleaseLine, useReleaseText, VersionName } from "./release-text";
 
 const CARD = "finder-card-h";
+/** How many different releases the short list shows before "Show all" (item 5). */
+const SHORT = 8;
 
 /**
  * The sources screen's TorrServer search (design-system 7.15 «Экран источников», S26): "Where to watch" unfolded. The
@@ -41,6 +44,7 @@ export function ReleaseFinder(props: FinderProps) {
   const tt = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tc = useTranslations("common");
+  const ts = useTranslations("settings");
   const locale = useLocale();
   const mediaError = useMediaErrorText();
   // The cut chosen on the title page comes in the address ("&edition=extended"), as its audio and picture do.
@@ -55,6 +59,7 @@ export function ReleaseFinder(props: FinderProps) {
   const lead = props.lead ?? !copiesHere;
   const [restOpen, setRestOpen] = useState(false);
   const [restShown, setRestShown] = useState(PAGE);
+  const [all, setAll] = useState(false);
   const list = useRef<HTMLDivElement>(null);
   const tv = d.kind === "tv";
   const searching = status.kind === "searching";
@@ -150,6 +155,8 @@ export function ReleaseFinder(props: FinderProps) {
 
   const rest = listed.rest;
   const rows = listed.rows;
+  // Eight different releases first, near-identical ones folded (item 5); "Show all" lists every one, a page at a time.
+  const folded = all ? rows.slice(0, f.shown) : foldReleases(rows).slice(0, SHORT);
   const nothingPicked = Boolean(found) && !choice?.chosen;
   return (
     <section aria-labelledby="finder-h" className="flex flex-col gap-8">
@@ -167,11 +174,11 @@ export function ReleaseFinder(props: FinderProps) {
             <SortPill value={f.sort} onChange={(s) => f.setSort(s)} />
           </div>
           <div ref={list}>
-            <ReleaseList rows={rows.slice(0, f.shown).map((x) => ({ r: x.result, x }))} f={f} tv={tv} season={season} locale={locale} />
+            <ReleaseList rows={folded.map((x) => ({ r: x.result, x }))} f={f} tv={tv} season={season} locale={locale} />
           </div>
-          {rows.length > f.shown && (
-            <Button className="self-center" variant="secondary" onClick={() => f.setShown((n) => n + PAGE)}>
-              {t("moreResults", { count: rows.length - f.shown })}
+          {rows.length > folded.length && (
+            <Button className="self-center" variant="secondary" onClick={() => (all ? f.setShown((n) => n + PAGE) : setAll(true))}>
+              {all ? t("moreResults", { count: rows.length - folded.length }) : ts("showAllCount", { count: rows.length })}
             </Button>
           )}
         </section>

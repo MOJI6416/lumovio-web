@@ -138,3 +138,18 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   // Every cut: the one shown is the chosen release's own (a release without a cut in its name is the theatrical one).
   return { options, option, editions: many ? editions : [], edition: anyCut && chosen ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
 }
+
+/**
+ * The sources screen's short list (item 5, S6): releases a person can't tell apart — one audio, picture, source, cut and
+ * pack — fold into the first of them (the list's order: the best by it). A cinema recording stays apart.
+ */
+export function foldReleases(ranked: RankedRelease[]): RankedRelease[] {
+  const seen = new Set<string>();
+  return ranked.filter((x) => {
+    const p = x.info.pack;
+    const k = [voiceKeys(x).join(","), x.picture, x.info.source, x.info.cam, editionOf(x.result.title), p.seasons?.from, p.seasons?.to, p.episodes?.from, p.episodes?.to].join("|");
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
