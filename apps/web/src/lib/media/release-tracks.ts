@@ -41,3 +41,15 @@ export const saveTracks = (read: ReleaseTracksRead) => api("/api/releases/tracks
 export function hidesStudios(x: Pick<RankedRelease, "info">): boolean {
   return x.info.tracks.some((t) => !t.original && t.voice !== null && t.studio === null && t.credit === null) || (x.info.voice !== null && x.info.studios.length === 0 && x.info.tracks.length === 0);
 }
+
+/**
+ * The releases to read ahead, in order (the owner, 2026-11-08): names that hide their studios ("MVO" without one)
+ * first, then the rest; in each, the best picture first, then the most seeders. Only alive ones that hold the episode,
+ * play here and aren't in the shared cache yet (`known`, by name). `readAhead` reads `MAX_READS` of them at most.
+ */
+export function readOrder(ranked: RankedRelease[], known: { has(title: string): boolean }): RankedRelease["result"][] {
+  return ranked
+    .filter((x) => !x.dead && !x.info.cam && x.holds !== false && x.fit !== "poor" && !known.has(x.result.title))
+    .sort((a, b) => Number(hidesStudios(b)) - Number(hidesStudios(a)) || (b.info.resolution ?? 0) - (a.info.resolution ?? 0) || (b.result.seeders ?? -1) - (a.result.seeders ?? -1))
+    .map((x) => x.result);
+}

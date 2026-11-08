@@ -7,7 +7,7 @@ import { useSession } from "@/components/providers/Providers";
 import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
-import { hidesStudios, lookupTracks } from "@/lib/media/release-tracks";
+import { lookupTracks, readOrder } from "@/lib/media/release-tracks";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
@@ -111,19 +111,13 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
     },
     select,
   });
-  // Read ahead only on suspicion: a profile with studios (adults), names that hide theirs, among the best pictures found
-  // — the ones at least as good as what would play now. The read itself loads only then (lib/media/read-ahead).
+  // Read ahead for a profile with studios (adults), in `readOrder`; the read itself loads only then (lib/media/read-ahead).
   const ranked = lookup.data?.ranked;
   const kids = Boolean(me?.activeProfile?.isKids);
   // biome-ignore lint/correctness/useExhaustiveDependencies: one round per answer and profile
   useEffect(() => {
     if (!ranked || !known || !source || kids || prefs.studios.length === 0) return;
-    const alive = ranked.filter((x) => !x.dead && !x.info.cam && x.holds !== false && x.fit !== "poor");
-    const top = alive[0]?.info.resolution ?? 0;
-    const suspects = alive
-      .filter((x) => hidesStudios(x) && !known.has(x.result.title) && (x.info.resolution ?? 0) >= top)
-      .sort((a, b) => (b.info.resolution ?? 0) - (a.info.resolution ?? 0) || (b.result.seeders ?? -1) - (a.result.seeders ?? -1))
-      .map((x) => x.result);
+    const suspects = readOrder(ranked, known);
     if (suspects.length === 0) return;
     let cancel: (() => void) | null = null;
     let gone = false;
