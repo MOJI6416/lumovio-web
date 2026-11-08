@@ -126,7 +126,11 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
     startLaunch({ status: tpl("stage_add"), onBack }, true);
     try {
       // Another release of the same audio and picture when the server doesn't take this one (item 3, S3).
-      const others = pick.pool.filter((y) => y !== x && y.picture === x.picture).slice(0, 2).map((y) => y.result);
+      const others = pick.pool
+        .filter((y) => y !== x && y.picture === x.picture)
+        .sort((a, b) => Number(a.result.tracker === x.result.tracker) - Number(b.result.tracker === x.result.tracker))
+        .slice(0, 2)
+        .map((y) => y.result);
       const added = await addFirst(source.id, d, null, [x.result, ...others], { live: () => !dropped, onNext: () => setLaunch({ status: tpl("addRetrying"), onBack }) });
       if (!added) throw new Error(tpl("addFailed"));
       if (dropped) return dropAdded(source.id, added);

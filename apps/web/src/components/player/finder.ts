@@ -366,13 +366,15 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const x = view?.byLink.get(r.link);
     return x ? [text.picture(x.info), heard(x)].filter(Boolean).join(" · ") : r.title;
   };
-  // Two releases a failed add falls back on (item 3, S3): the same audio and picture, alive, in the list's order.
+  // Two releases a failed add falls back on (item 3, S3): the same audio and picture, alive — another tracker's first
+  // (a tracker that refused one release usually refuses its others), then the list's order.
   const fallbacks = (r: TsSearchResult): TsSearchResult[] => {
     const x = view?.byLink.get(r.link);
     if (!x || !view) return [];
     const keys = voiceKeys(x);
     return view.ranked
       .filter((y) => y !== x && !y.dead && !y.info.cam && y.holds !== false && y.picture === x.picture && voiceKeys(y).some((k) => keys.includes(k)))
+      .sort((a, b) => Number(a.result.tracker === r.tracker) - Number(b.result.tracker === r.tracker))
       .slice(0, 2)
       .map((y) => y.result);
   };
