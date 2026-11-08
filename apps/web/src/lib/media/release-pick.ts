@@ -1,5 +1,5 @@
 import { type Edition, editionOf } from "./editions";
-import { optionIsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
+import { isDubStudio, optionIsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
 
 export { type Edition, editionOf };
 
@@ -63,9 +63,11 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
   };
   const hd = (o: VoiceOption) => 2 - o.best.floor;
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
+  // The profile's «Дубляж» is any dubbing, so a studio's dub (Пифагор) matches it too — but after the dubbing option
+  // itself: a studio the profile doesn't list never goes first by its seeders (owner, Бумажный дом).
   const studio = (o: VoiceOption) => {
     const i = prefs.studios.findIndex((s) => optionIsStudio(o, s));
-    return i < 0 ? prefs.studios.length : i;
+    return i < 0 ? prefs.studios.length : i + (isDubStudio(prefs.studios[i]!) && o.studio !== null ? 0.5 : 0);
   };
   return options
     .map((o, i) => ({ o, i }))

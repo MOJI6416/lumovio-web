@@ -109,3 +109,16 @@ describe("item 5: the short list folds releases a person can't tell apart", () =
     expect(folded.map((x) => x.result.seeders).sort((a, b) => (b ?? 0) - (a ?? 0))).toEqual([90, 30, 20, 20]);
   });
 });
+
+describe("the profile's «Дубляж» is the dubbing option, not a studio's dub (owner, Бумажный дом)", () => {
+  const show = { title: "Бумажный дом", originalTitle: "La casa de papel", kind: "tv" as const, year: 2017, originalLanguage: "es" };
+  const name = (rest: string) => `Бумажный дом / La casa de papel / Сезон: 5 / Серии: 1-10 из 10 [2021, WEB-DL 2160p] ${rest}`;
+  it("picks Дубляж, then LostFilm, over Пифагор that the profile doesn't list", () => {
+    const p = { ...prefs(["ru"]), studios: ["Dub", "LostFilm"] };
+    const ranked = rankReleases([result(name("Dub (Пифагор)"), 300), result(name("Dub"), 40), result(name("MVO (LostFilm)"), 90), result(name("MVO (TVShows)"), 20)], show, p, 5, 1);
+    const pick = pickRelease(ranked, p);
+    expect(pick.options.map((o) => o.studio ?? o.voice)).toEqual(["dub", expect.anything(), expect.anything(), expect.anything()]);
+    expect(pick.option?.studio).toBeNull();
+    expect(pick.option?.voice).toBe("dub");
+  });
+});
