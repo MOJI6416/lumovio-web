@@ -53,5 +53,15 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
     method: "POST",
     json: { mode: "merge", entries: [{ titleId: d.id, externalId: hash, season: null, episode: null, label, quality: null }] },
   });
-  return { hash, label };
+  // `fresh`: this add put it on the server (it wasn't in the list read just before); unknown counts as not.
+  return { hash, label, fresh: Boolean(before) && !had };
+}
+
+/**
+ * A launch cancelled while its release was being added (A16, P7): what it added goes, from the server and the index;
+ * a torrent that was on the server before stays — only `fresh` is ever removed.
+ */
+export function dropAdded(connectionId: string, added: { hash: string; fresh: boolean } | null | undefined): void {
+  if (!added?.fresh) return;
+  void import("./torrent-manage").then((m) => m.removeTorrents(connectionId, [added.hash])).catch(() => {}); // ui-lint-ignore swallowed-error: a leftover is swept with the unplayed ones after 30 minutes
 }

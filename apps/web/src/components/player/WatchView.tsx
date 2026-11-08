@@ -49,7 +49,7 @@ import { otherSeasonsOnly, voiceWish } from "@/lib/media/releases";
 import { orderedSources, sourceRank, startCandidate } from "@/lib/media/source-order";
 import { mediaFailure } from "@/lib/media/stream-break";
 import { forgetTorrents, invalidateAvailability, markPlayed, torrentPresence } from "@/lib/media/torrent-manage";
-import { addTorrentSource } from "@/lib/media/torrent-source";
+import { addTorrentSource, dropAdded } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
@@ -203,6 +203,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
+  /** The running launch's requests (P7): aborted by "Cancel", by the next launch and when the player goes. */
+  const run = useRef<AbortController | null>(null);
+  useEffect(() => () => run.current?.abort(), []);
   /** Where each source's stream broke and was quietly restarted (S1). */
   const resumedAt = useRef(new Map<string, number>());
   const sessionId = useRef(randomId());
@@ -325,11 +328,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    * to the person — never the first or biggest file in place of the requested one.
    */
   const resolveTorrent = useCallback(
-    async (c: Candidate, explicit: boolean): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
+    async (c: Candidate, explicit: boolean, signal?: AbortSignal): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
       const s = c.server;
       if (s.externalId.includes(":")) return { externalId: s.externalId, file: s.label ?? "", videos: null };
       const ts = (await clientFor(connOf(s))) as ReturnType<typeof torrServerClient>;
-      const { title, files } = await ts.files(s.externalId);
+      const { title, files } = await ts.files(s.externalId, signal);
       // The release's name (the index keeps it): a torrent added before SRC-06 has only the film's name on the server.
       const name = s.label || title || "";
       // How this release numbers the seasons, for numbering the series as releases do (kids profiles send nothing).
@@ -398,6 +401,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     async (start: Candidate, opts: { auto: boolean; audioIndex?: number; added?: string | null; touch?: boolean; fromScreen?: boolean; rebuild?: boolean }) => {
       const my = ++attempt.current;
       const live = () => attempt.current === my;
+      // One controller per launch (P7): "Cancel" or another launch aborts its requests on the server too.
+      run.current?.abort();
+      const ctrl = new AbortController();
+      run.current = ctrl;
       let c = start;
       if (opts.fromScreen) keepPlace(document.activeElement);
       setCurrent(c);
@@ -415,7 +422,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           let externalId = c.server.externalId;
           if (c.provider === "torrserver") {
             show(isBound(c) ? "file" : "files");
-            let r = await resolveTorrent(c, !opts.auto);
+            let r = await resolveTorrent(c, !opts.auto, ctrl.signal);
             if (!live()) return;
             const asked: TorrentFiles[] = [];
             if ("files" in r && opts.auto && d.kind === "tv") {
@@ -423,7 +430,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               asked.push(r);
               for (const other of candidates.filter((x) => x.provider === "torrserver" && !isBound(x) && x.key !== c.key)) {
                 // A torrent that can't be read is skipped: the others are still asked.
-                const o = await optional(resolveTorrent(other, false), null);
+                const o = await optional(resolveTorrent(other, false, ctrl.signal), null);
                 if (!live()) return;
                 if (!o) continue;
                 if ("externalId" in o) {
@@ -473,6 +480,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             voice: c.provider === "torrserver" ? wishedVoice.current : null,
             profile: c.provider === "torrserver" ? heard.current : null,
             rebuild: opts.rebuild,
+            signal: ctrl.signal,
           });
         }
         if (!live()) return;
@@ -566,6 +574,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
   const cancel = () => {
     attempt.current++;
+    run.current?.abort();
     preparing.current = false;
     setPhase({ kind: "choose" });
     requestAnimationFrame(toList);
@@ -603,7 +612,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         setPhase({ kind: "preparing", candidate: null, label: `${pick.version} — ${server}`, prep, fromScreen: true });
         try {
           const added = await addTorrentSource(pick.connectionId, d, season, pick.result);
-          if (attempt.current !== my) return;
+          if (attempt.current !== my) return dropAdded(pick.connectionId, added);
           if (!added) throw new ShownError(t("addFailed"));
           ({ hash, label } = added);
         } catch (e) {

@@ -20,7 +20,7 @@ import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLook
 import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { pictureReasons, type RankedRelease } from "@/lib/media/releases";
-import { addTorrentSource } from "@/lib/media/torrent-source";
+import { addTorrentSource, dropAdded } from "@/lib/media/torrent-source";
 import { startHref, useWatchStart } from "./chosen-season";
 import { sourcesHref, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
@@ -132,8 +132,8 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
     try {
       const added = await addTorrentSource(source.id, d, null, x.result);
       if (!added) throw new Error(tpl("addFailed"));
+      if (dropped) return dropAdded(source.id, added);
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
-      if (dropped) return;
       // The chosen dubbing goes along, so the player starts that studio's track once the file is read;
       // "added" lets the watch page show this add as the first of its stages.
       router.push(`${playHref}${join}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);

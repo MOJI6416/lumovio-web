@@ -76,3 +76,25 @@ describe("a read ahead or an add never takes or rewrites a torrent that was on t
     expect([mark.titleId, mark.played]).toEqual(["tv:71446", false]);
   });
 });
+
+describe("a launch cancelled while its release was added (A16, P7)", () => {
+  beforeEach(() => {
+    torrents = [owners()];
+    calls.length = 0;
+  });
+
+  it("takes off what it added, and leaves a torrent that was there", async () => {
+    const { dropAdded } = await import("../src/lib/media/torrent-source");
+    addsHash = NEW;
+    const mine = await addTorrentSource("c1", { id: "tv:71446", title: "Бумажный дом", year: 2017, posterPath: null }, 5, result as never);
+    expect(mine?.fresh).toBe(true);
+    dropAdded("c1", mine);
+    await vi.waitFor(() => expect(torrents.map((t) => t.hash)).toEqual([OWN]));
+    addsHash = OWN;
+    const theirs = await addTorrentSource("c1", { id: "tv:71446", title: "Бумажный дом", year: 2017, posterPath: null }, 5, result as never);
+    expect(theirs?.fresh).toBe(false);
+    dropAdded("c1", theirs);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(torrents).toEqual([owners()]);
+  });
+});

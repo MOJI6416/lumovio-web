@@ -333,7 +333,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
   stat(hash: string, timeoutMs: number, signal?: AbortSignal): Promise<TsTorrent>;
   ffprobe(hash: string, fileId: number, timeoutMs: number, signal?: AbortSignal): Promise<{ streams?: { codec_type: string; codec_name?: string; tags?: { language?: string; title?: string }; disposition?: { forced?: number } }[] } | null>;
   get(hash: string): Promise<TsTorrent>;
-  files(hash: string): Promise<{ title: string; files: TsFile[] }>;
+  files(hash: string, signal?: AbortSignal): Promise<{ title: string; files: TsFile[] }>;
   remove(hash: string): Promise<void>;
   search(query: string, signal?: AbortSignal): Promise<{ results: TsSearchResult[]; skipped: number }>;
   streamUrl(hash: string, file: TsFile, viaWorker: boolean): string;
@@ -379,9 +379,9 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     list: () => post<TsTorrent[]>("/torrents", { action: "list" }),
     get: (hash: string) => post<TsTorrent>("/torrents", { action: "get", hash }),
     /** The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits for the metadata. */
-    async files(hash: string) {
+    async files(hash: string, signal?: AbortSignal) {
       let t = await post<TsTorrent>("/torrents", { action: "get", hash });
-      if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
+      if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000, signal);
       return { title: t?.title ?? "", files: t?.file_stats ?? [] };
     },
     /** `link`: a magnet or a .torrent URL; TorrServer fetches the file itself. */
@@ -422,11 +422,13 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * chosen with the release (`voice`) plays the track that credits it, when one can be told to; with nothing chosen,
      * the track the profile's languages and studios find first (`profileTrack`), else the file's default.
      */
-    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean } = {}) {
+    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal } = {}) {
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
-      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
+      // A launch cancelled ("Cancel", another source) stops here too, not only on the screen (P7).
+      const { signal } = choice;
+      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000, signal);
       const file = (t.file_stats ?? []).find((f) => String(f.id) === idx && isVideoFile(f.path));
       if (!file) throw new TorrentFileMissing(idx ?? "");
 
@@ -450,7 +452,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         chapters?: ProbeChapter[];
       } | null = null;
       try {
-        probe = await get(`/ffp/${hash}/${file.id}`, 60_000);
+        probe = await get(`/ffp/${hash}/${file.id}`, 60_000, signal);
       } catch {
         probe = null;
       }
@@ -491,7 +493,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
 
       let subtitles: SubtitleTrack[] = [];
       try {
-        const subs = await get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000);
+        const subs = await get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000, signal);
         subtitles = (subs ?? []).map((s, i) => ({
           id: String(s.index ?? s.id ?? i),
           lang: s.lang ?? "und",
