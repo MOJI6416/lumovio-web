@@ -132,7 +132,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           aria-describedby="welcome-text"
           className={clsx(
             "stage page-x relative z-10 flex flex-col gap-4 border-t border-line bg-stage py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 md:py-6",
-            featured && "md:in-data-[theme=dark]:-mt-32",
+            featured && "art-over:in-data-[theme=dark]:-mt-32",
           )}
         >
           <h2 id="welcome-h" className="min-w-0 text-h2 text-text-1">
@@ -153,8 +153,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           "relative z-10 mx-auto flex max-w-media flex-col gap-8 md:gap-12",
           // The first shelf comes up onto the dark billboard in the dark theme only; in the light one the stage ends with an
           // even edge and the page starts under it (X-27), close enough to be in the first screen (Billboard). A guest's
-          // welcome takes that place.
-          featured && !guest ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-8" : "mt-8 md:mt-12",
+          // welcome takes that place. Under a band of art (7.14) the text stands there, and the shelves start after it.
+          featured && !guest ? "mt-2 art-over:in-data-[theme=dark]:-mt-32 art-over:in-data-[theme=light]:mt-8" : "mt-8 md:mt-12",
         )}
       >
         {cont.items.length > 0 && <ContinueRow items={cont.items} />}

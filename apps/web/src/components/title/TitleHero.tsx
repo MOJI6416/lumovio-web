@@ -34,10 +34,13 @@ const ENDED = new Set(["Ended", "Canceled"]);
  * TV's, under the overview on a phone — the names are links to their pages. The genres as links, the dates and the
  * rest are in "Details" below.
  *
- * The art is a stage: dark in either theme, text on its scrims, a straight edge where a light page begins. Phone: the
- * art in a 2:1 band under the header, the name under it, then the facts, the ratings and the actions on the first
- * screen; the overview and the credits after them (the reading order stays name → overview → actions). Without any
- * art (TTL-17) the hero is a plain page header — no empty stage above the name.
+ * The art is a stage: dark in either theme, text on its scrims, a straight edge where a light page begins. The picture
+ * is never cut across (7.14, 2026-11-08: TMDB's backdrops are composed around their middle): from md on a screen no
+ * taller than 5:4 it is a whole 16:9 picture on the end side, 80 % of the hero's width, with the text on the stage before
+ * it, as on the TV; on a phone, a portrait tablet or a squarish window it is a band under the header (2:1 on a phone,
+ * 16:9 from sm), the name under it, then the facts, the ratings and the actions on the first screen; the overview and
+ * the credits after them (the reading order stays name → overview → actions). Without any art (TTL-17) the hero is a
+ * plain page header — no empty stage above the name.
  */
 export async function TitleHero({ details: d, core }: { details: TitleDetails; core: TitleCore }) {
   const t = await getTranslations();
@@ -96,11 +99,21 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
   return (
     <header
       data-hero={art ? "" : undefined}
-      className={clsx("relative isolate flex flex-col justify-end overflow-hidden", art && "stage -mt-16 bg-stage md:min-h-[min(88svh,60rem)]")}
+      className={clsx("relative isolate flex flex-col justify-end overflow-hidden", art && "stage -mt-16 bg-stage art-over:min-h-[min(88svh,60rem)]")}
     >
       {art && (
         <>
-          <div className="absolute inset-x-0 top-16 -z-20 aspect-2/1 overflow-hidden md:inset-0 md:aspect-auto">
+          {/* The art (7.14): a band under the header — 2:1 on a phone, 16:9 from sm — with the name under it; from md on a
+              screen no taller than 5:4, a whole 16:9 picture on the end side, its start edge and foot dissolving into
+              the stage the text stands on. A poster on its blurred field fills the hero there. */}
+          <div
+            className={clsx(
+              "absolute inset-x-0 top-16 -z-20 aspect-2/1 overflow-hidden art-band:sm:aspect-video",
+              wide
+                ? "art-over:inset-x-auto art-over:end-0 art-over:top-0 art-over:aspect-video art-over:w-4/5 art-over:mask-b-from-75% art-over:ltr:mask-l-from-70% art-over:rtl:mask-r-from-70%"
+                : "art-over:inset-0 art-over:aspect-auto",
+            )}
+          >
             {d.backdropPath ? (
               <img
                 src={tmdbImage(d.backdropPath, "w1280") ?? undefined}
@@ -108,7 +121,8 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
                 sizes={BACKDROP_SIZES}
                 alt=""
                 fetchPriority="high"
-                className="size-full object-cover object-[50%_30%] md:object-[50%_20%]"
+                // A 2:1 band loses a ninth of a 16:9 picture's height: its foot, where heads aren't.
+                className="size-full object-cover object-[50%_10%]"
               />
             ) : d.posterPath ? (
               // No backdrop: a blurred field from the poster, and the poster itself whole — never a
@@ -119,25 +133,26 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
                   src={tmdbImage(d.posterPath, "w500") ?? undefined}
                   alt=""
                   fetchPriority="high"
-                  className="absolute inset-y-3 start-1/2 h-[calc(100%-24px)] w-auto -translate-x-1/2 rounded-sm shadow-float md:max-lg:hidden md:inset-y-auto md:end-12 md:start-auto md:top-1/2 md:h-auto md:w-[min(26vw,320px)] md:-translate-y-1/2 md:translate-x-0 rtl:translate-x-1/2 md:rtl:translate-x-0"
+                  className="absolute inset-y-3 start-1/2 h-[calc(100%-24px)] w-auto -translate-x-1/2 rounded-sm shadow-float rtl:translate-x-1/2 art-over:max-lg:hidden art-over:inset-y-auto art-over:end-12 art-over:start-auto art-over:top-1/2 art-over:h-auto art-over:w-[min(26vw,320px)] art-over:-translate-y-1/2 art-over:translate-x-0 art-over:rtl:translate-x-0"
                 />
               </>
             ) : null}
             {!d.backdropPath && d.altBackdrop && <FanartBackdrop art={d.altBackdrop} />}
             {/* The band's lower edge fades into the dark area the title sits on. */}
-            <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent md:hidden" />
+            <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent art-over:hidden" />
           </div>
-          <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent max-md:hidden" />
-          <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% max-md:hidden rtl:bg-linear-to-l" />
-          <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-[60%] bg-linear-to-t from-stage via-stage/70 to-transparent max-md:hidden" />
+          <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent art-band:hidden" />
+          <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% art-band:hidden rtl:bg-linear-to-l" />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-[60%] bg-linear-to-t from-stage via-stage/70 to-transparent art-band:hidden" />
         </>
       )}
 
       <div
         className={clsx(
           "page-x mx-auto w-full max-w-media",
-          art ? "pb-8 md:pt-40 md:pb-14" : "pt-8 pb-6 md:pt-12",
-          art && (wide ? "pt-[calc(4rem+50vw-40px)]" : "pt-[calc(4rem+50vw+12px)]"),
+          art ? "pb-8 art-over:pt-40 art-over:pb-14" : "pt-8 pb-6 md:pt-12",
+          // Under the band: the name comes up 40 px onto its fading foot (12 px below a poster).
+          art && (wide ? "pt-[calc(4rem+50vw-40px)] art-band:sm:pt-[calc(4rem+56.25vw-40px)]" : "pt-[calc(4rem+50vw+12px)] art-band:sm:pt-[calc(4rem+56.25vw+12px)]"),
         )}
       >
         {/* The text on the left; the credits at the foot of the right side from a laptop, under the text below that. */}

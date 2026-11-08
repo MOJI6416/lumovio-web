@@ -45,7 +45,8 @@ export function TitleScreen({
           src={backdrop}
           alt=""
           fetchPriority="high"
-          className="pointer-events-none absolute end-0 top-0 h-4/5 w-4/5 object-cover object-top"
+          // The site's rule (design-system 7.14): a whole 16:9 picture on the end side, never cut across.
+          className="pointer-events-none absolute end-0 top-0 aspect-video w-4/5 object-cover object-top"
         />
       )}
       <div

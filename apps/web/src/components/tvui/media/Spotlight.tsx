@@ -46,7 +46,8 @@ export function TvBackdrop({ src }: { src: string | null }) {
           key={shown}
           src={shown}
           alt=""
-          className="animate-fade-in absolute end-0 top-0 h-4/5 w-4/5 object-cover object-top"
+          // The site's rule (design-system 7.14): a whole 16:9 picture on the end side, never cut across.
+          className="animate-fade-in absolute end-0 top-0 aspect-video w-4/5 object-cover object-top"
         />
       )}
       {/* The scrims of the stage (3.5): from the start edge under the text, and from the bottom under the shelves. */}

@@ -79,7 +79,7 @@ export async function SectionLanding({
         className={clsx(
           "relative z-10 mx-auto flex max-w-media flex-col gap-8 md:gap-12",
           // As on the home page: up onto the dark billboard in the dark theme only, an even edge in the light one (X-27).
-          featured ? "mt-2 md:in-data-[theme=dark]:-mt-32 md:in-data-[theme=light]:mt-12" : "mt-2 md:mt-4",
+          featured ? "mt-2 art-over:in-data-[theme=dark]:-mt-32 art-over:in-data-[theme=light]:mt-12" : "mt-2 md:mt-4",
         )}
       >
         {popular && (

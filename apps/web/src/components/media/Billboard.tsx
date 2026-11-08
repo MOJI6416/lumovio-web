@@ -34,14 +34,16 @@ const SWIPE_PX = 48;
  * The art and the title open the title's page (the largest thing on the screen does what "More info" does; the button
  * stays the keyboard's way there), and a finger swiped sideways over the billboard turns the slide.
  *
- * Phone: a 2:1 band of art under the header, the text and buttons under it on the stage, so the next shelf starts in
- * the first screen. From a tablet the billboard is 88 % of the screen in the dark theme, where the first shelf comes up
- * onto it, and 72 % in the light one, where the stage ends with an even edge: the first shelf is in the first screen in
- * either (2026-11-06; it was under the fold in the light theme). `under="header"` (home) puts the stage under the
+ * The art is never cut across (7.14, 2026-11-08). A phone, a portrait tablet or a squarish window: a band of art under
+ * the header (2:1 on a phone, 16:9 from sm), the text and buttons under it on the stage, so the next shelf starts in
+ * the first screen. From md on a screen no taller than 5:4 the art is a whole 16:9 picture on the end side, 80 % of the
+ * width, with the text on the stage before it, and the billboard is 88 % of the screen in the dark theme, where the
+ * first shelf comes up onto it, and 72 % in the light one, where the stage ends with an even edge: the first shelf is in
+ * the first screen in either (2026-11-06; it was under the fold in the light theme). `under="header"` (home) puts the stage under the
  * transparent header and marks the page as opening on art (`data-hero`). `section` (a catalog section) is the same
  * billboard inside the section's stage, which lies under the header and lays the section's name and controls over the
- * top of the art (browse/SectionLanding, owner 2026-10-25): its top scrim is deeper for them, and on a phone its band of
- * art starts under the header and is taller, with room for them over it.
+ * top of the art (browse/SectionLanding, 2026-10-25): its top scrim is deeper for them, and on a phone or a portrait
+ * tablet its band of art starts under the header and is taller, with room for them over it.
  */
 export function Billboard({ items, genres, under = "header" }: { items: FeaturedTitle[]; genres: Genre[]; under?: "header" | "section" }) {
   const t = useTranslations();
@@ -177,24 +179,33 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
       className={clsx(
         // A finger's sideways move is the billboard's (a swipe), its up and down the page's; pinch zoom stays.
         "relative isolate touch-pan-y touch-pinch-zoom overflow-hidden bg-stage",
-        // Home: under the transparent header; a phone's band of art starts below it. A section: its stage is under it.
-        hero && "-mt-16 max-md:pt-16",
+        // Home: under the transparent header; a band of art starts below it. A section: its stage is under it.
+        hero && "-mt-16 art-band:pt-16",
         // At least 88 % of the screen; taller when the text needs it (a phone held sideways, a two-line logo) — it never
         // goes up under the header or the section's own row (owner, 2026-10-30). The home's light theme: 72 %, so the
         // first shelf under the even edge is in the first screen too.
-        "md:flex md:min-h-[max(88svh,37.5rem)] md:flex-col",
-        hero && "md:in-data-[theme=light]:min-h-[max(72svh,34rem)]",
+        "art-over:flex art-over:min-h-[max(88svh,37.5rem)] art-over:flex-col",
+        hero && "art-over:in-data-[theme=light]:min-h-[max(72svh,34rem)]",
       )}
     >
-      {/* The art: a 2:1 band in the flow on a phone, the whole billboard from a tablet. It opens the title (the keyboard's
-          way there is "More info"). */}
+      {/* The art (7.14), never cut across: a band in the flow — 2:1 on a phone, 16:9 from sm — on a phone, a portrait
+          tablet or a squarish window; from md on a screen no taller than 5:4, a whole 16:9 picture on the end side, 80 %
+          of the billboard's width, its start edge and foot dissolving into the stage the text stands on. It opens the
+          title (the keyboard's way there is "More info"). */}
       <Link
         href={href}
         tabIndex={-1}
         aria-hidden
         aria-label={item.title}
         draggable={false}
-        className={clsx("relative -z-20 block aspect-2/1 md:absolute md:inset-0 md:aspect-auto", section && "max-md:aspect-auto max-md:h-[calc(4rem+62.5vw)]")}
+        className={clsx(
+          "relative -z-20 block aspect-2/1 art-band:sm:aspect-video",
+          "art-over:absolute art-over:end-0 art-over:top-0 art-over:aspect-video art-over:w-4/5 art-over:mask-b-from-75% art-over:ltr:mask-l-from-70% art-over:rtl:mask-r-from-70%",
+          // A section's band is taller: its name and controls stand over its top (2026-10-25; the owner kept them over
+          // the art on 2026-11-08, when they stood above it for a try).
+          // Its height and width are set, so a ratio (16:9 from sm) can't widen the band past the screen.
+          section && "art-band:aspect-auto art-band:h-[calc(4rem+62.5vw)] art-band:w-full",
+        )}
       >
         {items.map((f, i) => {
           const near = i === index || (loaded && i === (index + 1) % items.length);
@@ -208,28 +219,37 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                   alt=""
                   fetchPriority={i === 0 ? "high" : "low"}
                   draggable={false}
-                  className="size-full object-cover object-[50%_30%] md:object-[50%_22%]"
+                  // A 2:1 band loses a ninth of a 16:9 picture's height: its foot, where heads aren't.
+                  className="size-full object-cover object-[50%_10%]"
                 />
               )}
             </div>
           );
         })}
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent md:hidden" />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-stage to-transparent art-over:hidden" />
       </Link>
       {/* Scrims: header legibility, the text column (--scrim-start: what keeps a logo or a name legible, with no glow
           around it), and the hand-off into the page. Always dark over artwork (3.5). */}
       {/* The scrims and the text column let a press through to the art; the title and the controls take their own. */}
-      {hero && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent max-md:hidden" />}
-      {section && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 bg-linear-to-b from-stage/90 via-stage/60 to-transparent md:h-64" />}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% max-md:hidden rtl:bg-linear-to-l" />
+      {hero && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent art-band:hidden" />}
+      {/* A section's name and controls over the top of the art: a deep scrim over a band; beside a 16:9 picture they stand
+          mostly on the stage and its dissolving edge, and one a little deeper than the home's is enough (heads at the
+          top of the picture stay lit). */}
+      {section && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 bg-linear-to-b from-stage/90 via-stage/60 to-transparent art-over:from-stage/80 art-over:via-transparent"
+        />
+      )}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% art-band:hidden rtl:bg-linear-to-l" />
       {/* Dark theme: into the page, where the first shelf comes up onto it; light theme: an even dark edge (3.5, X-27). */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-t from-bg via-stage/55 to-transparent max-md:hidden in-data-[theme=light]:from-stage" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-t from-bg via-stage/55 to-transparent art-band:hidden in-data-[theme=light]:from-stage" />
 
       <div
         className={clsx(
-          "stage page-x pointer-events-none relative mx-auto flex max-w-media flex-col pb-6 md:w-full md:flex-1 md:justify-end md:pb-16 md:in-data-[theme=dark]:pb-44",
+          "stage page-x pointer-events-none relative mx-auto flex max-w-media flex-col pb-6 art-over:w-full art-over:flex-1 art-over:justify-end art-over:pb-16 art-over:in-data-[theme=dark]:pb-44",
           // Room for the header above the text (and the section's title row under it).
-          hero ? "md:pt-[calc(var(--header-h)+2rem)]" : section && "md:pt-[calc(var(--header-h)+6rem)]",
+          hero ? "art-over:pt-[calc(var(--header-h)+2rem)]" : section && "art-over:pt-[calc(var(--header-h)+6rem)]",
         )}
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-8">

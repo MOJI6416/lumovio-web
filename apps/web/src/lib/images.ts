@@ -47,11 +47,13 @@ export function backdropSrcSet(path: string | null | undefined): string | undefi
 }
 
 /**
- * The width a full-bleed backdrop is drawn at, for its srcSet: the window's, but no more than 1280 px below 1600 px
- * windows. The art sits under a dark scrim (3.5), where TMDB's 1280 copy is as sharp to the eye as the 1920 one and a
- * third of its weight (631 → ~250 KB on a 1440 laptop: the billboard is the home page's largest paint, 2026-11-06).
+ * The width a hero's backdrop is drawn at, for its srcSet (design-system 7.14, 2026-11-08): 80 % of the window beside
+ * the text (from md on a screen no taller than 5:4 — globals.css `art-over`), the window's width as a band above it.
+ * Beside the text that is no more than 1280 px below 1600 px windows, as before: TMDB's 1280 copy is as sharp to the eye
+ * there as the 1920 one and a third of its weight (the billboard is the home page's largest paint, 2026-11-06). A band
+ * on a portrait tablet used to be drawn 1.67 times its 768 px — sized for the window, stretched to the billboard's height.
  */
-export const BACKDROP_SIZES = "(min-width: 1600px) 100vw, min(100vw, 1280px)";
+export const BACKDROP_SIZES = "(min-width: 48rem) and (min-aspect-ratio: 5/4) 80vw, 100vw";
 
 /**
  * Asks for the page's first backdrop from the document's head (React's preload), so the browser fetches it with the

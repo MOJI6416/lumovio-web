@@ -5,6 +5,12 @@
 /* 7.19 The site opened from a home screen (a phone's web app): no browser buttons around it. */
 @custom-variant standalone (@media (display-mode: standalone));
 
+/* 7.14 The hero's art (2026-11-08): beside the text on a screen from md and no taller than 5:4 (`art-over`: a 16:9
+   picture on the end side of the hero, the text on the stage before it); above the text on a phone, a portrait tablet
+   or a squarish window (`art-band`: a band of art, the text under it). The two never apply at once. */
+@custom-variant art-over (@media (min-width: 48rem) and (min-aspect-ratio: 5/4));
+@custom-variant art-band (@media not all and (min-width: 48rem) and (min-aspect-ratio: 5/4));
+
 /* ───────────── Lumovio design tokens ─────────────
  * docs/design/design-system.md, sections 3–6 and 10.3. Components use role names only (bg-surface-1,
  * text-text-2, z-dialog, rounded-sm …); hex and rgb() stay in this file.
