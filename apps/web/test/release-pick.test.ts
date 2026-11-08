@@ -116,18 +116,14 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
     expect(pickRelease(rankReleases([remux, webdl, bdrip], dune2, ru({ quality: "best" })), ru({ quality: "best" })).chosen?.result).toBe(remux);
   });
 
-  it("sinks a swarm of fewer than five seeders below every healthy release, whatever its picture (the owner, 2026-11-08)", () => {
+  it("sinks a swarm of one or two seeders below the same picture's healthy releases, never below another picture", () => {
     const weak = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 2, 14 * GB, "Kinozal");
     const healthy = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 40, 9 * GB, "Kinozal");
     expect(rankReleases([weak, healthy], dune2, ru())[0]!.result).toBe(healthy);
-    // "4K with 2 peers is worse than 1080p with 20": on a 4K screen too, in "Auto" and "Best"; a healthy 4K still wins.
+    // 4K on a 4K screen stays 4K with two seeders; unknown seeders are not weak.
     const uhd = { hevc: true, hdr: true, uhd: true, dolbyVision: false };
     const weak4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 2, 30 * GB, "Kinozal");
-    expect(rankReleases([weak4k, healthy], dune2, ru({ device: uhd }))[0]!.result).toBe(healthy);
-    expect(rankReleases([weak4k, healthy], dune2, ru({ device: uhd, quality: "best" }))[0]!.result).toBe(healthy);
-    const alive4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 6, 30 * GB, "Kinozal");
-    expect(rankReleases([healthy, alive4k], dune2, ru({ device: uhd }))[0]!.result).toBe(alive4k);
-    // Unknown seeders are not weak.
+    expect(rankReleases([healthy, weak4k], dune2, ru({ device: uhd }))[0]!.result).toBe(weak4k);
     expect(rankReleases([weak, result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", null, 9 * GB, "LostFilm.tv")], dune2, ru())[0]!.result.tracker).toBe("LostFilm.tv");
     // "Smaller file": the healthy one before the smaller one.
     const tiny = result("Dune: Part Two [2024, WEB-DL 720p] Dub + Original (Eng)", 1, 2 * GB, "Kinozal");
@@ -313,36 +309,5 @@ describe("pickRelease for the sources screen (ANY)", () => {
   it("leaves Where to watch as it was (no ANY, 12 options at most)", () => {
     expect(pickRelease(ranked, p, NO_CHOICE)).toEqual(pickRelease(ranked, p, NO_CHOICE, 12));
     expect(pickRelease(ranked, p, NO_CHOICE).option?.key).toBe("uk|dub");
-  });
-});
-
-describe("audio options without multi-voice, Dubbing as a studio (torr-system 2026-11-08)", () => {
-  it("offers no 'multi-voice' option: an unnamed MVO is an option of its language", () => {
-    const ranked = rankReleases([result(name("[2001, BDRip 1080p] 6x MVO")), result(name("[2001, BDRip 720p] MVO (LostFilm)"))], lotr, prefs({ languages: ["ru"] }));
-    const keys = voiceOptions(ranked).map((o) => o.key);
-    expect(keys).toContain("ru|");
-    expect(keys).toContain("ru|LostFilm");
-    expect(keys.some((k) => k.endsWith("|mvo"))).toBe(false);
-  });
-
-  it("ranks a dubbed release first for a profile whose first 'studio' is Dubbing, and offers it first", () => {
-    const list = [result(name("[2001, BDRip 1080p] MVO (LostFilm)"), 90), result(name("[2001, BDRip 1080p] Dub (Невафильм)"), 10)];
-    const ranked = rankReleases(list, lotr, prefs({ languages: ["ru"], studios: ["Dub", "LostFilm"] }));
-    expect(ranked[0]!.result.title).toContain("Dub (Невафильм)");
-    expect(ranked[0]!.studio).toBe("Dub");
-    const pick = pickRelease(ranked, prefs({ languages: ["ru"], studios: ["Dub", "LostFilm"] }));
-    expect(pick.option?.voice).toBe("dub");
-    expect(pick.chosen!.result.title).toContain("Dub (Невафильм)");
-  });
-
-  it("finds Dubbing and every studio in a file whose name says only 'многоголосый' (the owner's screenshot)", () => {
-    const r = result(name("[2001, WEB-DL 1080p] многоголосый"));
-    const file = ["rus|MVO, HDRezka Studio", "rus|MVO, LostFilm", "rus|MVO, NewComers", "rus|MVO, TVShows", "rus|MVO, Red Head Sound", "rus|Дубляж, HDRezka Studio", "eng|Original"];
-    const ranked = rankReleases([r], lotr, prefs({ languages: ["ru"], studios: ["LostFilm"] }), null, null, () => file);
-    expect(ranked[0]!.studio).toBe("LostFilm");
-    const keys = voiceOptions(ranked).map((o) => o.key);
-    expect(keys).toEqual(expect.arrayContaining(["ru|HDrezka Studio", "ru|LostFilm", "ru|TVShows", "ru|Red Head Sound"]));
-    const dub = rankReleases([r], lotr, prefs({ languages: ["ru"], studios: ["Dub"] }), null, null, () => file);
-    expect(dub[0]!.studio).toBe("Dub");
   });
 });

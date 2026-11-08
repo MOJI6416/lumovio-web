@@ -1,9 +1,9 @@
 "use client";
 
 import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
-import { ExternalLink, Magnet, Play, Server, Tv } from "lucide-react";
+import { ExternalLink, Play, Server, Tv } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
@@ -23,12 +23,10 @@ import { autoSearchSource } from "@/hooks/useTorrentLookup";
 import { Link } from "@/i18n/navigation";
 import { regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
-import { otherSeasonsOnly } from "@/lib/media/releases";
 import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
-import { startHref, useWatchStart } from "./chosen-season";
-import { sourcesHref, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
@@ -65,26 +63,20 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const { data: lib } = useLibraryState(d.id);
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
-  // "Another release": the search card under the copy, its pills and "Watch" (a release is chosen right here) — on the
-  // TorrServer that searches by itself, else on one that answers: the press is the person's own request to search.
-  const [another, setAnother] = useState(false);
-  const anotherButton = useRef<HTMLButtonElement>(null);
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
-  const ordered = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
+  const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
   const manage = signedIn && !kids;
   const torrServers = manage ? (raw?.sources ?? []).filter((s) => s.kind === "torrserver") : [];
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
-  const anotherSource = search ?? manual;
-  // Where the profile is, or the season picked in "Episodes" (./chosen-season).
-  const ep = useWatchStart(d, lib);
-  // A series: a whole torrent whose name holds other seasons only is no copy of the episode "Watch" starts (T10) — the
-  // player doesn't take it either; with none left, the TorrServer card below searches for that season.
-  const copies = ep ? ordered.filter((s) => !otherSeasonsOnly(s, ep.season, ep.episode)) : ordered;
-  const resume = startHref(d, ep, watchHref(d, lib?.progress));
+  // A torrent's files bound to episodes of this series (they are not copies of their own).
+  const hashOf = (s: { externalId: string }) => s.externalId.split(":")[0]!.toLowerCase();
+  const episodeFilesOf = (copy: Copy) =>
+    (raw?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.episode !== null && x.connectionId === copy.connectionId && hashOf(x) === hashOf(copy));
+  const resume = watchHref(d, lib?.progress);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
@@ -104,13 +96,13 @@ export function Availability({ title: d }: { title: TitleCore }) {
       heard: heard ?? q.words[0] ?? s.connectionName,
       // The marks and what they don't say; without marks, the version in words unless the heading already says it.
       quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      // A release already added to the profile's TorrServer says so in one phrase, not "On «Earth» · TorrServer".
-      where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, d.originalLanguage),
     };
   };
   // "Watch on TV" (8.18) beside a copy's "Watch": that copy, from where the profile is.
   const tcard = useTranslations("card");
+  const ep = d.kind === "tv" ? startEpisode(d, lib?.progress) : null;
   const cast = (s: Copy, size: "md" | "lg") => (
     <CastButton
       titleId={d.id}
@@ -119,7 +111,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
     />
   );
   const more = (s: Copy, size: "md" | "lg") => (
-    <CopyActions copy={s} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
+    <CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
   );
 
   let main: ReactNode = null;
@@ -166,7 +158,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
             <>
               <Link href={playOf(first)} className={buttonClass("primary", "lg")}>
                 <Play aria-hidden className="fill-current" />
-                {ep ? t("tsWatchEpisode", ep) : t("tsWatch")}
+                {t("tsWatch")}
               </Link>
               {cast(first, "lg")}
               {more(first, "lg")}
@@ -198,7 +190,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
                     <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:[&>*:first-child]:flex-1">
                       <Link href={playOf(s)} className={buttonClass("secondary", "md")}>
                         <Play aria-hidden className="fill-current" />
-                        {ep ? t("tsWatchEpisode", ep) : t("tsWatch")}
+                        {t("tsWatch")}
                       </Link>
                       {cast(s, "md")}
                       {more(s, "md")}
@@ -209,27 +201,10 @@ export function Availability({ title: d }: { title: TitleCore }) {
             </ul>
           </section>
         )}
-        {anotherSource && another && (
-          <TorrentLookupPanel
-            title={d}
-            source={anotherSource}
-            onClose={() => {
-              setAnother(false);
-              requestAnimationFrame(() => anotherButton.current?.focus());
-            }}
-          />
-        )}
         {torrServers.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {anotherSource && !another && (
-              <Button ref={anotherButton} variant="secondary" size="md" icon={Magnet} onClick={() => setAnother(true)}>
-                {tp("otherRelease")}
-              </Button>
-            )}
-            <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume, "&find=1")}>
-              {tp("allSources")}
-            </ActionLink>
-          </div>
+          <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
+            {tp("allSources")}
+          </ActionLink>
         )}
       </>
     );
@@ -244,7 +219,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
         heading={manual.name}
         where="TorrServer"
         actions={
-          <Link id={FIND_SOURCE_ID} href={sourcesHref(resume, "&find=1")} className={buttonClass("secondary", "lg")}>
+          <Link id={FIND_SOURCE_ID} href={sourcesHref(resume)} className={buttonClass("secondary", "lg")}>
             {tp("findSource")}
           </Link>
         }

@@ -50,11 +50,8 @@ export interface ManagedTorrent {
   addedAt: number | null;
 }
 
-/**
- * Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title } }` (`title` since SRC-06); since 2026-11-08
- * also `addedAt` (ms) and `played` — false from the add until a player first gets the file (`markPlayed`).
- */
-export function lumovioData(data: string | undefined): { titleId?: string; title?: string; addedAt?: number; played?: boolean } | null {
+/** Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title } }` (`title` since SRC-06). */
+function lumovioData(data: string | undefined): { titleId?: string; title?: string } | null {
   try {
     const mark = data ? JSON.parse(data)?.lumovio : null;
     return mark && typeof mark === "object" ? mark : null;
@@ -90,43 +87,6 @@ export function managedTorrents(list: ListedTorrent[], index: TorrentIndexEntry[
       };
     })
     .sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
-}
-
-/**
- * How long a torrent Lumovio added may wait for its first playback: one that never reached a player in this time (no
- * metadata, no peers) is taken off the server at the next add (`sweepUnplayed`).
- */
-export const UNPLAYED_MINUTES = 30;
-
-/**
- * Torrents Lumovio added that never reached a player within `UNPLAYED_MINUTES`: their mark says `played: false` with
- * the time of the add. Torrents without that mark — added in TorrServer's own interface or by another app, added by
- * Lumovio before the mark existed, or already there when Lumovio added them — are never in it.
- */
-export function unplayedHashes(list: ListedTorrent[], now = Date.now()): string[] {
-  return list
-    .filter((t) => {
-      const mark = lumovioData(t.data);
-      return mark?.played === false && typeof mark.addedAt === "number" && now - mark.addedAt > UNPLAYED_MINUTES * 60_000;
-    })
-    .map((t) => t.hash.toLowerCase());
-}
-
-/** Takes off this TorrServer (and the index) what Lumovio added and never played (`unplayedHashes`), but `keep`. */
-export async function sweepUnplayed(connectionId: string, keep: string | null = null): Promise<string[]> {
-  const ts = await torrServerFor(connectionId);
-  const hashes = unplayedHashes(asTorrentList(await ts.list())).filter((h) => h !== keep);
-  if (hashes.length > 0) await removeTorrents(connectionId, hashes);
-  return hashes;
-}
-
-/** The torrent reached a player: its mark says so, and it is no longer swept. Only a mark that says `played: false` is touched. */
-export async function markPlayed(connectionId: string, hash: string): Promise<void> {
-  const ts = await torrServerFor(connectionId);
-  const t = await ts.get(hash);
-  const mark = lumovioData(t?.data);
-  if (!t || mark?.played !== false) return;
-  await ts.set(hash, t.title, t.poster ?? "", JSON.stringify({ lumovio: { ...mark, played: true } }));
 }
 
 /** Hashes the index links on this server that its full list doesn't have (removed in TorrServer's own UI, say). */

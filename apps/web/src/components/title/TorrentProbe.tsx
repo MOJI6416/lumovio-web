@@ -7,15 +7,14 @@ import { useEffect, useMemo } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
-import { resolutionWord } from "@/components/sources/QualityBadges";
-import { releaseMarks, useReleaseText } from "@/components/sources/release-text";
+import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
 import { pickRelease } from "@/lib/media/release-pick";
 import { bestOf } from "@/lib/media/releases";
-import { addTorrentSource, dropAdded } from "@/lib/media/torrent-source";
+import { addTorrentSource } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { startEpisode, type TitleCore, watchHref } from "./core";
@@ -68,10 +67,10 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
 
   // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
   const marks = chosen ? releaseMarks(chosen.info) : [];
-  // The resolution in words beside the marks: 1080p or 720p under HD, SD.
+  // The resolution in words only where no mark says it: 720p (under HD), SD.
   const summary = chosen
     ? [
-        resolutionWord(chosen.info.resolution),
+        chosen.info.resolution === 720 || chosen.info.resolution === 480 ? RESOLUTION[chosen.info.resolution] : null,
         text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio),
       ]
         .filter(Boolean)
@@ -104,11 +103,8 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
         try {
           const added = await addTorrentSource(source.id, d, null, chosen.result);
           if (!added) throw new Error(tp("addFailed"));
-          if (dropped) {
-            dropAdded(source.id, added);
-            return false;
-          }
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
+          if (dropped) return false;
           // The chosen dubbing goes along, so the player starts that studio's track (as "Where to watch" does).
           router.push(`${href}${href.includes("?") ? "&" : "?"}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
           return true;

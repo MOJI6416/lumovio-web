@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
-import { phoneSafe, TV_APP_UA } from "@/lib/tv";
+import { TV_APP_UA } from "@/lib/tv";
 import { TvLayer } from "../nav/TvLayer";
 import { TvNavProvider } from "../nav/TvNav";
 import { ContinueOnPhone } from "./ContinueOnPhone";
@@ -42,8 +42,7 @@ function AppUpdate() {
 
 /**
  * The TV app (apps/tv-android) opens nothing but the site: an address elsewhere (a service's page, a legal source) comes
- * here as `lumovio:external` and is offered as a QR code to open on a phone. A player's address (an older app that
- * doesn't open VLC itself) carries the server's password: it is never shown — the app is asked to update instead (P2).
+ * here as `lumovio:external` and is offered as a QR code to open on a phone.
  */
 function ExternalLinks() {
   const t = useTranslations("tvui");
@@ -56,13 +55,7 @@ function ExternalLinks() {
   if (!url) return null;
   return (
     <TvLayer look="dialog" className="max-w-240" label={t("phoneTitle")} onClose={() => setUrl(null)}>
-      {() =>
-        phoneSafe(url) ? (
-          <ContinueOnPhone url={url} title={t("phoneTitle")} text={t("externalText")} />
-        ) : (
-          <p className="text-body-l text-text-1">{t("externalAppOld")}</p>
-        )
-      }
+      {() => <ContinueOnPhone url={url} title={t("phoneTitle")} text={t("externalText")} />}
     </TvLayer>
   );
 }

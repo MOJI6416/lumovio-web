@@ -1,16 +1,15 @@
 "use client";
 
 import type { ConnectionSummary, ReleaseQuality, TitleDetails } from "@lumovio/contracts";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { type Edition, pickRelease, sourcesPick } from "@/lib/media/release-pick";
-import { isDubStudio, optionIsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
-import { lookupTracks } from "@/lib/media/release-tracks";
+import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
+import { creditsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -72,8 +71,6 @@ export interface FinderPick {
   linked: boolean;
   /** The release in words ("1080p · WEB-DL · Russian · dubbed"), for the stages of starting it. */
   version: string;
-  /** Releases of the same audio and picture to add instead if the server doesn't take this one (item 3). */
-  fallbacks: TsSearchResult[];
 }
 
 /**
@@ -113,7 +110,7 @@ export interface FinderProps {
   fileTracks?: (r: TsSearchResult) => readonly string[] | null;
   start?: FinderStart;
   /** Search right away when nothing was searched yet (the sources screen was asked for). */
-  autoStart?: boolean | "now";
+  autoStart?: boolean;
   /** Adding it and starting it are the screen's stages. `anchor`: the row's "Watch", for coming back to the same place. */
   onPick: (pick: FinderPick, anchor: Element | null) => void;
   /**
@@ -179,11 +176,10 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     if (!cached && connections.find((c) => c.id === connId)?.settings.autoSearch) void search();
   }, [connId]);
   // One first search when the screen was asked for and nothing is known yet — only on a server that
-  // may search by itself (its "search automatically" setting), or when the person asked for one ("Find a source", T14:
-  // "now"); elsewhere the search waits for a tap.
+  // may search by itself (its "search automatically" setting); elsewhere the search waits for a tap.
   // biome-ignore lint/correctness/useExhaustiveDependencies: on open only
   useEffect(() => {
-    if (autoStart && !found && (autoStart === "now" || connections.find((c) => c.id === connId)?.settings.autoSearch)) void search();
+    if (autoStart && !found && connections.find((c) => c.id === connId)?.settings.autoSearch) void search();
     return () => run.current?.abort();
   }, []);
 
@@ -222,23 +218,15 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
 
   // Releases of this title first, best for the profile's languages, studios, mode and this device; the
   // rest follow by seeders (the indexer's numbers; unknown ones last), so a custom query still shows everything.
-  // The shared cache of releases' file tracks (7.15 «Чтение дорожек заранее»), under a copy's own read.
-  const shared = useQuery({
-    queryKey: ["releaseTracks", ...lookupKey(profileId, connId, d.id), found?.at ?? 0, found?.query ?? ""],
-    enabled: Boolean(profileId && found?.results.length),
-    staleTime: 30 * 60_000,
-    queryFn: () => lookupTracks(found?.results ?? []),
-  }).data;
-  const fileOf = useMemo(() => (shared ? (r: TsSearchResult) => fileTracks?.(r) ?? shared.get(r.title) : (fileTracks ?? null)), [shared, fileTracks]);
   const view = useMemo(() => {
     if (!found) return null;
     // An episode is wanted: a release whose name holds other seasons (or other episodes of the season) only sinks.
     // A result that is a copy already on the server: its studios as its file's tracks name them ("6x MVO").
-    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileOf);
+    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileTracks ?? null);
     const mine = new Set(ranked.map((x) => x.result.link));
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
-  }, [found, d, prefs, season, episode, fileOf]);
+  }, [found, d, prefs, season, episode, fileTracks]);
   // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
   const options = useMemo(() => {
     // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
@@ -249,7 +237,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     };
     // In a language, the profile's studios first, in their order ("1 — LostFilm, 2 — HDRezka"), as "Where to watch" offers them.
     const studio = (o: VoiceOption) => {
-      const i = base.studios.findIndex((s) => optionIsStudio(o, s));
+      const i = o.studio ? base.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
       return i >= 0 ? i : base.studios.length;
     };
     return all
@@ -308,7 +296,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   // screen of "All releases" lists every audio (the card is the same release either way).
   const titleDefault = useMemo(() => (view && !modeInSort ? (pickRelease(view.ranked, base).option?.key ?? null) : null), [view, base, modeInSort]);
   const siteVoice = voice !== null && voice === startVoice.current && voice === titleDefault ? null : voice;
-  const choice = useMemo(() => (modeInSort || !view ? null : sourcesPick(view.ranked, base, { voice: siteVoice, edition: edition as Edition | null, picture })), [modeInSort, view, base, siteVoice, edition, picture]);
+  const choice = useMemo(() => (modeInSort || !view ? null : pickRelease(view.ranked, base, { voice: siteVoice ?? ANY, edition: (edition as Edition | null) ?? ANY, picture }, 40)), [modeInSort, view, base, siteVoice, edition, picture]);
   /** The site's choices, each narrowing the next and starting the list again (the ones after it go back to "any"). */
   const choose = (next: { voice?: string | null; edition?: string | null; picture?: string | null; mode?: ReleaseQuality }) => {
     // The title page's audio is read once: whatever is chosen here keeps it as it is shown now (a new mode reranks the
@@ -353,7 +341,6 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     if (!x) return null;
     const keys = voiceKeys(x);
     if (voice !== null && keys.includes(voice)) return voice;
-    if (x.studio && isDubStudio(x.studio)) return keys.find((k) => k.endsWith("|dub")) ?? null;
     if (x.studio) return keys.find((k) => k.endsWith(`|${x.studio}`)) ?? `${x.language ?? ""}|${x.studio}`;
     if (x.info.studios.length === 1) return keys.find((k) => k.endsWith(`|${x.info.studios[0]}`)) ?? null;
     return x.language ? (keys.find((k) => k.startsWith(`${x.language}|`)) ?? null) : null;
@@ -366,20 +353,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const x = view?.byLink.get(r.link);
     return x ? [text.picture(x.info), heard(x)].filter(Boolean).join(" · ") : r.title;
   };
-  // Two releases a failed add falls back on (item 3, S3): the same audio and picture, alive — another tracker's first
-  // (a tracker that refused one release usually refuses its others), then the list's order.
-  const fallbacks = (r: TsSearchResult): TsSearchResult[] => {
-    const x = view?.byLink.get(r.link);
-    if (!x || !view) return [];
-    const keys = voiceKeys(x);
-    return view.ranked
-      .filter((y) => y !== x && !y.dead && !y.info.cam && y.holds !== false && y.picture === x.picture && voiceKeys(y).some((k) => keys.includes(k)))
-      .sort((a, b) => Number(a.result.tracker === r.tracker) - Number(b.result.tracker === r.tracker))
-      .slice(0, 2)
-      .map((y) => y.result);
-  };
-  const pick = (r: TsSearchResult, anchor: Element | null) =>
-    onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r), fallbacks: isLinked(r) ? [] : fallbacks(r) }, anchor);
+  const pick = (r: TsSearchResult, anchor: Element | null) => onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r) }, anchor);
 
   const minutes = found ? Math.max(0, Math.round((Date.now() - found.at) / 60_000)) : 0;
   // "Russian · HDrezka Studio · 32": the language first, so one studio in two languages is two clear options (SRC-04).

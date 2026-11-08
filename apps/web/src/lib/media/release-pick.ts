@@ -1,5 +1,5 @@
 import { type Edition, editionOf } from "./editions";
-import { isDubStudio, optionIsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
+import { creditsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
 
 export { type Edition, editionOf };
 
@@ -63,11 +63,9 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
   };
   const hd = (o: VoiceOption) => 2 - o.best.floor;
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
-  // The profile's «Дубляж» is any dubbing, so a studio's dub (Пифагор) matches it too — but after the dubbing option
-  // itself: a studio the profile doesn't list never goes first by its seeders (owner, Бумажный дом).
   const studio = (o: VoiceOption) => {
-    const i = prefs.studios.findIndex((s) => optionIsStudio(o, s));
-    return i < 0 ? prefs.studios.length : i + (isDubStudio(prefs.studios[i]!) && o.studio !== null ? 0.5 : 0);
+    const i = o.studio ? prefs.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+    return i < 0 ? prefs.studios.length : i;
   };
   return options
     .map((o, i) => ({ o, i }))
@@ -109,9 +107,8 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   const anyVoice = choice.voice === ANY;
   const option = anyVoice ? undefined : (options.find((o) => o.key === choice.voice) ?? options[0]);
   if (!option && !anyVoice) {
-    // Never a cinema recording, even as the last resort (T4): only those found is said as such, not as "found".
     const x = ranked[0];
-    const chosen = x && !x.dead && x.holds !== false && !x.info.cam ? x : undefined;
+    const chosen = x && !x.dead && x.holds !== false ? x : undefined;
     return { options, option, editions: [], edition: null, versions: [], version: undefined, pool: chosen ? [chosen] : [], chosen };
   }
   const pool = alive.filter((x) => !x.info.cam && !x.dead && (!option || voiceKeys(x).includes(option.key)));
@@ -139,31 +136,4 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   const chosen = anyCut && !choice.picture ? lead : (version?.best ?? inCut[0]);
   // Every cut: the one shown is the chosen release's own (a release without a cut in its name is the theatrical one).
   return { options, option, editions: many ? editions : [], edition: anyCut && chosen ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
-}
-
-/**
- * The sources screen's short list (item 5, S6): releases a person can't tell apart — one audio, picture, source, cut and
- * pack — fold into the first of them (the list's order: the best by it). A cinema recording stays apart.
- */
-export function foldReleases(ranked: RankedRelease[]): RankedRelease[] {
-  const seen = new Set<string>();
-  return ranked.filter((x) => {
-    const p = x.info.pack;
-    const k = [voiceKeys(x).join(","), x.picture, x.info.source, x.info.cam, editionOf(x.result.title), p.seasons?.from, p.seasons?.to, p.episodes?.from, p.episodes?.to].join("|");
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-}
-
-/**
- * The sources screen's pick (its card) and list (`pool`): every audio and cut listed until one is chosen, and the card
- * the release "Where to watch" recommends while nothing is — one function for both, so the title and its sources never
- * recommend different releases (the owner, 2026-11-08). A choice made on the screen picks within it.
- */
-export function sourcesPick(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "languages" | "studios">, chosen: { voice: string | null; edition: Edition | null; picture: string | null }, max = 40): ReleasePick {
-  const pick = pickRelease(ranked, prefs, { voice: chosen.voice ?? ANY, edition: chosen.edition ?? ANY, picture: chosen.picture }, max);
-  if (chosen.voice !== null || chosen.edition !== null || chosen.picture !== null) return pick;
-  const title = pickRelease(ranked, prefs).chosen;
-  return title ? { ...pick, chosen: title } : pick;
 }

@@ -84,8 +84,7 @@ export function CopyChoice({
     return {
       heard: heard ?? q.words[0] ?? s.connectionName,
       quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      // A release already added to the profile's TorrServer says so in one phrase, not "On «Earth» · TorrServer".
-      where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, originalLanguage),
     };
   };

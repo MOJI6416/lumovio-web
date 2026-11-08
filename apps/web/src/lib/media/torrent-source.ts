@@ -23,18 +23,10 @@ export async function torrServerFor(connectionId: string) {
 export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
   const ts = await torrServerFor(connectionId);
   const links = r.origins?.map((o) => o.link) ?? [r.link];
-  // What is there already: a torrent the server had before this add is never marked to be swept as unplayed, and it
-  // comes out of the add as it went in.
-  const before = await ts.list().then(
-    (list) => new Map(list.map((t) => [t.hash.toLowerCase(), t])),
-    () => null,
-  );
-  const known = r.hash ? before?.has(r.hash.toLowerCase()) : false;
-  const data = { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, ...(before && !known ? { addedAt: Date.now(), played: false } : {}) };
   let tor: Awaited<ReturnType<typeof ts.add>> | null = null;
   for (const [i, link] of links.entries()) {
     try {
-      tor = await ts.add(link, r.title.slice(0, 250), data, tmdbImage(d.posterPath, "w342"));
+      tor = await ts.add(link, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}` }, tmdbImage(d.posterPath, "w342"));
       if (tor?.hash) break;
     } catch (e) {
       if (i === links.length - 1) throw e;
@@ -42,56 +34,10 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
   }
   if (!tor?.hash) return null;
   const hash = tor.hash.toLowerCase();
-  // It was there before (an indexer gives no hash to check first): the add rewrote its name, poster and data — they go
-  // back as they were, so nothing marks it to be swept or cleared as Lumovio's own. The index links it all the same.
-  const had = before?.get(hash);
-  if (had) await ts.set(had.hash, had.title, had.poster ?? "", had.data ?? "").catch(() => {}); // ui-lint-ignore swallowed-error: the add itself succeeded; the torrent stays on the server either way
-  // What Lumovio added before and never played goes now (UNPLAYED_MINUTES), off the way of this viewing.
-  void import("./torrent-manage").then((m) => m.sweepUnplayed(connectionId, hash)).catch(() => {}); // ui-lint-ignore swallowed-error: the sweep is housekeeping in the background; the next add tries again
   const label = r.title.slice(0, 190);
   await api(`/api/connections/${connectionId}/index`, {
     method: "POST",
     json: { mode: "merge", entries: [{ titleId: d.id, externalId: hash, season: null, episode: null, label, quality: null }] },
   });
-  // `fresh`: this add put it on the server (it wasn't in the list read just before); unknown counts as not.
-  return { hash, label, fresh: Boolean(before) && !had };
-}
-
-/**
- * Adds the first of these releases the server takes (item 3, S3): one indexer's link out of date or a tracker refusing
- * doesn't end the launch while another release of the same audio and picture is there. `onNext` says so before each
- * next try; `live` stops the tries once the launch was cancelled. Null when the server added none and said nothing; the
- * last failure is thrown otherwise.
- */
-export async function addFirst(
-  connectionId: string,
-  d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">,
-  season: number | null,
-  releases: TsSearchResult[],
-  { onNext, live = () => true }: { onNext?: () => void; live?: () => boolean } = {},
-) {
-  let failure: unknown = null;
-  for (const [i, r] of releases.entries()) {
-    if (i > 0) {
-      if (!live()) break;
-      onNext?.();
-    }
-    try {
-      const added = await addTorrentSource(connectionId, d, season, r);
-      if (added) return { ...added, release: r };
-    } catch (e) {
-      failure = e;
-    }
-  }
-  if (failure) throw failure;
-  return null;
-}
-
-/**
- * A launch cancelled while its release was being added (A16, P7): what it added goes, from the server and the index;
- * a torrent that was on the server before stays — only `fresh` is ever removed.
- */
-export function dropAdded(connectionId: string, added: { hash: string; fresh: boolean } | null | undefined): void {
-  if (!added?.fresh) return;
-  void import("./torrent-manage").then((m) => m.removeTorrents(connectionId, [added.hash])).catch(() => {}); // ui-lint-ignore swallowed-error: a leftover is swept with the unplayed ones after 30 minutes
+  return { hash, label };
 }

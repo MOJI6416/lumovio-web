@@ -7,7 +7,7 @@
  *    Video bytes never pass through Lumovio's backend.
  * 2. Offline fallback for page navigations.
  */
-const VERSION = "lumovio-sw-6";
+const VERSION = "lumovio-sw-5";
 const creds = new Map();
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -20,34 +20,20 @@ function basic(user, pass) {
   return `Basic ${btoa(bin)}`;
 }
 
-// One request for a connection's password, however many ranges and subtitles ask at once (60 a minute is the API's
-// limit); kept 10 minutes, dropped on a failure, a 401, sign-out and a change of profile.
-function credentialsFor(connectionId) {
+async function credentialsFor(connectionId) {
   const cached = creds.get(connectionId);
-  if (cached && cached.exp > Date.now()) return cached.value;
-  const value = (async () => {
-    const res = await fetch(`/api/connections/${connectionId}/credentials`, { credentials: "same-origin", cache: "no-store" });
-    if (!res.ok) throw new Error(`credentials ${res.status}`);
-    const body = await res.json();
-    const a = body.auth || {};
-    return {
-      base: String(body.baseUrl).replace(/\/+$/, ""),
-      header: a.kind === "torrserver" && a.username ? basic(a.username, a.password) : null,
-    };
-  })();
-  creds.set(connectionId, { value, exp: Date.now() + 10 * 60 * 1000 });
-  value.catch(() => creds.delete(connectionId));
+  if (cached && cached.exp > Date.now()) return cached;
+  const res = await fetch(`/api/connections/${connectionId}/credentials`, { credentials: "same-origin", cache: "no-store" });
+  if (!res.ok) throw new Error(`credentials ${res.status}`);
+  const body = await res.json();
+  const a = body.auth || {};
+  const value = {
+    base: String(body.baseUrl).replace(/\/+$/, ""),
+    header: a.kind === "torrserver" && a.username ? basic(a.username, a.password) : null,
+    exp: Date.now() + 10 * 60 * 1000,
+  };
+  creds.set(connectionId, value);
   return value;
-}
-
-// What the player asks a TorrServer for, and nothing else: a file's stream by its info hash, subtitles, a playlist —
-// never an add by link (`stream?link=<magnet>&save`), settings or removal, and never as a page to open.
-function bridged(path, search, mode) {
-  if (mode === "navigate") return false;
-  if (path.startsWith("subs/") || path.startsWith("play/")) return true;
-  if (!path.startsWith("stream/")) return false;
-  const q = new URLSearchParams(search);
-  return /^[0-9a-f]{40}$/i.test(q.get("link") || "") && q.has("play") && !q.has("save") && !q.has("stat");
 }
 
 const PRIVATE = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?|[^.]+\.local$)/i;
@@ -61,10 +47,6 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   const m = url.pathname.match(/^\/__ts\/([0-9a-f-]{36})\/(.+)$/);
-  if (m && !bridged(m[2], url.search, event.request.mode)) {
-    event.respondWith(new Response("Not a player request", { status: 403 }));
-    return;
-  }
   if (m) {
     event.respondWith(
       (async () => {

@@ -18,7 +18,6 @@ import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "@/components/title/CopyActions";
-import { episodeAfter, isOut } from "@/components/title/core";
 import { useCastReport } from "@/components/tv/cast-report";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
@@ -38,18 +37,16 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { ApiRequestError, api } from "@/lib/api";
 import { reportPlayback } from "@/lib/last-playback";
 import { trackOutcome } from "@/lib/discovery-metrics";
-import { formatClock } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { detectCapabilities } from "@/lib/media/capabilities";
 import { clientFor } from "@/lib/media/clients";
 import { MediaNetError } from "@/lib/media/net";
 import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
-import { otherSeasonsOnly, voiceWish } from "@/lib/media/releases";
-import { orderedSources, sourceRank, startCandidate } from "@/lib/media/source-order";
-import { mediaFailure } from "@/lib/media/stream-break";
-import { forgetTorrents, invalidateAvailability, markPlayed, torrentPresence } from "@/lib/media/torrent-manage";
-import { addFirst, dropAdded } from "@/lib/media/torrent-source";
+import { voiceWish } from "@/lib/media/releases";
+import { orderedSources, sourceRank } from "@/lib/media/source-order";
+import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
+import { addTorrentSource } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
@@ -107,8 +104,6 @@ type Phase =
       message: string;
       prep: Prep;
       retry: (() => void) | null;
-      /** The retry's own words ("Retry from 0:06"); "Retry" otherwise. */
-      retryLabel?: string;
       prepared?: PreparedPlayback;
       gone?: { connectionId: string; hash: string };
       auth?: boolean;
@@ -119,8 +114,6 @@ type Phase =
     };
 
 const KIND_LABEL = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" } as const;
-/** A TorrServer candidate's torrent, "<connection>:<hash>"; null for another server. */
-const torrentOf = (c: Candidate) => (c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId)}` : null);
 /** A failure this screen has already put into words (translated), shown as it is. */
 class ShownError extends Error {}
 const hashOf = (externalId: string) => externalId.split(":")[0]!;
@@ -187,10 +180,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // The audio track chosen in this viewing (the phone sends it to a TV with the viewing).
   const chosenAudio = useRef<number | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  // No copy holds this season (by its files): the sources screen searches for it by itself (autoStart).
-  const [seasonMissing, setSeasonMissing] = useState(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset for another episode
-  useEffect(() => setSeasonMissing(false), [season, episode]);
   // The player of this viewing: shown while playing, kept paused while the screen is shown over it.
   const [active, setActive] = useState<{ candidate: Candidate; prepared: PreparedPlayback } | null>(null);
   const [current, setCurrent] = useState<Candidate | null>(null);
@@ -203,11 +192,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
-  /** The running launch's requests (P7): aborted by "Cancel", by the next launch and when the player goes. */
-  const run = useRef<AbortController | null>(null);
-  useEffect(() => () => run.current?.abort(), []);
-  /** Where each source's stream broke and was quietly restarted (S1). */
-  const resumedAt = useRef(new Map<string, number>());
   const sessionId = useRef(randomId());
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
@@ -252,9 +236,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const list = orderedSources(avail.data, undefined, audioLangs).flatMap(({ server: s }): Candidate[] => {
       // A torrent file bound to another episode is not a source for this one.
       if (s.kind === "torrserver" && s.season !== null && (s.season !== season || s.episode !== episode)) return [];
-      // Nor is a whole torrent whose release name holds other seasons only ("Сезон 1" for season 2): the screen searches
-      // for a release of this season instead of offering that one's files (the owner, 2026-11-08).
-      if (otherSeasonsOnly(s, season, episode)) return [];
       return [toCandidate(s)];
     });
     // Within TorrServer: files bound to exactly this film/episode first (the server lists the latest choice first),
@@ -328,11 +309,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    * to the person — never the first or biggest file in place of the requested one.
    */
   const resolveTorrent = useCallback(
-    async (c: Candidate, explicit: boolean, signal?: AbortSignal): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
+    async (c: Candidate, explicit: boolean): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
       const s = c.server;
       if (s.externalId.includes(":")) return { externalId: s.externalId, file: s.label ?? "", videos: null };
       const ts = (await clientFor(connOf(s))) as ReturnType<typeof torrServerClient>;
-      const { title, files } = await ts.files(s.externalId, signal);
+      const { title, files } = await ts.files(s.externalId);
       // The release's name (the index keeps it): a torrent added before SRC-06 has only the film's name on the server.
       const name = s.label || title || "";
       // How this release numbers the seasons, for numbering the series as releases do (kids profiles send nothing).
@@ -401,10 +382,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     async (start: Candidate, opts: { auto: boolean; audioIndex?: number; added?: string | null; touch?: boolean; fromScreen?: boolean; rebuild?: boolean }) => {
       const my = ++attempt.current;
       const live = () => attempt.current === my;
-      // One controller per launch (P7): "Cancel" or another launch aborts its requests on the server too.
-      run.current?.abort();
-      const ctrl = new AbortController();
-      run.current = ctrl;
       let c = start;
       if (opts.fromScreen) keepPlace(document.activeElement);
       setCurrent(c);
@@ -422,7 +399,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           let externalId = c.server.externalId;
           if (c.provider === "torrserver") {
             show(isBound(c) ? "file" : "files");
-            let r = await resolveTorrent(c, !opts.auto, ctrl.signal);
+            let r = await resolveTorrent(c, !opts.auto);
             if (!live()) return;
             const asked: TorrentFiles[] = [];
             if ("files" in r && opts.auto && d.kind === "tv") {
@@ -430,7 +407,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               asked.push(r);
               for (const other of candidates.filter((x) => x.provider === "torrserver" && !isBound(x) && x.key !== c.key)) {
                 // A torrent that can't be read is skipped: the others are still asked.
-                const o = await optional(resolveTorrent(other, false, ctrl.signal), null);
+                const o = await optional(resolveTorrent(other, false), null);
                 if (!live()) return;
                 if (!o) continue;
                 if ("externalId" in o) {
@@ -442,14 +419,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 asked.push(o);
               }
             } else if ("files" in r) asked.push(r);
-            // No torrent holds this season by its files either (every episode file names another season): the sources
-            // screen searches for this season's release; another season's files are not the way to it.
-            const otherSeason = (x: TorrentFiles) => x.reason === "none" && x.files.length > 0 && x.files.every((f) => "parsed" in f && f.parsed !== null && f.parsed.season !== null && f.parsed.season !== season);
-            if ("files" in r && d.kind === "tv" && asked.length > 0 && asked.every(otherSeason)) {
-              setSeasonMissing(true);
-              setPhase({ kind: "choose" });
-              return;
-            }
             if ("files" in r) {
               // The file stage waits for the person: the torrent's files are offered.
               setPhase({ kind: "pickFile", torrents: asked, added: opts.added ?? null });
@@ -480,7 +449,6 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             voice: c.provider === "torrserver" ? wishedVoice.current : null,
             profile: c.provider === "torrserver" ? heard.current : null,
             rebuild: opts.rebuild,
-            signal: ctrl.signal,
           });
         }
         if (!live()) return;
@@ -492,20 +460,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         // sources screen and the copy's heading then pick and say. Sent only when they differ from what is kept.
         if (c.provider === "torrserver" && signedIn && !isKids && prepared.audio.length > 0) {
           const tracks = prepared.audio.slice(0, 32).map((a) => `${a.lang ?? ""}|${a.label}`.slice(0, 160));
-          if ((c.server.quality?.audioTracks ?? []).join("\n") !== tracks.join("\n")) {
+          if ((c.server.quality?.audioTracks ?? []).join("\n") !== tracks.join("\n"))
             background(api(`/api/connections/${c.server.connectionId}/index/tracks`, { method: "POST", json: { hash: hashOf(c.server.externalId).toLowerCase(), tracks } }).then(() => invalidateAvailability(qc)));
-            // And to the shared cache, under the release's name (a series' bound file is labelled by its file name: not sent).
-            const release = c.server.label && (d.kind === "movie" || !c.server.externalId.includes(":")) ? c.server.label : null;
-            if (release)
-              background(
-                import("@/lib/media/release-tracks").then((m) =>
-                  m.saveTracks({ tracker: null, title: release.slice(0, 250), hash: hashOf(c.server.externalId).toLowerCase(), tracks: m.compactTracks(tracks, d.originalLanguage ?? null), forced: [], via: "player" }),
-                ),
-              );
-          }
         }
-        // The torrent reached a player: it is no longer swept as one that never played (UNPLAYED_MINUTES).
-        if (c.provider === "torrserver" && signedIn) background(markPlayed(c.server.connectionId, hashOf(c.server.externalId).toLowerCase()));
         // No track could be told to be the chosen dubbing: the default plays, and the person is told so.
         if (prepared.voice?.match === "unknown") toast.info(t("voiceTrackUnknown", { studio: prepared.voice.studio }));
 
@@ -568,13 +525,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         if (live()) preparing.current = false;
       }
     },
-    [candidates, connOf, d.id, d.kind, d.originalLanguage, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
+    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
   );
 
   /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
   const cancel = () => {
     attempt.current++;
-    run.current?.abort();
     preparing.current = false;
     setPhase({ kind: "choose" });
     requestAnimationFrame(toList);
@@ -611,12 +567,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const prep: Prep = { stages: stagesFor({ provider: "torrserver", bound: false }, { added: true, episode: d.kind === "tv" }), at: "add", facts: {} };
         setPhase({ kind: "preparing", candidate: null, label: `${pick.version} — ${server}`, prep, fromScreen: true });
         try {
-          // Another release of the same audio and picture when the server doesn't take this one (item 3, S3).
-          const added = await addFirst(pick.connectionId, d, season, [pick.result, ...pick.fallbacks], {
-            live: () => attempt.current === my,
-            onNext: () => setPhase({ kind: "preparing", candidate: null, label: `${t("addRetrying")} · ${pick.version} — ${server}`, prep, fromScreen: true }),
-          });
-          if (attempt.current !== my) return dropAdded(pick.connectionId, added);
+          const added = await addTorrentSource(pick.connectionId, d, season, pick.result);
+          if (attempt.current !== my) return;
           if (!added) throw new ShownError(t("addFailed"));
           ({ hash, label } = added);
         } catch (e) {
@@ -673,7 +625,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (avail.isError) return setPhase({ kind: "choose" });
     if (!avail.data || (signedIn && (progress.isLoading || (conns.isLoading && !isKids)))) return;
     if (picking) return setPhase({ kind: "choose" });
-    const { pick, exact } = startCandidate(candidates, torrentOf, wanted, params.get("from"), Boolean(castId));
+    const sameTorrent = (c: Candidate) => Boolean(wanted?.startsWith(`${c.server.connectionId}:${hashOf(c.server.externalId)}`));
+    const exact = wanted ? candidates.find((c) => c.key === wanted) : undefined;
+    // A copy sent from a phone that this TV doesn't have: the sources screen here, and the phone is told (8.18).
+    const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
     if (params.has("added")) setUrl({ added: null });
@@ -741,23 +696,25 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     );
   };
 
-  const after = useMemo(() => (d.kind !== "tv" || season === null || episode === null ? null : episodeAfter(d.seasons, season, episode)), [d, season, episode]);
+  const nextEp = useMemo(() => {
+    if (d.kind !== "tv" || season === null || episode === null) return null;
+    const s = d.seasons.find((x) => x.seasonNumber === season);
+    if (s && episode < s.episodeCount) return { season, episode: episode + 1 };
+    const ns = d.seasons.find((x) => x.seasonNumber === season + 1);
+    return ns ? { season: season + 1, episode: 1 } : null;
+  }, [d, season, episode]);
   // The next episode's name for its card (PLR-11): the same query as the title page's season browser and the episodes panel.
   const nextSeason = useQuery({
-    queryKey: ["season", d.tmdbId, after?.season ?? 0, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${after!.season}`),
-    enabled: after !== null,
+    queryKey: ["season", d.tmdbId, nextEp?.season ?? 0, locale],
+    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${nextEp!.season}`),
+    enabled: nextEp !== null,
     staleTime: 30 * 60_000,
   });
-  // An announced episode (TMDB counts them) is not next until it is out (P3): no card, no countdown — the end screen.
-  // A season that didn't load leaves the count alone to decide, as before.
-  const afterData = after ? nextSeason.data?.episodes.find((e) => e.episodeNumber === after.episode) : undefined;
-  const nextEp = after && (nextSeason.isError || isOut(afterData?.airDate)) ? after : null;
   // A profile that hides the names (or stills) of unwatched episodes (8.12) gets the number only (the still blurred).
   const spoilers = useSpoilerPrefs();
   const watched = useLibraryState(d.id).data?.watchedEpisodes;
   const nextOpen = nextEp ? episodesOpen(watched)(nextEp.season, nextEp.episode) : false;
-  const nextData = nextEp ? afterData : undefined;
+  const nextData = nextEp ? nextSeason.data?.episodes.find((e) => e.episodeNumber === nextEp.episode) : undefined;
   const nextName = nextEp && !(spoilers.names && !nextOpen) ? nextData?.name : undefined;
   // The episode playing, named under the title (the same season query, usually cached by the title page).
   const thisSeason = useQuery({
@@ -790,10 +747,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
   // The dubbing chosen for this viewing goes on to the series' other episodes (their files have the same tracks).
   const voiceParam = params.get("voice");
-  // Another episode goes on in the release playing now when it holds that one (P4: same quality, audio and server).
-  const fromParam = active && torrentOf(active.candidate);
-  const epHref = (s: number, e: number) =>
-    `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ""}`;
+  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}`;
   // Why there is nothing to play, in the same words as the title page.
   const ws = avail.state;
   const whyNothing =
@@ -849,7 +803,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     existing: linked,
     fileTracks: filesOf.size ? fileTracksOf : undefined,
     start: finderStart,
-    autoStart: phase.kind === "choose" && (picking || candidates.length === 0 || seasonMissing) && (params.get("find") === "1" ? "now" : true),
+    autoStart: phase.kind === "choose" && (picking || candidates.length === 0),
     onPick: (pick, anchor) => void addAndPlay(pick, anchor),
   };
 
@@ -1090,28 +1044,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         complete(pos, last.current.dur ?? pos);
         active.prepared.reportStop?.(pos);
       }}
-      onFatal={(message, code, at = 0) => {
+      onFatal={(message, code) => {
         const c = active.candidate;
         const prepared = active.prepared;
-        // After the first frame a decoder's or network error is the stream that broke, not the file (S1): once per
-        // place it restarts quietly from there; a second break there says so, with a retry from that moment.
-        const played = Math.max(at, last.current.pos);
-        const broke = mediaFailure(code, played, resumedAt.current.get(c.key) ?? null);
-        // Where a restart starts: where it played to, else where this viewing was to start (a continuation at 20:00
-        // that failed before its first frame starts at 20:00 again, not at 0:00 — torr-speed, 2026-11-08).
-        const pos = played || (resumeOverride.current ?? resumeAt);
-        if (broke === "resume") {
-          resumedAt.current.set(c.key, pos);
-          resumeOverride.current = pos;
-          setActive(null);
-          void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index });
-          return;
-        }
         // A TorrServer file whose plain stream this browser couldn't take (a decoder or the password's service worker
         // failed): once, it is rebuilt in the browser from the same position, where it can be — no loop.
-        if (broke === "file" && c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
+        if (c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
           rebuilt.current.add(c.key);
-          resumeOverride.current = pos > 5 ? pos : resumeOverride.current;
+          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
           setActive(null);
           void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index, rebuild: true });
           return;
@@ -1132,21 +1072,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           // The media element's and the rebuild engine's messages are English and technical: not shown.
           // 4: the format; 3: a decoder that said yes and then couldn't (Firefox and HEVC on some PCs).
           message:
-            broke === "broke"
-              ? t("errorStreamBroke")
-              : code === 4
-                ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
-                : code === 3
-                  ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
-                  : t("errorUnknown"),
+            code === 4
+              ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
+              : code === 3
+                ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
+                : t("errorUnknown"),
           prepared,
-          retry: () => {
-            // "Retry" starts where it was meant to: the place it broke, else the continuation's start.
-            resumeOverride.current = pos > 5 ? pos : resumeOverride.current;
-            void prepare(c, { auto: false });
-          },
-          retryLabel: broke === "broke" ? t("retryFrom", { time: formatClock(pos) }) : undefined,
-          cause: broke === "broke" ? "other" : code === 3 || code === 4 ? "unsupported" : "other",
+          retry: () => void prepare(c, { auto: false }),
+          cause: code === 3 || code === 4 ? "unsupported" : "other",
         });
       }}
       castButton={castButton}
@@ -1232,7 +1165,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // The TV shell: the same viewing in the TV's composition (design-system 10.3 «Экран источников», S57).
   if (tvNav) {
     const errorActions = (p: Extract<Phase, { kind: "error" }>): TvAction[] => [
-      ...(p.retry ? [{ label: p.retryLabel ?? tc("retry"), icon: RefreshCw, run: p.retry }] : []),
+      ...(p.retry ? [{ label: tc("retry"), icon: RefreshCw, run: p.retry }] : []),
       ...(p.gone ? [{ label: t("forgetCopy"), icon: Link2Off, run: () => void forget.run(p.gone!), loading: forget.pending }] : []),
       // A server's sign-in is checked on a phone (the shell's "Continue on your phone").
       ...(p.auth ? [{ label: tt("checkConnection"), icon: Settings2, run: () => tvNav.navigate("/settings/connections") }] : []),
@@ -1346,7 +1279,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     <>
       {primaryRetry && p.retry && (
         <Button icon={RefreshCw} onClick={p.retry}>
-          {p.retryLabel ?? tc("retry")}
+          {tc("retry")}
         </Button>
       )}
       {p.gone && (
@@ -1529,8 +1462,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                     signedIn && !isKids
                       ? (copy, size) => (
                           <CopyActions
+                            title={{ ...d, trailer: null }}
                             copy={copy}
                             size={size}
+                            episodes={(avail.data?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.connectionId === copy.connectionId && hashOf(x.externalId).toLowerCase() === hashOf(copy.externalId).toLowerCase())}
                             manage={copy.kind === "torrserver"}
                             onRemove={setRemoval}
                             onDetails={() => setDetails(copy)}

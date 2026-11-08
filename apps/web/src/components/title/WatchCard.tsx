@@ -1,9 +1,8 @@
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { FilterChip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
-import { IconButton } from "@/components/ui/IconButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 /**
@@ -24,8 +23,6 @@ export function WatchCard({
   actions,
   children,
   className,
-  onClose,
-  closeLabel,
 }: {
   /** The heading's id: the card is a region named by it. */
   id: string;
@@ -45,16 +42,9 @@ export function WatchCard({
   /** Under a line: the pickers and a quiet link, or an alert. */
   children?: ReactNode;
   className?: string;
-  /** A card opened on request ("Another release"): × at its end and Esc close it; the opener takes the focus back. */
-  onClose?: () => void;
-  closeLabel?: string;
 }) {
   return (
-    <section
-      aria-labelledby={id}
-      className={cn("rounded-lg bg-surface-1 p-4 sm:p-6", className)}
-      onKeyDown={onClose ? (e) => e.key === "Escape" && !e.defaultPrevented && onClose() : undefined}
-    >
+    <section aria-labelledby={id} className={cn("rounded-lg bg-surface-1 p-4 sm:p-6", className)}>
       <div className="flex items-start gap-4">
         {mark}
         <div className="min-w-0 flex-1 sm:pt-0.5">
@@ -67,7 +57,6 @@ export function WatchCard({
           {where && <p className="mt-1 text-body-s break-words text-text-2">{where}</p>}
           {note && <div className="mt-2 text-body-s text-text-1">{note}</div>}
         </div>
-        {onClose && <IconButton icon={X} label={closeLabel ?? ""} onClick={onClose} className="-me-2 -mt-2 shrink-0" />}
       </div>
       {actions && <div className="mt-5 flex flex-wrap items-center gap-3 max-sm:[&>*:first-child]:flex-1">{actions}</div>}
       {children && <div className="mt-5 flex flex-col gap-4 border-t border-line pt-5">{children}</div>}
@@ -98,12 +87,10 @@ export function ServerMarks() {
 }
 
 /** The card while its answer is on the way: the same layout; a search that takes a while says so in the heading's place. */
-export function WatchCardLoading({ id, kind, status, onClose, closeLabel }: { id: string; kind?: string; status?: string; onClose?: () => void; closeLabel?: string }) {
+export function WatchCardLoading({ id, kind, status }: { id: string; kind?: string; status?: string }) {
   return (
     <WatchCard
       id={id}
-      onClose={onClose}
-      closeLabel={closeLabel}
       mark={kind ? <CardMark kind={kind} /> : <Skeleton shape="full" className="size-12 shrink-0" />}
       heading={
         <>
@@ -130,7 +117,7 @@ const NOT_TOGGLE = { "aria-pressed": undefined };
  * value and a chevron — the catalog's filter pill (7.4), never "selected", since a value is always there. It opens a
  * Menu (`menu`), whose items are MenuCheckboxItems with the current one ticked.
  */
-export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: ReactNode } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "value">>(function PickPill(
+export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">>(function PickPill(
   { name, value, ...rest },
   ref,
 ) {
@@ -145,7 +132,7 @@ export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: Rea
 });
 
 /** A menu item's two lines: the option, then what it comes in. */
-export function PickItem({ name, sub }: { name: ReactNode; sub?: string | null }) {
+export function PickItem({ name, sub }: { name: string; sub?: string | null }) {
   return (
     <>
       <span className="block">{name}</span>

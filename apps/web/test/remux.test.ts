@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canRemuxInBrowser, containerName, type PlaybackCapabilities } from "../src/lib/media/capabilities";
 import { type AudioCoders, choosePlayback, remuxAudioRoute } from "../src/lib/media/playback-choice";
-import { bufferWindow, compatibleMime } from "../src/lib/media/remux";
+import { compatibleMime } from "../src/lib/media/remux";
 
 // Capabilities as the browsers report them (tmp/player-compat/caps.json, 2026-10-25) or, for phones that weren't
 // available, as their platform documents them: the iPhone has only ManagedMediaSource (iOS 17.1+), or nothing.
@@ -167,18 +167,5 @@ describe("containerName and compatibleMime", () => {
     expect(compatibleMime('video/mp4; codecs="avc1.64001e, ac-3"', only('video/mp4; codecs="avc1.64001e, ac-3"'))).toBe('video/mp4; codecs="avc1.64001e, ac-3"');
     // Nothing fits: the type as it is, and Media Source says why.
     expect(compatibleMime('video/mp4; codecs="avc1.64001e, dtsc"', only())).toBe('video/mp4; codecs="avc1.64001e, dtsc"');
-  });
-});
-
-describe("bufferWindow", () => {
-  it("keeps 30 s ahead and behind for an ordinary file or one of unknown size", () => {
-    expect(bufferWindow(null)).toEqual({ ahead: 30, behind: 30 });
-    expect(bufferWindow(1.4e6)).toEqual({ ahead: 30, behind: 19 }); // 11 Mbit/s WEB-DL
-  });
-  it("fits a heavy file into what Media Source takes: a 40 Mbit/s remux gets 13 s ahead and 5 s behind", () => {
-    const w = bufferWindow(4.98e6);
-    expect(w).toEqual({ ahead: 13, behind: 5 });
-    expect((w.ahead + w.behind) * 4.98e6).toBeLessThan(100e6);
-    expect(bufferWindow(12e6)).toEqual({ ahead: 8, behind: 3 }); // never fewer seconds than that
   });
 });

@@ -18,16 +18,13 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
-import { foldReleases } from "@/lib/media/release-pick";
-import { type RankedRelease, releaseKey } from "@/lib/media/releases";
+import type { RankedRelease } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
-import { formatSize, isPack, knownVersions, packWords, QUALITY_MODES, ReleaseLine, useReleaseText, VersionName } from "./release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "./release-text";
 
 const CARD = "finder-card-h";
-/** How many different releases the short list shows before "Show all" (item 5). */
-const SHORT = 8;
 
 /**
  * The sources screen's TorrServer search (design-system 7.15 «Экран источников», S26): "Where to watch" unfolded. The
@@ -44,7 +41,6 @@ export function ReleaseFinder(props: FinderProps) {
   const tt = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tc = useTranslations("common");
-  const ts = useTranslations("settings");
   const locale = useLocale();
   const mediaError = useMediaErrorText();
   // The cut chosen on the title page comes in the address ("&edition=extended"), as its audio and picture do.
@@ -59,7 +55,6 @@ export function ReleaseFinder(props: FinderProps) {
   const lead = props.lead ?? !copiesHere;
   const [restOpen, setRestOpen] = useState(false);
   const [restShown, setRestShown] = useState(PAGE);
-  const [all, setAll] = useState(false);
   const list = useRef<HTMLDivElement>(null);
   const tv = d.kind === "tv";
   const searching = status.kind === "searching";
@@ -155,8 +150,6 @@ export function ReleaseFinder(props: FinderProps) {
 
   const rest = listed.rest;
   const rows = listed.rows;
-  // Eight different releases first, near-identical ones folded (item 5); "Show all" lists every one, a page at a time.
-  const folded = all ? rows.slice(0, f.shown) : foldReleases(rows).slice(0, SHORT);
   const nothingPicked = Boolean(found) && !choice?.chosen;
   return (
     <section aria-labelledby="finder-h" className="flex flex-col gap-8">
@@ -174,11 +167,11 @@ export function ReleaseFinder(props: FinderProps) {
             <SortPill value={f.sort} onChange={(s) => f.setSort(s)} />
           </div>
           <div ref={list}>
-            <ReleaseList rows={folded.map((x) => ({ r: x.result, x }))} f={f} tv={tv} season={season} locale={locale} />
+            <ReleaseList rows={rows.slice(0, f.shown).map((x) => ({ r: x.result, x }))} f={f} tv={tv} season={season} locale={locale} />
           </div>
-          {rows.length > folded.length && (
-            <Button className="self-center" variant="secondary" onClick={() => (all ? f.setShown((n) => n + PAGE) : setAll(true))}>
-              {all ? t("moreResults", { count: rows.length - folded.length }) : ts("showAllCount", { count: rows.length })}
+          {rows.length > f.shown && (
+            <Button className="self-center" variant="secondary" onClick={() => f.setShown((n) => n + PAGE)}>
+              {t("moreResults", { count: rows.length - f.shown })}
             </Button>
           )}
         </section>
@@ -218,7 +211,7 @@ export function ReleaseFinder(props: FinderProps) {
         onWatch={() => {
           const r = f.detailed;
           f.setDetailed(null);
-          if (r) f.pick(r, document.querySelector(`[data-release="${CSS.escape(releaseKey(r))}"]`));
+          if (r) f.pick(r, document.querySelector(`[data-link="${CSS.escape(r.link)}"]`));
         }}
       />
     </section>
@@ -245,6 +238,11 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const option = c.option;
   const found = f.found!;
   const editionName = (e: Edition) => tt(`edition_${e}`);
+  const resolutions = (list: RankedRelease["info"]["resolution"][]) =>
+    [...new Set(list)]
+      .sort((a, b) => (b ?? -1) - (a ?? -1))
+      .map((r) => (r ? RESOLUTION[r] : tt("tsNoResolution")))
+      .join(", ");
   // "Any" audio: what "Watch" plays of the release (the profile's studio), not every track it lists.
   const heard = (option ? text.audio({ info: chosen.info, language: option.language ?? chosen.language }, option.studio) : f.heard(chosen)) || text.option({ studio: null, voice: null, language: null });
   const size = formatSize(chosen.result.size, locale);
@@ -257,15 +255,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const failed = f.status.kind === "error" ? `${t("searchFailed")}. ${t("searchKept", { minutes: f.minutes })}` : null;
   const versionName = c.version ? text.version(c.version.resolution, c.version.range) : "";
   const qualityValue = f.picture ? versionName : [tt(`tsQuality_${f.mode}`), versionName].filter(Boolean).join(" · ");
-  // The pill shows the version as its marks (4K, HDR, Dolby Vision), the mode in words before it.
-  const qualityShown = (
-    <>
-      {f.picture ? null : `${tt(`tsQuality_${f.mode}`)}${c.version ? " · " : ""}`}
-      {c.version && <VersionName resolution={c.version.resolution} range={c.version.range} />}
-    </>
-  );
-  const versions = knownVersions(c.versions);
-  const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] && (option.studio || option.voice) ? text.language(option.language) : null].filter(Boolean).join(", ") : t("anyVoice");
+  const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : t("anyVoice");
   const editionValue = f.edition ? editionName(f.edition as Edition) : t("anyEdition");
   const busy = f.status.kind === "searching";
 
@@ -273,7 +263,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
     <WatchCard
       id={CARD}
       mark={<CardMark kind="torrserver" />}
-      tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: text.studio(chosen.studio!) })}</Tag> : undefined}
+      tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: chosen.studio! })}</Tag> : undefined}
       heading={heard}
       quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
       where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
@@ -301,7 +291,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
       }
       actions={
         <>
-          <Button variant={lead ? "primary" : "secondary"} size="lg" data-release={releaseKey(chosen.result)} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
+          <Button variant={lead ? "primary" : "secondary"} size="lg" data-link={chosen.result.link} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
             <Play aria-hidden className="fill-current" />
             {tt("tsWatch")}
           </Button>
@@ -325,7 +315,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
                   <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => f.choose({ voice: o.key })}>
                     <PickItem
                       name={text.option(o)}
-                      sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, text.resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
+                      sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
                     />
                   </MenuCheckboxItem>
                 ))}
@@ -339,27 +329,27 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
                 <MenuSeparator />
                 {c.editions.map((e) => (
                   <MenuCheckboxItem key={e.key} checked={e.key === f.edition} onCheckedChange={() => f.choose({ edition: e.key })}>
-                    <PickItem name={editionName(e.key)} sub={text.resolutions(e.resolutions)} />
+                    <PickItem name={editionName(e.key)} sub={resolutions(e.resolutions)} />
                   </MenuCheckboxItem>
                 ))}
               </Menu>
             )}
             {c.pool.length > 1 && (
-              <Menu label={tt("pickQuality")} align="start" trigger={<PickPill name={tt("pickQuality")} value={qualityShown} aria-label={tt("pickValue", { name: tt("pickQuality"), value: qualityValue })} />}>
+              <Menu label={tt("pickQuality")} align="start" trigger={<PickPill name={tt("pickQuality")} value={qualityValue} aria-label={tt("pickValue", { name: tt("pickQuality"), value: qualityValue })} />}>
                 {/* The mode picks the version for this screen (Auto), the best one or the smallest file, and orders the list so; a version by hand narrows it. */}
                 {QUALITY_MODES.map((m) => (
                   <MenuCheckboxItem key={m} checked={!f.picture && f.mode === m} onCheckedChange={() => f.choose({ mode: m })}>
                     {tt(`tsQuality_${m}`)}
                   </MenuCheckboxItem>
                 ))}
-                {versions.length > 1 && (
+                {c.versions.length > 1 && (
                   <>
                     <MenuSeparator />
-                    {[...versions]
+                    {[...c.versions]
                       .sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1))
                       .map((v) => (
                         <MenuCheckboxItem key={v.key} checked={f.picture === v.key} onCheckedChange={() => f.choose({ picture: v.key })}>
-                          <PickItem name={<VersionName resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
+                          <PickItem name={text.version(v.resolution, v.range)} sub={formatSize(v.best.result.size, locale)} />
                         </MenuCheckboxItem>
                       ))}
                   </>
@@ -510,7 +500,7 @@ function ReleaseItem({
   ) : linked ? (
     <Tag>{t("alreadyAdded")}</Tag>
   ) : x?.studio ? (
-    <Tag>{tt("tsYourVoice", { studio: text.studio(x.studio) })}</Tag>
+    <Tag>{tt("tsYourVoice", { studio: x.studio })}</Tag>
   ) : null;
   return (
     <li className="flex items-center gap-3 p-4">
@@ -523,11 +513,11 @@ function ReleaseItem({
         <p className="mt-0.5 text-body-s break-words text-text-2">{where}</p>
       </div>
       {/* As the card: "Watch", then "i" for the details (a circle "▶" on a phone, where the row is narrow). */}
-      <Button variant="secondary" data-release={releaseKey(r)} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 max-sm:hidden">
+      <Button variant="secondary" data-link={r.link} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 max-sm:hidden">
         <Play aria-hidden className="fill-current" />
         {tt("tsWatch")}
       </Button>
-      <IconButton icon={Play} variant="secondary" label={tt("tsWatch")} data-release={releaseKey(r)} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 sm:hidden [&_svg]:fill-current" />
+      <IconButton icon={Play} variant="secondary" label={tt("tsWatch")} data-link={r.link} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 sm:hidden [&_svg]:fill-current" />
       <IconButton icon={Info} variant="secondary" label={tp("releaseDetails")} aria-describedby={head} aria-haspopup="dialog" onClick={onDetails} className="shrink-0" />
     </li>
   );

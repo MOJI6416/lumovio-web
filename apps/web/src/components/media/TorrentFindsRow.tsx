@@ -20,27 +20,6 @@ import { Row } from "./Row";
 
 /** Watchlist titles searched per visit to the home page, one after another. */
 const PER_VISIT = 4;
-/**
- * Titles this device searched in the background lately (A6): a failed or empty search, which reports nothing, waits
- * as long as a found one before it is tried again — a broken indexer no longer means a full search on every visit.
- */
-const TRIED_KEY = "lumovio.finds.tried";
-const PAUSE_MS = 3 * 3600_000;
-function triedLately(): Record<string, number> {
-  try {
-    const all = JSON.parse(localStorage.getItem(TRIED_KEY) ?? "{}") as Record<string, number>;
-    return Object.fromEntries(Object.entries(all).filter(([, at]) => Date.now() - at < PAUSE_MS));
-  } catch {
-    return {};
-  }
-}
-function markTried(id: string): void {
-  try {
-    localStorage.setItem(TRIED_KEY, JSON.stringify({ ...triedLately(), [id]: Date.now() }));
-  } catch {
-    // Without storage the stored finds alone decide.
-  }
-}
 
 /**
  * "From your lists — on your TorrServer": watchlist titles without a copy on the profile's servers
@@ -84,8 +63,7 @@ export function TorrentFindsRow() {
   useEffect(() => {
     const known = stored.data?.finds;
     if (!profile || !source || !known || !playable.data || document.visibilityState === "hidden") return;
-    const tried = triedLately();
-    const due = titles.filter((x) => !playable.data[x.id] && !tried[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS).slice(0, PER_VISIT);
+    const due = titles.filter((x) => !playable.data[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS).slice(0, PER_VISIT);
     if (due.length === 0) return;
     const ctrl = new AbortController();
     // A search in the background for the next visit's shelf: a server that doesn't answer, a failed search or report
@@ -94,7 +72,6 @@ export function TorrentFindsRow() {
       const ts = await optional(torrServerFor(source.id), null);
       for (const x of due) {
         if (!ts || ctrl.signal.aborted) return;
-        markTried(x.id);
         const found = await optional(ts.search(torrentQuery(x), ctrl.signal), null);
         if (!found || ctrl.signal.aborted) continue;
         if (x.kind === "tv") reportNumbering(x.id, "names", namesNumbering(found.results, x));

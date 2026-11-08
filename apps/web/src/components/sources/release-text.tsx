@@ -4,11 +4,10 @@ import type { ReleaseQuality } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { formatDate, formatSize } from "@/lib/format";
-import { QualityLine, qualityMarks, resolutionWord } from "./QualityBadges";
+import { QualityLine, qualityMarks } from "./QualityBadges";
 import {
   audioMatch,
   type HdrFormat,
-  isDubStudio,
   kindOf,
   namedTracks,
   type PackInfo,
@@ -107,22 +106,17 @@ export function useReleaseText() {
       .filter(Boolean)
       .join(" · ");
   /**
-   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution under HD ("1080p",
-   * "720p"), "SD", "quality not stated", then the source ("Blu-ray"). Null when nothing is left.
+   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution only where they
+   * can't tell it ("720p" under HD, "SD", "quality not stated"), then the source ("Blu-ray"). Null when nothing is left.
    */
   const besideMarks = (info: ReleaseInfo) =>
-    [info.resolution ? resolutionWord(info.resolution) : t("tsNoResolution"), info.source ? SOURCE_LABEL[info.source] : null]
+    [info.resolution === 2160 || info.resolution === 1080 ? null : info.resolution ? RESOLUTION[info.resolution] : t("tsNoResolution"), info.source ? SOURCE_LABEL[info.source] : null]
       .filter(Boolean)
       .join(" · ") || null;
   /** A picture version's chip: "1080p", "4K SDR", "4K HDR", "4K" when the name says nothing about the range. */
   const version = (resolution: ReleaseInfo["resolution"], range: Range | null) =>
     [resolution ? RESOLUTION[resolution] : t("tsNoResolution"), range && !(range === "sdr" && resolution !== 2160) ? RANGE_LABEL[range] : null].filter(Boolean).join(" ");
   const option = (o: Pick<VoiceOption, "studio" | "voice" | "language">) => o.studio ?? (o.voice ? cap(t(`voice_${o.voice}`)) : o.language ? cap(language(o.language)) : t("tsVoiceUnnamed"));
-  /** "4K, 1080p, 720p": highest first; "quality not stated" only when no resolution is known ("4K", not "4K, quality not stated"). */
-  const resolutions = (list: readonly ReleaseInfo["resolution"][]) => {
-    const known = [...new Set(list.filter((r) => r !== null))].sort((a, b) => b - a);
-    return known.length ? known.map((r) => RESOLUTION[r]).join(", ") : t("tsNoResolution");
-  };
   return {
     cap,
     language,
@@ -133,9 +127,6 @@ export function useReleaseText() {
     besideMarks,
     version,
     option,
-    resolutions,
-    /** A profile's studio as shown: `DUB_STUDIO` in the interface's language ("Dubbed"). */
-    studio: (s: string) => (isDubStudio(s) ? cap(t("voice_dub")) : s),
     describe: (x: RankedRelease, withSeeders = true) =>
       [
         audio(x),
@@ -162,28 +153,13 @@ export function ReleaseLine({ info, rest = [] }: { info: ReleaseInfo; rest?: rea
   return <QualityLine marks={releaseMarks(info)} words={[text.besideMarks(info), ...rest]} />;
 }
 
-/**
- * A picture version as its marks (4K, HD, HDR, Dolby Vision — QualityBadges, 7.15), then in words what they don't say:
- * "720p", "SD", "SDR" at 4K, "quality not stated".
- */
-export function VersionName({ resolution, range }: { resolution: ReleaseInfo["resolution"]; range: Range | null }) {
-  const t = useTranslations("title");
-  const marks = qualityMarks({ resolution, hdrFormats: range === "hdr" ? ["hdr"] : range === "dv" ? ["dv"] : [] });
-  const words = [resolution ? resolutionWord(resolution) : t("tsNoResolution"), range === "sdr" && resolution === 2160 ? "SDR" : null];
-  return <QualityLine marks={marks} words={words} />;
-}
-
-/** The picture versions to choose from: one the name doesn't state only when no other is known (7.15). */
-export const knownVersions = <V extends { resolution: ReleaseInfo["resolution"] }>(versions: readonly V[]): V[] =>
-  versions.some((v) => v.resolution !== null) ? versions.filter((v) => v.resolution !== null) : [...versions];
-
 /** The label that says what a release's audio has to do with the profile: its studio, or only its language (7.4 Tag). */
 export function AudioMatchBadge({ x }: { x: RankedRelease }) {
   const t = useTranslations("title");
   const text = useReleaseText();
   const m = audioMatch(x);
   if (!m) return null;
-  return <Tag>{m.kind === "studio" ? t("tsYourVoice", { studio: text.studio(m.studio) }) : t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
+  return <Tag>{m.kind === "studio" ? t("tsYourVoice", { studio: m.studio }) : t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
 }
 
 const CODEC: Record<NonNullable<ReleaseInfo["codec"]>, string> = { hevc: "HEVC", avc: "AVC", av1: "AV1" };

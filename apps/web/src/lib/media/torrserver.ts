@@ -328,12 +328,8 @@ export function episodeFiles(files: TsFile[], torrentTitle: string, season: numb
 export function torrServerClient(base: string, auth: TsAuth, opts: { connectionId?: string } = {}): ProviderClient & {
   list(): Promise<TsTorrent[]>;
   add(link: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
-  set(hash: string, title: string, poster: string, data: string): Promise<void>;
-  peek(link: string, title: string): Promise<TsTorrent>;
-  stat(hash: string, timeoutMs: number, signal?: AbortSignal): Promise<TsTorrent>;
-  ffprobe(hash: string, fileId: number, timeoutMs: number, signal?: AbortSignal): Promise<{ streams?: { codec_type: string; codec_name?: string; tags?: { language?: string; title?: string }; disposition?: { forced?: number } }[] } | null>;
   get(hash: string): Promise<TsTorrent>;
-  files(hash: string, signal?: AbortSignal): Promise<{ title: string; files: TsFile[] }>;
+  files(hash: string): Promise<{ title: string; files: TsFile[] }>;
   remove(hash: string): Promise<void>;
   search(query: string, signal?: AbortSignal): Promise<{ results: TsSearchResult[]; skipped: number }>;
   streamUrl(hash: string, file: TsFile, viaWorker: boolean): string;
@@ -379,25 +375,14 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     list: () => post<TsTorrent[]>("/torrents", { action: "list" }),
     get: (hash: string) => post<TsTorrent>("/torrents", { action: "get", hash }),
     /** The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits for the metadata. */
-    async files(hash: string, signal?: AbortSignal) {
+    async files(hash: string) {
       let t = await post<TsTorrent>("/torrents", { action: "get", hash });
-      if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000, signal);
+      if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
       return { title: t?.title ?? "", files: t?.file_stats ?? [] };
     },
     /** `link`: a magnet or a .torrent URL; TorrServer fetches the file itself. */
     async add(link: string, title: string, data: Record<string, unknown>, poster?: string | null) {
       return post<TsTorrent>("/torrents", { action: "add", link, title, poster: poster ?? "", data: JSON.stringify({ lumovio: data }), save_to_db: true });
-    },
-    /** Adds a torrent for a moment, never saved in TorrServer's database: to read its file's header ahead (read-ahead). */
-    peek: (link: string, title: string) => post<TsTorrent>("/torrents", { action: "add", link, title, poster: "", data: JSON.stringify({ lumovio: { peek: true } }), save_to_db: false }),
-    /** Starts the torrent and waits for its metadata (its files). */
-    stat: (hash: string, timeoutMs: number, signal?: AbortSignal) => get<TsTorrent>(`/stream?link=${hash}&stat`, timeoutMs, signal),
-    /** ffprobe of one file, as TorrServer runs it. */
-    ffprobe: (hash: string, fileId: number, timeoutMs: number, signal?: AbortSignal) =>
-      get<{ streams?: { codec_type: string; codec_name?: string; tags?: { language?: string; title?: string }; disposition?: { forced?: number } }[] } | null>(`/ffp/${hash}/${fileId}`, timeoutMs, signal),
-    /** Rewrites a torrent's title, poster and data in TorrServer's database (MatriX "set"). */
-    async set(hash: string, title: string, poster: string, data: string) {
-      await post("/torrents", { action: "set", hash, title, poster, data });
     },
     async remove(hash: string) {
       await post("/torrents", { action: "rem", hash });
@@ -422,13 +407,11 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * chosen with the release (`voice`) plays the track that credits it, when one can be told to; with nothing chosen,
      * the track the profile's languages and studios find first (`profileTrack`), else the file's default.
      */
-    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal } = {}) {
+    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean } = {}) {
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
-      // A launch cancelled ("Cancel", another source) stops here too, not only on the screen (P7).
-      const { signal } = choice;
-      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000, signal);
+      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
       const file = (t.file_stats ?? []).find((f) => String(f.id) === idx && isVideoFile(f.path));
       if (!file) throw new TorrentFileMissing(idx ?? "");
 
@@ -452,7 +435,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         chapters?: ProbeChapter[];
       } | null = null;
       try {
-        probe = await get(`/ffp/${hash}/${file.id}`, 60_000, signal);
+        probe = await get(`/ffp/${hash}/${file.id}`, 60_000);
       } catch {
         probe = null;
       }
@@ -493,7 +476,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
 
       let subtitles: SubtitleTrack[] = [];
       try {
-        const subs = await get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000, signal);
+        const subs = await get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000);
         subtitles = (subs ?? []).map((s, i) => ({
           id: String(s.index ?? s.id ?? i),
           lang: s.lang ?? "und",

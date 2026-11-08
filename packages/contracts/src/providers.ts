@@ -200,31 +200,6 @@ export const TorrentTracks = z.object({
 });
 
 /**
- * A release's audio as its file says it, shared by every account (design-system 7.15 «Чтение дорожек заранее»): what
- * the pick needs and nothing else — each track "<ISO 639-1>|<kind>, <studio or credit>" ("ru|mvo, LostFilm"), the
- * languages of forced subtitles. No file names, no paths, nothing of the account. Keyed by the tracker and the release's
- * name (a Jackett result has no hash), and by the hash when it is known.
- */
-const ReleaseTrack = z.string().regex(/^[a-z]{0,3}\|[\p{L}\p{N} .,'&+()!-]{0,60}$/u);
-export const ReleaseKey = z.object({
-  tracker: z.string().max(60).nullable(),
-  title: z.string().min(1).max(250),
-  hash: z.string().regex(/^[a-f0-9]{40}$/i).nullable(),
-});
-export type ReleaseKey = z.infer<typeof ReleaseKey>;
-export const ReleaseTracksLookup = z.object({ keys: z.array(ReleaseKey).max(100) });
-export const ReleaseTracksRead = ReleaseKey.extend({
-  tracks: z.array(ReleaseTrack).min(1).max(32),
-  forced: z.array(z.string().regex(/^[a-z]{2,3}$/)).max(8).default([]),
-  /** Who read it: the player preparing the file, or a read ahead (a probe of the header). */
-  via: z.enum(["player", "probe"]),
-});
-export type ReleaseTracksRead = z.infer<typeof ReleaseTracksRead>;
-export interface ReleaseTracksFound {
-  found: { tracker: string | null; title: string; hash: string | null; tracks: string[]; forced: string[] }[];
-}
-
-/**
  * Torrents that are no longer on a TorrServer (removed from it, or missing from a full list it gave):
  * their index entries go — the torrent and every file of it bound to a film or episode.
  */

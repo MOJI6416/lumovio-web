@@ -3,7 +3,6 @@
 import { CircleCheck, Copy, Download, ExternalLink, MonitorPlay, ShieldAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
-import { useSession } from "@/components/providers/Providers";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { api } from "@/lib/api";
@@ -43,9 +42,6 @@ export function ExternalPlayerPanel({
   const tc = useTranslations("common");
   const locale = useLocale();
   const tvNav = useTvNavOptional();
-  // A link or playlist with the server's password is never shown on a TV (P2) or to a kids profile (A8): the apps open it.
-  const kids = Boolean(useSession().me?.activeProfile?.isKids);
-  const bare = Boolean(tvNav) || kids;
   const [launched, setLaunched] = useState(false);
   const [marked, setMarked] = useState(false);
   const url = prepared.externalUrl;
@@ -128,18 +124,16 @@ export function ExternalPlayerPanel({
           </a>
         ))}
         {/* A downloaded playlist goes nowhere on an iPhone: the apps above open the stream instead. */}
-        {!ios && !bare && (
+        {!ios && (
           <Button variant={apps.length === 0 ? "primary" : "secondary"} icon={Download} onClick={m3u}>
             {t("downloadPlaylist")}
           </Button>
         )}
-        {!bare && (
-          <Button variant="secondary" icon={Copy} loading={copy.pending} onClick={() => void copy.run()}>
-            {t("copyLink")}
-          </Button>
-        )}
+        <Button variant="secondary" icon={Copy} loading={copy.pending} onClick={() => void copy.run()}>
+          {t("copyLink")}
+        </Button>
       </div>
-      {hasCreds && !bare && (
+      {hasCreds && (
         <p className="flex items-start gap-2 text-body-s text-text-2">
           <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
           {t("linkWarning")}

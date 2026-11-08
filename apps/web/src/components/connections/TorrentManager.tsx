@@ -183,7 +183,6 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
     refresh();
   };
 
-  const ours = (data.data?.torrents ?? []).filter((x) => x.fromLumovio);
   const retryButton = (
     <Button variant="tertiary" size="sm" onClick={refresh}>
       {tm("retry")}
@@ -198,12 +197,6 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
         <Button variant="secondary" icon={RefreshCw} onClick={refresh} loading={data.isFetching}>
           {t("refresh")}
         </Button>
-        {/* Everything Lumovio added here, at once (the owner, 2026-11-08); torrents added elsewhere stay. Confirmed in TS7's dialog. */}
-        {ours.length > 0 && (
-          <Button variant="danger-tertiary" icon={Trash2} onClick={() => setRemoving(ours)}>
-            {t("clearAll")}
-          </Button>
-        )}
       </div>
 
       {data.isError && (

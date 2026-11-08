@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReleaseText } from "@/components/sources/release-text";
-import { isOut } from "@/components/title/core";
 import { Tag } from "@/components/ui/Badge";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -161,37 +160,29 @@ export function EpisodesBody({ episodes: e, onPick }: { episodes: EpisodesInfo; 
             const current = season === e.season && ep.episodeNumber === e.episode;
             const still = tmdbImage(ep.stillPath, "w300");
             const closed = !current && !open(season, ep.episodeNumber);
-            // An announced episode is listed, not started (P3): nothing to play until it is out.
-            const out = current || isOut(ep.airDate);
-            const cls = "flex gap-3 rounded-sm p-2 transition-colors duration-fast ease-fast";
-            const body = (
-              <>
-                <span className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xs bg-surface-2">
-                  {still && <img src={still} alt="" loading="lazy" className={cn("size-full object-cover", closed && prefs.stills && "scale-110 blur-lg")} />}
-                  {current && <span className="absolute inset-x-0 bottom-0 h-1 bg-progress" />}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-body-s text-text-2">
-                    {[t("episodeShort", { episode: ep.episodeNumber }), ep.runtime ? tc("minutes", { count: ep.runtime }) : null].filter(Boolean).join(" · ")}
-                  </span>
-                  <span aria-hidden={(closed && prefs.names) || undefined} className={cn("line-clamp-2 text-title text-text-1", closed && prefs.names && "select-none blur-sm")}>
-                    {ep.name}
-                  </span>
-                  {current && <Tag className="mt-1">{t("nowPlaying")}</Tag>}
-                </span>
-              </>
-            );
             return (
               <li key={ep.episodeNumber}>
-                {out ? (
-                  <Link href={e.href(season, ep.episodeNumber)} replace aria-current={current ? "true" : undefined} onClick={onPick} className={cn(cls, "hover:bg-surface-2 aria-[current=true]:bg-surface-3")}>
-                    {body}
-                  </Link>
-                ) : (
-                  <div aria-disabled="true" className={cn(cls, "opacity-50")}>
-                    {body}
-                  </div>
-                )}
+                <Link
+                  href={e.href(season, ep.episodeNumber)}
+                  replace
+                  aria-current={current ? "true" : undefined}
+                  onClick={onPick}
+                  className="flex gap-3 rounded-sm p-2 transition-colors duration-fast ease-fast hover:bg-surface-2 aria-[current=true]:bg-surface-3"
+                >
+                  <span className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xs bg-surface-2">
+                    {still && <img src={still} alt="" loading="lazy" className={cn("size-full object-cover", closed && prefs.stills && "scale-110 blur-lg")} />}
+                    {current && <span className="absolute inset-x-0 bottom-0 h-1 bg-progress" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-body-s text-text-2">
+                      {[t("episodeShort", { episode: ep.episodeNumber }), ep.runtime ? tc("minutes", { count: ep.runtime }) : null].filter(Boolean).join(" · ")}
+                    </span>
+                    <span aria-hidden={(closed && prefs.names) || undefined} className={cn("line-clamp-2 text-title text-text-1", closed && prefs.names && "select-none blur-sm")}>
+                      {ep.name}
+                    </span>
+                    {current && <Tag className="mt-1">{t("nowPlaying")}</Tag>}
+                  </span>
+                </Link>
               </li>
             );
           })}

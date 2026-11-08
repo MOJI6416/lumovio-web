@@ -135,7 +135,7 @@ export interface ProviderClient {
   /** `rebuild`: the plain stream failed to start here: rebuild the file in the browser when it can be (TorrServer). */
   prepare(
     externalId: string,
-    opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal },
+    opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean },
   ): Promise<PreparedPlayback>;
   /** Locate an episode's file id on the server (episode-level playback). */
   findEpisode?(seriesExternalId: string, season: number, episode: number): Promise<string | null>;

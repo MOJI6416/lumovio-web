@@ -60,8 +60,7 @@ export interface PlayerEvents {
   onPlay: (positionSec: number) => void;
   onPause: (positionSec: number) => void;
   onEnded: (positionSec: number) => void;
-  /** `at`: where the picture was when it failed (0 before the first frame). */
-  onFatal: (message: string, code: number | null, at?: number) => void;
+  onFatal: (message: string, code: number | null) => void;
 }
 
 export interface PlayerProps extends PlayerEvents {
@@ -117,17 +116,6 @@ export function LumovioPlayer(props: PlayerProps) {
   const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal);
-  // The element lets go of its stream when the player goes — another source, back to the sources, out (P9): one taken
-  // out of the page keeps reading until it is collected, and TorrServer then serves two releases over one line.
-  useEffect(() => {
-    const v = videoRef.current;
-    return () => {
-      if (!v) return;
-      v.pause();
-      v.removeAttribute("src");
-      v.load();
-    };
-  }, []);
   const subtitleMeta = useSubtitles(videoRef, prepared, props.titleId ?? null);
   const look = useSubtitleLook(videoRef, props.titleId ?? null);
   const caps = detectCapabilities();
@@ -595,18 +583,12 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     }
     prevPaused.current = paused;
   }, [paused, started, currentTime, props]);
-  // Once per end and per error (P1): `props` is a new object every render, and the end's "watched" changes the page's
-  // state — an effect that called again on each render sent the mark over and over.
-  const endedFor = useRef(false);
   useEffect(() => {
-    if (ended && !endedFor.current) props.onEnded(currentTime);
-    endedFor.current = ended;
+    if (ended) props.onEnded(currentTime);
   }, [ended, currentTime, props]);
-  const failedOn = useRef<typeof error>(null);
   useEffect(() => {
-    if (error && error !== failedOn.current) props.onFatal(error.message, error.code, started ? currentTime : 0);
-    failedOn.current = error;
-  }, [error, props, started, currentTime]);
+    if (error) props.onFatal(error.message, error.code);
+  }, [error, props]);
 
   // The next episode's card from the credits marker, or near the end; auto-advance after a countdown. The TV keeps its
   // timing (from the last 25 s, 15 s); on the site from the credits or the last 15 s, 10 s — 5 s once the file ended.

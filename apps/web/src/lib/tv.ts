@@ -77,16 +77,3 @@ export function tvShellPath(path: string): string | null {
 
 /** Back on a remote: Tizen's Return (10009), webOS's Back (461), Escape; Backspace outside text fields. */
 export const BACK_KEYCODES = new Set([10009, 461, 8, 27]);
-
-/**
- * Whether an address the TV app hands back (it opens nothing but the site) may be shown as a QR code and text to open on
- * a phone: a web page only — never a player's `intent:` or a stream with the server's login, password or token in it (P2).
- */
-export function phoneSafe(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return (u.protocol === "https:" || u.protocol === "http:") && !u.username && !u.password && !/api_?key|token|passw/i.test(u.search);
-  } catch {
-    return false;
-  }
-}

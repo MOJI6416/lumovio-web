@@ -3,7 +3,7 @@
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
-import { creditsStudio, isDubStudio, parseRelease, profileNameTrack, withFileTracks } from "@/lib/media/releases";
+import { creditsStudio, parseRelease, profileNameTrack, withFileTracks } from "@/lib/media/releases";
 import { copyMarks, type QualityMark, resolutionBesideMarks } from "./QualityBadges";
 import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 
@@ -134,8 +134,8 @@ export function useCopyText() {
       const name = releaseName(s, all);
       if (!name) return null;
       const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
-      const studio = studios.find((x) => (isDubStudio(x) ? info.tracks.some((t) => t.voice === "dub") : creditsStudio(name, x) || info.tracks.some((t) => t.studio !== null && creditsStudio(t.studio, x))));
-      if (studio) return { kind: "studio", studio: text.studio(studio) };
+      const studio = studios.find((x) => creditsStudio(name, x) || info.tracks.some((t) => t.studio !== null && creditsStudio(t.studio, x)));
+      if (studio) return { kind: "studio", studio };
       const l = langs.find((x) => info.languages.includes(x));
       return l ? { kind: "language", language: l } : null;
     },

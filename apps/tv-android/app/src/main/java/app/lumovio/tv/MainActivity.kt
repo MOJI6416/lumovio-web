@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.PendingIntent
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInstaller
@@ -31,7 +30,6 @@ import android.widget.ImageView
 import android.widget.Toast
 import org.json.JSONObject
 import java.net.HttpURLConnection
-import java.net.URISyntaxException
 import java.net.URL
 
 /**
@@ -263,34 +261,6 @@ class MainActivity : Activity() {
 
     private fun isSite(uri: Uri): Boolean = uri.scheme == home.scheme && uri.host == home.host
 
-    private fun external(view: WebView, url: String) {
-        val quoted = JSONObject.quote(url)
-        view.evaluateJavascript("window.dispatchEvent(new CustomEvent('lumovio:external',{detail:$quoted}))", null)
-    }
-
-    /** A player app on this TV from the site's intent: address; the store's page for it when it isn't installed. */
-    private fun openPlayer(view: WebView, address: String) {
-        val intent = try {
-            Intent.parseUri(address, Intent.URI_INTENT_SCHEME)
-        } catch (e: URISyntaxException) {
-            return
-        }
-        // Only an app that opens a link: never a component of this or another app named by the page.
-        intent.addCategory(Intent.CATEGORY_BROWSABLE)
-        intent.component = null
-        intent.selector = null
-        try {
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            val pkg = intent.`package` ?: return
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")))
-            } catch (e: ActivityNotFoundException) {
-                external(view, "https://play.google.com/store/apps/details?id=$pkg")
-            }
-        }
-    }
-
     private fun clearStartup() {
         startup?.let { root.removeView(it) }
         startup = null
@@ -312,15 +282,10 @@ class MainActivity : Activity() {
         }
 
         // The app opens nothing but the site; another address is offered to open on a phone (the site shows its QR).
-        // "Open in VLC / MX Player" is an intent: address with the server's login in it: the app opens the player itself,
-        // and the address is never handed back to be shown on the screen.
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             if (!request.isForMainFrame || isSite(request.url)) return false
-            if (request.url.scheme == "intent") {
-                openPlayer(view, request.url.toString())
-                return true
-            }
-            external(view, request.url.toString())
+            val url = JSONObject.quote(request.url.toString())
+            view.evaluateJavascript("window.dispatchEvent(new CustomEvent('lumovio:external',{detail:$url}))", null)
             return true
         }
 

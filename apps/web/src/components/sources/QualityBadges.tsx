@@ -55,18 +55,8 @@ export function qualityMarks(q: {
 export const copyMarks = (q: NonNullable<LibraryIndexEntry["quality"]>) =>
   qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos"), cc: (q.subtitleTracks ?? 0) > 0 });
 
-/**
- * The resolution in words beside the marks (the owner, 2026-11-08: "720 and Full HD are both HD — tell them apart"): the
- * HD mark always with its resolution — "[HD] 1080p", "[HD] 720p" — and "SD"; 4K's mark says it already. A server's
- * own words ("576p") as they are.
- */
-export const resolutionWord = (resolution: number | string | null | undefined): string | null => {
-  if (resolution === null || resolution === undefined || resolution === "") return null;
-  if (typeof resolution === "string") return /^2160|4k/i.test(resolution) ? null : resolution;
-  return resolution >= 2160 ? null : resolution >= 1080 ? "1080p" : resolution >= 720 ? "720p" : "SD";
-};
-/** A server's resolution in words beside its marks (`resolutionWord`). */
-export const resolutionBesideMarks = (resolution: string | null | undefined) => resolutionWord(resolution);
+/** A server's resolution in words where no mark says it ("720p", "576p"); 1080p and 4K have theirs (HD, 4K). */
+export const resolutionBesideMarks = (resolution: string | null | undefined) => (resolution && !/^(1080|2160)|4k/i.test(resolution) ? resolution : null);
 
 /**
  * The marks as Apple TV's row of them (owner, 2026-11-06): its own files, one colour — the text's, through a mask —

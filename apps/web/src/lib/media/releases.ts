@@ -143,10 +143,7 @@ export function holdsSeason(pack: PackInfo, season: number, episode: number | nu
   if (!pack.seasons || pack.cours) return null;
   if (season < pack.seasons.from || season > pack.seasons.to) return false;
   const e = pack.episodes;
-  // One season and its episodes — numbered in the season (S02E01-08), or a range from 1 or with a total ("Серии: 1-8 из
-  // 10"): a pack of that season, so an episode outside it isn't there (T5). A range counted across the series is not.
-  const inSeason = e && (e.bySeason || e.from === 1 || e.of !== null);
-  if (episode !== null && e && inSeason && !e.open && pack.seasons.from === pack.seasons.to && (episode < e.from || episode > e.to)) return false;
+  if (episode !== null && e?.bySeason && !e.open && pack.seasons.from === pack.seasons.to && (episode < e.from || episode > e.to)) return false;
   return true;
 }
 
@@ -222,16 +219,8 @@ export const VOICE_STUDIOS: { name: string; lang: "ru" | "uk"; anime?: boolean; 
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/**
- * "Dubbing" in a profile's studios (Settings → Audio): not a studio but the kind, wanted the way a studio is — any
- * dubbed track, whoever made it. Kept as this word in the profile, shown in the interface's language.
- */
-export const DUB_STUDIO = "Dub";
-export const isDubStudio = (studio: string) => studio.trim().toLowerCase() === "dub";
-
-/** Whether a release name credits a studio: a known one by its spellings, any other as written; `DUB_STUDIO` — any dubbing. */
+/** Whether a release name credits a studio: a known one by its spellings, any other as written. */
 export function creditsStudio(release: string, studio: string): boolean {
-  if (isDubStudio(studio)) return VOICE_WORDS.dub.test(release.replace(/[._]/g, " "));
   const known = VOICE_STUDIOS.find((s) => s.name.toLowerCase() === studio.toLowerCase());
   return (known?.match ?? W(escapeRe(studio.trim()))).test(release.replace(/[._]/g, " "));
 }
@@ -500,39 +489,14 @@ const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
-/**
- * A search result's identity on the page — for keys, focus memory and the element a launch grows from — without its link:
- * a Jackett link carries the account's `jackett_apikey`, and what is kept in the DOM or sessionStorage must not (A12).
- */
-export const releaseKey = (r: Pick<TsSearchResult, "hash" | "title" | "tracker" | "size">): string =>
-  r.hash ? r.hash.toLowerCase() : `${r.tracker ?? ""}|${r.size ?? ""}|${r.title}`;
-
 const EXTRAS = W("саундтрек|soundtrack|ost|making of|бонус\\p{L}*|bonus|трейлер|trailer|featurette");
-
-/**
- * What may follow a series' name in a release of it (T2): nothing, a bracket, a number (season, episode, year,
- * resolution), or a word of a release — season, quality, a country (The Office US), a studio. Other words continue the
- * name: a connector ("House of the Dragon") never is the series; a subtitle ("Arcane: League of Legends", but also
- * "Dexter: Original Sin") is only with a year of the series' run in the name.
- */
-const CONNECTOR = /^(?:of|and|the|on|in|at|with|to|for|from|и|в|на|из)(?![\p{L}\d])/iu;
-const SERIES_TAIL =
-  /^(?:$|[([{]|\d|[sс]\d|e\d|ep\s?\d|(?:season|сезон|серии|серия|series|complete|полный|staffel|temporada|saison|stagione|sezon|odc|mini|us|uk|tv|web|bd|blu|hdtv|hd|dvd|remux|rip|uhd|4k|imax|extended|director|unrated|amzn|nf|atvp|dsnp|hmax|hulu|rus|eng|ukr|mvo|dvo|avo|dub|lostfilm|newstudio|кураж)(?![\p{L}]))/iu;
-
-/** The last year a series aired, by its seasons' premieres (a season runs into the next year), or null when unknown. */
-export function seriesUntil(d: { seasons?: { seasonNumber: number; airDate: string | null }[] }): number | null {
-  const years = (d.seasons ?? []).filter((s) => s.seasonNumber > 0 && s.airDate).map((s) => Number(s.airDate!.slice(0, 4)));
-  return years.length ? Math.max(...years) + 1 : null;
-}
 
 /**
  * Whether a search result is this title: one of the name's parts (Russian trackers write "Рус / Eng")
  * starts with the original or localized title, and a film's year, when the name has one, is within a
  * year of it. A different film that merely contains the words ("The Science of Interstellar") does not count.
- * A series' release is dated within its run (`until`: `seriesUntil`), and one whose name goes on past the series'
- * (`SERIES_TAIL`) has to be dated so to count (T2: "Dexter: Original Sin" is not Dexter).
  */
-export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv", until: number | null = null): boolean {
+export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv"): boolean {
   if (EXTRAS.test(release)) return false;
   // A film is never a release that names seasons: "Avatar: The Last Airbender - S1 - rus 1080p" is not "Avatar" (2009).
   if (kind === "movie") {
@@ -541,28 +505,10 @@ export function isSameTitle(release: string, names: string[], year: number | nul
   }
   const parts = norm(release).split(/\s*[/|]\s*/);
   const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
-  // For a series: "marker" — the name ends where the series' does; "named" — a subtitle follows.
-  let fit: "marker" | "named" | null = null;
-  for (const p of parts)
-    for (const n of wanted) {
-      if (!p.startsWith(n) || /[\p{L}\d]/u.test(p.charAt(n.length))) continue;
-      const rest = p.slice(n.length);
-      const tail = rest.replace(/^[\s:,.\-–—]+/, "");
-      if (kind === "movie" || SERIES_TAIL.test(tail)) fit = "marker";
-      // A subtitle follows a colon or a dash ("Arcane: League of Legends"), an abbreviation a space ("House M.D."); a word
-      // straight after the name is another title ("The Penguin Lessons" is not "The Penguin").
-      else if ((/^\s*[:\-–—]/.test(rest) || /^\s+\p{L}{1,2}(?!\p{L})/u.test(rest)) && !CONNECTOR.test(tail)) fit ??= "named";
-    }
-  if (!fit) return false;
-  // A year that is the name itself ("1923", "1917") says nothing about when the release is from.
-  const own = new Set(wanted.flatMap((n) => n.match(/\d{4}/g) ?? []).map(Number));
-  const years = [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?!\d)/g)].map((m) => Number(m[1])).filter((y) => !own.has(y));
-  if (kind === "tv") {
-    // A series' releases are dated within its run (a year early for a premiere at New Year).
-    const inRun = years.filter((y) => (!year || y >= year - 1) && (!until || y <= until));
-    return fit === "marker" ? years.length === 0 || inRun.length > 0 : inRun.length > 0;
-  }
-  if (!year) return true;
+  const starts = parts.some((p) => wanted.some((n) => p.startsWith(n) && !/[\p{L}\d]/u.test(p.charAt(n.length))));
+  if (!starts) return false;
+  if (kind === "tv" || !year) return true;
+  const years = [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?!\d)/g)].map((m) => Number(m[1]));
   return years.length === 0 || years.some((y) => Math.abs(y - year) <= 1);
 }
 
@@ -665,13 +611,10 @@ function floorOf(info: Pick<ReleaseInfo, "resolution">, fit: Fit, prefs: Pick<Re
 }
 
 /**
- * A swarm too weak to stream from: the indexer counts fewer than five seeders (the owner, 2026-11-08: "4K with 2 peers is
- * worse than 1080p with 20"). Below it the picture doesn't win: a weak release sinks below every healthy one of the same
- * audio in every mode — a 4K that stalls is worse than a 1080p that plays; between weak ones the picture decides. An
- * unknown count is not weak. Five: a stream needs a few seeders at once to keep ahead of playback (one or two leave or
- * throttle, and the start waits for metadata from them).
+ * A swarm too weak to stream from: the indexer counts one or two seeders. It sinks below the same picture's healthy
+ * releases in every mode (an unknown count is not weak), never below another picture version.
  */
-export const WEAK_SWARM = 5;
+const WEAK_SWARM = 3;
 
 /**
  * Where the picture comes from, as "auto" wants it — "what loads at your speed" (Settings → quality): a disc's encode,
@@ -689,9 +632,9 @@ function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
 }
 
 /**
- * The picture part of the rank, by the quality mode. "auto" and "best": a healthy swarm first (`WEAK_SWARM`), then
- * resolution in the mode's order, then HDR only on a screen that shows it (an SDR screen gets the SDR version), then
- * the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
+ * The picture part of the rank, by the quality mode. "auto" and "best": resolution in the mode's order,
+ * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then a healthy swarm (`WEAK_SWARM`),
+ * then the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
  * also takes a film's bigger file (an episode's bitrate can't be told from a season pack's size).
  * "small": a healthy swarm, then the smallest known size, unknown sizes last.
  */
@@ -704,8 +647,8 @@ function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | n
   const sources = prefs.quality === "auto" ? AUTO_SOURCES : SOURCES;
   const source = info.source ? sources.length - sources.indexOf(info.source) : 0;
   if (prefs.quality === "small") return [healthy, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
-  if (prefs.quality === "best") return [healthy, res, dynamic, source, movie && size ? size : 0];
-  return [healthy, res, dynamic, source];
+  if (prefs.quality === "best") return [res, dynamic, healthy, source, movie && size ? size : 0];
+  return [res, dynamic, healthy, source];
 }
 
 function compareRank(a: number[], b: number[]): number {
@@ -729,24 +672,19 @@ function compareRank(a: number[], b: number[]): number {
  */
 export function rankReleases(
   results: TsSearchResult[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "seasons">>,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage">,
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
   fileOf: ((r: TsSearchResult) => readonly string[] | null | undefined) | null = null,
 ): RankedRelease[] {
   const names = [d.originalTitle ?? "", d.title];
-  const until = seriesUntil(d);
   return results
-    .filter((r) => isSameTitle(r.title, names, d.year, d.kind, until))
+    .filter((r) => isSameTitle(r.title, names, d.year, d.kind))
     .map((result) => {
       const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
-      const j = prefs.studios.findIndex((s) =>
-        isDubStudio(s)
-          ? info.tracks.some((t) => t.voice === "dub" && (i < 0 || t.language === null || t.language === prefs.languages[i]))
-          : creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))),
-      );
+      const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))));
       // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
@@ -786,10 +724,10 @@ export function kindOf(info: ReleaseInfo, studio: string): Voice | null {
   return info.studioVoices[known] ?? (info.studios.length <= 1 ? info.voice : null);
 }
 
-/** The release to recommend: the first ranked one, unless nothing is alive (or holds the wanted season); never a cinema recording (T4). */
+/** The release to recommend: the first ranked one, unless nothing is alive (or holds the wanted season). */
 export function bestOf(ranked: RankedRelease[]): RankedRelease | undefined {
   const x = ranked[0];
-  return x && !x.dead && x.holds !== false && !x.info.cam ? x : undefined;
+  return x && !x.dead && x.holds !== false ? x : undefined;
 }
 
 /**
@@ -808,23 +746,8 @@ export function audioMatch(x: RankedRelease): { kind: "studio"; studio: string }
  */
 export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[] {
   const tracks = namedTracks(x.info);
-  // The original track in the profile's language is that language's option too (T3): "… D, P, A | Original Eng" is
-  // English for a profile that listens in English, not only Russian dubbing.
-  const original = x.language && tracks.length > 0 && x.info.tracks.some((t) => t.original && t.language === x.language) ? [`${x.language}|`] : [];
-  if (tracks.length === 0) return [`${x.language ?? ""}|${kindKey(x.info.voice)}`];
-  return [...new Set([...tracks.map((t) => `${t.language ?? ""}|${t.studio ?? kindKey(t.voice)}`), ...original])];
-}
-
-/**
- * A kind of translation as an audio option: "multi-voice" is none — it says only that studios are there, not which
- * (the owner, 2026-11-08), so an unnamed one is an option of its language ("Russian"), as a name listing no kind is.
- */
-const kindKey = (voice: Voice | null) => (voice && voice !== "mvo" ? voice : "");
-
-/** Whether an audio option is one of a profile's studios: by its studio, `DUB_STUDIO` by its kind (a studio's dub too). */
-export function optionIsStudio(o: Pick<VoiceOption, "studio" | "voice">, studio: string): boolean {
-  if (isDubStudio(studio)) return o.voice === "dub";
-  return o.studio !== null && creditsStudio(o.studio, studio);
+  if (tracks.length === 0) return [`${x.language ?? ""}|${x.info.voice ?? ""}`];
+  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? t.voice ?? ""}`))];
 }
 
 export interface PictureVersion {
@@ -1072,10 +995,3 @@ export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<
   );
   return i === null ? null : (info.tracks[i] ?? null);
 }
-
-/**
- * A whole torrent on a TorrServer whose release name holds other seasons only ("Сезон 1" for season 2): no copy of
- * that episode — neither the player nor the title's "Watch" takes it, and the sources screen searches for that season.
- */
-export const otherSeasonsOnly = (s: { kind: string; externalId: string; label: string | null }, season: number | null, episode: number | null) =>
-  s.kind === "torrserver" && season !== null && !s.externalId.includes(":") && Boolean(s.label) && holdsSeason(packOf(s.label!), season, episode) === false;
