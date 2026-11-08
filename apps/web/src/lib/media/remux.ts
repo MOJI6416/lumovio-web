@@ -20,13 +20,28 @@ import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
  * that needs it — and the fragmented MP4 goes into Media Source: the standard one, or ManagedMediaSource, the
  * only one an iPhone has. Only this module loads Mediabunny (~0.6 MB; a decoder 0.3–1.6 MB more).
  *
- * At most AHEAD seconds are prepared beyond the playhead and BEHIND seconds kept behind it, so a
- * film never has to fit in memory. A seek outside what's buffered, or another audio track, starts a
- * new conversion from that time (Mediabunny begins at the keyframe before it; video stays copied).
+ * At most AHEAD seconds are prepared beyond the playhead and BEHIND seconds kept behind it (fewer for a heavy file,
+ * `bufferWindow`), so a film never has to fit in memory. A seek outside what's buffered, or another audio track, starts
+ * a new conversion from that time (Mediabunny begins at the keyframe before it; video stays copied).
  */
 
 const AHEAD = 30;
 const BEHIND = 30;
+/**
+ * What the buffer may hold of a file: Media Source refuses more than about 150 MB of video (Chrome). A 40 Mbit/s remux
+ * is 5 MB a second, so 30 s ahead and 30 s behind didn't fit: appends were refused again and again, playback stopped
+ * on a hole and nothing read on (an Arcane BDRemux on the stand, 2026-11-08).
+ */
+const BUFFER_BYTES = 90e6;
+/** Seconds a playback that wants to play stands still before the engine starts again where it stands. */
+const STUCK_SEC = 6;
+
+/** Seconds prepared ahead of the playhead and kept behind it for a file of this many bytes a second (null: unknown). */
+export function bufferWindow(bytesPerSecond: number | null): { ahead: number; behind: number } {
+  if (!bytesPerSecond || !Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return { ahead: AHEAD, behind: BEHIND };
+  const seconds = BUFFER_BYTES / bytesPerSecond;
+  return { ahead: Math.round(Math.min(AHEAD, Math.max(8, seconds * 0.7))), behind: Math.round(Math.min(BEHIND, Math.max(3, seconds * 0.3))) };
+}
 
 export interface RemuxHandle {
   /** Position of the track among the file's audio tracks (ffprobe order = container order). */
@@ -103,6 +118,8 @@ export interface RebuildJob {
  */
 export interface RebuildSource {
   duration: number | null;
+  /** The file's bytes a second (its size over its duration), for `bufferWindow`; null when unknown. */
+  bytesPerSecond?: number | null;
   audioCount: number;
   run(ctx: {
     from: number;
@@ -138,8 +155,10 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
     input.dispose();
     throw e;
   }
+  const size = await optional(input.source.getSizeOrNull(), null);
   return {
     duration,
+    bytesPerSecond: size && duration ? size / duration : null,
     audioCount: audioTracks.length,
     dispose: () => input.dispose(),
     async run({ from, audioPosition, isCurrent, newOutput }) {
@@ -223,6 +242,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   }
   const duration = source.duration;
   if (duration && Number.isFinite(duration)) ms.duration = duration;
+  const win = bufferWindow(source.bytesPerSecond ?? null);
 
   let sb: SourceBuffer | null = null;
   let mime = "";
@@ -233,6 +253,8 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   let closed = false;
   // The run whose media is in the buffer now: removals before its first append are the engine's own.
   let appended = -1;
+  // A writer waits for room in a full buffer (the browser refused its append).
+  let full = false;
   // Writers waiting for room are woken by playback progress, seeks and restarts.
   let wake: (() => void)[] = [];
   const nudge = () => {
@@ -261,15 +283,17 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
 
   const append = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
     for (let attempt = 0; ; attempt++) {
-      await evictBehind(BEHIND);
+      await evictBehind(win.behind);
       if (mine !== gen || !sb) return;
       try {
         sb.appendBuffer(data);
         await idle();
+        full = false;
         return;
       } catch (e) {
         // A full buffer frees up as playback moves on: drop more of what was played, then wait.
         if (!(e instanceof DOMException && e.name === "QuotaExceededError") || attempt > 20) throw e;
+        full = true;
         await evictBehind(2);
         await new Promise<void>((r) => wake.push(r));
       }
@@ -281,7 +305,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
       if (mine !== gen) return;
       const at = Math.max(video.currentTime, from);
       const end = bufferedEnd(at);
-      if (streaming() && (end === null || end - at < AHEAD)) return;
+      if (streaming() && (end === null || end - at < win.ahead)) return;
       await new Promise<void>((r) => wake.push(r));
     }
   };
@@ -302,7 +326,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
             const removed = (e as Event & { removedRanges?: TimeRanges }).removedRanges;
             const t = video.currentTime;
             for (let i = 0; removed && i < removed.length; i++)
-              if (removed.end(i) > t && removed.start(i) < t + AHEAD) return void run(t);
+              if (removed.end(i) > t && removed.start(i) < t + win.ahead) return void run(t);
           });
           opts.onRoute?.({ audio: route, codec, mediaSource: managed ? "managed" : "standard", mime: type });
         } else if (type !== mime && typeof sb.changeType === "function") {
@@ -328,6 +352,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
 
   const restart = async (from: number) => {
     const mine = ++gen;
+    full = false;
     nudge();
     const old = job;
     job = null;
@@ -387,6 +412,28 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   video.addEventListener("play", nudge);
   ms.addEventListener("startstreaming", nudge);
 
+  // Once a second a writer waiting for room looks again: a video that stands still sends no timeupdate to wake it.
+  // A playback that wants to play and stands still for STUCK_SEC where it can't go on by itself — media ahead of the
+  // playhead that it doesn't reach (a hole, or frames it lost), or a buffer too full to take what it waits for — starts
+  // a new run there, as a seek outside the buffer does (at most once in 20 s). Waiting for the network has no media ahead.
+  let lastAt = -1;
+  let still = 0;
+  let restartedAt = 0;
+  const watch = setInterval(() => {
+    nudge();
+    const t = video.currentTime;
+    const wants = !closed && appended === gen && !video.paused && !video.seeking && !video.ended && video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA;
+    still = wants && Math.abs(t - lastAt) < 0.01 ? still + 1 : 0;
+    lastAt = t;
+    const b = video.buffered;
+    const ahead = b.length ? b.end(b.length - 1) - t : 0;
+    if (still >= STUCK_SEC && (full || ahead > 1) && Date.now() - restartedAt > 20_000) {
+      still = 0;
+      restartedAt = Date.now();
+      void run(t);
+    }
+  }, 1000);
+
   // Resume only well inside the file, as for a plain stream (a position saved for another, longer file may be past the end).
   void run(opts.startAt > 5 && (!duration || opts.startAt < duration - 10) ? opts.startAt : 0);
 
@@ -401,6 +448,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
       gen++;
       nudge();
       clearTimeout(seekTimer);
+      clearInterval(watch);
       video.removeEventListener("seeking", onSeeking);
       video.removeEventListener("timeupdate", nudge);
       video.removeEventListener("play", nudge);
