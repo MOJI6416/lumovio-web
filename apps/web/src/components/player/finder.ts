@@ -106,6 +106,8 @@ export interface FinderProps {
   defaultConnectionId?: string | null;
   /** Hashes already linked to this title, per connection ("<connectionId>:<hash>"). */
   existing: Set<string>;
+  /** The audio tracks the player read in a result's file, when it is a copy already on the server (`rankReleases`). */
+  fileTracks?: (r: TsSearchResult) => readonly string[] | null;
   start?: FinderStart;
   /** Search right away when nothing was searched yet (the sources screen was asked for). */
   autoStart?: boolean;
@@ -122,7 +124,7 @@ export interface FinderProps {
  * `modeInSort` (the TV, as before): the order of the list carries the quality mode ("Best quality" ranks by the best
  * mode). The site keeps the mode in its "Quality" pill, as "Where to watch" does, and the order only orders the list.
  */
-export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, start, autoStart = false, onPick }: FinderProps, { modeInSort = true }: { modeInSort?: boolean } = {}) {
+export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, fileTracks, start, autoStart = false, onPick }: FinderProps, { modeInSort = true }: { modeInSort?: boolean } = {}) {
   const t = useTranslations("player");
   const tt = useTranslations("title");
   const qc = useQueryClient();
@@ -219,11 +221,12 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   const view = useMemo(() => {
     if (!found) return null;
     // An episode is wanted: a release whose name holds other seasons (or other episodes of the season) only sinks.
-    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null);
+    // A result that is a copy already on the server: its studios as its file's tracks name them ("6x MVO").
+    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileTracks ?? null);
     const mine = new Set(ranked.map((x) => x.result.link));
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
-  }, [found, d, prefs, season, episode]);
+  }, [found, d, prefs, season, episode, fileTracks]);
   // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
   const options = useMemo(() => {
     // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).

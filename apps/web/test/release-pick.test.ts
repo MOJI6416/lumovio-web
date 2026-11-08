@@ -193,6 +193,32 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
   });
 });
 
+describe("a release whose name counts its voice-overs without naming them, its file read (F1, owner 2026-11-08)", () => {
+  const GB = 1024 ** 3;
+  const f1 = { title: "F1", originalTitle: null, kind: "movie" as const, year: 2025, originalLanguage: "en" };
+  const uhd = result("F1 / F1: The Movie [2025, WEB-DL 2160p, HDR10, Dolby Vision] [Hybrid] 3x Dub (Movie Dubbing, Jaskier, RHS) + 6x MVO + AVO + VO + Dub (Ukr) + Original (Eng) + Sub (Rus, Ukr, Eng)", 28, 34.8 * GB);
+  const fhd = result("F1 / F1: The Movie [2025, WEB-DL 1080p] Dub (Movie Dubbing, RHS, Jaskier) + MVO (Jaskier, TVShows, HDrezka, LostFilm) + AVO + VO + Dub (Ukr) + Original (Eng)", 124, 26.4 * GB);
+  // The 4K file as TorrServer's ffprobe read it on the owner's torr.
+  const file = ["rus|Дубляж, Movie Dubbing", "rus|Дубляж, Jaskier", "rus|Дубляж, Red Head Sound", "rus|Дубляж, Dragon Studio", "rus|MVO, Jaskier", "rus|MVO, TVShows", "rus|MVO, HDRezka Studio", "rus|MVO, LostFilm", "rus|MVO, LE-Production", "rus|AVO, Ю. Сербин", "rus|VO, М. Яроцкий", "ukr|Дубляж, Postmodern", "eng|Original"];
+  const tv = prefs({ languages: ["ru"], studios: ["LostFilm", "HDrezka Studio"], device: { hevc: true, hdr: true, uhd: true, dolbyVision: true } });
+
+  it("knows LostFilm only in 1080p by the names alone", () => {
+    const x = pickRelease(rankReleases([uhd, fhd], f1, tv), tv);
+    expect(x.option?.studio).toBe("LostFilm");
+    expect(x.options.find((o) => o.studio === "LostFilm")?.versions.map((v) => v.key)).toEqual(["1080"]);
+    expect(x.chosen?.result).toBe(fhd);
+  });
+
+  it("knows LostFilm in 4K once the 4K file's tracks were read, and starts it on a 4K screen", () => {
+    const ranked = rankReleases([uhd, fhd], f1, tv, null, null, (r) => (r === uhd ? file : null));
+    const x = pickRelease(ranked, tv);
+    expect(x.option?.studio).toBe("LostFilm");
+    expect(x.options.find((o) => o.studio === "LostFilm")?.versions.map((v) => v.key)).toEqual(["1080", "2160-hdr"]);
+    expect(x.chosen?.result).toBe(uhd);
+    expect(ranked.find((r) => r.result === uhd)?.studio).toBe("LostFilm");
+  });
+});
+
 describe("pickRelease", () => {
   const releases = [
     result(name("[2001, BDRemux 2160p, HDR10] [Extended Edition] Dub (Ukr) + Original Eng"), 80, 90e9),

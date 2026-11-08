@@ -123,6 +123,12 @@ export const LibraryIndexEntry = z.object({
        * for the CC mark. Absent from copies scanned before 2026-11-06, and for TorrServer copies — their release name tells.
        */
       subtitleTracks: z.number().int().min(0).max(999),
+      /**
+       * A TorrServer copy's audio tracks as its file lists them, "<language tag>|<title>" in the file's order
+       * ("rus|MVO, LostFilm"), read when it was last played (`/index/tracks`): the studios its release name may not
+       * name ("6x MVO"). Absent until it is played; kept through rescans.
+       */
+      audioTracks: z.array(z.string().max(160)).max(32),
       hdr: z.string().max(24).nullable(),
       container: z.string().max(24).nullable(),
       sizeBytes: z.number().int().min(0).nullable(),
@@ -186,6 +192,12 @@ export const CatalogMatch = z.object({
 
 /** "I chose this source": it comes first in availability from now on. */
 export const SourceTouch = z.object({ titleId: TitleId, externalId: z.string().min(1).max(128) });
+
+/** The audio tracks the player read in a TorrServer torrent's file ("<language tag>|<title>"), kept with its index entries. */
+export const TorrentTracks = z.object({
+  hash: z.string().regex(/^[a-f0-9]{40}$/i),
+  tracks: z.array(z.string().max(160)).max(32),
+});
 
 /**
  * Torrents that are no longer on a TorrServer (removed from it, or missing from a full list it gave):

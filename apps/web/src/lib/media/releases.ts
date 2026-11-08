@@ -666,7 +666,9 @@ function compareRank(a: number[], b: number[]): number {
  * seeders as the indexer reports them for releases equal in all of that; the sort is stable after that. Seeders never
  * outweigh a picture version, and a 4K release is never swapped for 1080p by them. Results for other titles are left
  * out. With a wanted `season` (and `episode`), a release whose name says it holds other seasons (or other episodes of
- * that season) only sinks below the rest, like one without seeders, and is never recommended.
+ * that season) only sinks below the rest, like one without seeders, and is never recommended. `fileOf`: the audio
+ * tracks its file was read to have (a release already on the profile's server, `fileTracks`), else null — the name's
+ * "6x MVO" then credits the studios the file names.
  */
 export function rankReleases(
   results: TsSearchResult[],
@@ -674,14 +676,15 @@ export function rankReleases(
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
+  fileOf: ((r: TsSearchResult) => readonly string[] | null | undefined) | null = null,
 ): RankedRelease[] {
   const names = [d.originalTitle ?? "", d.title];
   return results
     .filter((r) => isSameTitle(r.title, names, d.year, d.kind))
     .map((result) => {
-      const info = parseRelease(result.title, result.tracker, d.originalLanguage);
+      const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
-      const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s));
+      const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))));
       // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
@@ -945,6 +948,40 @@ export function profileTrack(tracks: FileTrack[], prefs: Pick<ReleasePrefs, "lan
     if (hits.length > 0) return firstOf(hits);
   }
   return null;
+}
+
+/**
+ * A file's audio tracks ("<language tag>|<title>", as `torrentTracks` keeps them: "rus|MVO, LostFilm") read as a
+ * release name's tracks, in the file's order: each title's kind, studio or other credit and the original, its language
+ * by the tag (else by the title or the studio). What a name that says "6x MVO" doesn't tell.
+ */
+export function fileTracks(list: readonly string[], originalLanguage: string | null = null): ReleaseTrack[] {
+  return list.map((entry) => {
+    const bar = entry.indexOf("|");
+    const tag = bar >= 0 ? entry.slice(0, bar).toLowerCase() : "";
+    const title = bar >= 0 ? entry.slice(bar + 1) : entry;
+    const byTag = tag && tag !== "und" ? (Object.entries(ISO_639_2).find(([, codes]) => codes.includes(tag))?.[0] ?? (tag.length === 2 ? tag : null)) : null;
+    const t = tracksOf(title, null, originalLanguage);
+    const own = t.find((x) => !x.original && (x.studio || x.voice || x.credit)) ?? t.find((x) => x.original) ?? t[0];
+    const track: ReleaseTrack = own ? { ...own } : { language: null, voice: null, studio: null, credit: null, original: false };
+    // A name no studio list knows, after the kind: "Дубляж, Dragon Studio", "MVO [LE-Production]".
+    if (!track.studio && !track.credit && !track.original) {
+      const name = /(?:,|\(|\[)\s*([^,()[\]|]{2,40}?)\s*[)\]]?\s*(?:18\+)?\s*$/u.exec(title)?.[1]?.trim();
+      if (name && /\p{L}{2}/u.test(name) && !LANG_ONLY.test(name) && !NOT_A_CREDIT.test(name) && !voiceOfToken(name)) track.credit = name;
+    }
+    if (byTag) track.language = byTag;
+    if (!track.original && originalLanguage && track.language === originalLanguage && !track.voice && !track.studio && !track.credit) track.original = true;
+    return track;
+  });
+}
+
+/** A release's name as its file's tracks tell it, when they were read (`fileTracks`): its studios and languages too. */
+export function withFileTracks(info: ReleaseInfo, list: readonly string[] | null | undefined, originalLanguage: string | null = null): ReleaseInfo {
+  if (!list?.length) return info;
+  const tracks = fileTracks(list, originalLanguage);
+  const studios = [...new Set([...info.studios, ...tracks.flatMap((t) => (t.studio ? [t.studio] : []))])];
+  const languages = [...new Set([...info.languages, ...tracks.flatMap((t) => (t.language ? [t.language] : []))])];
+  return { ...info, tracks, studios, languages };
 }
 
 /**

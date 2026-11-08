@@ -456,6 +456,13 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         prep.at = "play";
         lastPrep.current = { label: labelOf(c), prep: { ...prep, facts: { ...prep.facts } } };
         if (opts.touch) background(api(`/api/connections/${c.server.connectionId}/index/touch`, { method: "POST", json: { titleId: d.id, externalId: c.server.externalId } }));
+        // The file's audio tracks, kept with the torrent: its release name may not name the studios ("6x MVO") the
+        // sources screen and the copy's heading then pick and say. Sent only when they differ from what is kept.
+        if (c.provider === "torrserver" && signedIn && !isKids && prepared.audio.length > 0) {
+          const tracks = prepared.audio.slice(0, 32).map((a) => `${a.lang ?? ""}|${a.label}`.slice(0, 160));
+          if ((c.server.quality?.audioTracks ?? []).join("\n") !== tracks.join("\n"))
+            background(api(`/api/connections/${c.server.connectionId}/index/tracks`, { method: "POST", json: { hash: hashOf(c.server.externalId).toLowerCase(), tracks } }).then(() => invalidateAvailability(qc)));
+        }
         // No track could be told to be the chosen dubbing: the default plays, and the person is told so.
         if (prepared.voice?.match === "unknown") toast.info(t("voiceTrackUnknown", { studio: prepared.voice.studio }));
 
@@ -518,7 +525,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         if (live()) preparing.current = false;
       }
     },
-    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav],
+    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
   );
 
   /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
@@ -770,6 +777,23 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const quality = params.get("quality");
   const finderStart = { voice: params.get("voice"), picture: params.get("picture"), quality: quality !== null && Object.hasOwn(QUALITY_MODES, quality) ? (quality as ReleaseQuality) : null };
   const finderShown = signedIn && !isKids && torrServers.length > 0;
+  // The audio tracks the player read in this title's copies on the profile's TorrServers: a search result that is the
+  // same release (by its hash, or the name the copy was saved under) takes its studios from the file ("6x MVO").
+  const filesOf = useMemo(() => {
+    const m = new Map<string, readonly string[]>();
+    const torrents = (avail.data?.servers ?? []).filter((s) => s.kind === "torrserver");
+    // Any entry of the torrent may hold them (its file bound to the film, the torrent's own entry added again).
+    for (const s of torrents) if (s.quality?.audioTracks?.length) m.set(`hash:${hashOf(s.externalId).toLowerCase()}`, s.quality.audioTracks);
+    for (const s of torrents) {
+      const tracks = s.quality?.audioTracks?.length ? s.quality.audioTracks : m.get(`hash:${hashOf(s.externalId).toLowerCase()}`);
+      if (tracks && s.label) m.set(`name:${s.label}`, tracks);
+    }
+    return m;
+  }, [avail.data]);
+  const fileTracksOf = useCallback(
+    (r: { hash: string | null; title: string }) => (r.hash ? filesOf.get(`hash:${r.hash.toLowerCase()}`) : undefined) ?? filesOf.get(`name:${r.title.slice(0, 190)}`) ?? null,
+    [filesOf],
+  );
   const finderProps: FinderProps = {
     details: d,
     season,
@@ -777,6 +801,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     connections: torrServers,
     defaultConnectionId: (active?.candidate ?? current)?.provider === "torrserver" ? (active?.candidate ?? current)!.server.connectionId : null,
     existing: linked,
+    fileTracks: filesOf.size ? fileTracksOf : undefined,
     start: finderStart,
     autoStart: phase.kind === "choose" && (picking || candidates.length === 0),
     onPick: (pick, anchor) => void addAndPlay(pick, anchor),

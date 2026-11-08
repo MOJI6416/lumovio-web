@@ -3,6 +3,7 @@ import {
   audioMatch,
   bestOf,
   creditsStudio,
+  fileTracks,
   holdsSeason,
   isSameTitle,
   packOf,
@@ -16,6 +17,7 @@ import {
   voiceOptions,
   voiceTrack,
   voiceWish,
+  withFileTracks,
 } from "../src/lib/media/releases";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
 
@@ -653,6 +655,31 @@ describe("a dubbing chosen by its language alone", () => {
     // "Russian · multi-voice" from a release whose file starts with HDRezka: the profile's LostFilm among the Russian tracks.
     expect(voiceTrack(dexter, { studio: null, language: "ru" }, ["LostFilm", "HDrezka Studio"])).toBe(5);
     expect(voiceTrack(dexter, { studio: null, language: "ru" })).toBe(1);
+  });
+});
+
+describe("a file's tracks read as a release's (fileTracks, withFileTracks)", () => {
+  it("reads each title's kind, studio or other name and language, the original by its tag", () => {
+    const tracks = fileTracks(["rus|Дубляж, Movie Dubbing", "rus|Дубляж, Dragon Studio", "rus|MVO, LostFilm", "rus|MVO [HDrezka Studio] 18+", "und|AVO, Ю. Сербин", "|RUS", "ukr|Дубляж, Postmodern", "eng|Original"], "en");
+    expect(tracks.map((t) => [t.language, t.voice, t.studio, t.credit, t.original])).toEqual([
+      ["ru", "dub", "Movie Dubbing", null, false],
+      ["ru", "dub", null, "Dragon Studio", false],
+      ["ru", "mvo", "LostFilm", null, false],
+      ["ru", "mvo", "HDrezka Studio", null, false],
+      ["ru", "avo", "Сербин", null, false],
+      ["ru", null, null, null, false],
+      ["uk", "dub", "Postmodern", null, false],
+      ["en", null, null, null, true],
+    ]);
+  });
+  it("gives a name that counts its voice-overs ('6x MVO') the studios its file names, and keeps the name's otherwise", () => {
+    const info = parseRelease("F1 / F1: The Movie [2025, WEB-DL 2160p, HDR10, Dolby Vision] 3x Dub (Movie Dubbing, Jaskier, RHS) + 6x MVO + AVO + VO + Dub (Ukr) + Original (Eng)", "RuTracker.org", "en");
+    expect(info.studios).not.toContain("LostFilm");
+    const read = withFileTracks(info, ["rus|MVO, LostFilm", "rus|MVO, HDRezka Studio", "eng|Original"], "en");
+    expect(read.studios).toEqual(expect.arrayContaining(["LostFilm", "HDrezka Studio"]));
+    expect(profileNameTrack(read, { languages: ["ru"], studios: ["LostFilm"] })).toMatchObject({ studio: "LostFilm" });
+    expect(withFileTracks(info, null)).toBe(info);
+    expect(withFileTracks(info, [])).toBe(info);
   });
 });
 

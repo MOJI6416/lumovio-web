@@ -3,7 +3,7 @@
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/components/providers/Providers";
-import { creditsStudio, parseRelease, profileNameTrack } from "@/lib/media/releases";
+import { creditsStudio, parseRelease, profileNameTrack, withFileTracks } from "@/lib/media/releases";
 import { copyMarks, type QualityMark, resolutionBesideMarks } from "./QualityBadges";
 import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 
@@ -75,6 +75,14 @@ export function useCopyText() {
     const info = parseRelease(name, null, originalLanguage);
     return releaseMarks(info);
   };
+  /** The audio tracks the player read in a TorrServer copy's file (its own entry's, or its torrent's), when it was played. */
+  const fileOf = (s: Availability, all: Availability[]) => {
+    if (s.kind !== "torrserver") return null;
+    if (s.quality?.audioTracks?.length) return s.quality.audioTracks;
+    const hash = s.externalId.split(":")[0]!.toLowerCase();
+    return all.find((x) => x.connectionId === s.connectionId && x.externalId.split(":")[0]!.toLowerCase() === hash && x.quality?.audioTracks?.length)?.quality?.audioTracks ?? null;
+  };
+
   /**
    * What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)") — of
    * a TorrServer copy, the track the player starts for this profile (`profileNameTrack`, as `profileTrack` picks the
@@ -85,7 +93,7 @@ export function useCopyText() {
     if (own) return own;
     const name = releaseName(s, all);
     if (!name) return null;
-    const info = parseRelease(name, null, originalLanguage);
+    const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
     const heard = profileNameTrack(info, { languages: langs, studios });
     return text.audio({ info, language: heard?.language ?? null }, heard?.studio) || null;
   };
@@ -125,9 +133,9 @@ export function useCopyText() {
       }
       const name = releaseName(s, all);
       if (!name) return null;
-      const studio = studios.find((x) => creditsStudio(name, x));
+      const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
+      const studio = studios.find((x) => creditsStudio(name, x) || info.tracks.some((t) => t.studio !== null && creditsStudio(t.studio, x)));
       if (studio) return { kind: "studio", studio };
-      const info = parseRelease(name, null, originalLanguage);
       const l = langs.find((x) => info.languages.includes(x));
       return l ? { kind: "language", language: l } : null;
     },
