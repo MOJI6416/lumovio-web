@@ -546,9 +546,12 @@ export function isSameTitle(release: string, names: string[], year: number | nul
   for (const p of parts)
     for (const n of wanted) {
       if (!p.startsWith(n) || /[\p{L}\d]/u.test(p.charAt(n.length))) continue;
-      const tail = p.slice(n.length).replace(/^[\s:,.\-–—]+/, "");
+      const rest = p.slice(n.length);
+      const tail = rest.replace(/^[\s:,.\-–—]+/, "");
       if (kind === "movie" || SERIES_TAIL.test(tail)) fit = "marker";
-      else if (!CONNECTOR.test(tail)) fit ??= "named";
+      // A subtitle follows a colon or a dash ("Arcane: League of Legends"), an abbreviation a space ("House M.D."); a word
+      // straight after the name is another title ("The Penguin Lessons" is not "The Penguin").
+      else if ((/^\s*[:\-–—]/.test(rest) || /^\s+\p{L}{1,2}(?!\p{L})/u.test(rest)) && !CONNECTOR.test(tail)) fit ??= "named";
     }
   if (!fit) return false;
   // A year that is the name itself ("1923", "1917") says nothing about when the release is from.

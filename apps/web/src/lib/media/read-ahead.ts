@@ -1,5 +1,5 @@
 import { isVideoFile, matchEpisode, pickMovieFile, type TsFile, type TsSearchResult } from "./torrserver";
-import { saveTracks } from "./release-tracks";
+import { refusedToday, saveTracks } from "./release-tracks";
 import { torrServerFor } from "./torrent-source";
 
 /*
@@ -83,7 +83,14 @@ export async function readOne(job: ReadAheadJob, r: TsSearchResult, signal: Abor
   const before = new Map(list.map((t) => [t.hash.toLowerCase(), t]));
   const deadline = Date.now() + READ_TIMEOUT_MS;
   const left = () => Math.max(1000, deadline - Date.now());
-  const hash = there ? there.hash.toLowerCase() : (await ts.peek(r.origins?.[0]?.link ?? r.link, r.title.slice(0, 250)))?.hash?.toLowerCase();
+  const added = there
+    ? null
+    : await ts.peek(r.origins?.[0]?.link ?? r.link, r.title.slice(0, 250)).catch((e: unknown) => {
+        // The tracker didn't give the .torrent (TorrServer's 400): its other releases aren't read today either.
+        refusedToday(r.tracker);
+        throw e;
+      });
+  const hash = there ? there.hash.toLowerCase() : added?.hash?.toLowerCase();
   if (!hash) return null;
   reading.add(hash);
   // The peek hit a torrent the server had (TorrServer keeps one per hash, and the add rewrote its name and data).

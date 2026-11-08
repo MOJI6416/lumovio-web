@@ -89,3 +89,14 @@ describe("reading ahead within the owner's limits", () => {
     expect(order).toEqual(["Film 2020 2160p WEB-DL MVO", "Film 2020 1080p WEB-DL MVO", "Film 2020 2160p WEB-DL Dub (LostFilm)"]);
   });
 });
+
+describe("reading ahead never spends the person's tracker downloads", () => {
+  it("leaves out Kinozal's .torrent links and trackers that refused today; a magnet is free", async () => {
+    const { spendsQuota, refusedToday } = await import("../src/lib/media/release-tracks");
+    expect(spendsQuota({ link: "http://jackett/dl/kinozal/?x", tracker: "Kinozal.tv", origins: undefined })).toBe(true);
+    expect(spendsQuota({ link: "magnet:?xt=urn:btih:abc", tracker: "Kinozal.tv", origins: undefined })).toBe(false);
+    expect(spendsQuota({ link: "http://jackett/dl/rutracker/?x", tracker: "RuTracker.org", origins: undefined })).toBe(false);
+    refusedToday("RuTracker.org");
+    expect(spendsQuota({ link: "http://jackett/dl/rutracker/?x", tracker: "RuTracker.org", origins: undefined }, refusedToday())).toBe(true);
+  });
+});

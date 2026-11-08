@@ -7,7 +7,7 @@ import { useSession } from "@/components/providers/Providers";
 import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
-import { lookupTracks, readOrder } from "@/lib/media/release-tracks";
+import { lookupTracks, readOrder, refusedToday } from "@/lib/media/release-tracks";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
@@ -117,7 +117,7 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
   // biome-ignore lint/correctness/useExhaustiveDependencies: one round per answer and profile
   useEffect(() => {
     if (!ranked || !known || !source || kids || prefs.studios.length === 0) return;
-    const suspects = readOrder(ranked, known);
+    const suspects = readOrder(ranked, known, refusedToday());
     if (suspects.length === 0) return;
     let cancel: (() => void) | null = null;
     let gone = false;

@@ -130,3 +130,20 @@ describe("720p and 1080p are not one HD (the owner, 2026-11-08)", () => {
     expect(["1080p", "720p", "4K", "2160p", "576p"].map(resolutionBesideMarks)).toEqual(["1080p", "720p", null, null, "576p"]);
   });
 });
+
+describe("T2 after the owner's Penguin (2026-11-08)", () => {
+  it("never takes words straight after a series' name for a subtitle", () => {
+    const penguin = ["The Penguin", "Пингвин"];
+    expect(isSameTitle("The Penguin Lessons 2024 DUB, MVO, Sub BDRip 1080p - RUSSIAN", penguin, 2024, "tv", 2025)).toBe(false);
+    expect(isSameTitle("Пингвин / The Penguin / Сезон: 1 / Серии: 1-8 из 8 [2024, WEB-DL 1080p] MVO", penguin, 2024, "tv", 2025)).toBe(true);
+    expect(isSameTitle("The Penguin S01 2160p WEB-DL", penguin, 2024, "tv", 2025)).toBe(true);
+    expect(isSameTitle("Arcane: League of Legends - S1E1-9 - 2021  DUB, Sub WEBDL 1080p - RUSSIAN", ["Arcane", "Аркейн"], 2021, "tv", 2025)).toBe(true);
+  });
+});
+
+describe("T2: an abbreviation after the name is still the series", () => {
+  it("takes House M.D. dated within the run", () => {
+    expect(isSameTitle(`House M.D. (S1-8 + "Swan Song") (2004-2012) BDRip 1080p`, ["House", "Доктор Хаус"], 2004, "tv", 2013)).toBe(true);
+    expect(isSameTitle("House Hunters International [2014, HDTV 1080i]", ["House", "Доктор Хаус"], 2004, "tv", 2013)).toBe(false);
+  });
+});

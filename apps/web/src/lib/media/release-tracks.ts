@@ -43,13 +43,41 @@ export function hidesStudios(x: Pick<RankedRelease, "info">): boolean {
 }
 
 /**
+ * Trackers that count the account's .torrent downloads per day (Kinozal: a few a day for most accounts): a read ahead
+ * through Jackett would spend the downloads the person needs to watch — on 2026-11-08 the owner's adds started failing
+ * with 400 ("Found '<'": Kinozal's page instead of the file) once reads had taken them. A magnet costs nothing.
+ */
+const QUOTA_TRACKERS = /kinozal/i;
+
+/** Whether reading a release ahead would download its .torrent from a tracker with a daily quota, or one that refused today. */
+export function spendsQuota(r: Pick<RankedRelease["result"], "link" | "tracker" | "origins">, refused: ReadonlySet<string> = new Set()): boolean {
+  if (r.link.startsWith("magnet:")) return false;
+  const tracker = (r.tracker ?? "").toLowerCase();
+  return QUOTA_TRACKERS.test(tracker) || refused.has(tracker);
+}
+
+/**
  * The releases to read ahead, in order (the owner, 2026-11-08): names that hide their studios ("MVO" without one)
  * first, then the rest; in each, the best picture first, then the most seeders. Only alive ones that hold the episode,
  * play here and aren't in the shared cache yet (`known`, by name). `readAhead` reads `MAX_READS` of them at most.
  */
-export function readOrder(ranked: RankedRelease[], known: { has(title: string): boolean }): RankedRelease["result"][] {
+export function readOrder(ranked: RankedRelease[], known: { has(title: string): boolean }, refused: ReadonlySet<string> = new Set()): RankedRelease["result"][] {
   return ranked
-    .filter((x) => !x.dead && !x.info.cam && x.holds !== false && x.fit !== "poor" && !known.has(x.result.title))
+    .filter((x) => !x.dead && !x.info.cam && x.holds !== false && x.fit !== "poor" && !known.has(x.result.title) && !spendsQuota(x.result, refused))
     .sort((a, b) => Number(hidesStudios(b)) - Number(hidesStudios(a)) || (b.info.resolution ?? 0) - (a.info.resolution ?? 0) || (b.result.seeders ?? -1) - (a.result.seeders ?? -1))
     .map((x) => x.result);
+}
+
+/** Trackers that refused a read's .torrent today on this device (a quota or a dead session): not read again today. */
+export function refusedToday(add?: string | null): Set<string> {
+  const key = "lumovio.readAhead.refused";
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    const [d, list] = (localStorage.getItem(key) ?? "").split("|");
+    const set = new Set(d === day && list ? list.split(",") : []);
+    if (add) localStorage.setItem(key, `${day}|${[...set.add(add.toLowerCase())].join(",")}`);
+    return set;
+  } catch {
+    return new Set();
+  }
 }
