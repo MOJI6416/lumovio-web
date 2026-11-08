@@ -55,16 +55,49 @@ export function resumable(p: TitleLibraryState["progress"] | undefined): p is No
   return Boolean(p && !p.completed && p.positionSec > 30);
 }
 
-/** The episode "Watch" starts a series with: where the profile is, the one after the last finished, else the first. */
-export function startEpisode(t: Pick<TitleDetails, "seasons">, p: TitleLibraryState["progress"] | undefined): { season: number; episode: number } {
+/**
+ * Whether an episode or season dated so (TMDB's YYYY-MM-DD) is out on the viewer's day; an undated one is not yet. The
+ * day is lib/format's `localDay`, written out: this module is in every card's bundle, and that one is not (1.9 KB).
+ */
+export function isOut(airDate: string | null | undefined, today?: string): boolean {
+  const d = new Date();
+  const day = today ?? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return Boolean(airDate && airDate <= day);
+}
+
+/**
+ * The episode after one by the seasons' counts — after a season's last, the next season's first (T1) — or null after
+ * the last one (and in specials). TMDB counts announced episodes and seasons: whether it is out is the caller's check.
+ */
+export function episodeAfter(seasons: TitleDetails["seasons"], season: number, episode: number): { season: number; episode: number } | null {
+  if (season === 0) return null;
+  const s = seasons.find((x) => x.seasonNumber === season);
+  if (s && episode < s.episodeCount) return { season, episode: episode + 1 };
+  const next = seasons.filter((x) => x.seasonNumber > season && x.episodeCount > 0).sort((a, b) => a.seasonNumber - b.seasonNumber)[0];
+  return next ? { season: next.seasonNumber, episode: 1 } : null;
+}
+
+/**
+ * The episode "Watch" starts a series with: where the profile is, the one after the last finished, else the first. The
+ * one after is taken only once it is out (P3, T1: TMDB's next episode or the next season's premiere date); until then
+ * "Watch" stays on the episode finished.
+ */
+export function startEpisode(t: Pick<TitleDetails, "seasons" | "nextEpisode">, p: TitleLibraryState["progress"] | undefined): { season: number; episode: number } {
   if (p && resumable(p) && p.season !== null) return { season: p.season, episode: p.episode ?? 1 };
   const first = t.seasons.find((s) => s.seasonNumber > 0) ?? t.seasons[0];
-  if (p?.completed && p.season !== null && p.episode !== null) return { season: p.season, episode: p.episode + 1 };
+  if (p?.completed && p.season !== null && p.episode !== null) {
+    const next = episodeAfter(t.seasons, p.season, p.episode);
+    const announced = t.nextEpisode && t.nextEpisode.seasonNumber === next?.season && t.nextEpisode.episodeNumber === next.episode ? t.nextEpisode : null;
+    const out = announced
+      ? isOut(announced.airDate)
+      : next && (next.season === p.season || isOut(t.seasons.find((s) => s.seasonNumber === next.season)?.airDate));
+    return next && out ? next : { season: p.season, episode: p.episode };
+  }
   return { season: first?.seasonNumber ?? 1, episode: 1 };
 }
 
 /** Where "Watch" and "Continue" go: resume, else the next episode, else the start. */
-export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, p: TitleLibraryState["progress"] | undefined): string {
+export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons" | "nextEpisode">, p: TitleLibraryState["progress"] | undefined): string {
   const base = `/watch/${t.kind}/${t.tmdbId}`;
   if (t.kind === "movie") return base;
   const { season, episode } = startEpisode(t, p);

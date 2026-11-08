@@ -18,7 +18,7 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
-import type { RankedRelease } from "@/lib/media/releases";
+import { type RankedRelease, releaseKey } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
@@ -211,7 +211,7 @@ export function ReleaseFinder(props: FinderProps) {
         onWatch={() => {
           const r = f.detailed;
           f.setDetailed(null);
-          if (r) f.pick(r, document.querySelector(`[data-link="${CSS.escape(r.link)}"]`));
+          if (r) f.pick(r, document.querySelector(`[data-release="${CSS.escape(releaseKey(r))}"]`));
         }}
       />
     </section>
@@ -294,7 +294,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
       }
       actions={
         <>
-          <Button variant={lead ? "primary" : "secondary"} size="lg" data-link={chosen.result.link} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
+          <Button variant={lead ? "primary" : "secondary"} size="lg" data-release={releaseKey(chosen.result)} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
             <Play aria-hidden className="fill-current" />
             {tt("tsWatch")}
           </Button>
@@ -516,11 +516,11 @@ function ReleaseItem({
         <p className="mt-0.5 text-body-s break-words text-text-2">{where}</p>
       </div>
       {/* As the card: "Watch", then "i" for the details (a circle "▶" on a phone, where the row is narrow). */}
-      <Button variant="secondary" data-link={r.link} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 max-sm:hidden">
+      <Button variant="secondary" data-release={releaseKey(r)} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 max-sm:hidden">
         <Play aria-hidden className="fill-current" />
         {tt("tsWatch")}
       </Button>
-      <IconButton icon={Play} variant="secondary" label={tt("tsWatch")} data-link={r.link} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 sm:hidden [&_svg]:fill-current" />
+      <IconButton icon={Play} variant="secondary" label={tt("tsWatch")} data-release={releaseKey(r)} aria-describedby={head} onClick={(e) => onWatch(e.currentTarget)} className="shrink-0 sm:hidden [&_svg]:fill-current" />
       <IconButton icon={Info} variant="secondary" label={tp("releaseDetails")} aria-describedby={head} aria-haspopup="dialog" onClick={onDetails} className="shrink-0" />
     </li>
   );

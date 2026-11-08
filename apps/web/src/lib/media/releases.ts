@@ -143,7 +143,10 @@ export function holdsSeason(pack: PackInfo, season: number, episode: number | nu
   if (!pack.seasons || pack.cours) return null;
   if (season < pack.seasons.from || season > pack.seasons.to) return false;
   const e = pack.episodes;
-  if (episode !== null && e?.bySeason && !e.open && pack.seasons.from === pack.seasons.to && (episode < e.from || episode > e.to)) return false;
+  // One season and its episodes — numbered in the season (S02E01-08), or a range from 1 or with a total ("Серии: 1-8 из
+  // 10"): a pack of that season, so an episode outside it isn't there (T5). A range counted across the series is not.
+  const inSeason = e && (e.bySeason || e.from === 1 || e.of !== null);
+  if (episode !== null && e && inSeason && !e.open && pack.seasons.from === pack.seasons.to && (episode < e.from || episode > e.to)) return false;
   return true;
 }
 
@@ -497,14 +500,39 @@ const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+/**
+ * A search result's identity on the page — for keys, focus memory and the element a launch grows from — without its link:
+ * a Jackett link carries the account's `jackett_apikey`, and what is kept in the DOM or sessionStorage must not (A12).
+ */
+export const releaseKey = (r: Pick<TsSearchResult, "hash" | "title" | "tracker" | "size">): string =>
+  r.hash ? r.hash.toLowerCase() : `${r.tracker ?? ""}|${r.size ?? ""}|${r.title}`;
+
 const EXTRAS = W("саундтрек|soundtrack|ost|making of|бонус\\p{L}*|bonus|трейлер|trailer|featurette");
+
+/**
+ * What may follow a series' name in a release of it (T2): nothing, a bracket, a number (season, episode, year,
+ * resolution), or a word of a release — season, quality, a country (The Office US), a studio. Other words continue the
+ * name: a connector ("House of the Dragon") never is the series; a subtitle ("Arcane: League of Legends", but also
+ * "Dexter: Original Sin") is only with a year of the series' run in the name.
+ */
+const CONNECTOR = /^(?:of|and|the|on|in|at|with|to|for|from|и|в|на|из)(?![\p{L}\d])/iu;
+const SERIES_TAIL =
+  /^(?:$|[([{]|\d|[sс]\d|e\d|ep\s?\d|(?:season|сезон|серии|серия|series|complete|полный|staffel|temporada|saison|stagione|sezon|odc|mini|us|uk|tv|web|bd|blu|hdtv|hd|dvd|remux|rip|uhd|4k|imax|extended|director|unrated|amzn|nf|atvp|dsnp|hmax|hulu|rus|eng|ukr|mvo|dvo|avo|dub|lostfilm|newstudio|кураж)(?![\p{L}]))/iu;
+
+/** The last year a series aired, by its seasons' premieres (a season runs into the next year), or null when unknown. */
+export function seriesUntil(d: { seasons?: { seasonNumber: number; airDate: string | null }[] }): number | null {
+  const years = (d.seasons ?? []).filter((s) => s.seasonNumber > 0 && s.airDate).map((s) => Number(s.airDate!.slice(0, 4)));
+  return years.length ? Math.max(...years) + 1 : null;
+}
 
 /**
  * Whether a search result is this title: one of the name's parts (Russian trackers write "Рус / Eng")
  * starts with the original or localized title, and a film's year, when the name has one, is within a
  * year of it. A different film that merely contains the words ("The Science of Interstellar") does not count.
+ * A series' release is dated within its run (`until`: `seriesUntil`), and one whose name goes on past the series'
+ * (`SERIES_TAIL`) has to be dated so to count (T2: "Dexter: Original Sin" is not Dexter).
  */
-export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv"): boolean {
+export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv", until: number | null = null): boolean {
   if (EXTRAS.test(release)) return false;
   // A film is never a release that names seasons: "Avatar: The Last Airbender - S1 - rus 1080p" is not "Avatar" (2009).
   if (kind === "movie") {
@@ -513,10 +541,25 @@ export function isSameTitle(release: string, names: string[], year: number | nul
   }
   const parts = norm(release).split(/\s*[/|]\s*/);
   const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
-  const starts = parts.some((p) => wanted.some((n) => p.startsWith(n) && !/[\p{L}\d]/u.test(p.charAt(n.length))));
-  if (!starts) return false;
-  if (kind === "tv" || !year) return true;
-  const years = [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?!\d)/g)].map((m) => Number(m[1]));
+  // For a series: "marker" — the name ends where the series' does; "named" — a subtitle follows.
+  let fit: "marker" | "named" | null = null;
+  for (const p of parts)
+    for (const n of wanted) {
+      if (!p.startsWith(n) || /[\p{L}\d]/u.test(p.charAt(n.length))) continue;
+      const tail = p.slice(n.length).replace(/^[\s:,.\-–—]+/, "");
+      if (kind === "movie" || SERIES_TAIL.test(tail)) fit = "marker";
+      else if (!CONNECTOR.test(tail)) fit ??= "named";
+    }
+  if (!fit) return false;
+  // A year that is the name itself ("1923", "1917") says nothing about when the release is from.
+  const own = new Set(wanted.flatMap((n) => n.match(/\d{4}/g) ?? []).map(Number));
+  const years = [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?!\d)/g)].map((m) => Number(m[1])).filter((y) => !own.has(y));
+  if (kind === "tv") {
+    // A series' releases are dated within its run (a year early for a premiere at New Year).
+    const inRun = years.filter((y) => (!year || y >= year - 1) && (!until || y <= until));
+    return fit === "marker" ? years.length === 0 || inRun.length > 0 : inRun.length > 0;
+  }
+  if (!year) return true;
   return years.length === 0 || years.some((y) => Math.abs(y - year) <= 1);
 }
 
@@ -680,15 +723,16 @@ function compareRank(a: number[], b: number[]): number {
  */
 export function rankReleases(
   results: TsSearchResult[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage">,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "seasons">>,
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
   fileOf: ((r: TsSearchResult) => readonly string[] | null | undefined) | null = null,
 ): RankedRelease[] {
   const names = [d.originalTitle ?? "", d.title];
+  const until = seriesUntil(d);
   return results
-    .filter((r) => isSameTitle(r.title, names, d.year, d.kind))
+    .filter((r) => isSameTitle(r.title, names, d.year, d.kind, until))
     .map((result) => {
       const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
@@ -736,10 +780,10 @@ export function kindOf(info: ReleaseInfo, studio: string): Voice | null {
   return info.studioVoices[known] ?? (info.studios.length <= 1 ? info.voice : null);
 }
 
-/** The release to recommend: the first ranked one, unless nothing is alive (or holds the wanted season). */
+/** The release to recommend: the first ranked one, unless nothing is alive (or holds the wanted season); never a cinema recording (T4). */
 export function bestOf(ranked: RankedRelease[]): RankedRelease | undefined {
   const x = ranked[0];
-  return x && !x.dead && x.holds !== false ? x : undefined;
+  return x && !x.dead && x.holds !== false && !x.info.cam ? x : undefined;
 }
 
 /**
@@ -758,8 +802,11 @@ export function audioMatch(x: RankedRelease): { kind: "studio"; studio: string }
  */
 export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[] {
   const tracks = namedTracks(x.info);
+  // The original track in the profile's language is that language's option too (T3): "… D, P, A | Original Eng" is
+  // English for a profile that listens in English, not only Russian dubbing.
+  const original = x.language && tracks.length > 0 && x.info.tracks.some((t) => t.original && t.language === x.language) ? [`${x.language}|`] : [];
   if (tracks.length === 0) return [`${x.language ?? ""}|${kindKey(x.info.voice)}`];
-  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? kindKey(t.voice)}`))];
+  return [...new Set([...tracks.map((t) => `${t.language ?? ""}|${t.studio ?? kindKey(t.voice)}`), ...original])];
 }
 
 /**

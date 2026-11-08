@@ -123,17 +123,20 @@ export function ExternalPlayerPanel({
             {a.label}
           </a>
         ))}
-        {/* A downloaded playlist goes nowhere on an iPhone: the apps above open the stream instead. */}
-        {!ios && (
+        {/* A downloaded playlist goes nowhere on an iPhone: the apps above open the stream instead. On a TV neither a
+            playlist nor a copied link goes anywhere, and both carry the server's password (P2): the app opens the player. */}
+        {!ios && !tvNav && (
           <Button variant={apps.length === 0 ? "primary" : "secondary"} icon={Download} onClick={m3u}>
             {t("downloadPlaylist")}
           </Button>
         )}
-        <Button variant="secondary" icon={Copy} loading={copy.pending} onClick={() => void copy.run()}>
-          {t("copyLink")}
-        </Button>
+        {!tvNav && (
+          <Button variant="secondary" icon={Copy} loading={copy.pending} onClick={() => void copy.run()}>
+            {t("copyLink")}
+          </Button>
+        )}
       </div>
-      {hasCreds && (
+      {hasCreds && !tvNav && (
         <p className="flex items-start gap-2 text-body-s text-text-2">
           <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
           {t("linkWarning")}

@@ -99,7 +99,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
         <WatchCard
           id={ID}
           mark={<CardMark kind="torrserver" />}
-          heading={<span aria-live="polite">{t("tsNothing")}</span>}
+          heading={<span aria-live="polite">{t(ranked?.some((x) => x.info.cam && !x.dead && x.holds !== false) ? "tsCamOnly" : "tsNothing")}</span>}
           where={via}
           actions={
             <Link href={pickHref} className={buttonClass("secondary", "lg")}>

@@ -18,6 +18,7 @@ import { useMediaErrorText } from "@/components/sources/media-error";
 import { formatSize } from "@/components/sources/release-text";
 import { SourceRow, SourceSection } from "@/components/sources/SourceRow";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "@/components/title/CopyActions";
+import { episodeAfter, isOut } from "@/components/title/core";
 import { useCastReport } from "@/components/tv/cast-report";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import type { TvAction, TvSourcesProps } from "@/components/tvui/sources/TvSources";
@@ -37,6 +38,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { ApiRequestError, api } from "@/lib/api";
 import { reportPlayback } from "@/lib/last-playback";
 import { trackOutcome } from "@/lib/discovery-metrics";
+import { formatClock } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { detectCapabilities } from "@/lib/media/capabilities";
 import { clientFor } from "@/lib/media/clients";
@@ -45,6 +47,7 @@ import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence"
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
 import { holdsSeason, packOf, voiceWish } from "@/lib/media/releases";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
+import { mediaFailure } from "@/lib/media/stream-break";
 import { forgetTorrents, invalidateAvailability, markPlayed, torrentPresence } from "@/lib/media/torrent-manage";
 import { addTorrentSource } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
@@ -104,6 +107,8 @@ type Phase =
       message: string;
       prep: Prep;
       retry: (() => void) | null;
+      /** The retry's own words ("Retry from 0:06"); "Retry" otherwise. */
+      retryLabel?: string;
       prepared?: PreparedPlayback;
       gone?: { connectionId: string; hash: string };
       auth?: boolean;
@@ -196,6 +201,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
+  /** Where each source's stream broke and was quietly restarted (S1). */
+  const resumedAt = useRef(new Map<string, number>());
   const sessionId = useRef(randomId());
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
@@ -722,25 +729,23 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     );
   };
 
-  const nextEp = useMemo(() => {
-    if (d.kind !== "tv" || season === null || episode === null) return null;
-    const s = d.seasons.find((x) => x.seasonNumber === season);
-    if (s && episode < s.episodeCount) return { season, episode: episode + 1 };
-    const ns = d.seasons.find((x) => x.seasonNumber === season + 1);
-    return ns ? { season: season + 1, episode: 1 } : null;
-  }, [d, season, episode]);
+  const after = useMemo(() => (d.kind !== "tv" || season === null || episode === null ? null : episodeAfter(d.seasons, season, episode)), [d, season, episode]);
   // The next episode's name for its card (PLR-11): the same query as the title page's season browser and the episodes panel.
   const nextSeason = useQuery({
-    queryKey: ["season", d.tmdbId, nextEp?.season ?? 0, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${nextEp!.season}`),
-    enabled: nextEp !== null,
+    queryKey: ["season", d.tmdbId, after?.season ?? 0, locale],
+    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${after!.season}`),
+    enabled: after !== null,
     staleTime: 30 * 60_000,
   });
+  // An announced episode (TMDB counts them) is not next until it is out (P3): no card, no countdown — the end screen.
+  // A season that didn't load leaves the count alone to decide, as before.
+  const afterData = after ? nextSeason.data?.episodes.find((e) => e.episodeNumber === after.episode) : undefined;
+  const nextEp = after && (nextSeason.isError || isOut(afterData?.airDate)) ? after : null;
   // A profile that hides the names (or stills) of unwatched episodes (8.12) gets the number only (the still blurred).
   const spoilers = useSpoilerPrefs();
   const watched = useLibraryState(d.id).data?.watchedEpisodes;
   const nextOpen = nextEp ? episodesOpen(watched)(nextEp.season, nextEp.episode) : false;
-  const nextData = nextEp ? nextSeason.data?.episodes.find((e) => e.episodeNumber === nextEp.episode) : undefined;
+  const nextData = nextEp ? afterData : undefined;
   const nextName = nextEp && !(spoilers.names && !nextOpen) ? nextData?.name : undefined;
   // The episode playing, named under the title (the same season query, usually cached by the title page).
   const thisSeason = useQuery({
@@ -1070,12 +1075,23 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         complete(pos, last.current.dur ?? pos);
         active.prepared.reportStop?.(pos);
       }}
-      onFatal={(message, code) => {
+      onFatal={(message, code, at = 0) => {
         const c = active.candidate;
         const prepared = active.prepared;
+        // After the first frame a decoder's or network error is the stream that broke, not the file (S1): once per
+        // place it restarts quietly from there; a second break there says so, with a retry from that moment.
+        const pos = Math.max(at, last.current.pos);
+        const broke = mediaFailure(code, pos, resumedAt.current.get(c.key) ?? null);
+        if (broke === "resume") {
+          resumedAt.current.set(c.key, pos);
+          resumeOverride.current = pos;
+          setActive(null);
+          void prepare(c, { auto: false, audioIndex: prepared.audio.find((a) => a.isDefault)?.index });
+          return;
+        }
         // A TorrServer file whose plain stream this browser couldn't take (a decoder or the password's service worker
         // failed): once, it is rebuilt in the browser from the same position, where it can be — no loop.
-        if (c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
+        if (broke === "file" && c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
           rebuilt.current.add(c.key);
           resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
           setActive(null);
@@ -1098,14 +1114,20 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           // The media element's and the rebuild engine's messages are English and technical: not shown.
           // 4: the format; 3: a decoder that said yes and then couldn't (Firefox and HEVC on some PCs).
           message:
-            code === 4
-              ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
-              : code === 3
-                ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
-                : t("errorUnknown"),
+            broke === "broke"
+              ? t("errorStreamBroke")
+              : code === 4
+                ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
+                : code === 3
+                  ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
+                  : t("errorUnknown"),
           prepared,
-          retry: () => void prepare(c, { auto: false }),
-          cause: code === 3 || code === 4 ? "unsupported" : "other",
+          retry: () => {
+            if (broke === "broke") resumeOverride.current = pos;
+            void prepare(c, { auto: false });
+          },
+          retryLabel: broke === "broke" ? t("retryFrom", { time: formatClock(pos) }) : undefined,
+          cause: broke === "broke" ? "other" : code === 3 || code === 4 ? "unsupported" : "other",
         });
       }}
       castButton={castButton}
@@ -1191,7 +1213,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // The TV shell: the same viewing in the TV's composition (design-system 10.3 «Экран источников», S57).
   if (tvNav) {
     const errorActions = (p: Extract<Phase, { kind: "error" }>): TvAction[] => [
-      ...(p.retry ? [{ label: tc("retry"), icon: RefreshCw, run: p.retry }] : []),
+      ...(p.retry ? [{ label: p.retryLabel ?? tc("retry"), icon: RefreshCw, run: p.retry }] : []),
       ...(p.gone ? [{ label: t("forgetCopy"), icon: Link2Off, run: () => void forget.run(p.gone!), loading: forget.pending }] : []),
       // A server's sign-in is checked on a phone (the shell's "Continue on your phone").
       ...(p.auth ? [{ label: tt("checkConnection"), icon: Settings2, run: () => tvNav.navigate("/settings/connections") }] : []),
@@ -1305,7 +1327,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     <>
       {primaryRetry && p.retry && (
         <Button icon={RefreshCw} onClick={p.retry}>
-          {tc("retry")}
+          {p.retryLabel ?? tc("retry")}
         </Button>
       )}
       {p.gone && (

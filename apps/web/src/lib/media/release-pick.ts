@@ -107,8 +107,9 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   const anyVoice = choice.voice === ANY;
   const option = anyVoice ? undefined : (options.find((o) => o.key === choice.voice) ?? options[0]);
   if (!option && !anyVoice) {
+    // Never a cinema recording, even as the last resort (T4): only those found is said as such, not as "found".
     const x = ranked[0];
-    const chosen = x && !x.dead && x.holds !== false ? x : undefined;
+    const chosen = x && !x.dead && x.holds !== false && !x.info.cam ? x : undefined;
     return { options, option, editions: [], edition: null, versions: [], version: undefined, pool: chosen ? [chosen] : [], chosen };
   }
   const pool = alive.filter((x) => !x.info.cam && !x.dead && (!option || voiceKeys(x).includes(option.key)));
