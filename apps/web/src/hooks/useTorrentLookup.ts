@@ -130,6 +130,7 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
     void import("@/lib/media/read-ahead").then(({ readAhead }) => {
       if (gone) return;
       cancel = readAhead({
+        titleId: d.id,
         connectionId: source.id,
         releases: suspects,
         originalLanguage: d.originalLanguage ?? null,

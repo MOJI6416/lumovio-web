@@ -9,20 +9,23 @@ import { torrServerFor } from "./torrent-source";
  *
  * Only on suspicion (`useTorrentLookup`): a name that hides its studios, one of the best pictures found, a profile with
  * studios. The rules that keep it out of the way: it starts when the page has been idle `IDLE_MS` (requestIdleCallback),
- * at most `MAX_READS` releases per page view, one at a time across the whole app, each within `READ_TIMEOUT_MS`; the
+ * at most `MAX_READS` releases per title in a tab, one at a time across the whole app, each within `READ_TIMEOUT_MS`; the
  * first failure ends the round (a slow server or a dead swarm is not asked again); leaving the page cancels it, and a
- * release already on the server is never added again (an add would rewrite it).
+ * release already on the server is read where it is, never added again (an add would rewrite it) nor removed.
  */
 export const IDLE_MS = 2000;
 export const MAX_READS = 2;
 export const READ_TIMEOUT_MS = 30_000;
 
 const tried = new Set<string>();
+/** Reads started per title in this tab: `MAX_READS` for a title, however often its ranking changes. */
+const readsOf = new Map<string, number>();
 let busy = false;
 
 const norm = (s: string | undefined) => (s ?? "").toLowerCase().replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
 
 export interface ReadAheadJob {
+  titleId: string;
   connectionId: string;
   releases: TsSearchResult[];
   originalLanguage: string | null;
@@ -51,12 +54,12 @@ async function readOne(job: ReadAheadJob, r: TsSearchResult, signal: AbortSignal
   const ts = await torrServerFor(job.connectionId);
   const list = await ts.list();
   const name = norm(r.title);
-  if (list.some((t) => norm(t.title) === name || norm((t as { name?: string }).name) === name || (r.hash && t.hash.toLowerCase() === r.hash.toLowerCase()))) return null;
+  // Already on the server (the same name or hash): read as it is — never added again, which would rewrite it.
+  const there = list.find((t) => norm(t.title) === name || norm((t as { name?: string }).name) === name || (r.hash && t.hash.toLowerCase() === r.hash.toLowerCase()));
   const before = new Set(list.map((t) => t.hash.toLowerCase()));
   const deadline = Date.now() + READ_TIMEOUT_MS;
   const left = () => Math.max(1000, deadline - Date.now());
-  const added = await ts.peek(r.origins?.[0]?.link ?? r.link, r.title.slice(0, 250));
-  const hash = added?.hash?.toLowerCase();
+  const hash = there ? there.hash.toLowerCase() : (await ts.peek(r.origins?.[0]?.link ?? r.link, r.title.slice(0, 250)))?.hash?.toLowerCase();
   if (!hash) return null;
   try {
     const t = await ts.stat(hash, left(), signal);
@@ -78,13 +81,12 @@ export function readAhead(job: ReadAheadJob): () => void {
   const ctrl = new AbortController();
   const run = async () => {
     const { compactTracks } = await import("./release-tracks");
-    let reads = 0;
     for (const r of job.releases) {
-      if (ctrl.signal.aborted || busy || reads >= MAX_READS) return;
+      if (ctrl.signal.aborted || busy || (readsOf.get(job.titleId) ?? 0) >= MAX_READS) return;
       if (tried.has(r.link)) continue;
       tried.add(r.link);
       busy = true;
-      reads++;
+      readsOf.set(job.titleId, (readsOf.get(job.titleId) ?? 0) + 1);
       try {
         const read = await readOne(job, r, ctrl.signal).catch(() => null); // ui-lint-ignore swallowed-error: a read ahead is quiet: a failure ends the round, nobody asked for it
         if (!read) return;
