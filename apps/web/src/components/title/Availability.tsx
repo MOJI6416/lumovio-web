@@ -63,7 +63,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const { data: lib } = useLibraryState(d.id);
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
-  // "Another release": the search card under the copy, its pills and "Watch" (a release is chosen right here).
+  // "Another release": the search card under the copy, its pills and "Watch" (a release is chosen right here) — on the
+  // TorrServer that searches by itself, else on one that answers: the press is the person's own request to search.
   const [another, setAnother] = useState(false);
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
@@ -74,6 +75,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
+  const anotherSource = search ?? manual;
   const resume = watchHref(d, lib?.progress);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
@@ -200,10 +202,10 @@ export function Availability({ title: d }: { title: TitleCore }) {
             </ul>
           </section>
         )}
-        {search && another && <TorrentLookupPanel title={d} source={search} />}
+        {anotherSource && another && <TorrentLookupPanel title={d} source={anotherSource} />}
         {torrServers.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {search && !another && (
+            {anotherSource && !another && (
               <Button variant="secondary" size="md" icon={Magnet} onClick={() => setAnother(true)}>
                 {tp("otherRelease")}
               </Button>
