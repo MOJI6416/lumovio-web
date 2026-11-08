@@ -25,6 +25,7 @@ import { tmdbImage } from "@/lib/images";
 import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
+import { chooseSeason } from "./chosen-season";
 import type { TitleCore } from "./core";
 import { useHydrated } from "./hydrated";
 
@@ -68,6 +69,11 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   const ordered = [...regular, ...d.seasons.filter((s) => s.seasonNumber === 0)];
   const [season, setSeason] = useState(regular[0]?.seasonNumber ?? d.seasons[0]?.seasonNumber ?? 1);
   const [jump, setJump] = useState(false);
+  // A season the person picks is the one "Where to watch" starts (./chosen-season); the profile's own opens it.
+  const pick = (s: number) => {
+    setSeason(s);
+    chooseSeason(d.id, s);
+  };
   const list = useRef<HTMLOListElement>(null);
   const prefs = useSpoilerPrefs();
   const [showAll, setShowAll] = useState(false);
@@ -118,7 +124,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
     row.querySelector<HTMLElement>("a,button")?.focus({ preventScroll: true });
   }, [jump, data, season, nextHere, tp]);
   const goNext = () => {
-    if (!nextHere && laterSeason) setSeason(laterSeason.seasonNumber);
+    if (!nextHere && laterSeason) pick(laterSeason.seasonNumber);
     setJump(true);
   };
 
@@ -194,7 +200,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
         </h2>
         {/* The season is one control showing its value (redesign-2026-11.md 5); a series of one season has nothing to
             choose: its facts and actions only. */}
-        {tabs.length > 1 && <Select size="sm" value={String(season)} onValueChange={(v) => setSeason(Number(v))} options={tabs} aria-label={t("seasons")} className="w-auto min-w-32" />}
+        {tabs.length > 1 && <Select size="sm" value={String(season)} onValueChange={(v) => pick(Number(v))} options={tabs} aria-label={t("seasons")} className="w-auto min-w-32" />}
         {facts && <p className="text-body-s text-text-2 tabular-nums">{facts}</p>}
         {/* On a phone the season's actions are a line of their own that scrolls, never three lines over the strip. */}
         <div className="scroll-row flex items-center gap-x-1 max-sm:-mx-(--gutter) max-sm:basis-full max-sm:overflow-x-auto max-sm:px-(--gutter) sm:ms-auto sm:flex-wrap">

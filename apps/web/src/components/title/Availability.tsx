@@ -26,7 +26,8 @@ import { tmdbImage } from "@/lib/images";
 import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
-import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { startHref, useWatchStart } from "./chosen-season";
+import { sourcesHref, type TitleCore, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
@@ -76,7 +77,9 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
   const anotherSource = search ?? manual;
-  const resume = watchHref(d, lib?.progress);
+  // Where the profile is, or the season picked in "Episodes" (./chosen-season).
+  const ep = useWatchStart(d, lib);
+  const resume = startHref(d, ep, watchHref(d, lib?.progress));
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
@@ -103,7 +106,6 @@ export function Availability({ title: d }: { title: TitleCore }) {
   };
   // "Watch on TV" (8.18) beside a copy's "Watch": that copy, from where the profile is.
   const tcard = useTranslations("card");
-  const ep = d.kind === "tv" ? startEpisode(d, lib?.progress) : null;
   const cast = (s: Copy, size: "md" | "lg") => (
     <CastButton
       titleId={d.id}
@@ -159,7 +161,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
             <>
               <Link href={playOf(first)} className={buttonClass("primary", "lg")}>
                 <Play aria-hidden className="fill-current" />
-                {t("tsWatch")}
+                {ep ? t("tsWatchEpisode", ep) : t("tsWatch")}
               </Link>
               {cast(first, "lg")}
               {more(first, "lg")}
@@ -191,7 +193,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
                     <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:[&>*:first-child]:flex-1">
                       <Link href={playOf(s)} className={buttonClass("secondary", "md")}>
                         <Play aria-hidden className="fill-current" />
-                        {t("tsWatch")}
+                        {ep ? t("tsWatchEpisode", ep) : t("tsWatch")}
                       </Link>
                       {cast(s, "md")}
                       {more(s, "md")}

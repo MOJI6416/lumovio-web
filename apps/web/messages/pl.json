@@ -461,6 +461,7 @@
     "tsSearching": "Szukamy wydań przez {name}…",
     "tsFailed": "Serwer {name} nie odpowiedział na wyszukiwanie.",
     "tsWatch": "Oglądaj",
+    "tsWatchEpisode": "Oglądaj S{season} · O{episode}",
     "tsSearchManually": "Szukaj samodzielnie",
     "tsVoices": "Wersje audio tego tytułu",
     "tsNote": "Dobrane według języków audio i studiów z profilu; to urządzenie szuka przez twój serwer TorrServer, liczby seedów pochodzą z trackerów.",

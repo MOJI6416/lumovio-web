@@ -461,6 +461,7 @@
     "tsSearching": "{name} üzerinden sürümler aranıyor…",
     "tsFailed": "{name} aramaya yanıt vermedi.",
     "tsWatch": "İzle",
+    "tsWatchEpisode": "İzle S{season} · B{episode}",
     "tsSearchManually": "Elle ara",
     "tsVoices": "Bu içeriğin ses sürümleri",
     "tsNote": "Profilin ses dillerine ve stüdyolarına göre seçildi; bu cihaz TorrServer sunucunuz üzerinden arar, seeder sayıları tracker’lardan gelir.",

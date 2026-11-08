@@ -461,6 +461,7 @@
     "tsSearching": "Searching for releases through {name}…",
     "tsFailed": "{name} didn't answer the search.",
     "tsWatch": "Watch",
+    "tsWatchEpisode": "Watch S{season} · E{episode}",
     "tsSearchManually": "Search yourself",
     "tsVoices": "Audio versions of this title",
     "tsNote": "Picked by the profile's audio languages and studios; this device searches through your TorrServer, seeders are the trackers' numbers.",

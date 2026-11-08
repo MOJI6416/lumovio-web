@@ -21,7 +21,8 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { pictureReasons, type RankedRelease } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
-import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { startHref, useWatchStart } from "./chosen-season";
+import { sourcesHref, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
 
 const ID = "torrserver-h";
@@ -47,8 +48,9 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const prefs = useReleasePrefs();
   const [mode, setMode] = useState<ReleaseQuality>(prefs.quality);
   const { data: state } = useLibraryState(d.id);
-  // "Watch" opens the episode the title's Play would (resume, else the next): the release has to hold its season.
-  const start = d.kind === "tv" ? startEpisode(d, state?.progress) : null;
+  // "Watch" opens the episode the title's Play would (resume, else the next), or the season picked in "Episodes": the
+  // release has to hold its season.
+  const start = useWatchStart(d, state);
   const lookup = useTorrentLookup(d, source, true, mode, start?.season ?? null, start?.episode ?? null);
   const text = useReleaseText();
   const [adding, setAdding] = useState(false);
@@ -62,7 +64,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   // Nothing is searched for a title that is not out yet, so nothing is said either.
   if (!isOut(d)) return null;
 
-  const playHref = watchHref(d, state?.progress);
+  const playHref = startHref(d, start, watchHref(d, state?.progress));
   const join = playHref.includes("?") ? "&" : "?";
   const via = tp("viaTorrServer", { name: source.name });
   const { option, edition, version, chosen } = pick;
@@ -196,7 +198,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
           <>
             <Button size="lg" loading={adding} onClick={() => void play(chosen, voice)}>
               <Play aria-hidden className="fill-current" />
-              {t("tsWatch")}
+              {start ? t("tsWatchEpisode", start) : t("tsWatch")}
             </Button>
             <IconButton icon={Info} variant="secondary" size="lg" label={tp("releaseDetails")} onClick={() => setDetails(chosen)} />
           </>
