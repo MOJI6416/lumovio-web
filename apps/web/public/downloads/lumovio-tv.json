@@ -1,9 +1,9 @@
 {
-  "versionCode": 5,
-  "versionName": "1.5",
-  "apk": "downloads/lumovio-tv-1.5.apk",
-  "size": 668507,
-  "sha256": "01c1c4d262b777830d0208d37ae3cc0f1131885a154decf76266ac71fa556c3b",
+  "versionCode": 9,
+  "versionName": "1.9",
+  "apk": "downloads/lumovio-tv-1.9.apk",
+  "size": 668936,
+  "sha256": "dfa01fde7bad6a9c58ea0025ccab789215bfe7e7f52a6983168f19bddbede9e6",
   "minAndroid": "5.1",
-  "publishedAt": "2026-10-30T12:15:52Z"
+  "publishedAt": "2026-11-08T08:19:12Z"
 }
