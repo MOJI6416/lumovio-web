@@ -117,6 +117,17 @@ export function LumovioPlayer(props: PlayerProps) {
   const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal);
+  // The element lets go of its stream when the player goes — another source, back to the sources, out (P9): one taken
+  // out of the page keeps reading until it is collected, and TorrServer then serves two releases over one line.
+  useEffect(() => {
+    const v = videoRef.current;
+    return () => {
+      if (!v) return;
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    };
+  }, []);
   const subtitleMeta = useSubtitles(videoRef, prepared, props.titleId ?? null);
   const look = useSubtitleLook(videoRef, props.titleId ?? null);
   const caps = detectCapabilities();

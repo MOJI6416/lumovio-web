@@ -834,7 +834,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     existing: linked,
     fileTracks: filesOf.size ? fileTracksOf : undefined,
     start: finderStart,
-    autoStart: phase.kind === "choose" && (picking || candidates.length === 0 || seasonMissing),
+    autoStart: phase.kind === "choose" && (picking || candidates.length === 0 || seasonMissing) && (params.get("find") === "1" ? "now" : true),
     onPick: (pick, anchor) => void addAndPlay(pick, anchor),
   };
 

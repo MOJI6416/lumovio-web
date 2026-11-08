@@ -210,7 +210,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
                 {tp("otherRelease")}
               </Button>
             )}
-            <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)}>
+            <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume, "&find=1")}>
               {tp("allSources")}
             </ActionLink>
           </div>
@@ -228,7 +228,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
         heading={manual.name}
         where="TorrServer"
         actions={
-          <Link id={FIND_SOURCE_ID} href={sourcesHref(resume)} className={buttonClass("secondary", "lg")}>
+          <Link id={FIND_SOURCE_ID} href={sourcesHref(resume, "&find=1")} className={buttonClass("secondary", "lg")}>
             {tp("findSource")}
           </Link>
         }

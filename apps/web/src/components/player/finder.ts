@@ -111,7 +111,7 @@ export interface FinderProps {
   fileTracks?: (r: TsSearchResult) => readonly string[] | null;
   start?: FinderStart;
   /** Search right away when nothing was searched yet (the sources screen was asked for). */
-  autoStart?: boolean;
+  autoStart?: boolean | "now";
   /** Adding it and starting it are the screen's stages. `anchor`: the row's "Watch", for coming back to the same place. */
   onPick: (pick: FinderPick, anchor: Element | null) => void;
   /**
@@ -177,10 +177,11 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     if (!cached && connections.find((c) => c.id === connId)?.settings.autoSearch) void search();
   }, [connId]);
   // One first search when the screen was asked for and nothing is known yet — only on a server that
-  // may search by itself (its "search automatically" setting); elsewhere the search waits for a tap.
+  // may search by itself (its "search automatically" setting), or when the person asked for one ("Find a source", T14:
+  // "now"); elsewhere the search waits for a tap.
   // biome-ignore lint/correctness/useExhaustiveDependencies: on open only
   useEffect(() => {
-    if (autoStart && !found && connections.find((c) => c.id === connId)?.settings.autoSearch) void search();
+    if (autoStart && !found && (autoStart === "now" || connections.find((c) => c.id === connId)?.settings.autoSearch)) void search();
     return () => run.current?.abort();
   }, []);
 
