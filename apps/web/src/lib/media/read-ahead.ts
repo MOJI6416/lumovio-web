@@ -11,7 +11,9 @@ import { torrServerFor } from "./torrent-source";
  * studios. The rules that keep it out of the way: it starts when the page has been idle `IDLE_MS` (requestIdleCallback),
  * at most `MAX_READS` releases per title in a tab, one at a time across the whole app, each within `READ_TIMEOUT_MS`; the
  * first failure ends the round (a slow server or a dead swarm is not asked again); leaving the page cancels it, and a
- * release already on the server is read where it is, never added again (an add would rewrite it) nor removed.
+ * release already on the server is read where it is, never added again (an add would rewrite it) nor removed. One the
+ * name didn't give away (a Jackett result has no hash) comes out of the read as it went in: its title, poster and data
+ * put back, and only a hash the server didn't have before the read is removed after it.
  */
 export const IDLE_MS = 2000;
 export const MAX_READS = 2;
@@ -50,17 +52,20 @@ function fileFor(files: TsFile[], title: string, job: ReadAheadJob): TsFile | nu
 }
 
 /** One release's tracks through the account's TorrServer, or null (already there, no file, too slow, cancelled). */
-async function readOne(job: ReadAheadJob, r: TsSearchResult, signal: AbortSignal): Promise<{ hash: string; list: string[]; forced: string[] } | null> {
+export async function readOne(job: ReadAheadJob, r: TsSearchResult, signal: AbortSignal): Promise<{ hash: string; list: string[]; forced: string[] } | null> {
   const ts = await torrServerFor(job.connectionId);
   const list = await ts.list();
   const name = norm(r.title);
   // Already on the server (the same name or hash): read as it is — never added again, which would rewrite it.
   const there = list.find((t) => norm(t.title) === name || norm((t as { name?: string }).name) === name || (r.hash && t.hash.toLowerCase() === r.hash.toLowerCase()));
-  const before = new Set(list.map((t) => t.hash.toLowerCase()));
+  const before = new Map(list.map((t) => [t.hash.toLowerCase(), t]));
   const deadline = Date.now() + READ_TIMEOUT_MS;
   const left = () => Math.max(1000, deadline - Date.now());
   const hash = there ? there.hash.toLowerCase() : (await ts.peek(r.origins?.[0]?.link ?? r.link, r.title.slice(0, 250)))?.hash?.toLowerCase();
   if (!hash) return null;
+  // The peek hit a torrent the server had (TorrServer keeps one per hash, and the add rewrote its name and data).
+  const had = there ? null : before.get(hash);
+  if (had) await ts.set(had.hash, had.title, had.poster ?? "", had.data ?? "").catch(() => {}); // ui-lint-ignore swallowed-error: the read goes on; the torrent itself stays on the server either way
   try {
     const t = await ts.stat(hash, left(), signal);
     const file = fileFor(t.file_stats ?? [], r.title, job);
