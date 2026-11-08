@@ -122,3 +122,11 @@ describe("the profile's «Дубляж» is the dubbing option, not a studio's d
     expect(pick.option?.voice).toBe("dub");
   });
 });
+
+describe("720p and 1080p are not one HD (the owner, 2026-11-08)", () => {
+  it("writes the resolution beside the HD mark, never beside 4K's", async () => {
+    const { resolutionWord, resolutionBesideMarks } = await import("../src/components/sources/QualityBadges");
+    expect([2160, 1080, 720, 480, null].map(resolutionWord)).toEqual([null, "1080p", "720p", "SD", null]);
+    expect(["1080p", "720p", "4K", "2160p", "576p"].map(resolutionBesideMarks)).toEqual(["1080p", "720p", null, null, "576p"]);
+  });
+});

@@ -7,7 +7,8 @@ import { useEffect, useMemo } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
-import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
+import { resolutionWord } from "@/components/sources/QualityBadges";
+import { releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
@@ -67,10 +68,10 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
 
   // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
   const marks = chosen ? releaseMarks(chosen.info) : [];
-  // The resolution in words only where no mark says it: 720p (under HD), SD.
+  // The resolution in words beside the marks: 1080p or 720p under HD, SD.
   const summary = chosen
     ? [
-        chosen.info.resolution === 720 || chosen.info.resolution === 480 ? RESOLUTION[chosen.info.resolution] : null,
+        resolutionWord(chosen.info.resolution),
         text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio),
       ]
         .filter(Boolean)
