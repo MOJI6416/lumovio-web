@@ -1,9 +1,10 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-// 44 px high on a phone (5.6), 32 on a desktop; on a TV (data-tv) every text is at least body (10.3).
+// 44 px on a phone (5.6) — wide too, for a short word ("Умови" in Ukrainian was 40), 32 high on a desktop; on a TV
+// (data-tv) every text is at least body (10.3).
 const LINK =
-  "inline-flex min-h-11 items-center text-body-s text-text-2 transition-colors duration-fast ease-fast hover:text-text-1 md:min-h-8 in-data-[tv=1]:text-body";
+  "inline-flex min-h-11 min-w-11 items-center text-body-s text-text-2 transition-colors duration-fast ease-fast hover:text-text-1 md:min-h-8 md:min-w-0 in-data-[tv=1]:text-body";
 
 /**
  * `document`: a link that loads the whole page, never prefetched — the TV version (`/tv`) is another shell of the site
