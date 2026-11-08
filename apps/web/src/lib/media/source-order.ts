@@ -35,3 +35,22 @@ export function orderedSources(a: TitleAvailability, caps?: PlaybackCapabilities
     .sort((x, y) => x.l - y.l || x.r - y.r || x.i - y.i)
     .map((x) => x.s);
 }
+
+/**
+ * The source a viewing starts with: the one asked for (`source`, exact — then it isn't tried as one of several), else a
+ * copy of the torrent asked for, else of the torrent the last episode played from (`from`: the next episode goes on in
+ * the same release when it holds it — P4), else the first. `torrent`: a candidate's "<connection>:<hash>", or null.
+ */
+export function startCandidate<C extends { key: string }>(
+  candidates: C[],
+  torrent: (c: C) => string | null,
+  wanted: string | null,
+  from: string | null,
+  cast: boolean,
+): { pick: C | undefined; exact: boolean } {
+  const exact = wanted ? candidates.find((c) => c.key === wanted) : undefined;
+  if (exact) return { pick: exact, exact: true };
+  const same = (t: string | null) => (t ? candidates.find((c) => { const own = torrent(c); return own !== null && t.startsWith(own); }) : undefined);
+  // A copy sent from a phone that this TV doesn't have: nothing here (the sources screen, and the phone is told, 8.18).
+  return { pick: same(wanted) ?? same(from) ?? (cast && wanted ? undefined : candidates[0]), exact: false };
+}

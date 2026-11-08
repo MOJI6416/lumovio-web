@@ -187,7 +187,7 @@
       "jsChunks": 14
     },
     "/[locale]/title/[kind]/[slug]": {
-      "jsGzip": 221566,
+      "jsGzip": 221719,
       "cssGzip": 20624,
       "jsChunks": 16
     },
@@ -262,7 +262,7 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 504401,
+      "jsGzip": 504542,
       "cssGzip": 20624,
       "jsChunks": 20
     }

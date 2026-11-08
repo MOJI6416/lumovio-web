@@ -1066,3 +1066,10 @@ export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<
   );
   return i === null ? null : (info.tracks[i] ?? null);
 }
+
+/**
+ * A whole torrent on a TorrServer whose release name holds other seasons only ("Сезон 1" for season 2): no copy of
+ * that episode — neither the player nor the title's "Watch" takes it, and the sources screen searches for that season.
+ */
+export const otherSeasonsOnly = (s: { kind: string; externalId: string; label: string | null }, season: number | null, episode: number | null) =>
+  s.kind === "torrserver" && season !== null && !s.externalId.includes(":") && Boolean(s.label) && holdsSeason(packOf(s.label!), season, episode) === false;

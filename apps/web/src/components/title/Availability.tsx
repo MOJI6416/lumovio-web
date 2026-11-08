@@ -23,6 +23,7 @@ import { autoSearchSource } from "@/hooks/useTorrentLookup";
 import { Link } from "@/i18n/navigation";
 import { regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
+import { otherSeasonsOnly } from "@/lib/media/releases";
 import { orderedSources } from "@/lib/media/source-order";
 import { titleCopies } from "@/lib/watch-state";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
@@ -70,7 +71,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
-  const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
+  const ordered = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
   const manage = signedIn && !kids;
   const torrServers = manage ? (raw?.sources ?? []).filter((s) => s.kind === "torrserver") : [];
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
@@ -79,6 +80,9 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const anotherSource = search ?? manual;
   // Where the profile is, or the season picked in "Episodes" (./chosen-season).
   const ep = useWatchStart(d, lib);
+  // A series: a whole torrent whose name holds other seasons only is no copy of the episode "Watch" starts (T10) — the
+  // player doesn't take it either; with none left, the TorrServer card below searches for that season.
+  const copies = ep ? ordered.filter((s) => !otherSeasonsOnly(s, ep.season, ep.episode)) : ordered;
   const resume = startHref(d, ep, watchHref(d, lib?.progress));
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which

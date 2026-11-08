@@ -44,3 +44,32 @@ describe("the season picked in Episodes leads Where to watch (the owner, 2026-11
     expect(startHref(d, { season: 2, episode: 2 }, "/watch/tv/71446?s=1&e=3")).toBe("/watch/tv/71446?s=2&e=2");
   });
 });
+
+describe("the next episode goes on in the same release (P4)", () => {
+  it("starts a copy of the torrent the last episode played from, else the first source", async () => {
+    const { startCandidate } = await import("@/lib/media/source-order");
+    const c = (key: string) => ({ key });
+    const torrent = (x: { key: string }) => (x.key.startsWith("ts1") ? x.key.split(":").slice(0, 2).join(":") : null);
+    const jellyfin = c("jf:item-4");
+    const other = c(`ts1:${"b".repeat(40)}`);
+    const same = c(`ts1:${"a".repeat(40)}`);
+    const list = [jellyfin, other, same];
+    expect(startCandidate(list, torrent, null, `ts1:${"a".repeat(40)}`, false)).toEqual({ pick: same, exact: false });
+    // The release doesn't hold the next episode (no candidate of it): the first source, as before.
+    expect(startCandidate([jellyfin, other], torrent, null, `ts1:${"a".repeat(40)}`, false)).toEqual({ pick: jellyfin, exact: false });
+    // A source asked for by name wins and is exact.
+    expect(startCandidate(list, torrent, "jf:item-4", `ts1:${"a".repeat(40)}`, false)).toEqual({ pick: jellyfin, exact: true });
+  });
+});
+
+describe("a copy of other seasons only is no copy of the episode (T10)", () => {
+  it("is left out on the title and in the player alike", async () => {
+    const { otherSeasonsOnly } = await import("@/lib/media/releases");
+    const pack = (label: string) => ({ kind: "torrserver" as const, externalId: "a".repeat(40), label });
+    expect(otherSeasonsOnly(pack("Бумажный дом / Сезон: 1 / Серии: 1-13 из 13"), 2, 1)).toBe(true);
+    expect(otherSeasonsOnly(pack("Бумажный дом / Сезоны: 1-5"), 2, 1)).toBe(false);
+    expect(otherSeasonsOnly(pack("Бумажный дом [2017-2021] LostFilm"), 2, 1)).toBe(false);
+    expect(otherSeasonsOnly({ ...pack("S01"), externalId: `${"a".repeat(40)}:3` }, 2, 1)).toBe(false);
+    expect(otherSeasonsOnly({ kind: "jellyfin" as const, externalId: "x", label: "S01" }, 2, 1)).toBe(false);
+  });
+});

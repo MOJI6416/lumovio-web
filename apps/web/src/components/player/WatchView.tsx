@@ -45,8 +45,8 @@ import { clientFor } from "@/lib/media/clients";
 import { MediaNetError } from "@/lib/media/net";
 import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
-import { holdsSeason, packOf, voiceWish } from "@/lib/media/releases";
-import { orderedSources, sourceRank } from "@/lib/media/source-order";
+import { otherSeasonsOnly, voiceWish } from "@/lib/media/releases";
+import { orderedSources, sourceRank, startCandidate } from "@/lib/media/source-order";
 import { mediaFailure } from "@/lib/media/stream-break";
 import { forgetTorrents, invalidateAvailability, markPlayed, torrentPresence } from "@/lib/media/torrent-manage";
 import { addTorrentSource } from "@/lib/media/torrent-source";
@@ -119,6 +119,8 @@ type Phase =
     };
 
 const KIND_LABEL = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" } as const;
+/** A TorrServer candidate's torrent, "<connection>:<hash>"; null for another server. */
+const torrentOf = (c: Candidate) => (c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId)}` : null);
 /** A failure this screen has already put into words (translated), shown as it is. */
 class ShownError extends Error {}
 const hashOf = (externalId: string) => externalId.split(":")[0]!;
@@ -249,7 +251,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       if (s.kind === "torrserver" && s.season !== null && (s.season !== season || s.episode !== episode)) return [];
       // Nor is a whole torrent whose release name holds other seasons only ("Сезон 1" for season 2): the screen searches
       // for a release of this season instead of offering that one's files (the owner, 2026-11-08).
-      if (s.kind === "torrserver" && season !== null && !s.externalId.includes(":") && s.label && holdsSeason(packOf(s.label), season, episode) === false) return [];
+      if (otherSeasonsOnly(s, season, episode)) return [];
       return [toCandidate(s)];
     });
     // Within TorrServer: files bound to exactly this film/episode first (the server lists the latest choice first),
@@ -658,10 +660,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (avail.isError) return setPhase({ kind: "choose" });
     if (!avail.data || (signedIn && (progress.isLoading || (conns.isLoading && !isKids)))) return;
     if (picking) return setPhase({ kind: "choose" });
-    const sameTorrent = (c: Candidate) => Boolean(wanted?.startsWith(`${c.server.connectionId}:${hashOf(c.server.externalId)}`));
-    const exact = wanted ? candidates.find((c) => c.key === wanted) : undefined;
-    // A copy sent from a phone that this TV doesn't have: the sources screen here, and the phone is told (8.18).
-    const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
+    const { pick, exact } = startCandidate(candidates, torrentOf, wanted, params.get("from"), Boolean(castId));
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
     if (params.has("added")) setUrl({ added: null });
@@ -778,7 +777,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
   // The dubbing chosen for this viewing goes on to the series' other episodes (their files have the same tracks).
   const voiceParam = params.get("voice");
-  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}`;
+  // Another episode goes on in the release playing now when it holds that one (P4: same quality, audio and server).
+  const fromParam = active && torrentOf(active.candidate);
+  const epHref = (s: number, e: number) =>
+    `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ""}`;
   // Why there is nothing to play, in the same words as the title page.
   const ws = avail.state;
   const whyNothing =
