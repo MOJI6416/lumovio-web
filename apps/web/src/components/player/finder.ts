@@ -11,7 +11,7 @@ import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence"
 import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
 import { type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
-import { filesVersion, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
+import { filesVersion, sharedFileOf, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult } from "@/lib/media/torrserver";
 
@@ -104,10 +104,16 @@ export interface FinderProps {
    * then has the white "Watch". Left out: known from the title's copies for this episode.
    */
   lead?: boolean;
+  /**
+   * No video is open on the page: the rows in sight — the card and the first under it — are read ahead through the
+   * server when the page is idle (lib/media/read-ahead): the "Audio" choice and the rows' details then name the studios
+   * a name like "6x MVO" hides.
+   */
+  readAhead?: boolean;
 }
 
 /** The quality mode is a choice of its own ("Quality"), as on "Where to watch"; the order only orders the list. */
-export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, fileTracks, start, autoStart = false, onPick }: FinderProps) {
+export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, fileTracks, start, autoStart = false, onPick, readAhead = false }: FinderProps) {
   const t = useTranslations("player");
   const tt = useTranslations("title");
   const qc = useQueryClient();
@@ -269,6 +275,28 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const rest = [...view.ranked.filter((x) => !eligible.has(x.result.link)).map((x) => x.result), ...view.rest];
     return { rows, rest };
   }, [choice, view, picture, sort]);
+
+  // The rows in sight read ahead (`readAhead`): the round asks for them again after every read, as they are then.
+  const sight = useRef<{ ranked: RankedRelease[]; prefs: typeof prefs; shown: TsSearchResult[] } | null>(null);
+  sight.current = view && choice ? { ranked: view.ranked, prefs, shown: [...(choice.chosen ? [choice.chosen] : []), ...listed.rows].map((x) => x.result) } : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one round per answer, episode and choice of the list
+  useEffect(() => {
+    if (!readAhead || !found?.results.length) return;
+    let cancel: (() => void) | null = null;
+    let gone = false;
+    void import("@/lib/media/read-ahead").then((m) => {
+      if (gone) return;
+      cancel = m.readAhead(
+        { connectionId: connId, titleId: d.id, movie: d.kind === "movie", year: d.year ?? null, season: d.kind === "tv" ? season : null, episode: d.kind === "tv" ? episode : null },
+        () => (sight.current ? { ...sight.current, known: (r) => sharedFileOf(r) != null || Boolean(fileTracks?.(r)) } : null),
+        () => undefined,
+      );
+    });
+    return () => {
+      gone = true;
+      cancel?.();
+    };
+  }, [readAhead, found?.at, connId, d.id, season, episode, siteVoice, edition, picture, sort]);
 
   // The dubbing a release is picked for: the audio filter's, else the profile's studio it credits, else its only
   // studio, else its track in the profile's language. Otherwise it plays the file's default track.

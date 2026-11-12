@@ -15,7 +15,7 @@ import { noteAdd } from "./tracker-adds";
  *
  * Out of the way of watching: it starts once the page has been idle `IDLE_MS`; one read at a time in the app, each within
  * `READ_TIMEOUT_MS`; never while the server plays or loads a torrent that isn't a read's (TorrServer's "preload" and
- * "working"), and never on the player's page; an add on the server stops it at once (`read-lock`); the first failure
+ * "working"), and never while a video is open on the page; an add on the server stops it at once (`read-lock`); the first failure
  * ends the round. Which releases, in what order, and how many a day per server and per tracker is the plan's (`read-plan`). A release already on the server is read where it is
  * and stays; only a torrent the read itself brought is taken off — also after a closed tab, on the next round.
  */
@@ -209,7 +209,7 @@ export function readAhead(
         const now = ranking();
         if (!now || readsToday(job.connectionId) >= DAILY) return;
         // `shown`: the rows a list shows (the sources screen), for a plan that reads what is in sight.
-        const ctx: ReadContext & { shown?: readonly TsSearchResult[] } = { readsToday: readsToday(job.connectionId), prefs: now.prefs, readsForTitle: forTitle.get(job.titleId) ?? 0, trackerReadsToday: trackerReadsToday(job.connectionId), shown: now.shown };
+        const ctx: ReadContext = { readsToday: readsToday(job.connectionId), prefs: now.prefs, readsForTitle: forTitle.get(job.titleId) ?? 0, trackerReadsToday: trackerReadsToday(job.connectionId), shown: now.shown };
         const next = plan(now.ranked, now.known, ctx).find((r) => !tried.has(r.link));
         if (!next) return;
         tried.add(next.link);

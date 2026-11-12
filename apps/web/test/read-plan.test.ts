@@ -26,8 +26,8 @@ const result = (rest: string, seeders = 50, o: { tracker?: string; magnet?: bool
 };
 const dune = { title: "Дюна: Часть вторая", originalTitle: "Dune: Part Two", kind: "movie" as const, year: 2024, originalLanguage: "en" };
 const none = () => false;
-const plan = (results: TsSearchResult[], p = prefs(), ctx: { readsToday?: number; readsForTitle?: number; trackerReadsToday?: (t: string) => number } = {}, known = none) =>
-  planReads(rankReleases(results, dune, p), known, { readsToday: ctx.readsToday ?? 0, prefs: p, readsForTitle: ctx.readsForTitle, trackerReadsToday: ctx.trackerReadsToday });
+const plan = (results: TsSearchResult[], p = prefs(), ctx: { readsToday?: number; readsForTitle?: number; trackerReadsToday?: (t: string) => number; shown?: TsSearchResult[] } = {}, known = none) =>
+  planReads(rankReleases(results, dune, p), known, { readsToday: ctx.readsToday ?? 0, prefs: p, readsForTitle: ctx.readsForTitle, trackerReadsToday: ctx.trackerReadsToday, shown: ctx.shown });
 
 describe("planReads", () => {
   it("reads nothing for a profile without studios: no read changes its pick", () => {
@@ -55,6 +55,17 @@ describe("planReads", () => {
     // A 4K HDR screen starts 4K; a 1080p one starts 1080p.
     expect(plan([hd, uhd])).toEqual([uhd, hd]);
     expect(plan([hd, uhd], prefs({ device: { hevc: true, hdr: false, uhd: false, dolbyVision: false } }))).toEqual([hd, uhd]);
+  });
+
+  it("on the sources screen, also its first rows that hide studios — whatever the profile", () => {
+    const named = result("WEB-DL 1080p | MVO (LostFilm)", 400);
+    const uhd = result("UHD WEB-DL 2160p HDR | MVO", 300);
+    const sd = result("BDRip 720p | MVO", 200);
+    const rows = [named, uhd, sd, ...[5, 6, 7, 8].map((i) => result(`DVDRip 480p | MVO ${"+ AVO ".repeat(i)}`, 100 - i))];
+    // The version tier reads 4K first; the list adds the 720p and the 480p rows among its first six, never one twice.
+    expect(plan(rows, prefs(), { shown: rows })).toEqual([uhd, sd, rows[3], rows[4], rows[5]]);
+    expect(plan(rows, prefs({ studios: [] }), { shown: rows })).toEqual([uhd, sd, rows[3], rows[4], rows[5]]);
+    expect(plan(rows, prefs({ studios: [] }), { shown: [] })).toEqual([]);
   });
 
   it("reads the sharp versions only: 1080p and 4K, else the title's best", () => {

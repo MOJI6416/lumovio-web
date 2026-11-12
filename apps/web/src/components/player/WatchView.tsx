@@ -924,6 +924,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     start: finderStart,
     autoStart: phase.kind === "choose" && (picking || candidates.length === 0),
     onPick: (pick, anchor) => void addAndPlay(pick, anchor),
+    // Reading ahead stays out of the way of a video: only while the screen is all there is.
+    readAhead: phase.kind === "choose" && !active,
   };
 
   // On a TV a preparation started from the sources screen is shown there, from the top; the screen's place is kept
