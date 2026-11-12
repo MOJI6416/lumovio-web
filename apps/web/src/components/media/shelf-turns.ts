@@ -1,5 +1,5 @@
 /**
- * Shelves of a page reached by a client-side navigation are drawn in turns (2026-10-30, docs/qa/2026-10-30/phones.md):
+ * Shelves of a page reached by a client-side navigation are drawn in turns:
  * the ones on or near the screen at once, the rest — top first — one per idle moment after the page has shown, or as
  * soon as one comes within a screen of the viewport. Drawing a home or catalog page's 400–600 cards in one task held a
  * mid-range Android phone for 0.6–0.9 s after every tap. A page from the server is hydrated whole (Row).
@@ -9,7 +9,7 @@ type NavigateEvent = Event & { navigationType: string; destination: { url: strin
 
 // Where each history entry was scrolled when it was left (Navigation API's "navigate" fires on the entry being left).
 // Back and Forward restore that place before the shelves are laid out: the ones there are then drawn at once, not left
-// empty for the first frames — after iOS's swipe back they flickered against the swipe's snapshot (owner, 2026-10-30).
+// empty for the first frames — after iOS's swipe back they flickered against the swipe's snapshot.
 const left = new Map<string, number>();
 const nav = typeof window === "undefined" ? undefined : (window as Window & { navigation?: Nav }).navigation;
 nav?.addEventListener("navigate", (event) => {

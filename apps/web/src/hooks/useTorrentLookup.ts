@@ -75,7 +75,7 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
   const base = useReleasePrefs();
   const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
   // The tracks read in the title's copies (the page's own availability query, not another request): a result that is
-  // a copy takes its studios from the file, as on the sources screen (docs/torrserver-2026-11.md 7).
+  // a copy takes its studios from the file, as on the sources screen.
   const avail = useTitleAvailability(d.id);
   const fileOf = useMemo(() => copyFileTracks(avail.data?.servers ?? []), [avail.data]);
   const select = useCallback(

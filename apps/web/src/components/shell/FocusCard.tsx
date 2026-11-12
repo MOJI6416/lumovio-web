@@ -2,10 +2,10 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
- * The Focus template of a system page (design-system 9): the stage under the transparent header, a 440 card in the
+ * The Focus template of a system page: the stage under the transparent header, a 440 card in the
  * middle with an icon, the page's h1, one line of text, an optional form (full width, fields aligned to the start —
- * a code to confirm, X-40) and the actions (`children`, the main one first). The 404, the error page and a page that
- * needs an account (GuestGatePanel) use it inside the shell, so the header and footer stay (SH-02).
+ * a code to confirm) and the actions (`children`, the main one first). The 404, the error page and a page that
+ * needs an account (GuestGatePanel) use it inside the shell, so the header and footer stay.
  */
 export function FocusCard({
   icon: Icon,
@@ -22,7 +22,7 @@ export function FocusCard({
   children?: ReactNode;
 }) {
   return (
-    // data-hero: the header lies over this stage transparently, as over a billboard (SH-06).
+    // data-hero: the header lies over this stage transparently, as over a billboard.
     <section data-hero className="stage page-x -mt-16 flex min-h-[85svh] items-center justify-center bg-stage pt-24 pb-16">
       <div className="w-full max-w-110 rounded-lg border border-line bg-surface-1 p-6 text-center md:p-10">
         {Icon && (

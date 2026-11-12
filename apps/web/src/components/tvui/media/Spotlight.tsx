@@ -9,7 +9,7 @@ import { tmdbImage } from "@/lib/images";
 import type { TvItem } from "./types";
 
 /*
- * The TV's spotlight (design-system 10.3): the top of a screen of shelves shows the title in focus — its backdrop over
+ * The TV's spotlight: the top of a screen of shelves shows the title in focus — its backdrop over
  * the whole screen, its name (logo for featured titles), one line of facts, why it's here and three lines of its
  * description — so the cards themselves stay plain posters. The text follows the focus at once; the picture only once
  * the focus rests (a held arrow doesn't download and decode a backdrop per card).
@@ -17,9 +17,9 @@ import type { TvItem } from "./types";
 
 /**
  * How long the focus rests before the picture changes. A new backdrop (decode, upload, fade over the scrims) costs a
- * TV ~100 ms of frames — on the owner's TCL a press landing in them took 150–170 ms to show instead of 40–50 — so
+ * TV ~100 ms of frames — on a TCL TV a press landing in them took 150–170 ms to show instead of 40–50 — so
  * walking at a person's pace changes none: at 600 ms, presses 0.7 s apart down the shelves met every change (p50 88 ms
- * against 56 ms at 0.4 or 1.5 s apart, 2026-11-06), so the picture waits a whole second of rest.
+ * against 56 ms at 0.4 or 1.5 s apart), so the picture waits a whole second of rest.
  */
 const ART_DELAY = 1000;
 
@@ -46,11 +46,12 @@ export function TvBackdrop({ src }: { src: string | null }) {
           key={shown}
           src={shown}
           alt=""
-          // The site's rule (design-system 7.14): a whole 16:9 picture on the end side, never cut across.
+          // The site's rule: a whole 16:9 picture on the end side, never cut across.
           className="animate-fade-in absolute end-0 top-0 aspect-video w-4/5 object-cover object-top"
         />
       )}
-      {/* The scrims of the stage (3.5): from the start edge under the text, and from the bottom under the shelves. */}
+      {/* The scrims of the stage: from the start edge under the text, and from the bottom under the
+          shelves. */}
       <div className="absolute inset-0 bg-linear-to-r from-stage from-20% via-stage/70 via-45% to-transparent to-80%" />
       <div className="absolute inset-0 bg-linear-to-t from-stage from-30% via-stage/60 via-55% to-transparent to-80%" />
     </div>

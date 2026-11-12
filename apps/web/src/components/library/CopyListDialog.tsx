@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 
 /**
- * "Save as a regular list" of a smart list (package F, "Fixing"): what the list shows now becomes an independent
+ * "Save as a regular list" of a smart list: what the list shows now becomes an independent
  * ordinary list under its own name; the smart list itself stays and keeps updating — it never turns into an ordinary
  * one unnoticed. The new list is announced with "Open".
  */

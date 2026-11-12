@@ -36,7 +36,7 @@ describe("watch state", () => {
     expect(watchState(avail({ connections: 1, sources: [source({ indexed: false })] }), { signedIn: true })).toEqual({ kind: "indexing", names: ["Home"] });
   });
 
-  // docs/torrserver-2026-11.md, 20: a season-1 pack is no copy of season 2 — the title searches for season 2 instead.
+  // A season-1 pack is no copy of season 2 — the title searches for season 2 instead.
   it("doesn't count a whole torrent whose name holds other seasons only as a copy of the season asked for", () => {
     const pack = (label: string, externalId: string): Availability => ({ ...copy("t1"), kind: "torrserver", externalId, label });
     const a = avail({ servers: [pack("La Casa de Papel - S1 - rus 1080p WEBDL (LostFilm)", "aa"), pack("Some Show (2017) WEB-DL 1080p", "bb")], connections: 1, sources: [source({ id: "t1", kind: "torrserver" })] });

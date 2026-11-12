@@ -8,7 +8,7 @@ const page = (ids: string[], nextOffset: number | null, itemCount = 3) => ({ id:
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("a list page by page (LIB-24)", () => {
+describe("a list page by page", () => {
   it("reads Watchlist and Favourites to the end, one page after another", async () => {
     const asked: string[] = [];
     const answers: Record<string, ListDetails> = {
@@ -29,7 +29,7 @@ describe("a list page by page (LIB-24)", () => {
   });
 });
 
-describe("a summary that says it is incomplete (PRF-19)", () => {
+describe("a summary that says it is incomplete", () => {
   const q = (data: unknown, dataUpdateCount = 1) => ({ state: { data, dataUpdateCount } });
   it("is asked again a second later, a few times at most, and not at all when complete", () => {
     expect(untilComplete(q({ lists: [], incomplete: true }))).toBe(1000);

@@ -3,7 +3,7 @@ import type { AiFilters, CatalogSearch } from "@lumovio/contracts";
 /** TMDB's `known_for_department` in the order of the `person.dept{n}` messages (the person page uses the same words). */
 const DEPTS = ["Acting", "Directing", "Writing", "Production", "Sound", "Camera", "Editing", "Art", "Visual Effects", "Costume & Make-Up", "Lighting", "Crew"];
 
-/** The message key of a person's department, or null for one TMDB adds later (then nothing is shown: SRCH-06). */
+/** The message key of a person's department, or null for one TMDB adds later (then nothing is shown). */
 export function departmentKey(dept: string | null | undefined): `person.dept${number}` | null {
   const i = dept ? DEPTS.indexOf(dept) : -1;
   return i >= 0 ? `person.dept${i}` : null;
@@ -14,7 +14,7 @@ const RU = "ёйцукенгшщзхъфывапролджэячсмитьбю";
 
 /**
  * The same keys on the other keyboard layout ("l.yf" → "дюна", "вгту" → "dune"): the commonest "typo" of a search in
- * Russian (SRCH-08). Null when the text isn't all on one layout or nothing changes.
+ * Russian. Null when the text isn't all on one layout or nothing changes.
  */
 export function otherLayout(text: string): string | null {
   const lower = text.toLowerCase();
@@ -28,7 +28,7 @@ export function otherLayout(text: string): string | null {
 }
 
 /**
- * "Search for «…»" on the other keyboard layout, for a query that found nothing (SRCH-08, SRCH-16): only when the other
+ * "Search for «…»" on the other keyboard layout, for a query that found nothing: only when the other
  * layout really names something — a title named so (`clear`; not a loose resemblance or TMDB's raw answer) and not the
  * typed query read back from that layout ("дюна" → "l.yf" → "дюна", for a kids profile that may open none of it).
  */

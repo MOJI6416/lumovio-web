@@ -50,7 +50,7 @@ export const ConnectionSettings = z.object({
   /** TorrServer: the device searches its indexers on its own (title pages, the watchlist) for the profile's audio languages. */
   autoSearch: z.boolean().default(true),
   /**
-   * TorrServer: the clean-up (docs/torrserver-2026-11.md 18а) clears the server's other torrents of titles too — watched,
+   * TorrServer: the clean-up clears the server's other torrents of titles too — watched,
    * never started, left — not only what Lumovio added. Off unless the person turns it on.
    */
   sweepAll: z.boolean().optional(),
@@ -125,7 +125,7 @@ export const LibraryIndexEntry = z.object({
       audioLanguages: z.array(z.string().min(2).max(3)).max(16),
       /**
        * How many subtitle tracks the server's scan saw (embedded and external; a series': a few of its first episodes'),
-       * for the CC mark. Absent from copies scanned before 2026-11-06, and for TorrServer copies — their release name tells.
+       * for the CC mark. Absent from copies scanned by older versions, and for TorrServer copies — their release name tells.
        */
       subtitleTracks: z.number().int().min(0).max(999),
       /**

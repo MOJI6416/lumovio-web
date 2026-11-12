@@ -13,7 +13,7 @@ import { TvCard } from "../media/TvCard";
 import { TvState } from "../shell/TvState";
 
 /**
- * A list on a TV (S10 TV): its name, owner and count, then its titles as a grid, page after page (LIB-24). Whoever
+ * A list on a TV: its name, owner and count, then its titles as a grid, page after page. Whoever
  * may edit it removes a title from it with the card's "More" (held OK, ../media/hold).
  */
 export function ListScreen({ id, initial }: { id: string; initial: ListDetails }) {

@@ -16,7 +16,7 @@ import { type Choice, ChoiceLayer } from "../shell/ChoiceLayer";
 import { TvState } from "../shell/TvState";
 
 /*
- * A section's whole list on a TV (S02, S03 TV; TV document §4 "Каталог/подборки"): the filters as one row of buttons —
+ * A section's whole list on a TV: the filters as one row of buttons —
  * the sort, the genre, films or series for anime, "Reset" — each opening a card; then the grid of posters, which
  * loads the next part by itself as the focus nears the end (no "Show more" to reach), keeping the focused card. The
  * filters live in the address (replaced, not pushed), so Back from a title comes back to the same grid, card and filters.
@@ -81,7 +81,7 @@ export function GridScreen({
     const next = new URLSearchParams(params.toString());
     if (v) next.set(k, v);
     else next.delete(k);
-    // A shelf's own name stays only while its conditions do (CAT-11).
+    // A shelf's own name stays only while its conditions do.
     next.delete("shelf");
     if (k === "kind") next.delete("genres");
     next.set("view", "all");

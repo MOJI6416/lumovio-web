@@ -33,7 +33,7 @@ export function A({ href, children }: { href: string; children: ReactNode }) {
 
 /**
  * TMDB's logo over its notice on "Credits" — the attribution TMDB's terms ask for (the logo and "This product uses the
- * TMDB API but is not endorsed or certified by TMDB"); since 2026-10-25 it lives here only, not in the footer.
+ * TMDB API but is not endorsed or certified by TMDB"); it lives here only, not in the footer.
  */
 export function TmdbMark() {
   return (

@@ -16,10 +16,10 @@ function toRatings() {
 }
 
 /**
- * The hero's ratings (owner's decision 1.3, 7.14 item 3, 7.22): one quiet line — the Lumovio Score when it is sure
+ * The hero's ratings: one quiet line — the Lumovio Score when it is sure
  * enough for a card (medium or high), IMDb (TMDB without it) and the critics' score (Rotten Tomatoes, else
  * Metacritic) — that is itself the way to every rating: it brings "Ratings" up on the page, as the line under the actions
- * brings "Where to watch" (`replace`, Back leaves the title). It replaced the "All ratings" popover (2026-11-06).
+ * brings "Where to watch" (`replace`, Back leaves the title). It replaced the "All ratings" popover.
  */
 export function HeroRatings({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: MediaKind; tmdbId: number; tmdbRating: number | null; tmdbVotes: number | null }) {
   const t = useTranslations("titlePage");
@@ -36,7 +36,7 @@ export function HeroRatings({ kind, tmdbId, tmdbRating, tmdbVotes }: { kind: Med
 
   if (q.isPending)
     return (
-      // The line's height when it arrives: 44 px on a phone (5.6).
+      // The line's height when it arrives: 44 px on a phone.
       <div className="flex h-8 items-center gap-4 max-sm:h-11" aria-busy>
         <Skeleton shape="xs" className="h-5 w-16" />
         <Skeleton shape="xs" className="h-5 w-16" />

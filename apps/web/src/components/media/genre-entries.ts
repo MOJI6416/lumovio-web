@@ -2,7 +2,7 @@ import type { Genre } from "@lumovio/contracts";
 
 /**
  * TMDB's series genres that join two film genres ("Action & Adventure", "Sci-Fi & Fantasy", "War & Politics"): one
- * list of genres for the person (SET-04) — choosing "Action" chooses the series' "Action & Adventure" too.
+ * list of genres for the person — choosing "Action" chooses the series' "Action & Adventure" too.
  */
 const SERIES_TWIN: Record<number, number[]> = { 28: [10759], 12: [10759], 878: [10765], 14: [10765], 10752: [10768] };
 const JOINED = new Set([10759, 10765, 10768]);

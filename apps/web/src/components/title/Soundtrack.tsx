@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 const POLLS = 6;
 
 /**
- * The soundtrack in "Details" (TTL-15, C13): the albums MusicBrainz or Wikidata link to the title by id, each with one
+ * The soundtrack in "Details": the albums MusicBrainz or Wikidata link to the title by id, each with one
  * Spotify action — "Listen" opens Spotify's player here (nothing is fetched from Spotify before that), or "Find in
  * Spotify" opens its search. No "Looking…" line: while MusicBrainz is asked (up to half a minute) only the search is
  * offered, and an album that turns up takes its place. Where the albums come from is in the "i".

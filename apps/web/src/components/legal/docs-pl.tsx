@@ -3,8 +3,8 @@ import { A, H, L, LEGAL_CONTACT, type LegalDoc, P, ScoreMethodology, TmdbMark } 
 import { RightsNoticeForm } from "./RightsNoticeForm";
 
 /**
- * The legal pages in Polish — a translation (owner's decision 1.3, L10N-01): the English version has legal force, and the
- * page says so with a link to it. "ty" as everywhere in the Polish interface (glossary-pl.md); names of services, licences
+ * The legal pages in Polish — a translation: the English version has legal force, and the
+ * page says so with a link to it. "ty" as everywhere in the Polish interface; names of services, licences
  * and IMDb's required attribution stay as they are.
  */
 export const DOCS_PL: Record<LegalDoc, () => ReactNode> = {

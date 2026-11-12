@@ -27,8 +27,8 @@ const isUrl = (s: string) => {
 };
 
 /**
- * Rights-holder notice (no account required; L10N-01): labels and checks in the page's language, errors at the fields
- * (8.5 — never the server's "Bad Request"), the result named with the address the answer goes to. Stored for admin
+ * Rights-holder notice (no account required): labels and checks in the page's language, errors at the fields
+ * (never the server's "Bad Request"), the result named with the address the answer goes to. Stored for admin
  * review; rate limited server-side. In the English original of a translated page it keeps the page's language.
  */
 export function RightsNoticeForm() {

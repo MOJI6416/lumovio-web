@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { jellyfinClient } from "../src/lib/media/jellyfin";
 
-/** Import history from Jellyfin (C134): what the sign-in played, read on the device, an episode by its series. */
+/** Import history from Jellyfin: what the sign-in played, read on the device, an episode by its series. */
 describe("Jellyfin history", () => {
   afterEach(() => vi.unstubAllGlobals());
 

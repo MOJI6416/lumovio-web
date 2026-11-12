@@ -7,8 +7,8 @@ import { isUsable, itemsIn } from "./engine";
 import { useTvNav } from "./TvNav";
 
 /*
- * A layer of the TV shell (design-system 10.3 "Слои", TV document TV3): a card in the middle over the screen (a choice,
- * "More", details, the query) or a whole-screen step (PIN) — nothing comes in from a side (owner, 2026-11-06). Mounted
+ * A layer of the TV shell: a card in the middle over the screen (a choice,
+ * "More", details, the query) or a whole-screen step (PIN) — nothing comes in from a side. Mounted
  * means open: it adds an entry to the history, so Back — the remote's, or the TV browser's own — closes this layer and
  * only it; the focus stays inside and returns to what opened it.
  * Close it from inside with the `close` it renders with (never by unmounting it from the parent while it is open).
@@ -66,7 +66,7 @@ export function TvLayer({
     };
   }, [nav]);
 
-  // The background can't be reached while the layer is open (TV3), by the remote or by the pointer.
+  // The background can't be reached while the layer is open, by the remote or by the pointer.
   useEffect(() => {
     if (id === null) return;
     const app = document.querySelector<HTMLElement>("[data-tv-app]");

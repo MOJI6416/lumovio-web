@@ -45,7 +45,7 @@ const isLocale = (s: string | undefined): s is (typeof LOCALE_CODES)[number] => 
 
 /**
  * Next answers 400 to a path whose segments don't survive decoding twice ("/ru/u/%25"). Such an address
- * is simply unknown: it gets the branded 404 at the same URL (SH-01).
+ * is simply unknown: it gets the branded 404 at the same URL.
  */
 function undecodable(pathname: string): boolean {
   try {
@@ -57,7 +57,7 @@ function undecodable(pathname: string): boolean {
 }
 
 /**
- * Locale detection by browser language only considers finished translations (L10N-02): a first visit
+ * Locale detection by browser language only considers finished translations: a first visit
  * from a de-DE or ar-EG browser gets English (or ru/uk when the browser lists them too), not a draft.
  * The address (/de/…) and a saved choice (cookie) still win, as before.
  */
@@ -77,7 +77,7 @@ function withInterfaceLanguages(req: NextRequest): NextRequest {
 const DEV = process.env.NODE_ENV === "development";
 
 /**
- * The pages' Content-Security-Policy for scripts (TV document §11.1 «Смешанный контент»: the TV app lets the page reach
+ * The pages' Content-Security-Policy for scripts (the TV app lets the page reach
  * `http://` servers at home, which is safe only while no script but the site's own can run). A script runs only with
  * this response's nonce — Next reads it from the request's header and puts it on its own scripts, the theme script
  * takes it from `x-nonce` — or when such a script loads it ('strict-dynamic': Next's chunks, Cloudflare Turnstile on
@@ -136,7 +136,7 @@ async function route(req: NextRequest) {
     return NextResponse.rewrite(url);
   }
   // English has no prefix (localePrefix "as-needed"): /en/… moves there for good — next-intl's own redirect is a
-  // temporary 307, which keeps search engines on the old address (Search Console, 2026-10-29). The choice of English
+  // temporary 307, which keeps search engines on the old address. The choice of English
   // is kept in the locale cookie, as next-intl does, so the unprefixed address doesn't send the visitor elsewhere.
   if (req.nextUrl.pathname === "/en" || req.nextUrl.pathname.startsWith("/en/")) {
     const url = req.nextUrl.clone();
@@ -153,7 +153,7 @@ async function route(req: NextRequest) {
     if (removed.pinEnglish) res.cookies.set("lumovio_locale", "en", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
   }
-  // "Watch now" lives in the library since 2026-11-07: people's bookmarks of its old pages lead there for good.
+  // "Watch now" lives in the library now: people's bookmarks of its old pages lead there for good.
   const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
   if (old) {
     const url = req.nextUrl.clone();
@@ -188,7 +188,7 @@ function passHeaders(req: NextRequest, res: NextResponse, add: Record<string, st
 }
 
 /**
- * The TV shell (TV document §4.1, §12.1): on a device in TV mode every address is answered by `app/[locale]/tvui`,
+ * The TV shell: on a device in TV mode every address is answered by `app/[locale]/tvui`,
  * so a TV never loads the site's shell and a phone never loads the TV's. The address stays the one the person sees.
  * `/tv` turns TV mode on in this browser, signed in or not; `tvui` itself is not an address outside TV mode.
  */

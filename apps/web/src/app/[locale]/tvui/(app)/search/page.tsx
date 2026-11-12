@@ -12,7 +12,7 @@ export async function generateMetadata() {
 }
 
 /**
- * Search on a TV (S05 TV; TV document §4 "Поиск"; design-system 9 "Search"): the query and the type in the address, so
+ * Search on a TV: the query and the type in the address, so
  * Back comes back to the results; the start without a query — what's popular and the genre tiles — comes with the page.
  */
 export default async function TvSearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {

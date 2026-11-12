@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Link } from "@/i18n/navigation";
 
 /**
- * A title hidden at a rights holder's request (Admin → Catalog): the same for everyone, the page state (7.11) — the
+ * A title hidden at a rights holder's request (Admin → Catalog): the same for everyone, the page state — the
  * reason is its one visible line, as it won't come back — with the way out home. Shared by the title page and /watch.
  */
 export async function TitleUnavailable() {

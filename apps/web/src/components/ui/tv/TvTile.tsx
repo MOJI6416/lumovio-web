@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "../cn";
 
 /**
- * A TV tile (design-system 7.17, 10.3): a big choice made of a picture and a caption — a profile on "Who's watching?",
+ * A TV tile: a big choice made of a picture and a caption — a profile on "Who's watching?",
  * a season — one stop of the remote, the lime ring and a little growth when focused, no fill of its own.
  */
 export const TvTile = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(function TvTile({ className, type = "button", ...rest }, ref) {

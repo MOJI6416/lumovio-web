@@ -20,7 +20,7 @@ function useTitleFact() {
 }
 
 /**
- * Linking one release already on the server to a title (TS7 «Не связано в Lumovio», C133): the titles its name fits —
+ * Linking one release already on the server to a title: the titles its name fits —
  * the sure one chosen — and a search of the catalog for another. The release becomes the title's copy on this server;
  * it stays on the server as it is. Nothing is linked until «Link».
  */
@@ -124,7 +124,7 @@ export function LinkTorrentDialog({
 }
 
 /**
- * «Review and link» (C133): every release not linked in Lumovio whose title is sure — by its own data or by its name
+ * «Review and link»: every release not linked in Lumovio whose title is sure — by its own data or by its name
  * and year — as a pair to check; an unchecked pair is left as it is. One request links the checked ones.
  */
 export function LinkAllDialog({

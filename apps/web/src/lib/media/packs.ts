@@ -1,6 +1,6 @@
 /*
- * The seasons and episodes a release name states (TS5): its own module, so the places that only ask whether a copy holds
- * a season (the title's copies, lib/watch-state) don't load the whole release ranking (./releases).
+ * The seasons and episodes a release name states: its own module, so the places that only ask whether a copy
+ * holds a season (the title's copies, lib/watch-state) don't load the whole release ranking (./releases).
  */
 
 export interface PackInfo {
@@ -83,9 +83,9 @@ export function holdsSeason(pack: PackInfo, season: number, episode: number | nu
 }
 
 /**
- * A whole torrent holds a series' season unless its release name says it holds others only (docs/torrserver-2026-11.md,
- * 20): a season-1 pack is no copy of season 2, so the title searches for season 2 and the player doesn't offer season 1's
- * files. A server's copy (Jellyfin, Plex) isn't judged by a name.
+ * A whole torrent holds a series' season unless its release name says it holds others only:
+ * a season-1 pack is no copy of season 2, so the title searches for season 2 and the player doesn't offer
+ * season 1's files. A server's copy (Jellyfin, Plex) isn't judged by a name.
  */
 export function holdsByName(s: { kind: string; label: string | null }, season: number): boolean {
   return s.kind !== "torrserver" || !s.label || holdsSeason(packOf(s.label), season) !== false;

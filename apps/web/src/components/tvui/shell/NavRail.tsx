@@ -9,7 +9,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { showsAnime } from "@/lib/show-anime";
 
 /*
- * The TV shell's menu (design-system 10.3, TV document §4 "Основная оболочка"): a rail of icons along the start edge,
+ * The TV shell's menu: a rail of icons along the start edge,
  * always there and always the same, that opens with its labels over a scrim when the focus comes to it (← from the
  * first item of a screen, or Back). The current section is marked in lime; the profile is at the top, the settings at
  * the bottom. ↑/↓ inside, → back to where the screen was (tvui/nav/TvNav).
@@ -36,7 +36,7 @@ export function NavRail() {
     { href: "/", key: "home", icon: Home, label: t("home"), on: pathname === "/" },
     { href: "/browse/movie", key: "movies", icon: Film, label: t("movies"), on: at("/browse/movie") },
     { href: "/browse/tv", key: "series", icon: Tv, label: t("series"), on: at("/browse/tv") },
-    // Only while the profile has anime on (design-system 8.14).
+    // Only while the profile has anime on.
     ...(showsAnime(me) ? [{ href: "/anime", key: "anime", icon: Sparkles, label: t("anime"), on: at("/anime") }] : []),
     {
       href: "/library",
@@ -78,7 +78,7 @@ export function NavRail() {
       data-zone-entry="current"
       className="group/rail stage fixed inset-y-0 start-0 z-header flex w-(--tv-rail) flex-col bg-stage"
     >
-      {/* The open menu's panel: a scrim that hides what is under the labels (no blur on a TV, 6.2). */}
+      {/* The open menu's panel: a scrim that hides what is under the labels (no blur on a TV). */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-y-0 start-0 w-(--tv-rail-open) bg-linear-to-r from-bg via-bg/95 to-transparent opacity-0 transition-opacity duration-base group-focus-within/rail:opacity-100"

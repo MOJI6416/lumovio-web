@@ -6,9 +6,9 @@ import { apiErrorKey } from "@/lib/api-errors";
 import { MediaNetError } from "@/lib/media/net";
 
 /*
- * What went wrong talking to the person's media server or to Lumovio, in words (design-system 2.1, 8.5; L10N-04) —
+ * What went wrong talking to the person's media server or to Lumovio, in words —
  * the same texts as connections/net-errors, in a module the player and the sources screen take without the
- * connections screen (X-43).
+ * connections screen.
  */
 
 /** A media server's own reason (CORS, certificate, timeout…) in the `connections` namespace's words. */
@@ -28,7 +28,7 @@ export function netReason(t: ReturnType<typeof useTranslations>, e: MediaNetErro
 
 /**
  * The media server's reason, its HTTP status, or the API error's key — never an error's own (English) text. In the TV
- * shell an `http://` server refused by the browser has its own words (TV document §7.2): only a TV's browser meets it
+ * shell an `http://` server refused by the browser has its own words: only a TV's browser meets it
  * (the TV app allows such servers), and it can't be helped on the TV — an https address set on a phone, or the app.
  */
 export function useMediaErrorText() {

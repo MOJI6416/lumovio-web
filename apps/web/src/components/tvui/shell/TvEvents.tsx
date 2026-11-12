@@ -14,14 +14,14 @@ type DeviceEvent =
   | { type: "cast"; castId: string; href: string; switched: boolean }
   | { type: "playback"; action: "toggle" | "stop" | "seek"; delta?: number };
 
-/** Changes are applied once the remote has rested this long (TV document §12.4: not while an arrow is held). */
+/** Changes are applied once the remote has rested this long (not while an arrow is held). */
 const IDLE_MS = 2500;
 /** Progress of a viewing on another device arrives every 10 s: the TV takes it at most this often. */
 const PROGRESS_MS = 60_000;
 const KEYS: Record<string, string> = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", back: "GoBack", play: " " };
 
 /**
- * The TV's side of the event stream (TV document §7.2, §7.3, §12.4): what changed on a phone or a computer — lists,
+ * The TV's side of the event stream: what changed on a phone or a computer — lists,
  * progress, a profile's preferences, servers and the copies on them (`index`: a torrent added, linked or removed, a
  * scan) — is fetched again when the remote rests and no layer is open (the
  * current viewing isn't touched); after a gap (sleep, lost network) everything shown is; a session removed from
@@ -91,7 +91,7 @@ export function TvEvents() {
         }
         return;
       }
-      // "Watch on TV" (design-system 8.18): a phone's viewing opens here at once — in place of the one playing, so Back
+      // "Watch on TV": a phone's viewing opens here at once — in place of the one playing, so Back
       // from it doesn't start that one again; after its profile was switched to the phone's the TV loads anew in it.
       if (e.type === "cast") {
         if (e.switched) window.location.assign(home(e.href));

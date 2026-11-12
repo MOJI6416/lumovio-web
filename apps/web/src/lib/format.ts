@@ -6,7 +6,7 @@ export function formatRuntime(min: number | null | undefined, t: (k: string, v: 
 }
 
 /**
- * A date that doesn't break where it shouldn't (L10N-17): the day stays with its month and the year with «г.» / «р.»
+ * A date that doesn't break where it shouldn't: the day stays with its month and the year with «г.» / «р.»
  * («20 січ. 2008 р.» never ends a line with «р.» alone) — non-breaking spaces after a number before a word.
  */
 const keepTogether = (s: string) => s.replace(/(\d) (?=\p{L})/gu, "$1\u00a0");
@@ -27,7 +27,7 @@ export function formatClock(sec: number): string {
 }
 
 /**
- * When something happened, as design-system 2.3 says it: "только что" under a minute (`justNow` — pass `common.justNow`),
+ * When something happened: "только что" under a minute (`justNow` — pass `common.justNow`),
  * then minutes, hours, "вчера" and days up to a week; older — the date ("24 окт.", with the year when it is another one).
  */
 export function relativeTime(iso: string, locale: string, justNow?: string): string {
@@ -57,14 +57,14 @@ export function formatSize(bytes: number | null | undefined, locale: string): st
   return as(Math.max(1, bytes / 1024), "kilobyte", 0);
 }
 
-/** "драма" → "Драма": a name from the catalog (a genre, a language) as a label, link or chip — one case everywhere (CAT-09). */
+/** "драма" → "Драма": a name from the catalog (a genre, a language) as a label, link or chip — one case everywhere. */
 export const capitalize = (s: string, locale: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
 
 const LATIN_LOCALES = /^(en|es|de|fr|pt|it|pl|tr)\b/;
 
 /**
  * The `lang` of a text a source doesn't translate (TMDB's character names): "en" on a page in a language with its own
- * script (ru, uk) when the text is Latin letters only, so a screen reader reads it in English (8.11, TTL-26).
+ * script (ru, uk) when the text is Latin letters only, so a screen reader reads it in English.
  */
 export function latinLang(text: string | null | undefined, locale: string): "en" | undefined {
   if (!text || LATIN_LOCALES.test(locale) || !/\p{L}/u.test(text)) return undefined;

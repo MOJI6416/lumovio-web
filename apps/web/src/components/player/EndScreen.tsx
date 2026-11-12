@@ -12,7 +12,7 @@ import { Link } from "@/i18n/navigation";
 import { tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 
-/** What the end of a film or of a series' last episode offers (PLR-04). */
+/** What the end of a film or of a series' last episode offers. */
 export interface EndInfo {
   /** The title page ("To the film", "To the series"). */
   titleHref: string;
@@ -43,9 +43,9 @@ export function Marked({ end }: { end: EndInfo }) {
 }
 
 /**
- * The end of a film or of a series' last episode on the site (design-system 11.1, PLR-04): the title's art, its logo
+ * The end of a film or of a series' last episode on the site: the title's art, its logo
  * (or name) as the heading, whether the watch went into the history, the way to the title page — the main action, the
- * focus on it — "Watch again", and titles like it as a shelf without captions (7.12: the name over the poster on hover
+ * focus on it — "Watch again", and titles like it as a shelf without captions (the name over the poster on hover
  * and focus). "←" stays where it is in the player. Space, arrows and the shortcuts stand down while it shows.
  */
 export function EndScreen({ end, title, logo, backdrop, onReplay, onBack }: { end: EndInfo; title: string; logo: TitleLogoArt | null; backdrop: string | null; onReplay: () => void; onBack: () => void }) {
@@ -104,7 +104,7 @@ export function EndScreen({ end, title, logo, backdrop, onReplay, onBack }: { en
   );
 }
 
-/** A poster of the end screen's shelf: the name over its foot on hover and focus only (7.12), and always for the reader. */
+/** A poster of the end screen's shelf: the name over its foot on hover and focus only, and always for the reader. */
 function Poster({ title: r }: { title: TitleSummary }): ReactNode {
   return (
     <Link href={titleHref(r.kind, r.tmdbId, r.title)} aria-label={r.title} className="group relative block overflow-hidden rounded-sm">

@@ -5,7 +5,7 @@
     <!-- Installing a newer version published on the site (MainActivity.checkForUpdate); the system still asks each time. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Seen in the Android TV launcher, installable on boxes without a touchscreen (TV document §11.1). -->
+    <!-- Seen in the Android TV launcher, installable on boxes without a touchscreen. -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 

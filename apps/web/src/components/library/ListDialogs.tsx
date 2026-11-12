@@ -22,7 +22,7 @@ import { useAction } from "@/lib/use-action";
 type Member = ListDetails["members"][number];
 
 /**
- * "Edit list" (LIB-06, LIB-08, LIB-15): the name and description (custom lists), who sees it and whether others may add
+ * "Edit list": the name and description (custom lists), who sees it and whether others may add
  * titles — one form, one "Save", a toast when it is saved; the dialog stays open with the error otherwise. A kids
  * profile's lists stay private (the server refuses anything else), so it isn't asked.
  */
@@ -104,7 +104,7 @@ export function EditListDialog({ list: l, open, onOpenChange, kids }: { list: Li
 }
 
 /**
- * Members and their roles (LIB-06): the owner changes a member's role in place (no toast — the Select shows it) and
+ * Members and their roles: the owner changes a member's role in place (no toast — the Select shows it) and
  * removes a profile after a confirmation; everyone else sees who is in the list.
  */
 export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: ListDetails; open: boolean; onOpenChange: (o: boolean) => void; isOwner: boolean }) {
@@ -117,7 +117,7 @@ export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: 
   const setRole = useAction({
     run: (m: Member, role: "editor" | "viewer") => api(`/api/lists/${l.id}/members/${m.profileId}`, { method: "PATCH", json: { role } }),
     optimistic: (m: Member, role: "editor" | "viewer") => {
-      // The list page keeps its pages under this key (LIB-24); each page carries the members.
+      // The list page keeps its pages under this key; each page carries the members.
       const before = qc.getQueryData<InfiniteData<ListDetails>>(key);
       qc.setQueryData<InfiniteData<ListDetails>>(
         key,
@@ -141,7 +141,7 @@ export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: 
     void refresh();
   };
   return (
-    // Who may change what is the dialog's description for a screen reader: the controls say it (1.2).
+    // Who may change what is the dialog's description for a screen reader: the controls say it.
     <Dialog open={open} onOpenChange={onOpenChange} title={t("members")} description={<span className="sr-only">{t("membersHint")}</span>}>
       <ul className="divide-y divide-line">
         {l.members.map((m) => (
@@ -181,7 +181,7 @@ export function MembersDialog({ list: l, open, onOpenChange, isOwner }: { list: 
 const TTL_HOURS = 72;
 
 /**
- * Inviting (LIB-16): what the invited person may do — two labelled choices with what each means — then "Create link";
+ * Inviting: what the invited person may do — two labelled choices with what each means — then "Create link";
  * the link in a labelled field with "Copy link" and the chosen role and lifetime said next to it.
  */
 export function InviteDialog({ list: l, open, onOpenChange }: { list: ListDetails; open: boolean; onOpenChange: (o: boolean) => void }) {

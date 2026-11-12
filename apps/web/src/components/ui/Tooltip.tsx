@@ -65,8 +65,8 @@ function place(trigger: DOMRect, tip: DOMRect, side: Side) {
 }
 
 /**
- * Tooltip (design-system 7.8): a short hint (up to 40 characters) for an icon-only button or a badge, after 400 ms of
- * hover or on keyboard focus; 12/600 on --surface-3, body size on TV (10.3). A tap or a click doesn't open it — the
+ * Tooltip: a short hint (up to 40 characters) for an icon-only button or a badge, after 400 ms of
+ * hover or on keyboard focus; 12/600 on --surface-3, body size on TV. A tap or a click doesn't open it — the
  * control's `aria-label` says the same — and neither does a focus that isn't the keyboard's (a dialog that opens
  * with its close button focused). Never the only place of information or of an action. Escape, a press, leaving
  * and scrolling close it.

@@ -14,7 +14,7 @@ import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
 /*
- * The TorrServer search of the sources screen without its look (TS1–TS6, SRC-07…SRC-13): the server, the query and
+ * The TorrServer search of the sources screen without its look: the server, the query and
  * its answer, the audio / picture / tracker filters and the order, the recommendation and what a pick carries. The
  * site's TorrentFinder and the TV's (tvui/sources) render it each their own way.
  */
@@ -23,7 +23,7 @@ export const PAGE = 30;
 const SERVER_KEY = "lumovio.sources.server";
 
 /**
- * The orders of the list, each one choice (SRC-08: one "quality" in the panel, not three): the recommendation under
+ * The orders of the list, each one choice (one "quality" in the panel, not three): the recommendation under
  * the profile's quality mode, the best picture ("best" mode), the smaller file ("small" mode), seeders, date.
  */
 export type Sort = "recommended" | "quality" | "size" | "seeders" | "date";
@@ -77,7 +77,7 @@ export interface FinderPick {
  * The server the search starts on: the current copy's; else the one whose answer for this title is already here (the
  * title page's "Where to watch" searched it), so the screen shows what the title page did; else the last one searched
  * here; else one that searches on its own and answered its last check (as `autoSearchSource`), else any that searches
- * on its own (SRC-11).
+ * on its own.
  */
 function firstServer(connections: ConnectionSummary[], preferred: string | null | undefined, answered: (id: string) => boolean): string {
   let remembered: string | null = null;
@@ -227,7 +227,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
   }, [found, d, prefs, season, episode, fileTracks]);
-  // Audio options grouped by language: the profile's languages first, each studio under its own language (SRC-04).
+  // Audio options grouped by language: the profile's languages first, each studio under its own language.
   const options = useMemo(() => {
     // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
     const all = voiceOptions((view?.ranked ?? []).filter((x) => x.holds !== false), 60);
@@ -236,7 +236,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
       return i >= 0 ? i : o.language ? base.languages.length : base.languages.length + 1;
     };
     // In a language, the order "Where to watch" offers them (`forProfile`: live ones before almost dead, HD, then the
-    // profile's studios in their order, "1 — LostFilm, 2 — HDRezka"), so both say the same (docs/torrserver-2026-11.md 7).
+    // profile's studios in their order, "1 — LostFilm, 2 — HDRezka"), so both say the same.
     return forProfile(all, base)
       .map((o, i) => ({ o, i }))
       .sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || a.i - b.i)
@@ -288,7 +288,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     setShown(PAGE);
   };
 
-  // The site (design-system 7.15 «Экран источников»): the pills of "Where to watch" narrowing the list, its card the
+  // The site: the pills of "Where to watch" narrowing the list, its card the
   // list's first. The title page always sends its audio; when that is just its default, nothing was chosen, and the
   // screen of "All releases" lists every audio (the card is the same release either way).
   const titleDefault = useMemo(() => (view && !modeInSort ? (pickRelease(view.ranked, base).option?.key ?? null) : null), [view, base, modeInSort]);
@@ -356,7 +356,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   const pick = (r: TsSearchResult, anchor: Element | null) => onPick({ connectionId: connId, result: r, voice: voiceFor(r), linked: isLinked(r), version: versionOf(r) }, anchor);
 
   const minutes = found ? Math.max(0, Math.round((Date.now() - found.at) / 60_000)) : 0;
-  // "Russian · HDrezka Studio · 32": the language first, so one studio in two languages is two clear options (SRC-04).
+  // "Russian · HDrezka Studio · 32": the language first, so one studio in two languages is two clear options.
   const optionLabel = (o: VoiceOption) => {
     const count = o.versions.reduce((n, v) => n + v.count, 0);
     const name = o.studio ?? (o.voice ? tt(`voice_${o.voice}`) : null);

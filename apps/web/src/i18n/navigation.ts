@@ -8,7 +8,7 @@ export const { redirect, usePathname, useRouter, getPathname } = navigation;
 
 /**
  * next-intl's Link, which also says while its navigation is pending, with the page it opens (shell/NavigationLoading
- * shows the page loader while that page is prepared; design-system 6.3.1).
+ * shows the page loader while that page is prepared).
  */
 export function Link({ children, ...props }: ComponentProps<typeof navigation.Link>) {
   const { href } = props;

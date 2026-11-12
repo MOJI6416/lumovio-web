@@ -1,7 +1,7 @@
 import { languageCode } from "../explain";
 
 /*
- * Which subtitles start shown (PLR-14), and the choice remembered for the title like the dubbing is: the track picked
+ * Which subtitles start shown, and the choice remembered for the title like the dubbing is: the track picked
  * last time for this title, matched by language and kind (never by position — another episode's file has its own
  * order); else, when the audio is in a language the profile doesn't list among its audio languages, the first of its
  * subtitle languages (Settings → Profile, "chosen in this order"); else the audio language's forced subtitles (signs

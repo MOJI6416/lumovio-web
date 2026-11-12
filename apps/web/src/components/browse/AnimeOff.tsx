@@ -11,7 +11,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 
 /**
- * The Anime section of a profile with anime off (design-system 8.14; an old link, a bookmark): says so, and an adult
+ * The Anime section of a profile with anime off (an old link, a bookmark): says so, and an adult
  * turns it on right here — the section then opens in its place. A kids profile is told an adult can (in Manage profiles).
  */
 export function AnimeOff() {

@@ -14,7 +14,7 @@ import { sourceErrorKey } from "./ConnectListDialog";
 export type ListDialog = "edit" | "members" | "invite" | "copy";
 
 /**
- * A list's "More" (LIB-06, LIB-08; design-system 8.13): Edit list, Members, Invite; a followed MDBList list's
+ * A list's "More": Edit list, Members, Invite; a followed MDBList list's
  * "Refresh now" and "Unfollow"; a smart list's "Save as a regular list"; "Bring back N removed titles" of a followed
  * or smart list; and — last, after a separator — Delete list (the owner) or Leave list (a member). Loaded by ListView
  * when the pointer comes near its button, it gets the focus or the browser is idle; it then takes the light button's

@@ -24,7 +24,7 @@ import { pageSeo } from "@/lib/seo";
 /** When each document last changed (the privacy policy: the Spotify button got its current name). */
 const UPDATED: Record<LegalDoc, string> = { terms: "2026-10-24", privacy: "2026-10-25", credits: "2026-10-25", copyright: "2026-10-24" };
 
-/** Translations of the legal pages (owner's decision 1.3, L10N-01); every other language reads the English original. */
+/** Translations of the legal pages; every other language reads the English original. */
 const TRANSLATED: Partial<Record<string, Record<LegalDoc, () => ReactNode>>> = { ru: DOCS_RU, uk: DOCS_UK, de: DOCS_DE, fr: DOCS_FR, it: DOCS_IT,es: DOCS_ES, "pt-BR": DOCS_PT_BR, pl: DOCS_PL, tr: DOCS_TR };
 
 const isDoc = (doc: string): doc is LegalDoc => (LEGAL_DOCS as readonly string[]).includes(doc);
@@ -52,11 +52,11 @@ export default async function LegalPage({ params, searchParams }: { params: Prom
   // A translated language reads its translation, with the English original one link away (`?version=en`, the site language unchanged).
   const original = Boolean(translation) && version === "en";
   const docs = translation && !original ? translation : DOCS_EN;
-  // A draft language reads the English page, so its date is English too — the whole phrase in one language (8.11).
+  // A draft language reads the English page, so its date is English too — the whole phrase in one language.
   const updated = formatDate(UPDATED[doc], translation || isInterfaceLocale(locale) ? locale : "en", { dateStyle: "long" });
   return (
-    // The Tool template (design-system 9) for reading: one column at a readable measure, centred on the page, the h1
-    // in it (owner, 2026-10-25: no text left against the start edge with the rest of a wide screen empty).
+    // The Tool template for reading: one column at a readable measure, centred on the page, the h1
+    // in it (no text left against the start edge with the rest of a wide screen empty).
     <div className="page-x">
       <article className="mx-auto max-w-measure">
         <PageHeader title={t(doc)} description={t("updated", { date: updated ?? UPDATED[doc] })} />
@@ -72,7 +72,7 @@ export default async function LegalPage({ params, searchParams }: { params: Prom
             {original ? t("originalNotice") : t("translationNotice")}
           </InlineAlert>
         )}
-        {/* The header's own 24/32 to the text (5.1): the first block drops its top margin. */}
+        {/* The header's own 24/32 to the text: the first block drops its top margin. */}
         <div className="max-w-measure *:first:mt-0" lang={original ? "en" : undefined}>
           {docs[doc]()}
         </div>

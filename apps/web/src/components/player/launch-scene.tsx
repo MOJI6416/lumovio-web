@@ -8,7 +8,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import type { LaunchScene } from "./launch";
 
 /**
- * What the launch's scene says (./launch, design-system 11.1 «Запуск») over its black: "←" from the start, the loader
+ * What the launch's scene says (./launch) over its black: "←" from the start, the loader
  * and what is being done now after --loader-delay, the ways out when it takes a while.
  */
 export default function LaunchSceneContent({ scene, since }: { scene: LaunchScene; since: number }) {

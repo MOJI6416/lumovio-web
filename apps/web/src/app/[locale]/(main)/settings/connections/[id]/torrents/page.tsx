@@ -13,7 +13,7 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
-/** A page under "Servers" (the Tool template): "← Servers" over its h1, which names the server (8.7). */
+/** A page under "Servers" (the Tool template): "← Servers" over its h1, which names the server. */
 export default async function TorrentsPage({ params }: { params: Params }) {
   const { id } = await params;
   const t = await getTranslations("torrentManager");

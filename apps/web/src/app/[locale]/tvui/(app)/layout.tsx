@@ -8,7 +8,7 @@ import { requireTvProfile } from "@/lib/tv-server";
 
 /**
  * The TV shell's screens with the menu: a signed-in profile only (a guest gets the code screen). The first screen streams
- * behind the app's launch mark; a later one shows the loader beside the menu while it is prepared (design-system 6.3.1).
+ * behind the app's launch mark; a later one shows the loader beside the menu while it is prepared.
  */
 export default async function TvMenuLayout({ children }: { children: ReactNode }) {
   const me = await requireTvProfile();

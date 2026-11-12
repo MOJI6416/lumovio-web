@@ -13,7 +13,7 @@ export async function generateMetadata() {
   return { robots: { index: false }, title: t("settings") };
 }
 
-/** Settings on a TV (S14 TV): the servers' status is read here, a kids profile has none (403 → not shown). */
+/** Settings on a TV: the servers' status is read here, a kids profile has none (403 → not shown). */
 export default async function TvSettingsPage() {
   const me = await requireTvProfile();
   if (me === "unavailable") return <TvUnavailable />;

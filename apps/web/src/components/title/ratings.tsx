@@ -7,7 +7,7 @@ import { ScoreMark } from "@/components/media/ScoreBadge";
 import { api } from "@/lib/api";
 
 /*
- * A title's ratings, one language for the hero, the Details tab and the TV (design-system 1.3, 7.14 item 3, 7.22):
+ * A title's ratings, one language for the hero, the Details tab and the TV:
  * every source's own score with its logo, its scale and the votes behind it, split into critics and audience. The
  * Lumovio Score is Lumovio's own derived number and never stands for any service's score.
  */
@@ -47,7 +47,7 @@ export function ratingItems(data: TitleExternal | undefined, kind: MediaKind, tm
   return items;
 }
 
-/** Up to three in the hero (owner's decision 1.3): IMDb (TMDB without it) and the critics' score; the Lumovio Score is separate. */
+/** Up to three in the hero: IMDb (TMDB without it) and the critics' score; the Lumovio Score is separate. */
 export function heroItems(items: RatingItem[]): RatingItem[] {
   const audience = items.find((r) => r.source === "imdb") ?? items.find((r) => r.source === "tmdb");
   const critics = items.find((r) => r.source === "rotten_tomatoes") ?? items.find((r) => r.source === "metacritic");
@@ -64,10 +64,10 @@ export const ratingGroup = (source: RatingItem["source"]): "critics" | "audience
 const SCALE: Partial<Record<RatingItem["source"], 5 | 10 | 100>> = { imdb: 10, tmdb: 10, tvmaze: 10, myanimelist: 10, letterboxd: 5, metacritic: 100 };
 export const ratingScale = (source: RatingItem["source"]) => SCALE[source] ?? null;
 
-/** A whole per cent in the locale's way (2.3): "83%" in en, "83 %" in fr and de, "%83" in tr. */
+/** A whole per cent in the locale's way: "83%" in en, "83 %" in fr and de, "%83" in tr. */
 export const percent = (n: number, locale: string) => new Intl.NumberFormat(locale, { style: "percent" }).format(n / 100);
 
-/** The number as its source writes it, without its scale, with the locale's decimal sign and per cent (2.3): "8,0", "83 %", "74", "3,9". */
+/** The number as its source writes it, without its scale, with the locale's decimal sign and per cent: "8,0", "83 %", "74", "3,9". */
 export function useRatingValue() {
   const locale = useLocale();
   const one = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });

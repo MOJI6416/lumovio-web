@@ -12,7 +12,7 @@ import { apiErrorKey, isRetryable } from "@/lib/api-errors";
 import type { RulesEdit } from "./SaveRulesDialog";
 
 /**
- * "Edit conditions" of a smart list (package F) opens the catalog grid or the library tab with its conditions and
+ * "Edit conditions" of a smart list opens the catalog grid or the library tab with its conditions and
  * `?editList=`: this banner over the filters says whose conditions are being changed, "Save conditions" (the dialog
  * that saves them back into the same list) and "Cancel" back to the list. A list that can't be changed here (gone,
  * not one's own, not a smart list) says so, with the way back to the lists.
@@ -61,7 +61,7 @@ export function EditRulesBar({ listId, onSave, className }: { listId: string; on
         </div>
       }
     >
-      {/* What to do, for a screen reader: the title and the two buttons say it (1.2). */}
+      {/* What to do, for a screen reader: the title and the two buttons say it. */}
       <span className="sr-only">{t("rulesEditingText")}</span>
     </InlineAlert>
   );

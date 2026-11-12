@@ -46,7 +46,7 @@ const OFFER_GROUPS: { key: "offerFlatrate" | "offerFree" | "offersPaid"; kinds: 
 const reachable = (s: SourceState) => s.status !== "unreachable" && s.status !== "unauthorized";
 
 /**
- * "Where to watch" (design-system 7.15, S06, C14; SRC-01, SRC-09, SRC-14, TTL-12, TTL-14; redrawn 2026-11-06): the one
+ * "Where to watch": the one
  * way to start now in a card — the copy the main button starts, else the release the profile's TorrServer finds, with
  * the choices that lead to another — then the other copies, and beside them (under them on a phone) the legal
  * streaming of the region by what it costs. Every state of the way is the same card: loading, an error, a server out of
@@ -61,7 +61,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const { me } = useSession();
   const { data: lib } = useLibraryState(d.id);
   // The season picked in "Episodes", else the one the profile is in: a whole torrent of other seasons only is no copy of
-  // it, and the search below looks for it (./chosen-season, docs/torrserver-2026-11.md 20–21).
+  // it, and the search below looks for it (./chosen-season).
   const chosen = useChosenSeason(d.id);
   const ep = d.kind === "tv" ? startEpisode(d, lib?.progress, chosen) : null;
   const holds = seasonCopies(ep?.season);
@@ -73,7 +73,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const data = raw ? titleCopies(raw, holds) : undefined;
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
-  // "Another release" under a copy (docs/torrserver-2026-11.md, 15 and 19): the search's card, closed by × and Escape.
+  // "Another release" under a copy: the search's card, closed by × and Escape.
   const [other, setOther] = useState(false);
   const otherButton = useRef<HTMLButtonElement>(null);
   const otherClose = useRef<HTMLButtonElement>(null);
@@ -96,7 +96,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const resume = watchHref(d, lib?.progress, chosen);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
-  // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
+  // goes to the details; the same words as the sources screen (sources/copy-text).
   const copyText = useCopyText();
   const all = raw?.servers ?? [];
   // Servers out of reach or still indexing: said once, quietly when another way is shown, as the card when none is.
@@ -113,12 +113,12 @@ export function Availability({ title: d }: { title: TitleCore }) {
       heard: heard ?? q.words[0] ?? s.connectionName,
       // The marks and what they don't say; without marks, the version in words unless the heading already says it.
       quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      // A TorrServer copy says it is already there (14), not "On «torr» · TorrServer" beside a found release's "Through".
+      // A TorrServer copy says it is already there, not "On «torr» · TorrServer" beside a found release's "Through".
       where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, d.originalLanguage),
     };
   };
-  // "Watch on TV" (8.18) beside a copy's "Watch": that copy, from where the profile is.
+  // "Watch on TV" beside a copy's "Watch": that copy, from where the profile is.
   const tcard = useTranslations("card");
   const cast = (s: Copy, size: "md" | "lg") => (
     <CastButton
@@ -139,7 +139,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
         mark={<ServerMarks />}
         heading={tp("guest")}
         actions={
-          // The one sign-in sheet (8.6), back to this tab afterwards.
+          // The one sign-in sheet, back to this tab afterwards.
           <GuestGate
             reason="watch"
             trigger={
@@ -308,7 +308,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
 }
 
 /**
- * Legal streaming for the profile's region (TTL-12, TTL-14): each service by its logo and name, opening its own search
+ * Legal streaming for the profile's region: each service by its logo and name, opening its own search
  * for the title, grouped by what it costs — in a subscription, free, rent or buy (JustWatch's groups); a service in two
  * groups is in both. Nothing in the region is said in words, with the way to change the region.
  */
@@ -319,9 +319,9 @@ function Streaming({ title: d, locale }: { title: TitleCore; locale: string }) {
   const wp = d.watchProviders;
   const region = regionName(wp?.region ?? me?.activeProfile?.region ?? null, locale);
   const title = region ? tp("streamingIn", { region }) : tp("streaming");
-  // The region is the profile's to change; a kids profile's is set by an adult (8.10).
+  // The region is the profile's to change; a kids profile's is set by an adult.
   const canChange = Boolean(me?.activeProfile && !me.activeProfile.isKids);
-  // One row per service in a group — its plan with ads folded in (TTL-26) — with its kinds of offer there ("Rent · Buy").
+  // One row per service in a group — its plan with ads folded in — with its kinds of offer there ("Rent · Buy").
   const groups = OFFER_GROUPS.map((g) => ({ ...g, rows: serviceOffers(wp?.providers ?? [], g.kinds).slice(0, 8) })).filter((g) => g.rows.length > 0);
   return (
     <section aria-labelledby="streaming-h" className="flex min-w-0 flex-col gap-4">

@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   return { robots: { index: false }, title: (await params).kind === "tv" ? t("titleSeries") : t("titleMovies") };
 }
 
-/** Movies and Series on a TV (S02 TV). */
+/** Movies and Series on a TV. */
 export default async function TvBrowsePage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { locale, kind } = await params;
   if (kind !== "movie" && kind !== "tv") notFound();

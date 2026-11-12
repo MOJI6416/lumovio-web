@@ -27,11 +27,11 @@ type Level = "root" | "quality" | "speed" | "source" | "info" | "keys";
 const LEVEL_OF: Partial<Record<PlayerPanel, Level>> = { settings: "root", info: "info", source: "source", help: "keys" };
 
 /**
- * The site's player menus (design-system 11.1): "Audio and subtitles" — the most frequent, one press, the two lists side
+ * The site's player menus: "Audio and subtitles" — the most frequent, one press, the two lists side
  * by side — "Settings" — one root with each setting's current value, a level per setting ("‹" back) — and the episodes.
  * On a computer a surface over the picture above its button, no veil: the film stays in view and plays on; closed by
  * Escape, a press outside or the button again (the surface is player-parts' Surface, the TV's menus stand on it too).
- * On a phone a bottom sheet, as every menu of the site (7.9). The TV keeps its own lists (PlayerPanels, TV document §6).
+ * On a phone a bottom sheet, as every menu of the site. The TV keeps its own lists (PlayerPanels).
  */
 export function PlayerMenus({
   panel,
@@ -156,7 +156,7 @@ const ROW =
 /** One choice of a list: its words, a format or fact under them, a check at the end on the chosen one. */
 function Choice({ checked, label, description, icon, badge, disabled, onSelect }: { checked: boolean; label: ReactNode; description?: string; icon?: ReactNode; badge?: ReactNode; disabled?: boolean; onSelect: () => void }) {
   return (
-    <button /* ui-lint-ignore raw-button: a choice row of the player's menu (11.1), a menuitemradio */
+    <button /* ui-lint-ignore raw-button: a choice row of the player's menu, a menuitemradio */
       type="button"
       role="menuitemradio"
       aria-checked={checked}
@@ -195,7 +195,7 @@ function SettingRow({ label, value, onOpen }: { label: string; value?: string; o
       </div>
     );
   return (
-    <button /* ui-lint-ignore raw-button: a row of the player's settings menu (11.1) that opens its level */
+    <button /* ui-lint-ignore raw-button: a row of the player's settings menu that opens its level */
       type="button"
       role="menuitem"
       aria-haspopup="menu"
@@ -221,7 +221,7 @@ function LevelBack({ label, onBack }: { label: string; onBack: () => void }) {
 }
 
 /**
- * Audio and subtitles (PLR-07): every track in words — "Russian · dubbed (Pifagor)" — with its format under it, the one
+ * Audio and subtitles: every track in words — "Russian · dubbed (Pifagor)" — with its format under it, the one
  * playing checked; none or one is said so. Two columns on a computer, one under the other on a phone. Under the
  * subtitles: their size (the profile's; a level of its own) and timing for this title ("Earlier" · "+1.0 s" · "Later").
  */
@@ -305,7 +305,7 @@ function TracksMenu({
                 <Choices label={t("subtitles")}>
                   <Choice checked={!shown} label={t("subtitlesOff")} onSelect={() => store.selectSubtitlesTrack(null)} />
                   {subtitleTracks.map((tr, i) => {
-                    // The file's own tracks and the torrent's files (PLR-14): forced ones said so, the format underneath.
+                    // The file's own tracks and the torrent's files: forced ones said so, the format underneath.
                     const m = subtitleMeta.get(tr.id);
                     const w = subWords(tr.label || null, tr.language || null, i + 1);
                     return (
@@ -374,7 +374,7 @@ function Timing({ look }: { look: SubtitleLook }) {
 /**
  * Settings: one root with each setting's value (as YouTube's), a level per setting replacing the list. Quality — the
  * stream's real versions (one file is one quality: its height, no level); speed; the source — this title's other copies
- * from this position and the search for another (PLR-03); playback info (PLR-06); the keys (a computer only).
+ * from this position and the search for another; playback info; the keys (a computer only).
  */
 function SettingsMenu(props: Parameters<typeof SettingsLevel>[0]) {
   const root = useRef<HTMLDivElement>(null);

@@ -25,7 +25,7 @@ export function trimProbe(p: FileProbe): FileProbe {
 /*
  * A torrent's file never changes (its info hash says so), so what ffprobe said about it is kept on this device: the next
  * start of the same file — "Continue", another audio track, a stream opened again after it broke off — goes without
- * waiting for the probe, which takes 2–17 s on a torrent TorrServer has to wake (docs/torrserver-2026-11.md 23).
+ * waiting for the probe, which takes 2–17 s on a torrent TorrServer has to wake.
  */
 const PROBES_KEY = "lumovio.probes.v1";
 const PROBES_MAX = 30;

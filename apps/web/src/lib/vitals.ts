@@ -2,15 +2,15 @@ import { withoutLocale } from "./locale-path";
 import { background } from "./optional";
 
 /**
- * Field speed of the site (docs/performance-handoff-2026-10-24.md §5.3): this page load's LCP, INP and CLS, sent once
+ * Field speed of the site: this page load's LCP, INP and CLS, sent once
  * as the page is left or hidden, with the kind of page and of device only — no title, account or cookie (the API counts
- * them into day histograms, its perf module). Nothing is measured or sent with Do Not Track or Global Privacy
+ * them into day histograms). Nothing is measured or sent with Do Not Track or Global Privacy
  * Control. Loaded when the page is idle (components/providers/Providers), not with the first JS.
  */
 type Group = "home" | "section" | "catalog" | "title" | "person" | "watch" | "search" | "library" | "list" | "settings" | "auth" | "tv" | "other";
 type Device = "desktop" | "phone" | "tv";
 
-/** The kind of page a path is, as the API's histograms group them (perf/vitals.ts GROUPS). */
+/** The kind of page a path is, as the API's histograms group them. */
 export function pageGroup(pathname: string, tv: boolean): Group {
   if (tv) return "tv";
   const p = withoutLocale(pathname);

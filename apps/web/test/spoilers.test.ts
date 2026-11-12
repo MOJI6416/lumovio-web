@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { episodesOpen } from "../src/lib/spoilers";
 
-describe("episodes open without spoilers (design-system 8.12)", () => {
+describe("episodes open without spoilers", () => {
   it("opens nothing while the library state is unknown or empty", () => {
     expect(episodesOpen(undefined)(1, 1)).toBe(false);
     expect(episodesOpen([])(1, 1)).toBe(false);

@@ -14,9 +14,9 @@ import { configuredProviders, type SocialProvider } from "./providers";
 
 export type { SocialProvider };
 
-// Third-party marks keep their own colours (design-system 3.6).
-const GOOGLE = "#EA4335"; // ui-lint-ignore hex-color: Google brand mark (3.6)
-const DISCORD = "#5865F2"; // ui-lint-ignore hex-color: Discord brand mark (3.6)
+// Third-party marks keep their own colours.
+const GOOGLE = "#EA4335"; // ui-lint-ignore hex-color: Google brand mark
+const DISCORD = "#5865F2"; // ui-lint-ignore hex-color: Discord brand mark
 
 const PROVIDERS = [
   {
@@ -49,7 +49,7 @@ const PROVIDERS = [
 ] as const;
 
 /**
- * OAuth buttons and the "or" under them — only for the providers the server has credentials for (AUTH-10): nothing at
+ * OAuth buttons and the "or" under them — only for the providers the server has credentials for: nothing at
  * all, and no hanging divider, when none is set up. The page passes `providers` (no jump when they appear); without
  * it they are asked here. `next` is where the provider brings the person back: Who's watching, then their page.
  */

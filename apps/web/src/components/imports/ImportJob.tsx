@@ -101,7 +101,7 @@ export function JobReview({ jobId }: { jobId: string }) {
     run: () => api(`/api/imports/${jobId}/apply`, { method: "POST", json: { includeKinds: kinds, keepExistingRatings: keepRatings } }),
     sync: refresh,
   });
-  // Takes back everything the import added: asked first with what it removes, the request runs in the dialog (IMP-06).
+  // Takes back everything the import added: asked first with what it removes, the request runs in the dialog.
   const rollback = async () => {
     if (!j) return;
     const ok = await confirm({
@@ -114,7 +114,7 @@ export function JobReview({ jobId }: { jobId: string }) {
     toast.success(t("rolledBack"));
     refresh();
   };
-  // Stops an import before anything is in the profile (IMP-03), or removes a finished one from the list.
+  // Stops an import before anything is in the profile, or removes a finished one from the list.
   const remove = async (running: boolean) => {
     const ok = await confirm({
       ...(running
@@ -128,9 +128,9 @@ export function JobReview({ jobId }: { jobId: string }) {
     router.push("/import");
   };
 
-  // "← Import history" over the import's own h1: the way back to the list (8.7, IMP-04).
+  // "← Import history" over the import's own h1: the way back to the list.
   const back = { href: "/import", label: t("title") };
-  // A failed load is said with Retry, never an endless skeleton (X-14).
+  // A failed load is said with Retry, never an endless skeleton.
   if (!j) {
     return job.isError ? (
       <>
@@ -178,7 +178,7 @@ export function JobReview({ jobId }: { jobId: string }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        // Its own distance to the content (9), not the list's extra 24.
+        // Its own distance to the content, not the list's extra 24.
         className="pb-0 sm:pb-0"
         back={back}
         title={t("jobTitle", { source: LABEL[j.source] })}
@@ -310,7 +310,7 @@ export function JobReview({ jobId }: { jobId: string }) {
 
       {j.status === "review" && (
         // Only the button stays at hand while the rows scroll: on a phone the whole panel took a third of the screen
-        // over the rows it was about (2026-11-07). A floating pill over the content, above the phone's tab bar.
+        // over the rows it was about. A floating pill over the content, above the phone's tab bar.
         <div className="pointer-events-none sticky bottom-24 z-sticky flex md:bottom-6">
           <Button
             size="lg"
@@ -354,7 +354,7 @@ function ImportRowItem({
   const locale = useLocale();
   // Simkl's TheTVDB numbering that TMDB's seasons don't confirm: the choice covers the whole title.
   const tvdb = r.sourceIds?.coords === "tvdb" && r.status === "ambiguous";
-  // The episode as 2.3 writes it, "1 сезон · 4 серия" (IMP-07).
+  // The episode written as "1 сезон · 4 серия".
   const episode = r.season !== null ? (r.episode !== null ? tcard("episode", { season: r.season, episode: r.episode }) : t("seasonOnly", { season: r.season })) : null;
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">

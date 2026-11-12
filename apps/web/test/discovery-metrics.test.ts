@@ -14,7 +14,7 @@ describe("discoveryPage", () => {
     expect(discoveryPage("/pt-BR")).toBe("home");
   });
 
-  it("carries the page's C5 comparison arm, and nothing else the API might send", () => {
+  it("carries the page's comparison arm, and nothing else the API might send", () => {
     expect(discoveryPage("/", "lift_a")).toBe("home_lift_a");
     expect(discoveryPage("/ru/browse/movie", "lift_b")).toBe("movie_lift_b");
     expect(discoveryPage("/ru/title/movie/1-x", "lift_b")).toBe("title");

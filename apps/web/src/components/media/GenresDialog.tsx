@@ -28,7 +28,7 @@ export function useGenreEntries() {
 }
 
 /**
- * The starter's "Pick genres" (cold start, docs/curation.md): genres the profile likes, before or instead of liking
+ * The starter's "Pick genres" (cold start): genres the profile likes, before or instead of liking
  * titles — "For you" is built from them at once, and the starter's titles come from them. Chips change a draft;
  * "Done" saves it (a failure stays in the dialog as a toast and nothing is lost), "Cancel" leaves it as it was.
  */

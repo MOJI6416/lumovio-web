@@ -21,9 +21,9 @@ import { useOpenState } from "./layers";
 import { lazyControl, useIdlePrefetch } from "./lazy-swap";
 
 /*
- * Modal layers (design-system 7.9): Dialog — centred on a tablet and desktop, a bottom sheet on a phone; Sheet — a
+ * Modal layers: Dialog — centred on a tablet and desktop, a bottom sheet on a phone; Sheet — a
  * bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover). Nothing slides in from a side of the
- * screen (owner, 2026-11-06): details are a dialog too. What they do — the focus trap and its return, Escape and Back,
+ * screen: details are a dialog too. What they do — the focus trap and its return, Escape and Back,
  * the stage, the default focus — is in ./DialogFrame.
  *
  * This module is the light part every screen imports: a closed layer draws nothing (or only its trigger), and the
@@ -32,7 +32,7 @@ import { lazyControl, useIdlePrefetch } from "./lazy-swap";
  */
 
 /**
- * Dialog widths (7.9): `sm` and `md` — 480 (forms, confirmations), `lg` — 640, `xl` — 880. On a phone every size is
+ * Dialog widths: `sm` and `md` — 480 (forms, confirmations), `lg` — 640, `xl` — 880. On a phone every size is
  * a full-width sheet.
  */
 export type DialogSize = "sm" | "md" | "lg" | "xl";
@@ -43,7 +43,7 @@ export interface LayerProps {
   onOpenChange?: (open: boolean) => void;
   /** The control that opens the layer (one element; it gets the click and aria-haspopup); the focus returns to it. */
   trigger?: ReactNode;
-  /** Names the layer; shown as an h3 (7.9) unless `hideTitle`. */
+  /** Names the layer; shown as an h3 unless `hideTitle`. */
   title: string;
   /** One line under the title (body-s). */
   description?: ReactNode;
@@ -151,7 +151,7 @@ export function Sheet(props: LayerProps) {
 }
 
 /**
- * The action row at the bottom of a dialog (7.1): the main action on the right with "Cancel" before it; on a phone a
+ * The action row at the bottom of a dialog: the main action on the right with "Cancel" before it; on a phone a
  * full-width column with the main action on top. Put "Cancel" first and the main action last.
  */
 export function DialogActions({ children, className }: { children: ReactNode; className?: string }) {

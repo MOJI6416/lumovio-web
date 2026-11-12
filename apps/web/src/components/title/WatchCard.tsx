@@ -6,7 +6,7 @@ import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 /**
- * "Where to watch" in one card (design-system 7.15, 2026-11-06): what will be watched — what is heard as the heading,
+ * "Where to watch" in one card: what will be watched — what is heard as the heading,
  * the picture as marks with what they don't say, where it comes from — then the white "Watch" with its "i" or "More"
  * under it, as the hero has them, and under a line the choices that lead to another one. The same card says every
  * state of the way: a search running or failed, nothing found, a server out of reach, the guest's sign-in, a profile
@@ -114,7 +114,7 @@ const NOT_TOGGLE = { "aria-pressed": undefined };
 
 /**
  * A choice that leads to another release or copy (Plex's pickers before Play): a pill with the choice's name and its
- * value and a chevron — the catalog's filter pill (7.4), never "selected", since a value is always there. It opens a
+ * value and a chevron — the catalog's filter pill, never "selected", since a value is always there. It opens a
  * Menu (`menu`), whose items are MenuCheckboxItems with the current one ticked.
  */
 export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">>(function PickPill(

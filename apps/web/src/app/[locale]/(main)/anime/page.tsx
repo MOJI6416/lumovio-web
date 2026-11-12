@@ -18,7 +18,7 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const t = await getTranslations("browse");
-  // Filters in the address are views of the section: the canonical is the section itself (SH-13).
+  // Filters in the address are views of the section: the canonical is the section itself.
   return { title: t("titleAnime"), ...pageSeo((await params).locale, "/anime") };
 }
 
@@ -30,7 +30,7 @@ export default async function AnimePage({ params, searchParams }: { params: Prom
   const tr = await getTranslations();
   const sp = await searchParams;
   const get = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : null);
-  // The profile has anime off (8.14): the section says so, with the way to turn it on.
+  // The profile has anime off: the section says so, with the way to turn it on.
   if (!showsAnime(await optional(getMe(), null))) {
     return (
       <div className="page-x mx-auto max-w-media">
@@ -64,8 +64,8 @@ export default async function AnimePage({ params, searchParams }: { params: Prom
   const query = discoverQuery(kind, browseState(get, true));
   // The first page rendered on the server; without it the browser loads it (with its own error and Retry).
   const first = await optional(serverApi<Paged<TitleSummary>>(`/api/catalog/discover?${query}&page=1`), null);
-  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11) — the latter for a screen reader only:
-  // no explanatory line on the screen (redesign 2026-11).
+  // A shelf's "All" page keeps its name and what it is for — the latter for a screen reader only:
+  // no explanatory line on the screen.
   const shelf = shelfHeading(get("shelf"), (k) => tr(k as "rows.finishedAnime"), gridGenres, locale);
   return (
     <div className="page-x mx-auto max-w-media">

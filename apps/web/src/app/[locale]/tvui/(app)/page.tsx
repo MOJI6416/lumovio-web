@@ -9,7 +9,7 @@ import { optional } from "@/lib/optional";
 import { serverApi } from "@/lib/server-api";
 
 /**
- * The TV's home (TV document §4 "Главная"): the featured title in the spotlight with "More info" and "Watchlist", then
+ * The TV's home: the featured title in the spotlight with "More info" and "Watchlist", then
  * the profile's shelves in the site's order — Continue watching (straight to the player), its servers, its personal
  * shelves, the Top 10 and the catalog — with the same data as the site's home.
  */

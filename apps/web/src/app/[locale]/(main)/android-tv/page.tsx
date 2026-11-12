@@ -17,12 +17,12 @@ const release: TvAppRelease | null = process.env.LUMOVIO_TV_APP ? JSON.parse(pro
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const t = await getTranslations("tvApp");
-  // Canonical and hreflang as the site's other pages (SH-13): without them its ten languages read as duplicates.
+  // Canonical and hreflang as the site's other pages: without them its ten languages read as duplicates.
   return { title: t("title"), description: t("description"), ...pageSeo((await params).locale, "/android-tv") };
 }
 
 /**
- * Lumovio for Android TV (S58; TV document §11.1): the APK of the app to download, and how a TV gets it by itself — the
+ * Lumovio for Android TV: the APK of the app to download, and how a TV gets it by itself — the
  * short address typed into Downloader, which always gives the newest version. The app offers its own updates later.
  * Linked from the footer, Settings → Devices and the code screen of a TV's Android browser.
  */

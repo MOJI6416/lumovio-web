@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 /**
- * Empty, error and "not here" states of the TV shell (design-system 7.11, 8.5 on a TV): an icon, what happened in one
+ * Empty, error and "not here" states of the TV shell: an icon, what happened in one
  * line, what to do, and the actions as one zone of the remote — the first is where the focus lands.
  */
 export function TvState({

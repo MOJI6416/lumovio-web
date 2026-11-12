@@ -25,7 +25,7 @@ const BASE: Partial<Record<Group, string>> = { directing: "Director", writing: "
 const rank = (g: Group, main: Group | null) => (g === main ? 0 : g === "crew" ? 2 : g === "self" ? 3 : 1);
 
 const CREW_WORK: Group[] = ["directing", "writing", "production", "crew"];
-/** A group in the address: "Other" is `other`, since an older link's `crew` meant all the crew work (before 2026-11-06). */
+/** A group in the address: "Other" is `other`, since an older link's `crew` meant all the crew work. */
 const param = (g: Group) => (g === "crew" ? "other" : g);
 
 /** The group an address asks for; an older `?credits=crew` opens the crew work they are known for, else the first. */
@@ -35,7 +35,7 @@ function fromParam(v: string | null, present: Group[], main: Group | null): Grou
 }
 
 /**
- * A person's filmography (S08, design-system 9 "Person", PER-01): one profession at a time — "Actor · 94", "Director · 9",
+ * A person's filmography: one profession at a time — "Actor · 94", "Director · 9",
  * "Writer", "Producer", "Other", "As themselves" (FilterChip, as Search's types; IMDb, Letterboxd and Kinopoisk split it the
  * same way) — opening on what they are known for, and under it the years, newest first (titles without a date last):
  * one row per title with the year, the poster, the name, the role there, then the rating, film or series and the
@@ -70,7 +70,7 @@ export function Filmography({ credits, main, gender }: { credits: RowCredit[]; m
         {tp("filmography")}
       </h2>
       {present.length > 1 && (
-        // One row of choices that scrolls sideways on a phone, as Search's types (9, Search).
+        // One row of choices that scrolls sideways on a phone, as Search's types.
         // biome-ignore lint/a11y/useSemanticElements: a row of filter chips, not a form's fieldset
         <div role="group" aria-label={tp("filterLabel")} className="scroll-row -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) py-1 md:mt-4 md:flex-wrap">
           {present.map((g) => (
@@ -81,11 +81,11 @@ export function Filmography({ credits, main, gender }: { credits: RowCredit[]; m
         </div>
       )}
       {list.length === 0 ? (
-        // A kids profile sees only the titles it may open (8.10): said so, rather than "nothing here".
+        // A kids profile sees only the titles it may open: said so, rather than "nothing here".
         <EmptyState variant="inline" className="mt-4" title={me?.activeProfile?.isKids ? tp("noCreditsKids") : tp("noCredits")} />
       ) : (
         <>
-          {/* Rows across the page's width, as History's (owner, 2026-10-25) and an artist's songs on Apple Music: one column
+          {/* Rows across the page's width, as History's and an artist's songs on Apple Music: one column
               on a phone and a tablet, two from xl, three from 2xl, a hairline under each. */}
           <ol className="mt-3 grid gap-x-8 md:mt-4 xl:grid-cols-2 2xl:grid-cols-3">
             {rows.map((c) => (
@@ -113,7 +113,7 @@ function useRole(c: RowCredit, group: Group): { text: string; node: ReactNode } 
       node: roles.map((r, i) => (
         <Fragment key={r.name}>
           {i > 0 && ", "}
-          {/* TMDB writes the characters in English: a Latin name on a ru/uk page is marked so (8.11). */}
+          {/* TMDB writes the characters in English: a Latin name on a ru/uk page is marked so. */}
           <span lang={latinLang(r.name, locale)}>{said[i]}</span>
         </Fragment>
       )),
@@ -127,7 +127,7 @@ function useRole(c: RowCredit, group: Group): { text: string; node: ReactNode } 
     node: jobs.map((j, i) => (
       <Fragment key={j}>
         {i > 0 && ", "}
-        {/* A job without a translation is as TMDB writes it, in English (8.11). */}
+        {/* A job without a translation is as TMDB writes it, in English. */}
         <span lang={jobKey(j) ? undefined : "en"}>{job(j)}</span>
       </Fragment>
     )),

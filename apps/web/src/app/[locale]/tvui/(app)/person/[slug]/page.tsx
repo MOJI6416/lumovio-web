@@ -12,7 +12,7 @@ export async function generateMetadata() {
   return { robots: { index: false } };
 }
 
-/** A person on a TV (S09 TV). */
+/** A person on a TV. */
 export default async function TvPersonPage({ params }: { params: Promise<{ slug: string }> }) {
   const id = parseSlugId((await params).slug);
   const p = id ? await optional(serverApi<PersonDetails>(`/api/catalog/person/${id}`), null) : null;

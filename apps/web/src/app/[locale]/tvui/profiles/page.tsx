@@ -12,7 +12,7 @@ export async function generateMetadata() {
   return { title: t("whoIsWatching"), robots: { index: false } };
 }
 
-/** "Who's watching?" on a TV (S24 TV): a guest gets the code screen first, keeping where it was going. */
+/** "Who's watching?" on a TV: a guest gets the code screen first, keeping where it was going. */
 export default async function TvProfilesPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const next = safeNext((await searchParams).next ?? null);
   const me = await getMeState();

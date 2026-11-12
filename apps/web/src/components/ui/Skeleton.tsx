@@ -10,7 +10,7 @@ const RADIUS: Record<SkeletonShape, string> = {
 };
 
 /**
- * A placeholder of what is loading (design-system 7.11): it repeats the final layout — the same card and row sizes,
+ * A placeholder of what is loading: it repeats the final layout — the same card and row sizes,
  * given with `className` — so nothing jumps when the content arrives. Shimmers every 1.6 s (`.skeleton`,
  * globals.css); with reduced motion it stays still. Hidden from screen readers: the region around it says
  * "Loading…" (QueryState does).

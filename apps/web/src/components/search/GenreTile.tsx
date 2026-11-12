@@ -4,7 +4,7 @@ import { tmdbImage } from "@/lib/images";
 import type { GenreTile as Tile } from "./search-model";
 
 /**
- * A genre tile of a search without a query (design-system 7.12 "GenreTile", as Apple TV's Browse): a 16:9 picture of
+ * A genre tile of a search without a query (as Apple TV's Browse): a 16:9 picture of
  * a popular film of the genre, its name on the foot on the stage's scrim; it opens the catalog's films of that genre.
  * Without a picture — --surface-2 with the name. Rises and takes the ring like a card.
  */

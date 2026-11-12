@@ -12,7 +12,7 @@ import { MediaNetError } from "@/lib/media/net";
 import { randomId } from "@/lib/random-id";
 import { failureDetail, netErrorText } from "./net-errors";
 
-// The server's state as a dot and a word (7.4, 7.16): never only a colour.
+// The server's state as a dot and a word: never only a colour.
 export const STATUS: Record<string, Status> = {
   ok: "success",
   degraded: "warning",
@@ -21,7 +21,7 @@ export const STATUS: Record<string, Status> = {
   unknown: "neutral",
 };
 
-/** One line of fact about the server (7.16): what's indexed and when it was scanned, or when it was last checked. */
+/** One line of fact about the server: what's indexed and when it was scanned, or when it was last checked. */
 export function useServerFact() {
   const t = useTranslations("connections");
   const tc = useTranslations("common");
@@ -35,7 +35,7 @@ export function useServerFact() {
 }
 
 /**
- * Whether the active profile may use the server (SRV-03): explicit grants, or "every adult profile" when there are
+ * Whether the active profile may use the server: explicit grants, or "every adult profile" when there are
  * none. Checking, scanning and the added releases go through the profile's own credentials — without access they'd
  * end in an error, so they aren't offered.
  */
@@ -56,9 +56,9 @@ export function useServerActions(c: ConnectionSummary, onChange: () => void) {
   const [scanned, setScanned] = useState<number | null>(null);
 
   /**
-   * `quiet`: the check the list runs by itself (SRV-08) — the row shows the result, a failure included: its status
-   * and what went wrong, with "What to do" (no toast repeating "Unreachable" over the bottom of the screen; phones
-   * 2026-10-30). A pressed check says its result in a toast as well.
+   * `quiet`: the check the list runs by itself — the row shows the result, a failure included: its status
+   * and what went wrong, with "What to do" (no toast repeating "Unreachable" over the bottom of the screen on
+   * phones). A pressed check says its result in a toast as well.
    */
   const test = async ({ quiet = false }: { quiet?: boolean } = {}) => {
     setBusy("test");
@@ -107,7 +107,7 @@ export function useServerActions(c: ConnectionSummary, onChange: () => void) {
     }
   };
 
-  // Removing a server is asked first; the request runs in the dialog (X-12, 8.3).
+  // Removing a server is asked first; the request runs in the dialog.
   const remove = async () => {
     const ok = await confirm({
       title: t("removeConfirm", { name: c.name }),

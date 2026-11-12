@@ -7,7 +7,7 @@ import { Tag } from "@/components/ui/Badge";
 import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import { useSession } from "../providers/Providers";
 
-/** Set before the reload that follows "Sign out"; the header of the next page says it happened (SH-09). */
+/** Set before the reload that follows "Sign out"; the header of the next page says it happened. */
 export const SIGNED_OUT_KEY = "lumovio:signed-out";
 /** The trigger of the account menu, the same element before and after the full menu arrives. */
 export const ACCOUNT_TRIGGER_ID = "account-menu-trigger";

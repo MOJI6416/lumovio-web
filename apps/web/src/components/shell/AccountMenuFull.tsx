@@ -26,7 +26,7 @@ import { PREFS_TRIGGER_ID } from "./PrefsMenu";
 
 /*
  * A submenu and a segmented row inside a desktop menu are not in ui/Menu yet: these follow its item and panel look
- * (7.8) and SegmentedControl's segments (7.5). A phone gets a sheet with the real SegmentedControl and Select instead.
+ * and SegmentedControl's segments. A phone gets a sheet with the real SegmentedControl and Select instead.
  */
 const ITEM =
   "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-surface-3 data-[state=open]:bg-surface-3 in-data-[tv=1]:min-h-12";
@@ -77,8 +77,8 @@ function LanguageSubmenu() {
   const { locale, options, choose } = useInterfaceLanguage();
   const current = options.find((o) => o.value === locale)?.label;
   // The submenu opens toward the line's end, or toward its start where there is no room — the account and "Language
-  // and theme" menus stand at the header's end, so there it opens to the start. The chevron points where it opens
-  // (X-51): the room is measured once the menu has taken its place (it is placed a frame or two after it opens), and
+  // and theme" menus stand at the header's end, so there it opens to the start. The chevron points where it
+  // opens: the room is measured once the menu has taken its place (it is placed a frame or two after it opens), and
   // again when the item is reached, against the menu's own width.
   const trigger = useRef<HTMLDivElement>(null);
   const [toStart, setToStart] = useState(false);
@@ -141,7 +141,7 @@ function PrefsItems({ phone }: { phone: boolean }) {
 }
 
 /**
- * "Language and theme" for a visitor who isn't signed in (SH-07; the footer no longer has them, owner 2026-10-25): the
+ * "Language and theme" for a visitor who isn't signed in (the footer doesn't have them): the
  * same theme and site language as the account menu, behind a Globe button in the header. ./PrefsMenu draws a light
  * trigger until this module arrives, then hands over (open, if pressed).
  */
@@ -171,7 +171,7 @@ export function PrefsMenu({ initialOpen = false, focusTrigger = false }: { initi
   );
 }
 
-/** A profile's face in the account menu (7.19): the avatar, a lock in its corner where a PIN is asked (as 7.17). */
+/** A profile's face in the account menu: the avatar, a lock in its corner where a PIN is asked. */
 function Face({ profile: p, size }: { profile: Profile; size: number }) {
   return (
     <>
@@ -186,7 +186,7 @@ function Face({ profile: p, size }: { profile: Profile; size: number }) {
 }
 
 /**
- * The account menu (design-system 7.19), a small "Who's watching?": the account's profiles as faces — you ringed first,
+ * The account menu, a small "Who's watching?": the account's profiles as faces — you ringed first,
  * one press on another and the same page opens as theirs (one behind a PIN asks for it on "Who's watching?" and comes
  * back), "+" while there is room — then rows by words alone: "Manage profiles" (a kids profile: "Leave the kids
  * profile"), the settings, the admin for an admin, and sign out apart. No e-mail (the account's page has it), no icons,
@@ -209,7 +209,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const head = useRef<HTMLDivElement>(null);
 
   // Taking over from the light trigger that had the focus: keep it on the (now real) trigger, or — opened from the
-  // keyboard — put it on the first item, as a menu opened from the keyboard does (SH-08).
+  // keyboard — put it on the first item, as a menu opened from the keyboard does.
   useEffect(() => {
     if (!focusTrigger) return;
     if (!initialOpen) {
@@ -220,7 +220,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
     return () => cancelAnimationFrame(id);
   }, [focusTrigger, initialOpen]);
 
-  // The sheet of a phone opens with the focus on its first item, not on the close button (SH-08). A desktop menu
+  // The sheet of a phone opens with the focus on its first item, not on the close button. A desktop menu
   // opened from the keyboard does this itself; opened with the mouse it keeps the focus on the panel (no ring).
   useEffect(() => {
     if (!open || !phone) return;
@@ -243,7 +243,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
   const at = (path: string, lang = locale) => (lang === "en" ? path : `/${lang}${path === "/" ? "" : path}`);
 
   // One press: the session takes the profile and this page opens again as theirs, in the profile's own interface
-  // language when it has one (L10N-06). A profile behind a PIN asks for it on "Who's watching?", which comes back here.
+  // language when it has one. A profile behind a PIN asks for it on "Who's watching?", which comes back here.
   const pick = async (x: Profile) => {
     setOpen(false);
     setSwitching(x);
@@ -290,7 +290,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
         onOpenChange={setOpen}
         label={t("account")}
         trigger={
-          // A kids profile says so next to its avatar, always (8.10).
+          // A kids profile says so next to its avatar, always.
           <AvatarButton
             id={ACCOUNT_TRIGGER_ID}
             avatar={p?.avatar ?? "aurora"}
@@ -301,7 +301,7 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
           />
         }
       >
-        {/* Who's watching, as faces (7.17): you ringed first, the others one press away, "+" while there is room. */}
+        {/* Who's watching, as faces: you ringed first, the others one press away, "+" while there is room. */}
         <div ref={head}>
           <MenuFaces label={tp("sectionProfiles")}>
             {p && (

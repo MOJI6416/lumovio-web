@@ -33,12 +33,12 @@ const LANGS = ["en", "ja", "ko", "fr", "es", "de", "it", "uk", "ru", "zh", "hi",
 const ANY = "any";
 const orAny = (v: string) => v || ANY;
 const fromAny = (v: string) => (v === ANY ? null : v);
-/** TMDB stops counting at about this many results: past it the number is a ceiling, not a count (CAT-07). */
+/** TMDB stops counting at about this many results: past it the number is a ceiling, not a count. */
 const COUNT_CEILING = 20000;
 /** Keys of the loading grid's 18 skeleton cards. */
 const SKELETONS = Array.from({ length: 18 }, (_, i) => `skeleton-${i}`);
 /**
- * The catalog's grid runs edge to edge, as the filter row above it (5.4, owner 2026-11-06): as many columns as fit
+ * The catalog's grid runs edge to edge, as the filter row above it: as many columns as fit
  * cards of at least 144 px (md) or 168 px (xl), and they share what is left — fixed columns left up to a column's
  * width empty on the right (193 px at 1920 with a scrollbar). Three columns on a phone. From 2xl the minimum stays 168:
  * at 1920 that is nine cards of ≈ 183 px, the shelf's 184 and its image, not eight blown-up ones. `auto-fill` keeps a
@@ -53,12 +53,12 @@ const FILTER_KEYS = ["genres", "yearFrom", "yearTo", "ratingMin", "language", "w
 
 type Patch = Record<string, string | null>;
 
-// Loaded when used (bundle budget): "Save as list", a smart list's "Edit conditions" (package F) and a guest's sign-in.
+// Loaded when used (bundle budget): "Save as list", a smart list's "Edit conditions" and a guest's sign-in.
 const SaveRulesDialog = lazy(() => import("@/components/library/SaveRulesDialog").then((m) => ({ default: m.SaveRulesDialog })));
 const EditRulesBar = lazy(() => import("@/components/library/EditRulesBar").then((m) => ({ default: m.EditRulesBar })));
 const GuestGate = lazy(() => import("@/components/shell/GuestGate").then((m) => ({ default: m.GuestGate })));
 
-/** A labelled filter list: Select up to 10 options, Combobox with a search above that (design-system 7.6). */
+/** A labelled filter list: Select up to 10 options, Combobox with a search above that. */
 function FilterSelect({
   label,
   value,
@@ -83,7 +83,7 @@ function FilterSelect({
   );
 }
 
-/** How many results, in words: an exact count, or "20 000+" where TMDB's number is only its ceiling (CAT-07). */
+/** How many results, in words: an exact count, or "20 000+" where TMDB's number is only its ceiling. */
 function useCountText() {
   const t = useTranslations("browse");
   const format = useFormatter();
@@ -94,7 +94,7 @@ function useCountText() {
 /** A single-choice filter with "Any": the same options for the desktop's pill menu and the sheet's pill group. */
 type Choice = { key: string; name: string; heading?: string; value: string; options: { value: string; label: string }[] };
 
-/** The years a range can start or end with, and their two lists; the other end's impossible years are disabled (CAT-06). */
+/** The years a range can start or end with, and their two lists; the other end's impossible years are disabled. */
 function YearFields({ state, set }: { state: BrowseState; set: (patch: Patch) => void }) {
   const t = useTranslations("browse");
   const year = new Date().getFullYear();
@@ -169,15 +169,15 @@ function GenresPill({ state, set, shown, name }: { state: BrowseState; set: (pat
 }
 
 /**
- * The filters of a catalog grid (8.4), for both places they are shown: a row of pills above the grid on a desktop,
+ * The filters of a catalog grid, for both places they are shown: a row of pills above the grid on a desktop,
  * each opening its menu and applied at once, and the filter sheet on a phone and tablet — the same filters as groups
- * of pills, applied with its "Show N" button (CAT-03).
+ * of pills, applied with its "Show N" button.
  */
 function Filters({ state, set, kind, genres, layout }: { state: BrowseState; set: (patch: Patch) => void; kind: MediaKind; genres: Genre[]; layout: "row" | "sheet" }) {
   const t = useTranslations("browse");
   const tr = useTranslations();
   const locale = useLocale();
-  // Decimals in the locale's style (2.3: 6,5 in ru/uk).
+  // Decimals in the locale's style (6,5 in ru/uk).
   const format = useFormatter();
   const isMovie = kind === "movie";
   const series = kind === "tv" && !state.anime;
@@ -303,8 +303,8 @@ export function BrowseView({
   const [gate, setGate] = useState(false);
   const editing = /^[0-9a-f-]{36}$/.test(params.get("editList") ?? "") ? params.get("editList") : null;
 
-  // The filters, the sort and the loaded position are in the address (8.4, 8.7): "Back" returns to the same grid. A
-  // shelf's name stays while its own conditions do (CAT-11).
+  // The filters, the sort and the loaded position are in the address: "Back" returns to the same grid. A
+  // shelf's name stays while its own conditions do.
   const navigate = (next: URLSearchParams) => {
     const sp = keepShelf(new URLSearchParams(params.toString()), next);
     router.replace(`${pathname}${sp.size ? `?${sp}` : ""}`, { scroll: false });
@@ -352,7 +352,7 @@ export function BrowseView({
     staleTime: 5 * 60_000,
   });
 
-  // "Show more" is a button (8.4); only the TV mode loads the next page by itself near the end.
+  // "Show more" is a button; only the TV mode loads the next page by itself near the end.
   const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = sentinel.current;
@@ -381,10 +381,10 @@ export function BrowseView({
   const isMovie = kind === "movie";
   const tv = kind === "tv";
   const series = tv && !state.anime;
-  // A shelf's "All" page keeps the shelf's conditions without showing them as chips (CAT-05).
+  // A shelf's "All" page keeps the shelf's conditions without showing them as chips.
   const shelf = SHELF_COPY[params.get("shelf") ?? ""]?.title ? params.get("shelf") : null;
   // Conditions without a control of their own; a shelf's page counts them as one (its name stands for them), and a
-  // shelf with none of them ("Anime series", "Popular series") adds nothing to the count (CAT-11).
+  // shelf with none of them ("Anime series", "Popular series") adds nothing to the count.
   const hiddenCount =
     state.without.length +
     [state.votesMin, state.votesMax, isMovie && state.noSpecials, tv && state.episodesMax, state.imdbVotesMax, state.opinions, isMovie && state.mood].filter(Boolean).length;
@@ -407,7 +407,7 @@ export function BrowseView({
         ...(isMovie && state.mood ? [{ key: "mood", label: t("mood", { name: trows(MOOD_NAME[state.mood]) }), clear: { mood: null } }] : []),
       ];
 
-  // The phone's filter sheet works on a copy of the address and applies it with "Show N" (CAT-03).
+  // The phone's filter sheet works on a copy of the address and applies it with "Show N".
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draft, setDraft] = useState(() => new URLSearchParams());
   const openSheet = () => {
@@ -436,7 +436,7 @@ export function BrowseView({
         ? t("apply")
         : t("showCount", { count: countText(draftCount.totalResults) });
   const grid = (children: ReactNode) => <div className={CATALOG_GRID}>{children}</div>;
-  // TMDB's own sorts in the owner's order (2026-10-25), then the ones on Lumovio's catalog index over the whole
+  // TMDB's own sorts first, then the ones on Lumovio's catalog index over the whole
   // filtered catalog (not a loaded page) — each only where the filters allow it and enough titles have the score.
   const indexOption = (s: keyof typeof INDEX_SORTS, label: string) => (sorts.data?.[s] || state.sort === s ? [{ value: s, label }] : []);
   const sortOptions = [
@@ -467,7 +467,7 @@ export function BrowseView({
       )}
     </Pill>
   );
-  // The grid's filters and sort as a smart list (package F); a guest is asked to sign in first (8.6). While a list's
+  // The grid's filters and sort as a smart list; a guest is asked to sign in first. While a list's
   // conditions are edited, the banner above saves them back instead.
   const saveAsList = (className: string) =>
     !editing && (
@@ -486,7 +486,7 @@ export function BrowseView({
           <EditRulesBar listId={editing} onSave={setSaving} className="mb-4" />
         </Suspense>
       )}
-      {/* One row of pills (7.4, 8.4): the filters, "Reset" once something is chosen, the sort and "Save as list" on
+      {/* One row of pills: the filters, "Reset" once something is chosen, the sort and "Save as list" on
           the end. Below lg the filters are one "Filters" pill opening the sheet. */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {allowKindSwitch && (
@@ -542,8 +542,8 @@ export function BrowseView({
         </p>
         {saveAsList("ms-auto lg:hidden")}
       </div>
-      {/* A failed load says so with Retry, not "nothing found" (8.4, audit X-14); a failed "Show more" — at the button
-          below, not above the grid out of sight (CAT-12). */}
+      {/* A failed load says so with Retry, not "nothing found"; a failed "Show more" — at the button
+          below, not above the grid out of sight. */}
       <QueryState
         query={{ ...q, isError: q.isError && !q.isFetchNextPageError }}
         loading={grid(SKELETONS.map((k) => <PosterCardSkeleton key={k} />))}
@@ -584,7 +584,7 @@ export function BrowseView({
         )}
         {gate && <GuestGate open onOpenChange={setGate} reason="saveList" />}
       </Suspense>
-      {/* Filters on a phone and tablet: a sheet; the choices apply with "Show N", "Reset" clears them (CAT-03). */}
+      {/* Filters on a phone and tablet: a sheet; the choices apply with "Show N", "Reset" clears them. */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={t("filters")}>
         <Filters state={draftState} set={(patch) => setDraft((d) => patched(d, patch))} kind={kind} genres={genres} layout="sheet" />
         <DialogActions>

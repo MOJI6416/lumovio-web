@@ -1,7 +1,7 @@
 import { canDirectPlay, canRemuxInBrowser, type CompatVerdict, containerName, type MediaFileFacts, type PlaybackCapabilities, REMUXABLE_AUDIO } from "./capabilities";
 
 /*
- * How one file plays in this browser (player document, 4): as it is, rebuilt in the browser, or in another app. Kept
+ * How one file plays in this browser: as it is, rebuilt in the browser, or in another app. Kept
  * apart from capabilities.ts, which every page with a title card loads: only preparing a playback (torrserver.ts,
  * loaded then), the rebuild engine and the device check need it.
  */
@@ -95,7 +95,7 @@ export type PlaybackChoice =
   | { path: "external"; reason: string };
 
 /**
- * How one file plays in this browser — the minimum that works (player document, 4): as it is; else rebuilt in the
+ * How one file plays in this browser — the minimum that works: as it is; else rebuilt in the
  * browser (video copied, audio copied or converted); else in another app, with every reason why. `otherTrack`: an
  * audio track other than the file's default is wanted (a plain stream always plays the default). `noBridge`: the
  * plain stream would need the service worker (a TorrServer with a password) and there is none — the rebuild fetches

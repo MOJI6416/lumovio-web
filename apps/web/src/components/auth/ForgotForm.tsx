@@ -27,7 +27,7 @@ import {
 } from "./shared";
 
 /**
- * "Forgot password?" (S30): the address — already there when it was typed on the sign-in screen — and "Send link",
+ * "Forgot password?": the address — already there when it was typed on the sign-in screen — and "Send link",
  * then "Check your email". The answer is the same whether or not the account exists (no account enumeration); a
  * refused or lost request (a bad address, too many requests, offline) says so instead of pretending it was sent.
  */

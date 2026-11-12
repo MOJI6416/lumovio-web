@@ -38,7 +38,7 @@ const prefsOf = (p: Partial<ReleasePrefs> & { hevc?: boolean }): ReleasePrefs =>
 /**
  * The audio of "Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] 7 x MVO (HDrezka Studio, NewStudio, TVShows,
  * Novamedia, LostFilm, WStudio, LE-Production) + 2 x MVO Ukr + Original" as TorrServer's ffprobe read its first file
- * (the owner's torr, 2026-11-08): HDrezka Studio is the default, LostFilm the fifth, HDrezka again as its "18+" cut.
+ * (on a real server): HDrezka Studio is the default, LostFilm the fifth, HDrezka again as its "18+" cut.
  */
 const dexter = [
   { index: 1, title: "MVO [HDrezka Studio]", language: "rus", default: true },
@@ -119,7 +119,7 @@ describe("isSameTitle", () => {
   it("does not require a year for series", () => {
     expect(isSameTitle("Фрирен, провожающая в последний путь / Sousou no Frieren [TV] [1-28 из 28]", ["葬送のフリーレン", "Фрирен, провожающая в последний путь"], 2023, "tv")).toBe(true);
   });
-  // The owner's torr, 2026-11-12: ten releases of the 2024 film passed as the 2024 series (docs/torrserver-2026-11.md, 25).
+  // From a real search: ten releases of the 2024 film passed as the 2024 series.
   it("does not take another title whose name goes on from a series' title (The Penguin Lessons for The Penguin)", () => {
     const penguin = ["The Penguin", "Пингвин"];
     for (const r of [
@@ -146,7 +146,7 @@ describe("isSameTitle", () => {
     expect(isSameTitle("The Penguin Lessons 2024 WEB-DL", ["The Penguin Lessons"], 2024, "movie")).toBe(true);
     expect(isSameTitle("House M.D. (S1-8) (2004-2012) BDRip 1080p", ["House", "Доктор Хаус"], 2004, "tv")).toBe(true);
   });
-  // The same searches on the owner's torr: titles that start alike, with seasons in the name too.
+  // The same searches: titles that start alike, with seasons in the name too.
   it("does not take a longer title with seasons, a same-name film before the series, or a later show after it ended", () => {
     expect(isSameTitle("House of the Dragon / S3E1-8 of 8 [2026, WEB-DL 1080p]", ["House"], 2004, "tv", 2011)).toBe(false);
     expect(isSameTitle("Lost in Space (S1) (2018) WEB-DL 1080p", ["Lost"], 2004, "tv", 2010)).toBe(false);
@@ -335,7 +335,7 @@ describe("voiceOptions", () => {
   });
 });
 
-describe("picture versions and quality modes (TS1–TS3)", () => {
+describe("picture versions and quality modes", () => {
   const GB = 1024 ** 3;
   const r = (title: string, seeders: number | null, size: number | null = null, tracker = "RuTracker.org"): TsSearchResult => ({
     title,
@@ -483,7 +483,7 @@ describe("picture versions and quality modes (TS1–TS3)", () => {
   });
 });
 
-describe("the chosen dubbing's track (TS5)", () => {
+describe("the chosen dubbing's track", () => {
   const tracks = [
     { index: 1, title: "Dub (Пифагор)", language: "rus" },
     { index: 2, title: "MVO (HDrezka Studio)", language: "rus" },
@@ -524,7 +524,7 @@ describe("the chosen dubbing's track (TS5)", () => {
   });
 });
 
-describe("each studio's own kind of translation (TS5)", () => {
+describe("each studio's own kind of translation", () => {
   it("pairs a kind with the studio it stands before, and leaves an unpaired studio without one", () => {
     const multi = parseRelease("Дюна / Dune [2021, BDRip 1080p] Dub (Пифагор) + MVO (HDrezka Studio) + Original Eng", "RuTracker.org", "en");
     expect(multi.voice).toBe("dub");
@@ -551,7 +551,7 @@ describe("each studio's own kind of translation (TS5)", () => {
   });
 });
 
-describe("season packs by the name (TS5)", () => {
+describe("season packs by the name", () => {
   it("reads seasons, episode ranges and totals as trackers write them, and nothing that isn't there", () => {
     expect(packOf("Во все тяжкие / Breaking Bad / Сезон: 2 / Серии: 1-13 из 13 [2009, WEB-DL 1080p]")).toEqual({ seasons: { from: 2, to: 2 }, cours: false, episodes: { from: 1, to: 13, of: 13 } });
     expect(packOf("Breaking.Bad.S01-S05.Complete.1080p")).toEqual({ seasons: { from: 1, to: 5 }, cours: false, episodes: null });
@@ -595,7 +595,7 @@ describe("season packs by the name (TS5)", () => {
     expect(holdsSeason(packOf("Breaking Bad 1080p"), 1)).toBeNull();
   });
 
-  it("reads season × episode as trackers write it, never a frame size (owner, 2026-10-31: season 2 offered season 4)", () => {
+  it("reads season × episode as trackers write it, never a frame size (season 2 once offered season 4)", () => {
     expect(packOf("Ведьмак / The Witcher [04x01-08 из 08] (2025) WEB-DL 1080p | LostFilm")).toEqual({
       seasons: { from: 4, to: 4 },
       cours: false,
@@ -616,7 +616,7 @@ describe("season packs by the name (TS5)", () => {
     }
   });
 
-  it("hears a Russian track in a torrent with no tracker by the trackers' own words (owner's TorrServer, 2026-11-06)", () => {
+  it("hears a Russian track in a torrent with no tracker by the trackers' own words", () => {
     const name = "12 angry men [1957, BDRemux 1080p] [DEU Transfer] Dub + 2x MVO ( SomeWax) + AVO + VO + Sub (Rus, Eng) + Original (Eng)";
     expect(parseRelease(name, null, "en").languages.sort()).toEqual(["en", "ru"]);
     // Its translations are Russian tracks, so the label leads with them, not with the original.
@@ -644,8 +644,8 @@ describe("season packs by the name (TS5)", () => {
   });
 });
 
-describe("audio tracks, each in its own language (SRC-04, SRC-05)", () => {
-  // The release from the audit's real Dune search (plb-p7-real-dune-filters-crop; its tail past "AV…" restored as
+describe("audio tracks, each in its own language", () => {
+  // The release from a real Dune search (its tail past "AV…" restored as
   // RuTracker writes it): a Russian dub and voice-overs, one Ukrainian dub, the original.
   const DUNE = "Дюна / Dune: Part One (Дени Вильнёв / Denis Villeneuve) [2021, США, Канада, фантастика, BDRip 1080p] Dub + MVO (Jaskier) + MVO (HDRezka Studio) + DVO (Pazl Voice) + AVO (Гаврилов) + Dub Ukr + Original Eng + Sub (Rus, Ukr, Eng)";
   const film = { title: "Дюна", originalTitle: "Dune", kind: "movie" as const, year: 2021, originalLanguage: "en" };
@@ -684,7 +684,7 @@ describe("audio tracks, each in its own language (SRC-04, SRC-05)", () => {
   it("offers a studio in its own language, so the same name in two languages is two options of their languages", () => {
     const ranked = rankReleases([r(DUNE, 255), r("Дюна / Dune (2021) WEB-DL 2160p | MVO (HDrezka Studio) + Dub (Ukr)", 40)], film, prefsOf({ languages: ["uk"] }));
     const options = voiceOptions(ranked);
-    // A two-voice track with no studio is no option of its own (docs/torrserver-2026-11.md, 4): it is Russian, "ru|".
+    // A two-voice track with no studio is no option of its own: it is Russian, "ru|".
     expect(options.map((o) => o.key)).toEqual(["ru|dub", "ru|Jaskier", "ru|HDrezka Studio", "ru|", "ru|Гаврилов", "uk|dub"]);
     // HDrezka is Russian in both releases: one option, never a Ukrainian one.
     expect(options.filter((o) => o.studio === "HDrezka Studio").map((o) => [o.language, o.versions.length])).toEqual([["ru", 2]]);
@@ -819,7 +819,7 @@ describe("copyFileTracks", () => {
 
 describe("wishNameTrack", () => {
   const info = parseRelease("Дюна: Часть вторая / Dune: Part Two (2024) WEB-DL 1080p | Dub (Movie Dubbing) + Dub (Red Head Sound) + MVO (LostFilm) + Original Eng");
-  it("names the one track a language alone or its dub starts, as the player picks the file's (36)", () => {
+  it("names the one track a language alone or its dub starts, as the player picks the file's", () => {
     expect(wishNameTrack(info, voiceWish("ru|dub"), [])).toMatchObject({ voice: "dub", studio: "Movie Dubbing" });
     expect(wishNameTrack(info, voiceWish("ru|"), ["LostFilm"])).toMatchObject({ studio: "LostFilm" });
     expect(wishNameTrack(info, voiceWish("ru|dub"), ["LostFilm"])).toMatchObject({ voice: "dub" });
@@ -831,7 +831,7 @@ describe("wishNameTrack", () => {
   });
 });
 
-// docs/torrserver-2026-11.md 8: one studio's track, named with its kind in one release and without it in another.
+// One studio's track, named with its kind in one release and without it in another.
 describe("a studio's kind of translation, from the names of one search", () => {
   const tlou = { title: "Одни из нас", originalTitle: "The Last of Us", kind: "tv" as const, year: 2023, originalLanguage: "en" };
   const r = (title: string, seeders: number) => ({ title, link: `magnet:?xt=urn:btih:${title.length.toString(16).padStart(40, "0")}${seeders}`, hash: null, size: 20e9, seeders, peers: 1, tracker: "RuTracker.org", published: null });
@@ -858,7 +858,7 @@ describe("a studio's kind of translation, from the names of one search", () => {
 });
 
 describe("the resolution a name states", () => {
-  it("takes the lines it writes over the words 4K and UHD (8)", () => {
+  it("takes the lines it writes over the words 4K and UHD", () => {
     expect(parseRelease("Oppenheimer (2023) UHD-BDRip 1080p H.265 HDR Ukr/Eng [IMAX Edition]").resolution).toBe(1080);
     expect(parseRelease("Oppenheimer [2023, UHD BDRemux 2160p, HDR10, Dolby Vision]").resolution).toBe(2160);
     expect(parseRelease("Dune (2021) WEB-DL 4K HDR").resolution).toBe(2160);
@@ -867,7 +867,7 @@ describe("the resolution a name states", () => {
 });
 
 describe("a film's releases, not broadcasts", () => {
-  it("leaves out races and other broadcasts that only share a short name (F1, 8)", () => {
+  it("leaves out races and other broadcasts that only share a short name (F1)", () => {
     const names = ["F1", "F1: The Movie"];
     expect(isSameTitle("S2025 / 19 / - / / F1 TV [17-19.10.2025, 1, WEB-DL/1080p/50fps, MKV/H.264, RUS/ENG]", names, 2025, "movie")).toBe(false);
     expect(isSameTitle("1 | S2025 | 01-06 | F1 TV WEB-DL 1080p 50fps Ukr/Eng", names, 2025, "movie")).toBe(false);

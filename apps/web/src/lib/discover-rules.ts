@@ -2,7 +2,7 @@ import type { CatalogRulesQuery, MediaKind } from "@lumovio/contracts";
 import { type BrowseState, discoverQuery } from "./discover";
 
 /*
- * A smart list's catalog conditions (package F) and the grid's address for them. Apart from ./discover so the catalog
+ * A smart list's catalog conditions and the grid's address for them. Apart from ./discover so the catalog
  * grid's first load doesn't carry them: they are used by the "Save as list" dialog and a smart list's page.
  */
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readClusterSubtitles, readMatroskaIndex } from "../src/lib/media/subs/matroska";
 
 /*
- * PLR-18: a Matroska file whose cues name only the video's clusters (older mkvmerge, HDCLUB). Its subtitle lines are
+ * A Matroska file whose cues name only the video's clusters (older mkvmerge, HDCLUB). Its subtitle lines are
  * found by walking the clusters — big video frames stepped over, not downloaded — and handed over one by one.
  */
 
@@ -60,7 +60,7 @@ function file() {
   return bytes(el(0x1a45dfa3, el(0x4282, text("matroska"))), segment);
 }
 
-describe("subtitles walked out of clusters the cues don't name (PLR-18)", () => {
+describe("subtitles walked out of clusters the cues don't name", () => {
   const mkv = file();
   let fetched = 0;
   const read = async (s: number, e: number) => {

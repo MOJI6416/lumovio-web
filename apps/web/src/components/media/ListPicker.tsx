@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useEditableLists, type usePersonalActions } from "./usePersonalActions";
 
 /**
- * "Add to list…" (design-system 8.1, TTL-09): the profile's lists with a check each, changed at once; "New list" makes
+ * "Add to list…": the profile's lists with a check each, changed at once; "New list" makes
  * one and puts the title in it. One picker for a card's "More" (./CardMenu) and the title page's (title/TitleMore).
  */
 export function ListPicker({

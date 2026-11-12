@@ -25,7 +25,7 @@ import type { TsSearchResult } from "@/lib/media/torrserver";
 
 /*
  * A TorrServer release in words, one way for every place that lists releases: "Where to watch" on the title page, the
- * title hero's line, the sources screen before the player (design-system 7.15, SRC-01, SRC-09).
+ * title hero's line, the sources screen before the player.
  */
 
 export const RESOLUTION = RESOLUTION_LABEL;
@@ -34,7 +34,7 @@ export const SOURCE_LABEL: Record<PictureSource, string> = { remux: "Remux", blu
 const RANGE_LABEL: Record<Range, string> = { hdr: "HDR", dv: "Dolby Vision", sdr: "SDR" };
 export const QUALITY_MODES: ReleaseQuality[] = ["auto", "best", "small"];
 
-/** The one size formatter (lib/format, L10N-09), kept importable from here for the release screens. */
+/** The one size formatter (lib/format), kept importable from here for the release screens. */
 export { formatSize };
 
 /** A release in a few words: language, translation and studio, picture, seeders, tracker. */
@@ -53,13 +53,13 @@ export function useReleaseText() {
   /**
    * "Ukrainian · dubbed (Le Doyen)": the audio of one language as the name lists it, each track with its own kind and
    * studio — the profile's language the release has (`x.language`), else its first track's; never every studio under
-   * one language (SRC-05). `only`: that studio's track. At most three tracks, then "+ N more"; the other languages are
+   * one language. `only`: that studio's track. At most three tracks, then "+ N more"; the other languages are
    * `otherLanguages`.
    */
   const audio = (x: Pick<RankedRelease, "info" | "language">, only?: string | ReleaseTrack | null) => {
     const named = namedTracks(x.info);
     // A track itself (a copy's, the one the player starts — `profileNameTrack`): that one only, with or without a studio
-    // ("Russian · dubbed", not every dub of the file; docs/torrserver-2026-11.md 36).
+    // ("Russian · dubbed", not every dub of the file).
     const picked = typeof only === "object" && only !== null ? only : only ? named.find((tr) => tr.studio === only) : undefined;
     const lang = picked?.language ?? x.language ?? named[0]?.language ?? x.info.languages[0] ?? null;
     const mine = picked ? [picked] : named.filter((tr) => tr.language === lang || (tr.language === null && lang === null));
@@ -99,7 +99,7 @@ export function useReleaseText() {
   };
   /**
    * "4K · HDR10 · Dolby Vision · HEVC · WEB-DL": what the name says about the picture, nothing guessed; "quality not stated"
-   * only when it says nothing else of it (docs/torrserver-2026-11.md, 12).
+   * only when it says nothing else of it.
    */
   const picture = (info: ReleaseInfo) =>
     [
@@ -112,9 +112,9 @@ export function useReleaseText() {
       .filter(Boolean)
       .join(" · ");
   /**
-   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution where they can't tell
-   * it — "1080p" and "720p" under HD, which is both (docs/torrserver-2026-11.md, 11), "SD" — then the source ("Blu-ray");
-   * "quality not stated" only when nothing else is known (12). Null when nothing is left.
+   * The picture in words beside its marks (QualityBadges), never what they say: the resolution where they can't tell
+   * it — "1080p" and "720p" under HD, which is both, "SD" — then the source ("Blu-ray");
+   * "quality not stated" only when nothing else is known. Null when nothing is left.
    */
   const besideMarks = (info: ReleaseInfo) =>
     [
@@ -126,7 +126,7 @@ export function useReleaseText() {
   /** A picture version's chip: "1080p", "4K SDR", "4K HDR", "4K" when the name says nothing about the range; "HDR" alone without a resolution. */
   const version = (resolution: ReleaseInfo["resolution"], range: Range | null) =>
     [resolution ? RESOLUTION[resolution] : range && range !== "sdr" ? null : t("tsNoResolution"), range && !(range === "sdr" && resolution !== 2160) ? RANGE_LABEL[range] : null].filter(Boolean).join(" ");
-  /** Resolutions as an option's line lists them, highest first: "4K, 1080p" — "quality not stated" only when it is all there is (12). */
+  /** Resolutions as an option's line lists them, highest first: "4K, 1080p" — "quality not stated" only when it is all there is. */
   const resolutions = (list: readonly ReleaseInfo["resolution"][]) => {
     const known = [...new Set(list.filter((r) => r !== null))].sort((a, b) => b! - a!);
     return known.length ? known.map((r) => RESOLUTION[r!]).join(", ") : t("tsNoResolution");
@@ -156,7 +156,7 @@ export function useReleaseText() {
   };
 }
 
-/** A release's marks (QualityBadges, 7.15): its resolution, one HDR format, Dolby Atmos, CC, as its name says them. */
+/** A release's marks (QualityBadges): its resolution, one HDR format, Dolby Atmos, CC, as its name says them. */
 export const releaseMarks = (info: Pick<ReleaseInfo, "resolution" | "hdrFormats" | "atmos" | "subtitles">) =>
   qualityMarks({ resolution: info.resolution, hdrFormats: info.hdrFormats, atmos: info.atmos, cc: info.subtitles });
 
@@ -170,8 +170,8 @@ export function ReleaseLine({ info, rest = [] }: { info: ReleaseInfo; rest?: rea
 }
 
 /**
- * A picture version for a choice (the "Quality" menu, the sources screen's filter; docs/torrserver-2026-11.md, 13): its
- * marks — 4K or HD, HDR or Dolby Vision — and in words what they don't say ("1080p", "SDR"), as everywhere else (7.15).
+ * A picture version for a choice (the "Quality" menu, the sources screen's filter): its
+ * marks — 4K or HD, HDR or Dolby Vision — and in words what they don't say ("1080p", "SDR"), as everywhere else.
  */
 export function VersionLine({ resolution, range }: { resolution: ReleaseInfo["resolution"]; range: Range | null }) {
   const t = useTranslations("title");
@@ -187,7 +187,7 @@ export const studioShown = (t: ReturnType<typeof useTranslations>, studio: strin
   return word.charAt(0).toUpperCase() + word.slice(1);
 };
 
-/** The label that says what a release's audio has to do with the profile: its studio, or only its language (7.4 Tag). */
+/** The label that says what a release's audio has to do with the profile: its studio, or only its language. */
 export function AudioMatchBadge({ x }: { x: RankedRelease }) {
   const t = useTranslations("title");
   const text = useReleaseText();
@@ -215,7 +215,7 @@ export const isPack = (p: PackInfo) => (p.episodes ? p.episodes.to > p.episodes.
 
 
 /**
- * The one label besides "Recommended" on a release's row (7.15): what matters most first — a cinema recording, the
+ * The one label besides "Recommended" on a release's row: what matters most first — a cinema recording, the
  * wrong season, no seeders, a format this device may not play, already on the server — else its audio's match.
  */
 export function ReleaseTag({ x, linked, season }: { x: RankedRelease; linked: boolean; season: number | null }) {
@@ -237,7 +237,7 @@ export function ReleaseTag({ x, linked, season }: { x: RankedRelease; linked: bo
 }
 
 /**
- * Everything the release name and the indexer say about one release (7.15 details), each fact on its own and "not
+ * Everything the release name and the indexer say about one release, each fact on its own and "not
  * stated" where the name says nothing — nothing is filled in; every audio track under its language. What this device
  * can do is its own reading; the file itself is checked when it is prepared. `tv`: a series — its pack's seasons, and
  * a pack's size said as the whole pack's. The cut of the film ("Extended") when the name says it.

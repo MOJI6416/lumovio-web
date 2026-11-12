@@ -37,7 +37,7 @@ const runIdle = () => {
   for (const f of fns) f();
 };
 
-describe("shelves after a client-side navigation are drawn in turns (phones 2026-10-30)", () => {
+describe("shelves after a client-side navigation are drawn in turns", () => {
   it("draws one shelf per idle moment, the highest on the page first", async () => {
     const { drawInTurn } = await import("../src/components/media/shelf-turns");
     const drawn: number[] = [];

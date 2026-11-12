@@ -38,7 +38,7 @@ export const BRAND_NAMES: Record<Brand, string> = {
 const FILES: Partial<Record<Brand, { src: string; cls: string; wordmark: boolean }>> = {
   imdb: { src: "/brands/imdb.svg", cls: "h-[1.05em]", wordmark: true },
   rotten_tomatoes: { src: "/brands/rt-fresh.svg", cls: "h-[1.15em]", wordmark: false },
-  // The Popcornmeter's own bucket (it was a generic popcorn icon until 2026-11-06).
+  // The Popcornmeter's own bucket, not a generic popcorn icon.
   rotten_tomatoes_audience: { src: "/brands/rt-popcorn-fresh.svg", cls: "h-[1.15em]", wordmark: false },
   metacritic: { src: "/brands/metacritic.svg", cls: "h-[1.15em]", wordmark: false },
   anilist: { src: "/brands/anilist.svg", cls: "h-[1.15em] rounded-xs", wordmark: false },
@@ -48,7 +48,7 @@ const FILES: Partial<Record<Brand, { src: string; cls: string; wordmark: boolean
   kinopoisk: { src: "/brands/kinopoisk.svg", cls: "h-[0.8em]", wordmark: true },
   myanimelist: { src: "/brands/myanimelist.svg", cls: "h-[1.15em] rounded-xs", wordmark: false },
   wikidata: { src: "/brands/wikidata.svg", cls: "h-[0.9em]", wordmark: false },
-  // Trakt had no mark and its scores stood without a logo (owner, 2026-11-06).
+  // Trakt's own mark, so its scores don't stand without a logo.
   trakt: { src: "/brands/trakt.svg", cls: "h-[1.1em]", wordmark: false },
 };
 

@@ -20,7 +20,7 @@ function latestApp(): string | null {
 const ASKED = "tv.app-update-asked";
 
 /**
- * The TV app is older than the site's minimum (lib/tv.ts, TV document §11.1 «Обновления»): a dialog over the first
+ * The TV app is older than the site's minimum (lib/tv.ts): a dialog over the first
  * screen, once per start of the app (its WebView's session), says so and how. The app's own way is its update offer
  * when it starts — so "Leave Lumovio" asks the app's own question to leave, and opened again it offers the new
  * version; or the APK by Downloader. "Not now" keeps going with the old app.

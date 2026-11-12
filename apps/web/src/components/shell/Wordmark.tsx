@@ -4,12 +4,12 @@ import { LOGO_HEIGHT, LOGO_WIDTH, MARK_PATHS, WORDMARK_PATH } from "@/lib/brand"
 const MARK_WIDTH = 110;
 
 /**
- * Shared vector lockup, one size everywhere — header, footer, sign-in, "Who's watching?", system pages (SH-15): 30 px
- * high in rem, so it scales with the TV root size (10.3). The word inherits the text colour; the mark is --brand-mark
+ * Shared vector lockup, one size everywhere — header, footer, sign-in, "Who's watching?", system pages: 30 px
+ * high in rem, so it scales with the TV root size. The word inherits the text colour; the mark is --brand-mark
  * (lime on dark and on the stage, ink on light).
  *
  * `compact`: from md to lg (768–1023) only the mark, at the same height — the header's sections then fit beside it in
- * every language, with a kids profile's tag (design-system 7.19). The accessible name stays "Lumovio".
+ * every language, with a kids profile's tag. The accessible name stays "Lumovio".
  */
 export function Wordmark({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   return (

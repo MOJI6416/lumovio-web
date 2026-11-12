@@ -17,8 +17,8 @@ export default async function StatsPage() {
   const t = await getTranslations("stats");
   const tn = await getTranslations("nav");
   return (
-    // The Tool template (design-system 9): the tool width, centred on the page — no block left against the start
-    // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
+    // The Tool template: the tool width, centred on the page — no block left against the start
+    // edge with the other half empty on a wide screen; the h1 is in the same column.
     <div className="page-x">
       <div className="mx-auto max-w-tool">
         {me === "unavailable" ? (

@@ -22,10 +22,10 @@ type Mode =
   | { kind: "mail"; sent: boolean; value: string; error: string | null; busy: boolean };
 
 /**
- * Leaving a kids profile for an adult one without a PIN, on a TV (design-system 8.10, TV document §7.1 item 5): an adult
+ * Leaving a kids profile for an adult one without a PIN, on a TV: an adult
  * approves it on a phone or a computer of the account — the QR opens the confirmation there, or the code is typed at
  * lumovio.app/link —, and the TV switches by itself; or a 6-digit code mailed to the account is typed with the remote.
- * Never the account password. The rule is the server's (modules/profiles/approval.ts, leave-code.ts).
+ * Never the account password. The rule is the server's.
  */
 export function LeaveKids({
   from,

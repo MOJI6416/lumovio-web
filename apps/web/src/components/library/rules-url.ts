@@ -4,7 +4,7 @@ import type { LibraryFilters } from "./url-state";
 
 export type LibraryRules = Extract<ListRules, { from: "library" }>;
 
-/** A library smart list's conditions from a collection tab's filters (package F): its lists, type, length, status, personal ones. */
+/** A library smart list's conditions from a collection tab's filters: its lists, type, length, status, personal ones. */
 export function libraryRules(lists: LibraryRulesList[], f: LibraryFilters): LibraryRules {
   return { from: "library", lists, show: f.show, max: f.max, status: f.status, onServers: f.onServers, unwatched: f.unwatched };
 }

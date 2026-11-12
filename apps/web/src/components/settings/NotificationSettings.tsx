@@ -24,7 +24,7 @@ import { useDiscardGuard } from "./use-unsaved";
 const DISCORD_WEBHOOK = /^https:\/\/(?:(?:ptb|canary)\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d{15,22}\/[\w-]{20,}$/;
 
 /**
- * Settings → Notifications (S22, audit SET-10): where the news of new episodes goes — by e-mail (a switch, applied at
+ * Settings → Notifications: where the news of new episodes goes — by e-mail (a switch, applied at
  * once with "Saved") and to a Discord channel (a row with its state opening a dialog: the channel webhook's address,
  * checked with Discord before it is kept; then a test message and "Disconnect" with "Undo"). When mail to the address
  * bounced or was marked as spam, the switch is off and a warning under it says why (switching it on again clears it).
@@ -151,9 +151,9 @@ function DiscordDialog({ prefs, onClose }: { prefs: Prefs; onClose: () => void }
     <Dialog open onOpenChange={(o) => !o && void close()} title={t("discord")} size="sm">
       <p className="sr-only">{t("discordHint")}</p>
       {connected ? (
-        // What can be done with the webhook is rows, not a row of buttons that runs out of the window in a long language
-        // (2026-11-07): the test message, then disconnecting — the risky one last, in red, its consequence under it
-        // (7.18; it can be undone from the toast). At the bottom only "Done".
+        // What can be done with the webhook is rows, not a row of buttons that runs out of the window in a
+        // long language: the test message, then disconnecting — the risky one last, in red, its consequence
+        // under it (it can be undone from the toast). At the bottom only "Done".
         <div className="flex flex-col gap-4">
           <p className="text-body text-text-1">{t("discordWebhookName", { name: connected.name })}</p>
           <SettingsSection raised>
@@ -200,7 +200,7 @@ function DiscordDialog({ prefs, onClose }: { prefs: Prefs; onClose: () => void }
             <Button variant="secondary" disabled={busy} onClick={() => void close()}>
               {tc("cancel")}
             </Button>
-            {/* Off until something is typed (8.8). */}
+            {/* Off until something is typed. */}
             <Button type="submit" loading={busy} disabled={!url.trim()}>
               {tr("services.connect", { service: "Discord" })}
             </Button>

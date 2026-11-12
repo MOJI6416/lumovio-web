@@ -1,7 +1,7 @@
 import type { SubtitleStyle } from "@lumovio/contracts";
 
 /*
- * The profile's subtitle look (`SubtitleStyle`, design-system 11.1) for the renderers that don't take CSS: ASS styles
+ * The profile's subtitle look (`SubtitleStyle`) for the renderers that don't take CSS: ASS styles
  * given to libass and the pictures of PGS and VobSub. Text cues take it from globals.css (`[data-sub-*]` on the player).
  */
 

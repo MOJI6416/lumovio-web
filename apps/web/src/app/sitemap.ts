@@ -3,7 +3,7 @@ import { INTERFACE_LOCALES } from "@/i18n/locales";
 import { languageAlternates, localizedPath, SITE_URL } from "@/lib/seo";
 
 /**
- * The site's own pages in each finished language, with hreflang (SH-13). Titles and people are not listed: they are
+ * The site's own pages in each finished language, with hreflang. Titles and people are not listed: they are
  * found through the server-rendered links of these pages, and a full list would need the API at build time (or a
  * paged sitemap over its title cache) — not a cheap source.
  */

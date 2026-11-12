@@ -17,15 +17,15 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const t = await getTranslations("import");
   const ts = await getTranslations("services");
   const { job } = await searchParams;
-  // An import has an address of its own (/import?job=…, IMP-04): its page brings "← Import history" and its own h1.
+  // An import has an address of its own (/import?job=…): its page brings "← Import history" and its own h1.
   const jobId = typeof job === "string" ? job : null;
   const jobView = jobId !== null && me !== "unavailable" && !me?.activeProfile?.isKids;
   return (
-    // The Tool template (design-system 9): the tool width, centred on the page — no block left against the start
-    // edge with the other half empty on a wide screen (owner, 2026-10-25); the h1 is in the same column.
+    // The Tool template: the tool width, centred on the page — no block left against the start
+    // edge with the other half empty on a wide screen; the h1 is in the same column.
     <div className="page-x">
       <div className="mx-auto max-w-tool">
-        {/* Its parent is Settings → Sync, where it is listed (8.7). No intro on the screen; a screen reader hears it. */}
+        {/* Its parent is Settings → Sync, where it is listed. No intro on the screen; a screen reader hears it. */}
         {!jobView && <PageHeader back={{ href: "/settings/services", label: ts("title") }} title={t("title")} />}
         {!jobView && <p className="sr-only">{t("intro")}</p>}
         {me === "unavailable" ? (

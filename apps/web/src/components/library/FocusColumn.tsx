@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { tmdbImage } from "@/lib/images";
 
 /**
- * One question on the page's own background (S10 for a guest, S32; design-system 9 "Library", as the sign-in pages'
- * "Вход"): a 360 column in the middle of the site's page, under the header — what it is about first (a list's cover),
+ * One question on the page's own background, as on the sign-in pages:
+ * a 360 column in the middle of the site's page, under the header — what it is about first (a list's cover),
  * the h1, one line of facts, then the actions stacked at the column's width, the main one on top. No card, no stage,
  * no icon in a circle; an explanation, if any, is for a screen reader. Works in server components.
  */
@@ -35,7 +35,7 @@ export function FocusColumn({
   );
 }
 
-/** A list's cover as on its card (7.12): its first four posters 2×2 on --surface-2. Works in server components. */
+/** A list's cover as on its card: its first four posters 2×2 on --surface-2. Works in server components. */
 export function ListCover({ cover }: { cover: (string | null)[] }) {
   const covers = cover.filter((c): c is string => Boolean(c)).slice(0, 4);
   return (

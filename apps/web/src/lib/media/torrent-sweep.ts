@@ -5,12 +5,12 @@ import { asTorrentList, invalidateAvailability, type ManagedTorrent, managedTorr
 import { torrServerFor } from "./torrent-source";
 
 /**
- * The clean-up (docs/torrserver-2026-11.md 18а, design-system 7.15 "Уборка"): nothing piles up on the person's
+ * The clean-up: nothing piles up on the person's
  * TorrServer. The API says which indexed torrents are done with — watched, never started, left — by every profile of the
- * account (api providers/sweep.ts); this device removes those of them that are surely Lumovio's (`claimedAt`) and that
+ * account; this device removes those of them that are surely Lumovio's (`claimedAt`) and that
  * the server isn't playing, and Lumovio's torrents linked to nothing a week after it brought them. The server's other
  * torrents of titles go the same way only when the person turned it on (`ConnectionSettings.sweepAll`); one linked to
- * nothing is never Lumovio's to judge. Removal is TS7's: `rem`, then the server's list decides.
+ * nothing is never Lumovio's to judge. Removal is torrent-manage's: `rem`, then the server's list decides.
  */
 
 const UNLINKED_AFTER_MS = 7 * 86_400_000;

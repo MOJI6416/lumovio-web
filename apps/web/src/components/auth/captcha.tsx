@@ -10,9 +10,9 @@ const Turnstile = lazy(() => import("@/components/support/Turnstile").then((m) =
 
 /**
  * Cloudflare Turnstile on sign-in, sign-up and the password reset: with keys on the API, Better Auth's captcha plugin
- * wants `x-captcha-response` on those three (auth.ts). The widget goes above the form's button and the token with the
+ * wants `x-captcha-response` on those three. The widget goes above the form's button and the token with the
  * request; a token serves one attempt, so every attempt starts a new check. Without keys nothing shows and nothing is
- * sent (operations.md, "Support").
+ * sent.
  */
 export function useAuthCaptcha() {
   const caps = useQuery({ queryKey: ["auth-caps"], queryFn: () => api<AuthCapabilities>("/api/auth-capabilities"), staleTime: Infinity });

@@ -22,7 +22,7 @@ import { isOngoing, type TitleCore } from "./core";
 const ArtChooser = lazy(() => import("./ArtChooser").then((m) => ({ default: m.ArtChooser })));
 
 /**
- * The title hero's "More" (design-system 8.1, TTL-02, TTL-08, TTL-09, TTL-20, TTL-24): Favourites, Watched (a series:
+ * The title hero's "More": Favourites, Watched (a series:
  * all of it, exactly undone), Not interested, Add to list… (the list picker with "New list"), new-episode alerts for a
  * series that still gets them (saying where they arrive), Share (the system sheet, else the link copied). The same
  * requests, toasts and Undo as a card's "More" (media/usePersonalActions). Loaded by TitleActions when approached.
@@ -68,12 +68,12 @@ export function TitleMore({
       qc.setQueryData(["follow", d.id], { following: on });
       return () => qc.setQueryData(["follow", d.id], { following: !on });
     },
-    // Where the alerts arrive is said when they are switched on (TTL-20); off needs no toast.
+    // Where the alerts arrive is said when they are switched on; off needs no toast.
     success: (_r, on) => (on ? t("followOn", { title: d.title }) : null),
     undo: () => followRequest(false),
   });
 
-  // A whole series at once, taken back exactly: only what this mark added goes again (TTL-25).
+  // A whole series at once, taken back exactly: only what this mark added goes again.
   const markShow = useAction({
     run: async (undoKey: string) => {
       const s = await api<TitleLibraryState>("/api/history/mark", { method: "POST", json: { titleId: d.id, scope: "show", watched: true, undoKey } });
@@ -85,7 +85,7 @@ export function TitleMore({
   });
 
   const movie = d.kind === "movie";
-  // A circle on every width, beside "Watch" and "Watchlist" (redesign-2026-11.md 2).
+  // A circle on every width, beside "Watch" and "Watchlist".
   const triggerEl = <IconButton ref={trigger} icon={Ellipsis} variant="secondary" size="lg" label={label} />;
 
   return (
@@ -126,7 +126,7 @@ export function TitleMore({
         <MenuItem icon={Share2} onSelect={() => void a.share()}>
           {tc("share")}
         </MenuItem>
-        {/* The profile's own background and logo for this page (8.16). */}
+        {/* The profile's own background and logo for this page. */}
         {a.signedIn && (
           <MenuItem icon={ImageIcon} onSelect={() => setArt(true)}>
             {ta("menu")}

@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await redirectSignedIn(searchParams);
-  // The social buttons are drawn with the page — only the configured ones, or none (AUTH-10).
+  // The social buttons are drawn with the page — only the configured ones, or none.
   const providers = configuredProviders(await optional(serverApi<AuthCapabilities>("/api/auth-capabilities"), null));
   return (
     <Suspense>

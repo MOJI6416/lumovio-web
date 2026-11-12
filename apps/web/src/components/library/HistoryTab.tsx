@@ -28,10 +28,10 @@ type Pages = InfiniteData<Page>;
 const Card = memo(PosterCard);
 
 /**
- * History (S09, LIB-05, LIB-11): what was watched, as posters by month, newest first — a card per title and day, its
+ * History: what was watched, as posters by month, newest first — a card per title and day, its
  * line the day and what of it ("Yesterday · Season 1 · episodes 1–3", a film twice "2 times"), so a title is found by
  * its art, not read out of rows. "Remove from history" is in the card's "More", seen on touch screens too: gone at
- * once, with "Undo" in the toast (8.3). The server sends 50 watches a page; "Show more" asks for the next.
+ * once, with "Undo" in the toast. The server sends 50 watches a page; "Show more" asks for the next.
  */
 export function HistoryTab() {
   const t = useTranslations("library");
@@ -46,12 +46,12 @@ export function HistoryTab() {
     getNextPageParam: (last) => last.nextBefore ?? undefined,
   });
 
-  // A card goes in one request, and "Undo" brings all of it back in one (LIB-25): the server keeps what it removed
+  // A card goes in one request, and "Undo" brings all of it back in one: the server keeps what it removed
   // under the key this removal chose.
   const remove = useAction({
     run: async (g: Group) => {
       const undoKey = randomId();
-      // The card's whole local day of this title, so a day the page boundary cut goes whole (LIB-27).
+      // The card's whole local day of this title, so a day the page boundary cut goes whole.
       const from = new Date(`${g.day}T00:00:00`);
       const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
       const span = { titleId: g.title.id, from: from.toISOString(), to: to.toISOString() };
@@ -105,7 +105,7 @@ export function HistoryTab() {
       }
     >
       {(d) => {
-        // Days, then months: a card per title and day (LIB-11), the days of a month under its name.
+        // Days, then months: a card per title and day, the days of a month under its name.
         const months: { month: string; groups: Group[] }[] = [];
         for (const { day, groups } of groupHistory(d.pages.flatMap((p) => p.entries))) {
           const month = day.slice(0, 7);

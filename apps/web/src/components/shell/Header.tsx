@@ -18,7 +18,7 @@ import { useNavigationLoading } from "./NavigationLoading";
 import { PrefsMenu } from "./PrefsMenu";
 import { Wordmark } from "./Wordmark";
 
-// "TV remote" beside search and the account while a TV of the account has Lumovio open (design-system 8.18): after the
+// "TV remote" beside search and the account while a TV of the account has Lumovio open: after the
 // page, so it adds nothing to any page's first load.
 const RemoteEntry = dynamic(() => import("@/components/tv/RemoteEntry"), { ssr: false });
 
@@ -31,7 +31,7 @@ const NAV = [
   { href: "/library", key: "library" },
 ] as const;
 
-/** After "Sign out" the page reloads; the next page says it happened (SH-09). */
+/** After "Sign out" the page reloads; the next page says it happened. */
 function useSignedOutNotice() {
   const t = useTranslations("shell");
   useEffect(() => {
@@ -45,11 +45,11 @@ function useSignedOutNotice() {
   }, [t]);
 }
 
-/** The tab bar's and the header's sections: their roots show no Back in a home-screen app (7.19). */
+/** The tab bar's and the header's sections: their roots show no Back in a home-screen app. */
 const ROOTS = new Set(["/", "/browse/movie", "/browse/tv", "/anime", "/search", "/library"]);
 
 /**
- * The header (design-system 7.19): 64 high on the page gutter, three zones — the logo at the start, the sections in the
+ * The header: 64 high on the page gutter, three zones — the logo at the start, the sections in the
  * middle as plain words (the one in view in --text-1, the others in --text-2: not pills, which are the buttons' and the
  * filters' shape), search and the account at the end. From md to lg the logo is its mark alone, so the five sections
  * fit in every language. On a phone: the logo and the account only (the sections and search are the bottom bar's tabs),
@@ -57,7 +57,7 @@ const ROOTS = new Set(["/", "/browse/movie", "/browse/tv", "/anime", "/search", 
  *
  * Over a page's artwork (`data-hero`: a billboard, a title's hero, a system page's stage) it is transparent on a scrim
  * and takes the stage's dark values; after scrolling, or on a page without artwork, it is --bg 94 % + blur + a line —
- * the same on every page (SH-06). `overlay` is the route's guess for the first paint; the page confirms it.
+ * the same on every page. `overlay` is the route's guess for the first paint; the page confirms it.
  */
 export function Header({ overlay }: { overlay: boolean }) {
   const t = useTranslations("nav");
@@ -125,7 +125,7 @@ export function Header({ overlay }: { overlay: boolean }) {
   // A list is part of the library, as on the bottom bar.
   const active = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href) || (href === "/library" && pathname.startsWith("/lists"));
-  // While the API is down the visitor may well be signed in (SH-03): "Sign in" isn't offered then.
+  // While the API is down the visitor may well be signed in: "Sign in" isn't offered then.
   const guest = !me && !apiDown;
 
   return (
@@ -149,7 +149,7 @@ export function Header({ overlay }: { overlay: boolean }) {
           before the logo or the account would leave the screen. A phone has the two ends only. */}
       <div className="page-x mx-auto flex h-full max-w-media items-center justify-between gap-4 md:grid md:grid-cols-[minmax(max-content,1fr)_minmax(0,auto)_minmax(max-content,1fr)] lg:gap-6">
         <div className="flex items-center gap-1">
-          {/* A home-screen app has no browser Back (7.19): where it came from, else the home page; not on a tab's root. */}
+          {/* A home-screen app has no browser Back: where it came from, else the home page; not on a tab's root. */}
           {!ROOTS.has(pathname) && (
             <IconButton
               icon={ArrowLeft}
@@ -176,7 +176,7 @@ export function Header({ overlay }: { overlay: boolean }) {
             style={{ maskImage: navFade, WebkitMaskImage: navFade }}
             className="scroll-row -my-1 flex items-center gap-1 overflow-x-auto py-1"
           >
-            {/* Anime only while the profile has it on (8.14). */}
+            {/* Anime only while the profile has it on. */}
             {NAV.filter((n) => n.key !== "anime" || showsAnime(me)).map((n) => {
               const on = active(n.href);
               return (
@@ -207,7 +207,7 @@ export function Header({ overlay }: { overlay: boolean }) {
             <AccountMenu />
           ) : (
             <>
-              {/* Language and theme for whoever isn't signed in, on a desktop and a phone (SH-07). */}
+              {/* Language and theme for whoever isn't signed in, on a desktop and a phone. */}
               <PrefsMenu />
               {guest && (
                 // Where a signed-in visitor has the avatar; a quiet pill, so the page's own main button stays the one.

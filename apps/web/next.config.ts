@@ -9,7 +9,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const apiProxy = process.env.API_PROXY_TARGET;
 
 /**
- * The Android TV app's newest release (TV document §11.1): .github/workflows/tv-app.yml commits it with this manifest into
+ * The Android TV app's newest release: the release workflow commits it with this manifest into
  * public/downloads/, so a deploy follows every release and reads it here, at build time.
  */
 const tvAppFile = fileURLToPath(new URL("./public/downloads/lumovio-tv.json", import.meta.url));

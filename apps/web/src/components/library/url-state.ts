@@ -4,9 +4,9 @@ import type { SeriesStatus } from "@lumovio/contracts";
 import { useSearchParams } from "next/navigation";
 
 /**
- * A page's filters and sort in the address (8.4, 8.7), changed without a server round trip: the native History API
+ * A page's filters and sort in the address, changed without a server round trip: the native History API
  * keeps `useSearchParams` in step (Next.js), so a chip answers at once instead of re-rendering the page on the server
- * (LIB-10), and Back from a title still finds them in the URL.
+ * and Back from a title still finds them in the URL.
  */
 export function useUrlState() {
   const params = useSearchParams();
@@ -51,7 +51,7 @@ export function readSort<S extends string>(params: { get: (k: string) => string 
   return sorts.includes(s as S) ? (s as S) : fallback;
 }
 
-/** The rating a card shows (Lumovio Score → IMDb → TMDB, 7.12) on one 0–10 scale, for "By rating". */
+/** The rating a card shows (Lumovio Score → IMDb → TMDB) on one 0–10 scale, for "By rating". */
 export function cardRating(t: { lumovioScore?: { score: number } | null; imdbRating?: number | null; tmdbRating?: number | null }): number {
   if (t.lumovioScore) return t.lumovioScore.score / 10;
   return t.imdbRating ?? t.tmdbRating ?? -1;

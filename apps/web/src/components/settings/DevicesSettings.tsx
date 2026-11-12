@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/Switch";
 import { setTvMode } from "@/lib/prefs";
 
 /**
- * Settings → This device (S18, design-system 7.18): what belongs to this browser, not to the profile or the account —
+ * Settings → This device: what belongs to this browser, not to the profile or the account —
  * the theme and the TV mode (the TV shell on this screen) — and, for an adult, the ways to the TV: pairing one by its
  * code, the phone remote, the Android TV app. The interface language is the profile's (Settings → Profile), so it isn't
  * asked twice. Where the account is signed in is Security's.
@@ -29,7 +29,7 @@ export function DevicesSettings() {
           <Switch id={`${ids}-tv`} checked={tv} onCheckedChange={setTvMode} label={t("nav.tvMode")} hideLabel />
         </SettingsRow>
       </SettingsSection>
-      {/* Pairing a TV, the remote and the app are an adult's (8.10: /link and /remote refuse a kids profile). */}
+      {/* Pairing a TV, the remote and the app are an adult's (/link and /remote refuse a kids profile). */}
       {!kids && (
         <SettingsSection title={t("settings.linkTvLabel")}>
           <SettingsLink href="/link" label={t("nav.linkDevice")} />

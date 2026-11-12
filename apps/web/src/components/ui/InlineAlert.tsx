@@ -12,10 +12,10 @@ const TONE: Record<AlertTone, { box: string; icon: string; Icon: LucideIcon }> =
 };
 
 /**
- * A banner inside a page, panel or dialog (design-system 7.10): the status's soft fill, its icon, a 15/600 title,
+ * A banner inside a page, panel or dialog: the status's soft fill, its icon, a 15/600 title,
  * body-s text, one action at the end (a `tertiary` Button). No coloured frame; the text keeps the text colours, so it
  * reads in both themes. An error is announced (`role="alert"`), the other tones politely (`role="status"`).
- * The text says what happened and what to do (2.1) — never the server's own message (8.5).
+ * The text says what happened and what to do — never the server's own message.
  */
 export function InlineAlert({
   tone = "info",

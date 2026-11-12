@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 /**
- * Watching on a TV (S25, S26 TV; TV document §6): the same player and sources screen as the site — one way to play —
+ * Watching on a TV: the same player and sources screen as the site — one way to play —
  * with the remote's model of the player (components/player/LumovioPlayer, `useTvNavOptional`) and the shell's
  * navigation for the sources screen.
  */

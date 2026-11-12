@@ -6,7 +6,7 @@ import { confirmQueue } from "./confirm-queue";
 import { isOnStage, layerOrigin, usePortalContainer } from "./portal";
 
 /*
- * Confirmation of the irreversible (design-system 7.9, 8.3; audit X-12): the title asks the question with the object
+ * Confirmation of the irreversible: the title asks the question with the object
  * («Удалить список «Ужасы 80-х»?»), the text says what changes and what stays, then "Cancel" and the main button
  * with the same verb («Удалить список»). The most dangerous ones (the account) ask to type a word or the name first.
  * Reversible actions don't ask: they offer "Undo" in a toast (lib/use-action).

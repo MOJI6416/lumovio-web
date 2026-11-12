@@ -10,9 +10,9 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { onlineTvs, useTvs } from "./cast";
 
 /**
- * The way to the remote without the settings (design-system 8.18, 7.19): a round `Tv` link "TV remote" in the header —
+ * The way to the remote without the settings: a round `Tv` link "TV remote" in the header —
  * on a phone too, beside the account — only while a TV of the account has Lumovio open, with a lime dot while it plays
- * something. An adult profile's (the remote is an adult's, 8.10); not on the remote itself. Loaded after the page
+ * something. An adult profile's (the remote is an adult's); not on the remote itself. Loaded after the page
  * (Header), so it costs no first-load JS.
  */
 export default function RemoteEntry() {

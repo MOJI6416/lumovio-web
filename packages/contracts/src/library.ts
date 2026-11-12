@@ -23,7 +23,7 @@ export interface ListSummary {
   updatedAt: string;
   /** Set when the list is kept in step with an external list. */
   source: ListSource | null;
-  /** Set when the list keeps itself up to date by saved conditions (a smart list, package F). */
+  /** Set when the list keeps itself up to date by saved conditions (a smart list). */
   rules?: ListRulesInfo | null;
 }
 
@@ -63,15 +63,15 @@ export interface ListItem {
 }
 
 export interface ListDetails extends ListSummary {
-  /** One page of the list's titles, in its order (`?offset=`, LIB-24). */
+  /** One page of the list's titles, in its order (`?offset=`). */
   items: ListItem[];
   /** `photo`: the member profile's photo or null, as `Profile.photo`. */
   members: { profileId: string; name: string; avatar: string; photo: string | null; role: ListRole }[];
-  /** Where the next page of `items` starts (`?offset=`), or null when this page is the last (LIB-24). */
+  /** Where the next page of `items` starts (`?offset=`), or null when this page is the last. */
   nextOffset?: number | null;
 }
 
-/** Page size of `GET /api/lists/:id` and `GET /api/library/watchlist|favorites` (LIB-24). */
+/** Page size of `GET /api/lists/:id` and `GET /api/library/watchlist|favorites`. */
 export const LIST_PAGE_SIZE = 500;
 
 export const ListCreate = z.object({
@@ -106,7 +106,7 @@ export const ListItemAdd = z.object({
   note: z.string().max(500).nullable().optional(),
 });
 
-/** What an invitation opens, before joining (`GET /api/invites/:token`, LIB-19). */
+/** What an invitation opens, before joining (`GET /api/invites/:token`). */
 export interface ListInvitePreview {
   listId: string;
   name: string;
@@ -127,7 +127,7 @@ export const ListInviteCreate = z.object({
   ttlHours: z.number().int().min(1).max(24 * 30).default(72),
 });
 
-/* ── Smart lists: a list kept up to date by saved conditions (package F) ── */
+/* ── Smart lists: a list kept up to date by saved conditions ── */
 
 /** Smart lists one profile may keep. */
 export const MAX_RULE_LISTS = 20;
@@ -283,7 +283,7 @@ export const MarkWatched = z.object({
   watched: z.boolean().default(true),
   /**
    * Chosen by the client: what this change did — the watch events it added, or the ones it removed with their own
-   * dates — is kept under it for 15 minutes, so `POST /api/history/mark/undo` takes back exactly that (TTL-25).
+   * dates — is kept under it for 15 minutes, so `POST /api/history/mark/undo` takes back exactly that.
    */
   undoKey: z.string().uuid().optional(),
 });
@@ -292,12 +292,12 @@ export const MarkWatched = z.object({
 export const MarkUndo = z.object({ undoKey: z.string().uuid() });
 
 /**
- * Removes a row of the history at once — one title on one day, all its entries (LIB-25). What it removed is kept under
+ * Removes a row of the history at once — one title on one day, all its entries. What it removed is kept under
  * `undoKey` for 15 minutes, so `POST /api/history/restore` puts back exactly those rows.
  */
 /**
  * Removes a history row: its entries by id and, with `span`, every other watch of that title in the row's day (the
- * profile's local day as an ISO range), so a row cut by the page boundary goes whole (LIB-27).
+ * profile's local day as an ISO range), so a row cut by the page boundary goes whole.
  */
 export const HistoryRemove = z.object({
   ids: z.array(z.string().uuid()).min(1).max(500),

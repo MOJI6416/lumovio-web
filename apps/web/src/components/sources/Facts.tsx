@@ -1,5 +1,5 @@
 /**
- * The facts of a release or a copy (7.9, 7.15 details), read and not chosen: the fact's name and its value side by side
+ * The facts of a release or a copy in their details, read and not chosen: the fact's name and its value side by side
  * from `sm`, as on a TV, so the list stays short; on a phone one under the other.
  */
 export function Facts({ rows }: { rows: [string, string][] }) {

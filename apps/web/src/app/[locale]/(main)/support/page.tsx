@@ -11,7 +11,7 @@ export async function generateMetadata() {
 }
 
 /**
- * Support (S60, admin handoff «Поддержка»): anyone can write — a guest with the e-mail for the answer, signed in with
+ * Support: anyone can write — a guest with the e-mail for the answer, signed in with
  * «Мои обращения» under the form; not from a kids profile.
  */
 export default async function SupportPage() {
@@ -21,7 +21,7 @@ export default async function SupportPage() {
   return (
     <div className="page-x">
       <div className="mx-auto max-w-tool">
-        {/* A kids profile isn't told the parent's address (PRF-01); it gets no form either. */}
+        {/* A kids profile isn't told the parent's address; it gets no form either. */}
         <PageHeader title={t("title")} description={account?.activeProfile?.isKids ? undefined : account ? t("introSignedIn", { email: account.user.email }) : t("intro")} />
         {me === "unavailable" ? (
           <ServiceUnavailable />

@@ -18,7 +18,7 @@ export const findsKey = (profileId: string | null) => ["torrent-finds", profileI
 export const fetchFinds = () => api<{ finds: TorrentFinds }>("/api/library/torrent-finds");
 
 /**
- * The part of a ranked release that is kept, with every picture version its audio option was found in (TS5: the
+ * The part of a ranked release that is kept, with every picture version its audio option was found in (the
  * profile's studio's, else its language's releases — 1080p · 4K SDR · 4K HDR), from the search's ranked releases.
  */
 export function findOf(best: RankedRelease | undefined, ranked: RankedRelease[] = []): TorrentFindBest | null {
@@ -34,8 +34,8 @@ export const reportFind = (titleId: string, best: RankedRelease | undefined, ran
   api<TorrentFind>("/api/library/torrent-finds", { method: "POST", json: { titleId, best: findOf(best, ranked) } });
 
 /**
- * A stored find's picture versions in words — "1080p, 4K SDR, 4K HDR" (TS5) — or its best release's resolution for a
- * find kept before versions were; versions the names don't give a resolution for are left out.
+ * A stored find's picture versions in words — "1080p, 4K SDR, 4K HDR" — or its best release's resolution for
+ * a find kept before versions were; versions the names don't give a resolution for are left out.
  */
 export function findPictureText(b: TorrentFindBest): string | null {
   const range = { hdr: "HDR", dv: "Dolby Vision", sdr: "SDR" } as const;
@@ -47,8 +47,8 @@ export function findPictureText(b: TorrentFindBest): string | null {
 }
 
 /**
- * A stored find's best picture version as quality marks (QualityBadges, 7.15): the highest resolution, with the best
- * range found at it (Dolby Vision over HDR) — "[4K] [HDR]" for "1080p, 4K SDR, 4K HDR".
+ * A stored find's best picture version as quality marks (QualityBadges): the highest resolution, with the
+ * best range found at it (Dolby Vision over HDR) — "[4K] [HDR]" for "1080p, 4K SDR, 4K HDR".
  */
 export function findMarks(b: TorrentFindBest): QualityMark[] {
   const versions = (b.pictures?.length ? b.pictures : b.resolution ? [{ resolution: b.resolution, range: null }] : []).filter((p) => p.resolution !== null);
@@ -58,13 +58,13 @@ export function findMarks(b: TorrentFindBest): QualityMark[] {
   return qualityMarks({ resolution: top, hdrFormats: ranges.includes("dv") ? ["dv"] : ranges.includes("hdr") ? ["hdr"] : [] });
 }
 
-/** The best version's resolution in words beside its HD mark — "1080p", "720p" (HD is both, docs/torrserver-2026-11.md 11). */
+/** The best version's resolution in words beside its HD mark — "1080p", "720p" (HD is both). */
 export function findResolutionWord(b: TorrentFindBest): string | null {
   const top = Math.max(0, ...(b.pictures?.length ? b.pictures : b.resolution ? [{ resolution: b.resolution, range: null }] : []).map((p) => p.resolution ?? 0));
   return top && top < 2160 ? (RESOLUTION_LABEL[top] ?? null) : null;
 }
 
-/** Finds this browser kept itself before they moved to Lumovio (2026-10-24): removed on sight. */
+/** Finds this browser kept itself before they moved to Lumovio: removed on sight. */
 export function dropLocalFinds(profileId: string) {
   try {
     localStorage.removeItem(`lumovio.torrent-finds.v1:${profileId}`);

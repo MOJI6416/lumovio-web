@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "./cn";
 
 /**
- * A progress bar (design-system 7.11): 4 px on --surface-3, filled with --progress. `value` 0–100; `null` — the
+ * A progress bar: 4 px on --surface-3, filled with --progress. `value` 0–100; `null` — the
  * length is unknown (a running stripe; still with reduced motion). Always named by `label`.
  */
 export function Progress({
@@ -58,7 +58,7 @@ export interface Step {
 }
 
 /**
- * A multi-step operation (design-system 7.11, 8.3): preparing a source, an import. The list of steps with the current
+ * A multi-step operation: preparing a source, an import. The list of steps with the current
  * one marked, a progress bar and an understandable way to stop it (`action`, e.g. a secondary "Cancel" Button).
  * Announced politely as it moves on.
  */

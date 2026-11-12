@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { type Status, StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/format";
 
-/** "23 окт." this year, "23 окт. 2025 г." before (2.3). */
+/** "23 окт." this year, "23 окт. 2025 г." before. */
 export const shortDate = (iso: string, locale: string) =>
   formatDate(iso, locale, { day: "numeric", month: "short", ...(iso.startsWith(String(new Date().getFullYear())) ? {} : { year: "numeric" }) });
 
@@ -21,7 +21,7 @@ export const LABEL: Record<ImportSource, string> = {
 };
 
 /**
- * Each source's official mark (IMP-10; trademarks of their owners, credited on the Credits page). An app icon with its
+ * Each source's official mark (trademarks of their owners, credited on the Credits page). An app icon with its
  * own square (Trakt, Simkl, Lampa, Plex) fills the tile; the others sit in it at 24 px. Decorative: the name is written next to it.
  */
 const LOGO: Record<ImportSource, { src: string; fill?: boolean }> = {
@@ -58,7 +58,7 @@ export const EXPORT_PAGE: Partial<Record<ImportSource, string>> = {
   netflix: "https://www.netflix.com/settings/viewing-history",
 };
 
-/** The file name for an upload; Trakt/Simkl imports are named by what started them (IMP-02). */
+/** The file name for an upload; Trakt/Simkl imports are named by what started them. */
 export function JobName({ job }: { job: ImportJob }) {
   const t = useTranslations("import");
   if (job.origin === "sync") return t("originSync", { source: LABEL[job.source] });
@@ -70,7 +70,7 @@ export function JobName({ job }: { job: ImportJob }) {
 
 const JOB_STATUS: Partial<Record<ImportJob["status"], Status>> = { done: "success", failed: "danger", review: "warning" };
 
-/** The state of an import: a dot in the status colour and the word (7.4); a step nothing works on — "Stopped". */
+/** The state of an import: a dot in the status colour and the word; a step nothing works on — "Stopped". */
 export function JobStatus({ job }: { job: ImportJob }) {
   const t = useTranslations("import");
   if (job.stalled) return <StatusBadge status="warning">{t("status_stalled")}</StatusBadge>;

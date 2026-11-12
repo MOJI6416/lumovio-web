@@ -18,10 +18,10 @@ import { rovingIndex } from "./keyboard";
 import { groupFocusRing } from "./styles";
 
 /*
- * Tabs (design-system 7.5): the sections of one page. Two forms with one look:
+ * Tabs: the sections of one page. Two forms with one look:
  * - `Tabs` + `TabList` + `Tab` + `TabPanel` — Radix Tabs, the choice lives in the component;
  * - `LinkTabs` + `LinkTabPanel` — each tab is a link (`?tab=…`), so the choice survives a reload, a shared link and
- *   Back (8.7). ←/→ move between tabs, Enter or Space opens one (manual activation: every tab is a navigation).
+ *   Back. ←/→ move between tabs, Enter or Space opens one (manual activation: every tab is a navigation).
  * - `PillTabs` — a row of pills choosing which part of one list the panel under it shows (the seasons of a series).
  * On a phone the row scrolls sideways with faded edges and keeps the active tab in view.
  */
@@ -66,7 +66,7 @@ function useEdgeFade(ref: RefObject<HTMLElement | null>): CSSProperties | undefi
 
 /**
  * A mouse wheel scrolls the row sideways while it has more to show that way (a PC has no sideways swipe: the seasons of
- * a long series were out of reach, 2026-10-30); at the row's end the wheel scrolls the page again, as everywhere.
+ * a long series were out of reach); at the row's end the wheel scrolls the page again, as everywhere.
  */
 function useWheelScroll(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -288,9 +288,9 @@ export interface PillTab<V extends string> {
 export const pillTabId = (panelId: string, value: string) => `${panelId}-pill-${value}`;
 
 /**
- * A row of pill tabs (design-system 7.5, owner 2026-10-25): which part of one list the panel under it shows — the
+ * A row of pill tabs: which part of one list the panel under it shows — the
  * seasons of a series ("1 season · 2 season … Specials"), never a filter and never a page's sections (those are Tabs).
- * Pills 40 px tall (44 to tap on a phone), the chosen one in the selection colours (7.4). One tab stop: ←/→ (Home/End)
+ * Pills 40 px tall (44 to tap on a phone), the chosen one in the selection colours. One tab stop: ←/→ (Home/End)
  * move along the row, Enter or Space opens one (manual activation: each choice loads its part). The row scrolls sideways
  * with faded edges and keeps the chosen pill in view, so a long series opens with its current season visible.
  */

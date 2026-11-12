@@ -5,7 +5,7 @@ import { keepShelf, SHELF_COPY, shelfHeading, shelfHref } from "../src/component
 import { layoutFix } from "../src/components/search/search-helpers";
 import ru from "../messages/ru.json";
 
-// The re-audit's findings on shelves, personal picks and search (2026-10-29): CAT-11, HOME-16, HOME-17, SRCH-16.
+// Shelves, personal picks and search.
 
 /** The `rows` translator over the Russian messages, as next-intl formats a simple `{name}`. */
 const rows = ru.rows as Record<string, string>;
@@ -16,7 +16,7 @@ const tr = (key: string) => {
   return (ru as unknown as Record<string, Record<string, string>>)[ns!]![k!] ?? key;
 };
 
-describe("a shelf's “All” page keeps its name (CAT-11)", () => {
+describe("a shelf's “All” page keeps its name", () => {
   it("marks every shelf with an “All” page, a genre shelf too, and nothing without one", () => {
     expect(shelfHref("kids_top", "/browse/movie?genres=10751&sort=rating")).toBe("/browse/movie?genres=10751&sort=rating&shelf=kids_top");
     expect(shelfHref("anime", "/browse/tv?anime=1")).toBe("/browse/tv?anime=1&shelf=anime");
@@ -48,7 +48,7 @@ describe("a shelf's “All” page keeps its name (CAT-11)", () => {
   });
 });
 
-describe("personal shelves and their lines (HOME-16, HOME-17)", () => {
+describe("personal shelves and their lines", () => {
   const because = (signal: NonNullable<RecommendationShelf["seed"]>["signal"]): RecommendationShelf => ({
     key: "because_1",
     kind: "because",
@@ -75,7 +75,7 @@ describe("personal shelves and their lines (HOME-16, HOME-17)", () => {
   });
 });
 
-describe("“Search for «…»” on the other layout (SRCH-16)", () => {
+describe("“Search for «…»” on the other layout", () => {
   const answer = (over: Partial<CatalogSearch>, n = 1): CatalogSearch => ({
     titles: { page: 1, totalPages: 1, totalResults: n, results: Array.from({ length: n }, (_, i) => ({ id: `movie:${i}` }) as never) },
     people: [],

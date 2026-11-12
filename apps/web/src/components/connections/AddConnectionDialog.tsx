@@ -23,7 +23,7 @@ import { ServerMark } from "./ServerMark";
 const KINDS: ProviderKind[] = ["jellyfin", "plex", "torrserver"];
 
 /**
- * Adding a server, and changing the address or sign-in of one (design-system 7.9; audit SRV-02, SRV-05, SRV-06).
+ * Adding a server, and changing the address or sign-in of one.
  * Adding is two steps: the type (with its mark and what it is for), then the form of that type — its own title, its
  * own hints, "Check and save". Changing is the same form, filled in, for one server: a new address is checked with
  * the sign-in it has unless a new one is typed. Credentials typed here go straight from this device to the user's
@@ -52,7 +52,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
   );
 
   const normalized = () => url.trim().replace(/\/+$/, "");
-  // Whether the typed host name exists at all (SRV-02): a typo then reads "server not found", not a certificate problem.
+  // Whether the typed host name exists at all: a typo then reads "server not found", not a certificate problem.
   const lookupHost = async (u: string) => (await api<{ found: boolean | null }>("/api/connections/lookup", { method: "POST", json: { url: u } })).found;
   /** A failure in words, at the field it is about: wrong sign-in at the password, the rest under the form. */
   const fail = async (err: unknown) => {
@@ -75,7 +75,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
     onDone();
   };
 
-  /** Saves a new server with the check that just passed, so it starts "Online", not "Not checked" (SRV-08). */
+  /** Saves a new server with the check that just passed, so it starts "Online", not "Not checked". */
   async function create(auth: ProviderAuth, baseUrl: string, displayName: string, version: string | null = null, latencyMs: number | null = null) {
     const c = await api<ConnectionSummary>("/api/connections", { method: "POST", json: { kind: auth.kind, name: displayName.slice(0, 60) || t(`kind_${auth.kind}`), baseUrl, auth } });
     try {
@@ -100,7 +100,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
   async function submit(e: FormEvent) {
     e.preventDefault();
     const u = normalized();
-    // Checked on submit, said at the field (one model for forms, AUTH-04).
+    // Checked on submit, said at the field (one model for forms).
     const found = {
       url: !u ? t("urlMissing") : !/^https?:\/\/[^/\s]+/i.test(u) ? t("urlInvalid") : undefined,
       username: kind === "jellyfin" && !edit && !username.trim() ? t("usernameMissing") : undefined,
@@ -226,7 +226,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
     }
   }
 
-  // The title says the step (SRV-05): the choice, then the server type, or the server being changed.
+  // The title says the step: the choice, then the server type, or the server being changed.
   const title = edit ? t("editTitle", { name: edit.name }) : kind ? t("addKind", { kind: t(`kind_${kind}`) }) : t("add");
   const description = edit ? undefined : kind ? t(`kindHint_${kind}`) : t("chooseKind");
   const back = edit ? (
@@ -247,7 +247,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
             return (
               <li key={k}>
                 {/* A tile per server type; each opens its own form. */}
-                <button /* ui-lint-ignore raw-button: a server-type tile (icon, name, hint) that opens its form, 7.16 */
+                <button /* ui-lint-ignore raw-button: a server-type tile (icon, name, hint) that opens its form */
                   type="button"
                   onClick={() => chooseKind(k)}
                   className="flex h-full w-full flex-col gap-2 rounded-md border border-line-2 p-4 text-start transition-colors duration-fast ease-fast hover:bg-surface-2"
@@ -344,7 +344,7 @@ export function AddConnectionDialog({ edit, onClose, onDone }: { edit?: Connecti
               <p className="mt-2 text-h2 tabular-nums tracking-widest text-text-1">{qcCode}</p>
             </div>
           )}
-          {/* The error with the steps to try (C132): "Server didn't answer" → is it on, open the address here, away from home… */}
+          {/* The error with the steps to try: "Server didn't answer" → is it on, open the address here, away from home… */}
           {errors.code ? <Diagnosis failure={errors.code} kind={kind} address={normalized()} /> : errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
           <DialogActions className="flex-wrap">
             {back}

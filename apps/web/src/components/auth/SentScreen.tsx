@@ -9,7 +9,7 @@ import { inboxOf } from "./inboxes";
 import { clock, FormError, RESEND_AFTER, Screen, useCountdown, useWait } from "./shared";
 
 /**
- * "Check your email" after a confirmation or a reset link went out (AUTH-09): the address it went to, "Open email" for
+ * "Check your email" after a confirmation or a reset link went out: the address it went to, "Open email" for
  * a known mail service, "Send again" after a minute, "Change address" back to the form, and the way back (`back`).
  * `send` sends the letter again and answers with the error's key and the wait the API asked for; `extra` — the
  * captcha a resend needs.

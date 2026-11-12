@@ -108,10 +108,10 @@ export function LayersFeedback() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="toast" title={t("toasts")} source="ui/Toast.tsx, ui/toast-store.ts · 7.10">
+      <ShowcaseSection id="toast" title={t("toasts")} source="ui/Toast.tsx, ui/toast-store.ts">
         <ToastDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="inline-alert" title={t("inlineAlert")} source="ui/InlineAlert.tsx · 7.10">
+      <ShowcaseSection id="inline-alert" title={t("inlineAlert")} source="ui/InlineAlert.tsx">
         <AlertDemo />
       </ShowcaseSection>
     </>

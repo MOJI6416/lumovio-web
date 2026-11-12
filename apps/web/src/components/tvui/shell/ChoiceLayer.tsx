@@ -12,7 +12,7 @@ export interface Choice {
 }
 
 /**
- * One choice from a list on a TV (design-system 7.6, 10.3 — a Select's TV variant): a card in the middle with the
+ * One choice from a list on a TV (a Select's TV variant): a card in the middle with the
  * options as rows, the current one marked and focused first; OK picks and closes, Back closes without a change.
  */
 export function ChoiceLayer({

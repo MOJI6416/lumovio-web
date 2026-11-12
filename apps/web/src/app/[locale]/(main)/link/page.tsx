@@ -21,7 +21,7 @@ export default async function LinkPage({ searchParams }: { searchParams: Promise
     redirect({ href: `/auth/sign-in?next=${encodeURIComponent(next)}`, locale: await getLocale() });
   }
   const t = await getTranslations("tv");
-  // Approving a TV would sign a new device into the account: an adult's call (PRF-02).
+  // Approving a TV would sign a new device into the account: an adult's call.
   const blocked = me === "unavailable" ? <ServiceUnavailable /> : me?.activeProfile?.isKids ? <KidsRestricted from="/link" /> : null;
   if (blocked) {
     return (
@@ -33,7 +33,7 @@ export default async function LinkPage({ searchParams }: { searchParams: Promise
       </div>
     );
   }
-  // The Focus template (design-system 9): LinkDevice is the 440 card over the stage.
+  // The Focus template: LinkDevice is the 440 card over the stage.
   return (
     <Suspense>
       <LinkDevice initialCode={user_code ?? ""} approve={approve} />

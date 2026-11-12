@@ -28,7 +28,7 @@ export type ImportStatus =
 
 export type ImportRowKind = "watch" | "rating" | "watchlist" | "favorite" | "list_item";
 
-/** `restricted` — a title the target profile's age limit doesn't open; never applied (redesign-plan §5 п. 4). */
+/** `restricted` — a title the target profile's age limit doesn't open; never applied. */
 export type ImportRowStatus = "matched" | "ambiguous" | "unmatched" | "duplicate" | "skipped" | "applied" | "restricted";
 
 export interface ImportStats {
@@ -46,11 +46,11 @@ export interface ImportStats {
 
 /**
  * Why an uploaded file was refused. Sent as the `file` issue of a `bad_request` (or `rate_limited`)
- * error, so the app can say it in the person's language (IMP-02).
+ * error, so the app can say it in the person's language.
  */
 export type ImportFileProblem = "no_file" | "unreadable" | "unrecognised" | "empty" | "not_lumovio" | "daily_limit";
 
-/** The step a failed import stopped at (IMP-01). The technical cause stays in the server log. */
+/** The step a failed import stopped at. The technical cause stays in the server log. */
 export type ImportFailure = "match_failed" | "apply_failed";
 
 export interface ImportJob {
@@ -72,7 +72,7 @@ export interface ImportJob {
   canRetry: boolean;
   /**
    * Still "matching" or "applying", but nothing is working on it: no background worker is connected, or its queue
-   * job is gone or finished (IMP-03). It can be retried or deleted.
+   * job is gone or finished. It can be retried or deleted.
    */
   stalled?: boolean;
   /** The target profile is a kids one (titles over its age limit are left out). */

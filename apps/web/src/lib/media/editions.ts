@@ -1,5 +1,5 @@
 /*
- * The cut of a film as a release's name says it (design-system 7.15): its own module, so the places that only say a
+ * The cut of a film as a release's name says it: its own module, so the places that only say a
  * release's facts (the sources screen, the player's panels) don't load the whole pick (lib/media/release-pick).
  */
 

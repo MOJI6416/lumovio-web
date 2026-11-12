@@ -18,7 +18,7 @@ import { Select } from "@/components/ui/Select";
 import { api } from "@/lib/api";
 
 /**
- * Import history from a connected Jellyfin or Plex (S13, C134; roadmap Stage 6): this device reads what the server's
+ * Import history from a connected Jellyfin or Plex: this device reads what the server's
  * sign-in has played — Lumovio's servers never contact it — and hands it to the import as a file, so it goes through the
  * same review, report and undo as any export. A server this profile can't use isn't offered; none — a link to Servers.
  */
@@ -57,7 +57,7 @@ export function ServerHistoryRead({ source, busy, onFile }: { source: "jellyfin"
   };
 
   if (conns.isLoading) return null;
-  // The servers didn't load: said with Retry, not "no server" (8.4).
+  // The servers didn't load: said with Retry, not "no server".
   if (!conns.data && (conns.isError || conns.fetchStatus === "paused"))
     return <ErrorState variant="inline" error={conns.error} onRetry={() => void conns.refetch()} retrying={conns.isFetching} />;
   if (servers.length === 0) {

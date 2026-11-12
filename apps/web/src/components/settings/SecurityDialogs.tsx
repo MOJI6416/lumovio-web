@@ -18,7 +18,7 @@ import { useDiscardGuard } from "./use-unsaved";
 const MIN_PASSWORD = 10;
 
 /**
- * "Change password" (S17, design-system 8.8): a form in a dialog with an explicit "Change password", checked on submit,
+ * "Change password": a form in a dialog with an explicit "Change password", checked on submit,
  * errors at the fields; closing it with something typed asks first. Loaded when it is opened (SecuritySettings).
  */
 export function PasswordDialog({ onClose }: { onClose: () => void }) {
@@ -34,7 +34,7 @@ export function PasswordDialog({ onClose }: { onClose: () => void }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    // Checked on submit, said at the field (one model for every form, AUTH-04).
+    // Checked on submit, said at the field (one model for every form).
     const found = {
       cur: cur ? undefined : t("currentPasswordMissing"),
       next: next.length >= MIN_PASSWORD ? undefined : ta("errPasswordShort"),
@@ -85,7 +85,8 @@ export function PasswordDialog({ onClose }: { onClose: () => void }) {
 type Setup = { qr: string; uri: string; key: string; backup: string[] };
 
 /**
- * Two-step verification in a dialog (S17). Turning it on: the steps are said first (password → scan the QR code → type a
+ * Two-step verification in a dialog.
+ * Turning it on: the steps are said first (password → scan the QR code → type a
  * code → keep the backup codes), then it asks for the password; beside the QR code its setup key as text with "Copy",
  * for an authenticator on the same phone. Turning it off asks for the password. Leaving the QR step asks first: the setup
  * isn't finished. The backup codes are shown once, until "I've saved the codes".
@@ -193,7 +194,7 @@ export function TwoFactorDialog({ enabled, onClose, onChanged }: { enabled: bool
     >
       {step === "password" && (
         <form onSubmit={(e) => void start(e)} noValidate className="flex flex-col gap-4">
-          {/* What it is, for a screen reader (1.2, principle 6); the steps are the instruction everyone sees. */}
+          {/* What it is, for a screen reader; the steps are the instruction everyone sees. */}
           <p className="sr-only">{t("twoFactorIntro")}</p>
           <ol className="flex list-decimal flex-col gap-1 ps-5 text-body text-text-2">
             {steps.map((s, i) => (
@@ -216,7 +217,7 @@ export function TwoFactorDialog({ enabled, onClose, onChanged }: { enabled: bool
 
       {step === "scan" && setup && (
         <div className="grid gap-6 md:grid-cols-[13.75rem_1fr]">
-          {/* A QR code keeps its white quiet zone in both themes (3.6). */}
+          {/* A QR code keeps its white quiet zone in both themes. */}
           {/* biome-ignore lint/performance/noImgElement: a data: URL drawn here, nothing for the image optimiser */}
           <img src={setup.qr} alt={t("qrAlt")} className="rounded-md bg-white p-2" width={220} height={220} />
           <div className="flex min-w-0 flex-col gap-4">

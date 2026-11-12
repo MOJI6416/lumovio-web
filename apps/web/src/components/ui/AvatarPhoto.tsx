@@ -3,7 +3,7 @@
 import { type ReactNode, useState } from "react";
 
 /**
- * A profile's photo inside its avatar circle (design-system 7.17). While it loads the circle shows the profile's colour;
+ * A profile's photo inside its avatar circle. While it loads the circle shows the profile's colour;
  * a photo that doesn't load (deleted since, offline) gives way to `fallback` — the name's letter — so the avatar never
  * shows a broken image.
  */

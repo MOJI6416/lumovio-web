@@ -1,6 +1,6 @@
 /**
  * `refetchInterval` for a summary of a kids profile's own data (lists, ratings, statistics, liked titles): the first
- * look after a long break may be answered before every title's rating is checked, and then says `incomplete` (PRF-19).
+ * look after a long break may be answered before every title's rating is checked, and then says `incomplete`.
  * The app asks again a second later, a few times at most; a complete answer stops it.
  */
 export function untilComplete(query: { state: { data?: unknown; dataUpdateCount: number } }): number | false {

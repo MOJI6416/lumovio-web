@@ -1,5 +1,5 @@
 /**
- * Just enough Matroska to find a file's subtitle tracks and read their blocks one by one (PLR-14): the tracks, the
+ * Just enough Matroska to find a file's subtitle tracks and read their blocks one by one: the tracks, the
  * timestamp scale, the cues and the attached fonts — read with HTTP ranges from the start and the cues' place, never
  * the whole file. Muxers (mkvmerge, FFmpeg) write a cue for every subtitle block with its place inside the cluster
  * (CueRelativePosition) and its duration, so one subtitle line costs one small range request, near the playhead,
@@ -449,7 +449,7 @@ const WALK_SKIP = 1 << 20;
 
 /**
  * Every subtitle block of a stretch of clusters (from a cluster the cues name to the next one), for a file whose cues
- * don't name subtitle blocks (older mkvmerge, HDCLUB releases; PLR-18). The clusters are walked element by element in
+ * don't name subtitle blocks (older mkvmerge, HDCLUB releases). The clusters are walked element by element in
  * pieces (`WALK_PIECE`), not read whole in one request: a video frame that runs a megabyte or more past the piece in hand
  * is stepped over by its size and its bytes are never fetched — the next piece starts at the element after it — so a
  * big frame costs one small read instead of being downloaded a second time. Each block is handed to `onBlock` as it is found, so

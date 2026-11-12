@@ -53,9 +53,9 @@ function writeSent(s: SentState | null) {
 }
 
 /**
- * Sign-up (S29): the providers, the address and a password, "Create account", the terms; "Sign in" at the end. An
+ * Sign-up: the providers, the address and a password, "Create account", the terms; "Sign in" at the end. An
  * address that already has an account says so with "Sign in" right there — the address goes along. With the e-mail
- * confirmation on, "Check your email" follows (and survives a reload in this tab). Registration closed by the owner
+ * confirmation on, "Check your email" follows (and survives a reload in this tab). Registration closed by an admin
  * (Admin → Management → Settings) is said before anyone fills anything — the page knows it from the server.
  */
 export function SignUpForm({ providers, closed }: { providers?: SocialProvider[] | null; closed?: boolean }) {
@@ -76,7 +76,7 @@ export function SignUpForm({ providers, closed }: { providers?: SocialProvider[]
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   useCarriedEmail(setEmail, emailRef, passwordRef);
-  // "Check your email" survives a reload of the page in this tab (AUTH-09).
+  // "Check your email" survives a reload of the page in this tab.
   useEffect(() => setSent(readSent()), []);
   const after = localized(locale, withNext("/profiles", next));
   const signIn = withNext("/auth/sign-in", next);

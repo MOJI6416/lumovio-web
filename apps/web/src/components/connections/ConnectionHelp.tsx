@@ -15,7 +15,7 @@ const KINDS: ProviderKind[] = ["jellyfin", "plex", "torrserver"];
 const KIND_LABEL: Record<ProviderKind, string> = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" };
 
 /**
- * What went wrong and what to try, in steps (design-system 7.10 InlineAlert): under the error of the "add server"
+ * What went wrong and what to try, in steps (an InlineAlert): under the error of the "add server"
  * dialog, and at the top of the help when it is opened from a server that failed its check.
  */
 export function Diagnosis({ failure, kind, address, title }: { failure: NetErrorCode; kind: ProviderKind; address: string | null; title?: string }) {
@@ -44,11 +44,11 @@ function Part({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
- * "Help with connecting" (S19, C132; roadmap Stage 4 onboarding): how Lumovio reaches a server — straight from this
+ * "Help with connecting": how Lumovio reaches a server — straight from this
  * device — per server type: its address, Chrome's local network question and how to answer it (and undo a "Block"),
  * when HTTPS is needed and the ways to get it (Tailscale Serve, a reverse proxy, Plex's own addresses), the type's own
  * pitfalls. Opened from a server whose check failed, it starts with what happened and the steps for it, and offers
- * "Check again". A dialog on a computer, a sheet on a phone (7.9); short parts with headings, not a wall of text.
+ * "Check again". A dialog on a computer, a sheet on a phone; short parts with headings, not a wall of text.
  */
 export function ConnectionHelp({
   kind,
@@ -96,7 +96,7 @@ export function ConnectionHelp({
                 <li>
                   {t.rich("httpsTailscale", {
                     command: `tailscale serve --bg ${port}`,
-                    // A command to type: the UI font without ligatures ("--" stays two hyphens, 4.1), no monospace.
+                    // A command to type: the UI font without ligatures ("--" stays two hyphens), no monospace.
                     code: (chunks) => <code className="whitespace-nowrap font-sans text-text-1 [font-variant-ligatures:none]">{chunks}</code>,
                   })}
                 </li>

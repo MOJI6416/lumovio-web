@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { robots: { index: false }, ...(d && typeof d !== "string" ? { title: d.title } : {}) };
 }
 
-/** A title on a TV (S06, S07 TV): the same details as the site's title page. */
+/** A title on a TV: the same details as the site's title page. */
 export default async function TvTitlePage({ params }: { params: Params }) {
   const { locale, kind, slug } = await params;
   setRequestLocale(locale);
@@ -59,7 +59,7 @@ export default async function TvTitlePage({ params }: { params: Params }) {
   const shown = new Set([d.id]);
   const parts = d.collection?.parts.filter((p) => p.id !== d.id) ?? [];
   for (const p of parts) shown.add(p.id);
-  // The film series first (TTL-16), then what is like it — each title once.
+  // The film series first, then what is like it — each title once.
   const related = [...parts, ...d.related.filter((p) => !shown.has(p.id)), ...d.relatedOther.filter((p) => !shown.has(p.id))].slice(0, 20).map(trimOverview);
   const runtime = formatRuntime(d.runtime, (k, v) => t(k as "common.minutes", v));
   const kindLabel = d.isAnime ? t("common.anime") : d.kind === "movie" ? t("common.movie") : t("common.series");

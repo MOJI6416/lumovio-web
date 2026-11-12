@@ -41,14 +41,14 @@ async function load(handle: string): Promise<PublicProfile | null | "unavailable
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; handle: string }> }): Promise<Metadata> {
   const { locale, handle } = await params;
   const p = await load(handle);
-  // Canonical and hreflang at the handle as the owner spells it (SH-13).
+  // Canonical and hreflang at the handle as the owner spells it.
   return p && p !== "unavailable"
     ? { title: `${p.name} (@${p.handle})`, description: p.bio ?? undefined, ...pageSeo(locale, `/u/${encodeURIComponent(p.handle)}`) }
     : {};
 }
 
 /**
- * A public profile (S33; design-system 9 «Публичный профиль»): who it is the way a person page says it — the circle and the
+ * A public profile: who it is the way a person page says it — the circle and the
  * name side by side, the handle over the name, their own words — then what the owner opted into: favourites, ratings
  * (the highest first: what they loved is what a visitor came for) and public lists. "Share" for anyone, "Edit" for
  * the owner. Never history, progress or servers.
@@ -60,7 +60,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const t = await getTranslations();
   const locale = await getLocale();
   if (p === "unavailable") {
-    // Said on the page with Retry — not an endless wait or a generic crash (X-14). Retry reloads the page.
+    // Said on the page with Retry — not an endless wait or a generic crash. Retry reloads the page.
     const again = getPathname({ href: `/u/${encodeURIComponent(handle)}`, locale });
     return (
       <ErrorState
@@ -87,7 +87,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-10 pt-6 sm:pt-8 md:gap-12">
-      {/* As a person page (9, Person): the circle and the name side by side, 112 / 160 / 192; their words and the buttons
+      {/* As a person page: the circle and the name side by side, 112 / 160 / 192; their words and the buttons
           under both on a phone, beside the circle from md. */}
       <header className="page-x mx-auto grid w-full max-w-media grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-5 [--avatar:7rem] md:grid-cols-[10rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-8 md:[--avatar:10rem] xl:grid-cols-[12rem_minmax(0,1fr)] xl:gap-x-10 xl:[--avatar:12rem]">
         <ProfileAvatar avatar={p.avatar} photo={p.photo} name={p.name} size="var(--avatar)" className="md:row-span-2" />
@@ -115,7 +115,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </Row>
       )}
       {ratings.length > 0 && (
-        // Their rating is the card's line, with the star of a rating (7.14): "★ 9"; said as "Rating: 9".
+        // Their rating is the card's line, with the star of a rating: "★ 9"; said as "Rating: 9".
         <Row title={t("library.ratings")} id="pub-ratings">
           {ratings.map((r) => (
             <PosterCard
@@ -146,7 +146,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </section>
       )}
       {empty && (
-        // Nothing shared yet is said in words (LIB-21); the owner is told what can go here ("Edit" is in the header).
+        // Nothing shared yet is said in words; the owner is told what can go here ("Edit" is in the header).
         <EmptyState icon={UserRound} title={t("publicProfile.empty")} about={own ? t("publicProfile.emptyOwner") : undefined} />
       )}
     </div>

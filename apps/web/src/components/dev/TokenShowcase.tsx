@@ -8,7 +8,7 @@ import { LayersSections } from "./sections/Layers";
 
 type Theme = "dark" | "light";
 
-/** Anchors of the showcase; Ф1 adds a section per components/ui primitive. */
+/** Anchors of the showcase; each components/ui primitive adds a section of its own. */
 const SECTIONS = [
   "color",
   "type",

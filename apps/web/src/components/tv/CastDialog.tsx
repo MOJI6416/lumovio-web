@@ -22,7 +22,7 @@ type Step =
   | { kind: "error"; tv: TvDevice | null; text: string };
 
 /**
- * "Watch on TV" (design-system 8.18; S63, C197–C203): one dialog (a sheet on a phone) from the choice to the remote.
+ * "Watch on TV": one dialog (a sheet on a phone) from the choice to the remote.
  * Several TVs open — which one (its profile under its name); the TV on another profile — "Switch … to …?" first, never
  * silently; then the remote of that viewing on the TV (CastRemote). A refusal says why, with the way to try again.
  * `mode: "remote"` — the TV already plays this: straight to its remote.
@@ -101,7 +101,7 @@ export default function CastDialog({
         (online.length === 0 ? (
           <p className="text-body text-text-2">{t("noneOpen")}</p>
         ) : (
-          // The TVs as the settings' rows (7.18): the name, the profile under it when it isn't yours; a press sends.
+          // The TVs as the settings' rows: the name, the profile under it when it isn't yours; a press sends.
           <ul className="flex flex-col divide-y divide-line">
             {online.map((tv) => {
               const other = tv.profile && tv.profile.id !== me?.activeProfile?.id ? tv.profile.name : null;

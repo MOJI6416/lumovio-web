@@ -32,7 +32,7 @@ const load = cache(async (slug: string): Promise<PersonDetails | "blocked" | nul
     return await serverApi<PersonDetails>(`/api/catalog/person/${id}`);
   } catch (e) {
     if (e instanceof ApiRequestError && e.code === "maturity_blocked") return "blocked";
-    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary" (SH-02).
+    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary".
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) return null;
     throw e;
   }
@@ -40,11 +40,11 @@ const load = cache(async (slug: string): Promise<PersonDetails | "blocked" | nul
 
 /** TMDB's departments in the order of the `person.dept{n}` words (Search says a person's department with them too). */
 const DEPTS = ["Acting", "Directing", "Writing", "Production", "Sound", "Camera", "Editing", "Art", "Visual Effects", "Costume & Make-Up", "Lighting", "Crew"];
-// TMDB's decorations in biographies ("💥", "🏆") are left out (PER-02).
+// TMDB's decorations in biographies ("💥", "🏆") are left out.
 const EMOJI = /\p{Extended_Pictographic}️?/gu;
 /** The other sites without a logo of ours, as they write their names; the person's own site is its address. */
 const SITE_NAMES: Partial<Record<PersonSite, string>> = { instagram: "Instagram", x: "X", tiktok: "TikTok", youtube: "YouTube", facebook: "Facebook" };
-// "Elsewhere": quiet links that leave the site (↗), 44 px on a phone (5.6; "X" is that wide too) — the title page's
+// "Elsewhere": quiet links that leave the site (↗), 44 px on a phone ("X" is that wide too) — the title page's
 // "On other sites".
 const LINK = "inline-flex min-h-8 items-center gap-1 text-body text-text-1 underline decoration-1 underline-offset-3 hover:decoration-2 max-sm:min-h-11 max-sm:min-w-11";
 
@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!p) return {};
   // Closed to this profile (an adult performer for a guest): the same screen at every such address, not to be indexed — as a title's.
   if (p === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
-  // A link preview is landscape (11.3, SH-13): a frame from what they are known for, else the brand image — not the
+  // A link preview is landscape: a frame from what they are known for, else the brand image — not the
   // portrait photo, which a preview crops to a strip of face.
   const frame = tmdbImage(known(p).find((c) => c.backdropPath)?.backdropPath, "w1280");
   const path = personHref(p.id);
@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 /**
- * A person (S08, design-system 9 "Person"; 2026-11-06 from scratch): the page answers "what else is there with them".
+ * A person's page: it answers "what else is there with them".
  * At the top who they are — the photo in a circle, as everywhere a person is (their card, Search's best match), what they
  * do in words ("Actor · Producer · Director", "Actress" for a woman), the name, the birth date with the age and the place,
  * the biography in three lines with "More" (none without one) and, for a signed-in profile, "Don't show in
@@ -155,7 +155,7 @@ export default async function PersonPage({ params }: { params: Params }) {
           <h1 className="mt-1 text-h1 text-text-1" lang={lang}>
             {p.name}
           </h1>
-          {/* The facts with " · " between them (2.2), the label of each for a screen reader; the place as TMDB writes it,
+          {/* The facts with " · " between them, the label of each for a screen reader; the place as TMDB writes it,
               in English. */}
           {(p.birthday || p.deathday || p.placeOfBirth) && (
             <p className="mt-2 flex flex-wrap gap-x-2 text-body-s text-text-2 md:text-body">

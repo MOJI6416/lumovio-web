@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 
 /*
- * Recent searches (design-system 9 "Search"): the last eight queries of this browser, shared by the header's search,
+ * Recent searches: the last eight queries of this browser, shared by the header's search,
  * the search page and the TV's. A query goes in when a result is opened, Enter is pressed, or what it found stayed on
  * the page for a moment; the same text in another case replaces the older one. Every view sees a change at once (and
  * another tab of the site on its next "storage" event).

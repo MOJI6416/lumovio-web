@@ -11,10 +11,10 @@ import { titleHref } from "@/lib/slug";
 import { type ActionTitle, usePersonalActions } from "./usePersonalActions";
 
 /**
- * The actions of a billboard slide (design-system 7.14, 8.2; redesign-2026-11.md 2): one primary — "Continue" when the
+ * The actions of a billboard slide: one primary — "Continue" when the
  * profile is part-way through, "Watch" when a copy can be played, else "More info" — and circles beside it: "More info"
- * (i) next to a play button, and always "Watchlist" (+ / ✓; a guest gets the sign-in sheet for it, 8.6). "More info"
- * is the one label for opening the title everywhere (2.4, HOME-10). `playable` is undefined while it is being checked.
+ * (i) next to a play button, and always "Watchlist" (+ / ✓; a guest gets the sign-in sheet for it). "More info"
+ * is the one label for opening the title everywhere. `playable` is undefined while it is being checked.
  */
 export function HeroActions({ title, playable, size = "lg", className }: { title: ActionTitle; playable: boolean | undefined; size?: "md" | "lg"; className?: string }) {
   const t = useTranslations();
@@ -27,7 +27,7 @@ export function HeroActions({ title, playable, size = "lg", className }: { title
       ? `/watch/${title.kind}/${title.tmdbId}`
       : null;
   const details = titleHref(title.kind, title.tmdbId, title.title);
-  // The primary takes the width the circles leave on a phone; from a tablet it keeps its own (redesign-2026-11.md 2).
+  // The primary takes the width the circles leave on a phone; from a tablet it keeps its own.
   return (
     <div className={cn("flex w-full items-center gap-3 md:w-auto", className)}>
       {watch ? (
@@ -46,7 +46,7 @@ export function HeroActions({ title, playable, size = "lg", className }: { title
           {t("home.moreInfo")}
         </Link>
       )}
-      {/* "Watchlist" as a circle beside it: + off, ✓ on; a guest gets the sign-in sheet for it (8.6). */}
+      {/* "Watchlist" as a circle beside it: + off, ✓ on; a guest gets the sign-in sheet for it. */}
       <IconButton
         icon={a.inWatchlist ? Check : Plus}
         variant="secondary"

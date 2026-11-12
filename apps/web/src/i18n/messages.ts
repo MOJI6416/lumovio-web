@@ -1,6 +1,6 @@
 /**
  * A language's messages over the English ones: a key the translation lacks shows in English as a whole phrase,
- * never as a raw key (design-system 8.11). Shared by the request config and its tests.
+ * never as a raw key. Shared by the request config and its tests.
  */
 export function withEnglish<T extends Record<string, unknown>>(en: T, own: Partial<T>): T {
   const out: Record<string, unknown> = { ...en };

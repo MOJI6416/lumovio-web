@@ -8,7 +8,7 @@ import { titleHref } from "@/lib/slug";
 import { useHoldForMore } from "./hold";
 
 /*
- * TV cards (design-system 7.12 TV variant, 10.3): one stop of the remote each — a link to the title (or to what it
+ * TV cards: one stop of the remote each — a link to the title (or to what it
  * plays) with nothing nested to stop on; the focused card grows with the lime ring (`tv-focus`). Its name is the
  * link's name; what a card can't show (description, why it's here) is said by the screen's spotlight.
  */
@@ -58,7 +58,7 @@ export function TvArt({
 
 /**
  * Memoised: a screen re-renders its spotlight or the line over its grid on every step of the focus, and hundreds of
- * cards with the same props must not render again for it (measured on the owner's TCL TV, 2026-10-30).
+ * cards with the same props must not render again for it (measured on a TCL TV).
  */
 export const TvCard = memo(function TvCard({
   title,
@@ -82,7 +82,7 @@ export const TvCard = memo(function TvCard({
   index: number;
   /** 0–1: a progress bar along the bottom (Continue watching). */
   progress?: number;
-  /** A Top 10's place: an outlined numeral beside the poster, as the site's Top10Card (design-system 7.12). */
+  /** A Top 10's place: an outlined numeral beside the poster, as the site's Top10Card. */
   rank?: number;
   initial?: boolean;
   fluid?: boolean;

@@ -4,12 +4,12 @@ Motion assets based on Lumovio's approved projector/screen identity. The origina
 Outfit outlines come from [`src/lib/brand.ts`](../../src/lib/brand.ts); there is no alternative logo or external font
 dependency.
 
-**On the site (2026-10-30):** the same vectors drawn inline by
+**On the site:** the same vectors drawn inline by
 [`components/ui/BrandMotion.tsx`](../../src/components/ui/BrandMotion.tsx), animated by this folder's `motion.css`
 (imported by `globals.css`) in the theme's colours: the first-load intro
 ([`shell/BootBoundary.tsx`](../../src/components/shell/BootBoundary.tsx)), the loader of link navigations
 ([`shell/NavigationLoading.tsx`](../../src/components/shell/NavigationLoading.tsx)) and of the player, and the tick of
-success toasts, "Saved", the watched mark and TV linking. Where and why: design system §6.3.1 «Как сделано».
+success toasts, "Saved", the watched mark and TV linking.
 The exported files below also serve other surfaces. Android TV now has native launch resources and a static handoff
 until WebView paints; Apple PWA startup PNGs are linked through server metadata. The offline page embeds the projector
 extinguishing once. The three action responses are drawn on the site by `ActionMark` (ui/BrandMotion): the heart in
@@ -109,6 +109,4 @@ The rating ends on a fully filled star, matching the existing selected rating ic
   once; the icon settles to the theme's `--text-2`, never green/success. All geometry and CSS are embedded locally.
 
 Native and iOS tabs in the preview show the asset layout, not a captured or simulated operating-system startup.
-Actual system animation, cold-start timing and iOS install/cache behaviour still require device checks. Design rules:
-`docs/design/design-system.md` §6.3.1; browser audit: `node scripts/ui-audit/motion.mjs` and
-`node scripts/ui-audit/motion-launch.mjs`.
+Actual system animation, cold-start timing and iOS install/cache behaviour still require device checks.

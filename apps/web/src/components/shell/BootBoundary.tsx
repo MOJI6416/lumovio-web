@@ -4,7 +4,7 @@ import { type ReactNode, Suspense } from "react";
 import { RouteLoading } from "./RouteLoading";
 
 /**
- * The first page of a visit streams its brand intro while its data comes (design-system 6.3.1): the response starts at
+ * The first page of a visit streams its brand intro while its data comes: the response starts at
  * once, the page follows. A robot (search engines, link previews) is answered with the whole page instead — a stream that
  * has begun is a 200, so a page's own 404 and its 308 to the canonical address reach it only this way.
  *

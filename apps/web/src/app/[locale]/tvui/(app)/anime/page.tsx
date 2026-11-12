@@ -15,11 +15,11 @@ export async function generateMetadata() {
   return { robots: { index: false }, title: t("titleAnime") };
 }
 
-/** Anime on a TV (S03 TV): series by default, films by the grid's "Films". */
+/** Anime on a TV: series by default, films by the grid's "Films". */
 export default async function TvAnimePage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Search }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  // The profile has anime off (design-system 8.14): the menu has no Anime, and its address goes home.
+  // The profile has anime off: the menu has no Anime, and its address goes home.
   if (!showsAnime(await optional(getMe(), null))) redirect({ href: "/", locale });
   const t = await getTranslations("browse");
   const sp = await searchParams;

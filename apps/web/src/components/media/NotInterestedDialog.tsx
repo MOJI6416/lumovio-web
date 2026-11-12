@@ -25,7 +25,7 @@ export function useGenreNames(enabled = true) {
 }
 
 /**
- * "Not interested" with a reason (design-system 8.1): why the title isn't for the profile — already watched it, not its
+ * "Not interested" with a reason: why the title isn't for the profile — already watched it, not its
  * genre, or not this title — so recommendations learn the right thing (recommendations/taste.ts SIGNAL.hide). The reason
  * is optional: "Not interested" without one hides the title too. The card leaves its shelf once it is pressed, with
  * "Undo" in the toast, as before.

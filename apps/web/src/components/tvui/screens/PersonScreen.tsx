@@ -9,7 +9,7 @@ import { tmdbImage } from "@/lib/images";
 import { TvCard } from "../media/TvCard";
 
 /**
- * A person on a TV (S09 TV): the photo, the name, a few lines of the biography, then the films and series as one grid,
+ * A person on a TV: the photo, the name, a few lines of the biography, then the films and series as one grid,
  * most known first — the same data as the site's page.
  */
 export function PersonScreen({ person: p, credits }: { person: PersonDetails; credits: TitleSummary[] }) {

@@ -13,7 +13,7 @@ const subscribe = (on: () => void) => {
 };
 
 /**
- * No connection while the site is open (design-system 7.11 "Нет сети"): a quiet pill of words where toasts come (no
+ * No connection while the site is open: a quiet pill of words where toasts come (no
  * icon: it rides on every page's first load) — what is on the
  * screen stays, the pill says why the next tap won't load — and "Back online" for two seconds once it returns, while
  * the requests that waited go on by themselves (react-query). Lives in the toasts' live region (Toaster), so a screen

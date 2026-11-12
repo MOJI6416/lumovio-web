@@ -88,7 +88,7 @@ export function useLazySwap<M>(control: LazyControl<M>, light: RefObject<HTMLEle
  * The stand-in stays while it is being pressed: a part that arrived between pointer-down and pointer-up would take
  * the button's place, and the rest of the press would land on another element — the browser then sends the click
  * nowhere (nothing opens), or a touch's mouse events focus and click the new trigger, which closes what just opened
- * and takes the focus from its search field (X-41). A touch that turns into a scroll asks for nothing.
+ * and takes the focus from its search field. A touch that turns into a scroll asks for nothing.
  */
 export function useStandIn<M>(swap: { full: M | null; activate: (open: boolean) => void }) {
   const [held, setHeld] = useState(false);
@@ -108,7 +108,7 @@ export function useStandIn<M>(swap: { full: M | null; activate: (open: boolean) 
         swap.activate(false);
       },
       // The click releases it. A mouse's click comes in the same task as its pointer-up; a finger's comes later, as the
-      // mouse events after a tap, each in a task of its own (Android Chrome on a phone, 2026-11-07): released at once,
+      // mouse events after a tap, each in a task of its own (Android Chrome on a phone): released at once,
       // the full part took the button's place between their mousedown and mouseup and the click went nowhere — a
       // select's first tap on a page opened nothing most times. The timer is for a press that ended elsewhere.
       onPointerUp: (e: PointerEvent) => {

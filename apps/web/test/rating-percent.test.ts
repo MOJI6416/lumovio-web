@@ -5,7 +5,7 @@ import { percent } from "@/components/title/ratings";
 const NO_BREAK = [String.fromCharCode(0xa0), String.fromCharCode(0x202f)];
 
 describe("the Tomatometer in per cent", () => {
-  it("follows the locale's own way of writing a per cent (2.3)", () => {
+  it("follows the locale's own way of writing a per cent", () => {
     expect(percent(83, "en")).toBe("83%");
     for (const locale of ["fr", "de"]) {
       const s = percent(83, locale);

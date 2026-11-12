@@ -50,7 +50,7 @@ function usePrefs() {
 }
 
 /**
- * Settings → Recommendations (S15, design-system 7.18, 8.8): what recommendations are built on — each of the profile's
+ * Settings → Recommendations: what recommendations are built on — each of the profile's
  * titles with its signals and influence, with "Don't use" for one of them; why you see them — the interests they add
  * up to, with "Don't show" for a person; genres you like and titles to like; what not to show — genres, people and
  * "Not interested" titles; how to pick — watch history on or off and the one "More proven · Balanced · More new" knob;
@@ -69,7 +69,7 @@ export function RecommendationSettings() {
     void qc.invalidateQueries({ queryKey: ["recommendations"] });
     void qc.invalidateQueries({ queryKey: ["recommendations-feedback"] });
   };
-  // Starting over is asked first; the request runs in the dialog and a failure stays there (8.3).
+  // Starting over is asked first; the request runs in the dialog and a failure stays there.
   const reset = async () => {
     const ok = await confirm({
       title: t("resetConfirmTitle"),
@@ -87,17 +87,19 @@ export function RecommendationSettings() {
   return (
     <div className="space-y-8">
       <p className="sr-only">{t("intro")}</p>
-      {/* One answer feeds every section: when it fails, the page says so once, with "Retry" (8.5), not five times. */}
+      {/* One answer feeds every section: when it fails, the page says so once, with "Retry", not five
+          times. */}
       {taste.isError && !taste.data ? (
         <QueryState query={taste} error={{ title: t("loadError") }}>
           {() => null}
         </QueryState>
       ) : (
         <>
-          {/* The settings themselves first, then what they are built on (7.18): a long list goes below the switches. */}
+          {/* The settings themselves first, then what they are built on: a long list goes below the
+              switches. */}
           <HowSection taste={taste} />
           {/* The long part — genres, the starter titles, the signals — right after the first frame: the section opens at
-              once from the menu instead of waiting for all of it (2026-11-07: 0.4–0.6 s on a phone at 4× CPU). */}
+              once from the menu instead of waiting for all of it (0.4–0.6 s on a phone at 4× CPU). */}
           {rest && (
             <>
               <LikeSection taste={taste} onChange={refresh} />
@@ -109,7 +111,7 @@ export function RecommendationSettings() {
           )}
         </>
       )}
-      {/* Starting over: apart and last, its consequence said under it (1.2, principle 6), asked first (8.3). */}
+      {/* Starting over: apart and last, its consequence said under it, asked first. */}
       {rest && (
         <SettingsSection title={t("resetTitle")}>
           <SettingsLink tone="danger" label={t("reset")} detail={t("resetText")} onClick={() => void reset()} />
@@ -193,7 +195,7 @@ function SignalsSection({ taste, onChange }: { taste: TasteQuery; onChange: () =
                   const likeOnly = s.signals.length === 1 && s.signals[0] === "like";
                   return (
                     <li key={s.title.id} className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 py-2">
-                      {/* The row's text is the title's link: a target as tall as the row (5.6). */}
+                      {/* The row's text is the title's link: a target as tall as the row. */}
                       <Link href={titleHref(s.title.kind, s.title.tmdbId, s.title.title)} className="group/l block min-w-0 flex-1 basis-56 rounded-sm py-1">
                         <span className="block text-title text-text-1 group-hover/l:underline">{s.title.title}</span>
                         <span className="block text-body-s text-text-2">
@@ -519,7 +521,7 @@ function HowSection({ taste }: { taste: TasteQuery }) {
 }
 
 /**
- * Opened pages (owner, 2026-10-25): title pages the profile stayed on count a little, fading within a couple of
+ * Opened pages: title pages the profile stayed on count a little, fading within a couple of
  * months, kept 180 days. Switched off, they are neither recorded nor used; each can be forgotten, or all at once.
  */
 function OpenedSection({ taste, onChange }: { taste: TasteQuery; onChange: () => void }) {
@@ -541,7 +543,7 @@ function OpenedSection({ taste, onChange }: { taste: TasteQuery; onChange: () =>
         return () => qc.setQueryData(TASTE, before);
       },
     );
-  // Removing them all is asked first; the request runs in the dialog (8.3).
+  // Removing them all is asked first; the request runs in the dialog.
   const clear = async () => {
     const ok = await confirm({
       title: t("openedClearTitle"),

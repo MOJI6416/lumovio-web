@@ -9,17 +9,17 @@ import { authCall } from "./auth-call";
 import type { SentScreen as SentScreenType } from "./SentScreen";
 
 /*
- * What the sign-in screens share (design-system 9, "Вход"): the screen's frame, the checks, the way back (`next`), the
+ * What the sign-in screens share: the screen's frame, the checks, the way back (`next`), the
  * address carried from one screen to the next, the waits the API asks for, and the error under a form.
  */
 
 export const MIN_PASSWORD = 10;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// How long "Send again" waits after a letter went out (AUTH-09).
+// How long "Send again" waits after a letter went out.
 export const RESEND_AFTER = 60;
 
 export const localized = (locale: string, path: string) => (locale === "en" ? path : `/${locale}${path}`);
-/** `?next=…` for links between the sign-in pages, so the way back survives every step (AUTH-06). */
+/** `?next=…` for links between the sign-in pages, so the way back survives every step. */
 export const withNext = (path: string, next: string) => (next === "/" ? path : `${path}?next=${encodeURIComponent(next)}`);
 
 export type Errors = { email?: string; password?: string; form?: string };
@@ -38,7 +38,7 @@ export function useEmailCheck() {
 
 /**
  * One screen: the h1, centred; `lead` — the one fact the screen is about (the address a letter went to); `about` — what
- * the screen is for, for a screen reader only (1.2, 6: no visible explanations). Then the form or the actions.
+ * the screen is for, for a screen reader only (no visible explanations). Then the form or the actions.
  */
 export function Screen({ title, lead, about, children }: { title: string; lead?: ReactNode; about?: string; children: ReactNode }) {
   return (

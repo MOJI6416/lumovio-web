@@ -19,7 +19,7 @@ import {
   srtToCueText,
 } from "../src/lib/media/subs/text";
 
-// The device check's subtitle clip (scripts/player-check/make-clips.mjs): SRT rus, SRT rus forced, ASS eng, PGS eng,
+// The device check's subtitle clip: SRT rus, SRT rus forced, ASS eng, PGS eng,
 // VobSub fre.
 const clip = readFileSync(new URL("../public/player-check/mkv-subs.mkv", import.meta.url));
 const reads: [number, number][] = [];
@@ -28,7 +28,7 @@ const read = async (s: number, e: number) => {
   return new Uint8Array(clip.subarray(s, e));
 };
 
-describe("Matroska subtitle tracks (PLR-14)", () => {
+describe("Matroska subtitle tracks", () => {
   it("finds the tracks and a cue with its place for every subtitle block, reading only ranges", async () => {
     const idx = await readMatroskaIndex(read);
     const subs = idx.tracks.filter((t) => t.type === 17);

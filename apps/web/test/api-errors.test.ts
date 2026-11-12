@@ -7,7 +7,7 @@ import { AUTH_NETWORK_ERROR, apiErrorKey, authErrorKey, importUploadErrorKey } f
 
 const has = (messages: unknown, key: string) => key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], messages) !== undefined;
 
-describe("auth errors are translated, never shown raw (AUTH-03)", () => {
+describe("auth errors are translated, never shown raw", () => {
   const cases: [Parameters<typeof authErrorKey>[0], string][] = [
     [{ code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password", status: 401 }, "auth.invalidCredentials"],
     [{ code: "INVALID_EMAIL", message: "Invalid email", status: 400 }, "auth.errInvalidEmail"],
@@ -35,7 +35,7 @@ describe("auth errors are translated, never shown raw (AUTH-03)", () => {
   });
 });
 
-describe("API and import errors (IMP-01, IMP-02)", () => {
+describe("API and import errors", () => {
   it("names the problem of a refused import file", () => {
     const refused = (problem: string, status = 400, code: "bad_request" | "rate_limited" = "bad_request") =>
       new ApiRequestError(status, code, "English text", [{ path: "file", message: problem }]);

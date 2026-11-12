@@ -21,9 +21,9 @@ export function useRecommendationFeedback() {
 }
 
 /**
- * One personal shelf (design-system 7.13; docs/curation.md "For you"): "For you", "Because you watched «X»", a
+ * One personal shelf: "For you", "Because you watched «X»", a
  * director's or actor's titles, the next parts of a film series, new titles in the profile's genres. "For you" cards
- * say in one line where they come from (HOME-08); every card's "More" has "Why this?" with all of its reason and
+ * say in one line where they come from; every card's "More" has "Why this?" with all of its reason and
  * "Not interested" with a reason (the card leaves the shelf at once, with "Undo"). What the shelf is built from and the
  * way to adjust it are in the "i".
  */
@@ -38,7 +38,7 @@ export function PersonalShelf({ shelf, genres, seeds }: { shelf: RecommendationS
       id={shelf.key}
       min={3}
       title={title}
-      // A name TMDB has only in Latin letters stays as it is, marked with its language (8.11, L10N-11).
+      // A name TMDB has only in Latin letters stays as it is, marked with its language.
       heading={shelf.person ? withNameLang(title, shelf.person.name, locale) : undefined}
       note={forYou && seeds < 3 ? t("forYouNoteFew", { count: seeds }) : shelfNote(t, shelf, byId)}
       rules={t("forYouRules")}

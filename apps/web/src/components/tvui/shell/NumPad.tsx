@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { TvButton } from "@/components/ui/tv/TvButton";
 
 /*
- * Digits by remote (design-system 10.3 "Ввод"): an on-screen keypad and the remote's own 0–9, for a profile's PIN and a
+ * Digits by remote: an on-screen keypad and the remote's own 0–9, for a profile's PIN and a
  * mailed code. What is typed shows as dots (a PIN) or digits (a code); "Done" sends, ⌫ takes one back.
  */
 export function NumPad({

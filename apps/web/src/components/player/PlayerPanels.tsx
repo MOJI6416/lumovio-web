@@ -25,11 +25,11 @@ export interface TvAnchors {
 }
 
 /**
- * The TV's menus (TV document §6; drawn by TvChrome — the site has PlayerMenus), each opened by its button in the bar:
- * a surface over the picture above that button, as on the site (player-parts' Surface, 11.1) — the picture neither
+ * The TV's menus (drawn by TvChrome — the site has PlayerMenus), each opened by its button in the bar:
+ * a surface over the picture above that button, as on the site (player-parts' Surface) — the picture neither
  * moves aside nor darkens. Back (a layer of the shell's history), Escape or a press outside closes it and the focus goes
- * back to the button (PLR-11): audio and subtitles side by side (tracks in words, PLR-07), quality and speed, playback
- * info (how the stream reaches the screen, PLR-06), the episodes of every season, the source (other copies; the
+ * back to the button: audio and subtitles side by side (tracks in words), quality and speed, playback
+ * info (how the stream reaches the screen), the episodes of every season, the source (other copies; the
  * search). Keyboard shortcuts — only what this video has — in a dialog.
  */
 export function PlayerPanels({
@@ -67,7 +67,7 @@ export function PlayerPanels({
 }) {
   const t = useTranslations("player");
   const close = () => onPanel("none");
-  // A TV remote's OK (Enter) chooses in the lists: ui/RadioGroup does it (C19).
+  // A TV remote's OK (Enter) chooses in the lists: ui/RadioGroup does it.
   return (
     <>
       {panel === "tracks" && (
@@ -122,7 +122,7 @@ function Note({ children }: { children: ReactNode }) {
 }
 
 /**
- * Audio and subtitles (PLR-07): every track in words — "Russian · dubbed (Pifagor)", not "Dub (Пифагор) AAC" — with its
+ * Audio and subtitles: every track in words — "Russian · dubbed (Pifagor)", not "Dub (Пифагор) AAC" — with its
  * format underneath, the one playing checked; one track or none is said so rather than the button disappearing. With
  * subtitles, their size (the profile's) and timing (this title's) under the list.
  */
@@ -157,7 +157,7 @@ function TracksBody({
     : prepared.audio.map((a, i) => ({ value: String(a.index), label: words(a.label, a.lang, i + 1), description: a.codec?.toUpperCase(), checked: a.isDefault }));
   const canSwitch = hls || Boolean(onAudioChange);
   const shownSub = subtitleTracks.find((tr) => tr.mode === "showing");
-  // Side by side, as the site's menu (11.1): the audio, then the subtitles with their size and timing — short enough to
+  // Side by side, as the site's menu: the audio, then the subtitles with their size and timing — short enough to
   // stand over the button.
   return (
     <div className="grid grid-cols-2 gap-10">
@@ -196,7 +196,7 @@ function TracksBody({
             options={[
               { value: "off", label: t("subtitlesOff") },
               ...subtitleTracks.map((tr, i) => {
-                // The file's own tracks and the torrent's files (PLR-14): forced ones said so, the format underneath.
+                // The file's own tracks and the torrent's files: forced ones said so, the format underneath.
                 const m = subtitleMeta?.get(tr.id);
                 const words = subWords(tr.label || null, tr.language || null, i + 1);
                 return {
@@ -321,7 +321,7 @@ function SettingsBody({ onInfo, onHelp }: { onInfo: () => void; onHelp: () => vo
   );
 }
 
-/** The title's copies (SourceRow, 7.15): the one playing marked, another from this position; the search for another release. */
+/** The title's copies (SourceRow): the one playing marked, another from this position; the search for another release. */
 function SourceBody({ sources, onPick, onSearch }: { sources: SourcesInfo; onPick: (key: string) => void; onSearch?: () => void }) {
   const t = useTranslations("player");
   const tt = useTranslations("title");

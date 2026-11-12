@@ -48,7 +48,7 @@ const statsQuery = (year: number | null, locale: string) => ({
 });
 
 /**
- * Statistics (S12; design-system 7.20, 9 «Статистика»): one number first — the hours — and four facts beside it, as a
+ * Statistics: one number first — the hours — and four facts beside it, as a
  * year in review opens; the years to choose are the ones with something watched (from the first watch on, the latest
  * three) and "All time"; the months only for a year (all time would add up every January); the genres as shares of
  * what was watched; the titles watched most, a series by its episodes. An empty profile points to finding and importing.
@@ -70,7 +70,7 @@ export function StatsView() {
     queryKey: ["genres-stats", locale],
     queryFn: async () => {
       const [m, tv] = await Promise.all([api<{ genres: Genre[] }>("/api/catalog/genres/movie"), api<{ genres: Genre[] }>("/api/catalog/genres/tv")]);
-      // Film names first: the statistics count series genres as their film counterparts (INS-01).
+      // Film names first: the statistics count series genres as their film counterparts.
       return [...m.genres, ...tv.genres.filter((g) => !m.genres.some((x) => x.id === g.id))];
     },
     staleTime: Infinity,
@@ -119,9 +119,10 @@ export function StatsView() {
             <Skeleton shape="md" className="h-48 w-full" />
           </div>
         )}
-        {/* A failed load is not an empty year (X-14). */}
+        {/* A failed load is not an empty year. */}
         {q.isError && !s && <ErrorState error={q.error} title={t("loadError")} onRetry={() => void q.refetch()} retrying={q.isFetching} />}
-        {/* Offline before anything came: said, not a blank page; a failed refresh keeps the numbers, one line above (7.11). */}
+        {/* Offline before anything came: said, not a blank page; a failed refresh keeps the numbers, one line
+            above. */}
         {!s && !q.isError && q.fetchStatus === "paused" && <ErrorState error={null} onRetry={() => void q.refetch()} />}
         {q.isError && s && <ErrorState variant="inline" error={q.error} title={t("loadError")} onRetry={() => void q.refetch()} retrying={q.isFetching} />}
         {s && total === 0 && (
@@ -146,7 +147,7 @@ export function StatsView() {
 
         {s && total > 0 && (
           <>
-            {/* The hours first and large; the other numbers beside them, each with its words over it (7.20). */}
+            {/* The hours first and large; the other numbers beside them, each with its words over it. */}
             <section aria-label={t("summary")}>
               <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
                 <div className="col-span-full">
@@ -240,8 +241,9 @@ function TopTitles({ titles }: { titles: Stats["topTitles"] }) {
 }
 
 /**
- * One series by month (7.20): --progress columns on --line grid lines, captions in `caption`. Every month with a value
- * has it written over its column — on a phone too, with no hover-only tooltip (INS-01); one letter per month on a phone
+ * One series by month: --progress columns on --line grid lines, captions in `caption`.
+ * Every month with a value has it written over its column — on a phone too, with no hover-only tooltip;
+ * one letter per month on a phone
  * (twelve short names don't fit), the full name for screen readers in the table under it. This year's months after the
  * current one are lighter: they haven't come yet.
  */

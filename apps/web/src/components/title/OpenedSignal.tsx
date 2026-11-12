@@ -8,7 +8,7 @@ import { background } from "@/lib/optional";
 const STAY_SEC = 8;
 
 /**
- * Tells recommendations the profile stayed on this title's page (a weak signal, owner 2026-10-25): once per title and
+ * Tells recommendations the profile stayed on this title's page (a weak signal): once per title and
  * day in this tab, after STAY_SEC seconds while the page is visible. The server keeps nothing while the profile's
  * "Use opened pages" is off. Renders nothing.
  */

@@ -9,7 +9,7 @@ const DUNE_2021 = film(438631, "Дюна", "Dune", 2021);
 const DUNE_TWO = film(693134, "Дюна: Часть вторая", "Dune: Part Two", 2024);
 const JJK = show(95479, "Магическая битва", "呪術廻戦", 2020);
 
-/** Torrents already on a TorrServer, matched to titles (TS7 «Не связано в Lumovio», docs/torrserver.md). */
+/** Torrents already on a TorrServer, matched to titles. */
 describe("releaseTitle", () => {
   it("takes the title words before the year, picture or season", () => {
     expect(releaseTitle("Дюна / Dune (Дени Вильнёв / Denis Villeneuve) [2021, США, фантастика, BDRip 1080p] Dub")).toMatchObject({ query: "Дюна", alt: "Dune", years: [2021], kind: null });

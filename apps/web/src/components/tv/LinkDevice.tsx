@@ -14,10 +14,10 @@ import { Link } from "@/i18n/navigation";
 type Checked = { kind: "device" } | { kind: "approval"; details: ProfileApprovalDetails };
 
 /**
- * Phone side of a TV's code (S28, the Focus template): type the code shown on the TV, check it, then decide — only after
- * an explicit "Sign in on this TV". The same field takes the code a TV shows to leave a kids profile (TV document §7.1
- * item 5): it then asks "Allow «Kid» → «Anna» on the TV?" and switches only that TV's profile. The code is checked on
- * submit with the reason at the field (AUTH-04).
+ * Phone side of a TV's code (the Focus template): type the code shown on the TV, check it, then decide —
+ * only after an explicit "Sign in on this TV". The same field takes the code a TV shows to leave a kids
+ * profile: it then asks "Allow «Kid» → «Anna» on the TV?" and switches only that TV's profile. The code is
+ * checked on submit with the reason at the field.
  */
 export function LinkDevice({ initialCode, approve: approveCode }: { initialCode: string; approve?: string }) {
   const t = useTranslations("tv");
@@ -30,7 +30,7 @@ export function LinkDevice({ initialCode, approve: approveCode }: { initialCode:
   const [busy, setBusy] = useState(false);
   const clean = code.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
-  // No connection is said as such, not as a wrong code, and never leaves the button spinning (8.5).
+  // No connection is said as such, not as a wrong code, and never leaves the button spinning.
   const request = async (input: string, init?: RequestInit) => {
     try {
       return await fetch(input, { credentials: "same-origin", ...init });
@@ -92,7 +92,7 @@ export function LinkDevice({ initialCode, approve: approveCode }: { initialCode:
       </FocusCard>
     );
 
-  // The Focus template (design-system 9): a 440 card over the stage, the page's h1 on it.
+  // The Focus template: a 440 card over the stage, the page's h1 on it.
   return (
     <FocusCard
       icon={Tv}
@@ -123,7 +123,7 @@ export function LinkDevice({ initialCode, approve: approveCode }: { initialCode:
                   spellCheck={false}
                   size="lg"
                   autoFocus={!initialCode && !approveCode}
-                  // A code field: large even figures with spacing (4.1: no monospace).
+                  // A code field: large even figures with spacing (no monospace).
                   className="text-center text-h3 tabular-nums tracking-widest"
                   maxLength={9}
                 />

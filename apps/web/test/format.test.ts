@@ -7,7 +7,7 @@ import { capitalize, formatDate, formatSize, latinLang, relativeTime } from "../
 const NBSP = /[  ]/g;
 const plain = (s: string | null) => s?.replace(NBSP, " ") ?? null;
 
-describe("one size formatter, in the person's units (2.3, L10N-09)", () => {
+describe("one size formatter, in the person's units", () => {
   const GB = 1024 ** 3;
   const MB = 1024 ** 2;
   it("says 9,6 ГБ and 700 МБ in Russian, 9.6 GB in English", () => {
@@ -27,7 +27,7 @@ describe("one size formatter, in the person's units (2.3, L10N-09)", () => {
   });
 });
 
-describe("relative time (2.3)", () => {
+describe("relative time", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-25T12:00:00Z"));
@@ -52,7 +52,7 @@ describe("relative time (2.3)", () => {
   });
 });
 
-describe("dates that don't break apart (L10N-17)", () => {
+describe("dates that don't break apart", () => {
   const NB = String.fromCharCode(0xa0);
   it("keeps the year with «р.» / «г.» and the day with its month", () => {
     expect(formatDate("2008-01-20", "uk")).toBe(`20${NB}січ. 2008${NB}р.`);
@@ -63,12 +63,12 @@ describe("dates that don't break apart (L10N-17)", () => {
 });
 
 describe("catalog names as labels and text a source doesn't translate", () => {
-  it("writes a genre with a capital letter in every language (CAT-09)", () => {
+  it("writes a genre with a capital letter in every language", () => {
     expect(capitalize("драма", "ru")).toBe("Драма");
     expect(capitalize("історія", "uk")).toBe("Історія");
     expect(capitalize("Drama", "en")).toBe("Drama");
   });
-  it("marks a Latin-only character name as English on a Cyrillic page (TTL-26)", () => {
+  it("marks a Latin-only character name as English on a Cyrillic page", () => {
     expect(latinLang("Paul Atreides", "ru")).toBe("en");
     expect(latinLang("Paul Atreides", "uk")).toBe("en");
     expect(latinLang("Пол Атрейдес", "ru")).toBeUndefined();

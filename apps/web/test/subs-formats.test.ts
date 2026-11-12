@@ -15,7 +15,7 @@ const reader = (file: string) => {
   return { read, reads, size: bytes.length };
 };
 
-// The device check's MP4 subtitle clip (scripts/player-check/make-clips.mjs): mov_text rus, mov_text rus forced.
+// The device check's MP4 subtitle clip: mov_text rus, mov_text rus forced.
 describe("MP4 text subtitles (tx3g)", () => {
   it("finds the text tracks with their language, name and kind, reading only the movie box", async () => {
     const { read, reads, size } = reader("mp4-subs.mp4");

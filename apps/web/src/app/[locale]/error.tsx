@@ -12,7 +12,7 @@ import { RATE_LIMITED_DIGEST } from "@/lib/api";
 const CHUNK_RELOAD_KEY = "lumovio:chunk-reload";
 
 /**
- * Route-level error boundary (SH-02; design-system 7.11, the page state): inside the shell, what happened and "Retry"
+ * Route-level error boundary (the page state): inside the shell, what happened and "Retry"
  * that really asks the server again (Next 16.4 `retry` re-fetches and re-renders the segment; `reset` alone only clears
  * the client state), "Home" beside it, the why for a screen reader; plus a privacy-safe client error report.
  */
@@ -25,7 +25,7 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
     if (limited) return;
     const e = error instanceof Error ? (error as Error & { digest?: string }) : null;
     // A tab opened before a deploy asks for code the new build no longer has: the page loads again, once a minute at
-    // most, instead of saying the server failed (most "render" reports in the admin, 2026-10-29).
+    // most, instead of saying the server failed (most "render" reports in the admin).
     if (/Failed to load chunk|ChunkLoadError|Loading chunk .+ failed/.test(e?.message ?? "")) {
       try {
         const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));

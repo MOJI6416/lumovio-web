@@ -24,9 +24,9 @@ const SOCIAL = [
 ] as const;
 
 /**
- * Settings → Account (S16, design-system 7.18): the account's e-mail and whether it is confirmed, the ways to sign in —
+ * Settings → Account: the account's e-mail and whether it is confirmed, the ways to sign in —
  * e-mail and password (changed in Security), Google, Apple, Discord — and "Sign out" on this device at the end, as in the
- * account menu. A provider the server has no credentials for isn't offered (AUTH-10); one that is linked stays listed
+ * account menu. A provider the server has no credentials for isn't offered; one that is linked stays listed
  * either way. Deleting the account is in Privacy and data, with the rest of the account's data.
  */
 export function AccountSettings() {

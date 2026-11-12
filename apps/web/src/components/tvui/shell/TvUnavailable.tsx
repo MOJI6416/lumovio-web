@@ -7,7 +7,7 @@ import { useTransition } from "react";
 import { TvButton } from "@/components/ui/tv/TvButton";
 import { TvState } from "./TvState";
 
-/** The API didn't answer (SH-03, 8.5): said so with Retry, never the code screen as if signed out. */
+/** The API didn't answer: said so with Retry, never the code screen as if signed out. */
 export function TvUnavailable() {
   const t = useTranslations("errors");
   const tc = useTranslations("common");

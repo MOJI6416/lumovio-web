@@ -67,7 +67,7 @@ export function useTvPlayback(tv: TvDevice): TvPlayback | null {
 }
 
 /**
- * The remote of the viewing on the TV (design-system 8.18): what plays and where — "Playing on TV · Android" —, the
+ * The remote of the viewing on the TV: what plays and where — "Playing on TV · Android" —, the
  * time gone and left, −10 · Play/Pause · +10, and "Stop on TV". Until the TV says it got the viewing: "Starting on …";
  * no word in 20 s — it didn't answer; the TV's failure in words, with "Send again". The same block in the dialog after
  * "Watch on TV" and at the top of the remote (/remote): `full` — the dialog's way to the whole remote (arrows, OK…);
@@ -182,7 +182,7 @@ export function CastRemote({
       )}
       <div className="flex items-center justify-center gap-4">
         <IconButton icon={RotateCcw} label={tp("back10")} variant="secondary" size="lg" disabled={!live} onClick={() => void control({ action: "seek", delta: -10 })} />
-        {/* The one that matters most, the largest (as the player's touch controls, 11.1). */}
+        {/* The one that matters most, the largest (as the player's touch controls). */}
         <IconButton
           icon={shown?.state === "playing" ? Pause : Play}
           label={shown?.state === "playing" ? tp("pause") : tp("play")}

@@ -3,17 +3,17 @@ import { cn } from "./cn";
 // A button's classes apart from the Button component, so a server page that only styles a link (the 404, maintenance)
 // doesn't import lucide-react's client Icon through Button's spinner — that alone gave the maintenance page 172 KB of JS.
 
-/** design-system 7.1. One `primary` per area; `danger` only confirms a deletion in a dialog. */
+/** One `primary` per area; `danger` only confirms a deletion in a dialog. */
 export type ButtonVariant = "primary" | "secondary" | "tertiary" | "danger" | "danger-tertiary";
 export type ButtonSize = "sm" | "md" | "lg";
 /**
- * `stacked` (10.1): below md the icon (24) stands over a 12 px caption, without the fill and border — one of a row of
+ * `stacked`: below md the icon (24) stands over a 12 px caption, without the fill and border — one of a row of
  * labelled actions sharing the width (the title's Watchlist · Rate · More); from md it is the plain button.
  */
 export type ButtonLayout = "inline" | "stacked";
 
-// Roles only, so the colours follow the theme and `.stage` (3.5): primary is white on dark and black on light.
-// `danger` carries dark text in the dark theme: white on the light red is 2.8:1 (audit X-23).
+// Roles only, so the colours follow the theme and `.stage`: primary is white on dark and black on light.
+// `danger` carries dark text in the dark theme: white on the light red is 2.8:1.
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-text-1 text-bg hover:not-disabled:bg-text-1/85",
   secondary: "border border-line-2 bg-surface-2 text-text-1 hover:not-disabled:bg-surface-3",
@@ -22,8 +22,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   "danger-tertiary": "text-danger hover:not-disabled:bg-danger-soft",
 };
 
-// On a phone every button is at least 44 px (5.6); `sm` exists for dense desktop panels only. On a TV every size is
-// lg (48 rem-px, 66 at the TV's scale: a remote's target is 64, text at least body, 10.3) — callers don't pass it.
+// On a phone every button is at least 44 px; `sm` exists for dense desktop panels only. On a TV every size is
+// lg (48 rem-px, 66 at the TV's scale: a remote's target is 64, text at least body) — callers don't pass it.
 const TV_LG = "in-data-[tv=1]:h-12 in-data-[tv=1]:min-w-12 in-data-[tv=1]:px-6 in-data-[tv=1]:text-body";
 const SIZES: Record<ButtonSize, string> = {
   sm: `h-8 px-3 text-body-s max-sm:h-11 max-sm:min-w-11 [&_svg:not([class*=size-])]:size-4 ${TV_LG}`,

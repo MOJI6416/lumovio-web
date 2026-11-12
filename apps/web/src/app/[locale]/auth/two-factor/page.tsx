@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   // The cookie of a sign-in waiting for its code (Better Auth's "two_factor", with Lumovio's prefix): without it the
-  // page says to sign in again instead of showing a form that can only fail (AUTH-08).
+  // page says to sign in again instead of showing a form that can only fail.
   const started = (await cookies()).getAll().some((c) => c.name.endsWith("lumovio.two_factor"));
   return (
     <Suspense>

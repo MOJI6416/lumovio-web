@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { type ComponentType, type ReactNode, useEffect, useReducer, useState, useSyncExternalStore } from "react";
 
 /*
- * The launch of a viewing (design-system 11.1 «Запуск»): from the press of "Watch" — anywhere: the title's hero, "Where
+ * The launch of a viewing: from the press of "Watch" — anywhere: the title's hero, "Where
  * to watch" and its details, "Continue" on home, the sources screen, the next episode — to the film's first frame, one
  * scene: the black stage, the brand's loader with what is being done now in a few words, and nothing else. It comes the
  * moment "Watch" is pressed (a link to the player too) and stays over the navigation to the player, its preparation and
@@ -130,7 +130,7 @@ const loadScene = () => {
 };
 
 /**
- * The launch's one scene, drawn once for the whole site (not in the TV shell, which has its own: TV document §6). A link
+ * The launch's one scene, drawn once for the whole site (not in the TV shell, which has its own). A link
  * into the player starts it by itself; the player's page then says what it does (WatchView). A launch that doesn't reach
  * the player (the link went nowhere, the page failed) ends by itself.
  */

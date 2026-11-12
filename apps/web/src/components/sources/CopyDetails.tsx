@@ -9,7 +9,7 @@ import { QualityLine } from "./QualityBadges";
 import { formatSize } from "./release-text";
 
 /**
- * A copy's details (7.9, 7.15): its marks and what is heard, its release's full name, the server, picture, audio and
+ * A copy's details: its marks and what is heard, its release's full name, the server, picture, audio and
  * size — the same dialog as "Release details" (centred, a bottom sheet on a phone). The title page's and the sources
  * screen's "Copy details"; a TV reads the same rows (tvui/sources/TvSources).
  */
@@ -27,7 +27,7 @@ export function CopyDetails({ copy: s, all, originalLanguage, onClose }: { copy:
   );
 }
 
-/** A copy's known facts (7.15 details): the release's name, the server, picture, audio and size — here and on a TV. */
+/** A copy's known facts: the release's name, the server, picture, audio and size — here and on a TV. */
 export function useCopyFacts() {
   const tp = useTranslations("titlePage");
   const locale = useLocale();

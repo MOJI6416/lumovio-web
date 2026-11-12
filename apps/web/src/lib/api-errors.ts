@@ -2,7 +2,7 @@ import type { ImportFileProblem } from "@lumovio/contracts";
 import { ApiRequestError } from "./api";
 
 /**
- * Error codes → message keys (AUTH-03, IMP-01, IMP-02). Screens never show an error's own text: it is
+ * Error codes → message keys. Screens never show an error's own text: it is
  * English, sometimes technical ("[body.email] Invalid email address", a database error). They translate
  * the key returned here with `useTranslations()` (keys include their namespace); an unknown code gets
  * the plain "something went wrong" of its area.
@@ -66,7 +66,7 @@ const API_CODES: Partial<Record<ApiRequestError["code"], string>> = {
   upstream_unavailable: "errors.upstream",
   unauthorized: "errors.signInRequired",
   profile_required: "errors.profileRequired",
-  // Ф1 (design-system 8.5): every code the API sends has words.
+  // Every code the API sends has words.
   kids_restricted: "errors.kidsRestricted",
   maturity_blocked: "errors.maturityBlocked",
   title_unavailable: "errors.titleUnavailable",
@@ -89,7 +89,7 @@ export function apiErrorKey(e: unknown): string {
 export type ErrorPlace = "page" | "section";
 
 /**
- * The title and text of a failed load (ErrorState): what happened and what to do (2.1, 8.5). A section says
+ * The title and text of a failed load (ErrorState): what happened and what to do. A section says
  * "Couldn't load this" and why; a page names the situation (not found, temporarily unavailable…).
  */
 export function loadErrorKeys(e: unknown, place: ErrorPlace = "section"): { title: string; text: string } {
@@ -141,7 +141,7 @@ export function isRetryable(e: unknown) {
 
 /**
  * The technical details folded under ErrorState's "Technical details": the status, the code and the request id the
- * server logs carry ("HTTP 500 · internal · 7f3a…"). Never the error's message (8.5); null when there is nothing
+ * server logs carry ("HTTP 500 · internal · 7f3a…"). Never the error's message; null when there is nothing
  * worth showing (not an API error).
  */
 export function errorDetails(e: unknown): string | null {

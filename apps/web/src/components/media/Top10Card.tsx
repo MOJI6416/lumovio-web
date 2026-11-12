@@ -15,9 +15,9 @@ import { useCardMark, useRatingText } from "./PosterCard";
 import { useDismissed } from "./shelf-context";
 
 /**
- * Top 10 card (design-system 7.12, sizes 5.4): the rank as an outlined numeral standing on the poster's foot line, beside
+ * Top 10 card: the rank as an outlined numeral standing on the poster's foot line, beside
  * a poster of a poster card's width with the same name and line under it as a PosterCard, so the shelf is the same row
- * of posters as every other. One Top 10 shelf per page (HOME-14).
+ * of posters as every other. One Top 10 shelf per page.
  */
 export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank: number; priority?: boolean }) {
   const t = useTranslations("rows");

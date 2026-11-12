@@ -5,7 +5,7 @@ import { routing } from "@/i18n/routing";
 import { webManifest } from "@/lib/web-manifest";
 
 /*
- * /<locale>/manifest.webmanifest (L10N-10): the PWA manifest in the site's language — the locale layout links it, so a
+ * /<locale>/manifest.webmanifest: the PWA manifest in the site's language — the locale layout links it, so a
  * page in Russian installs with the Russian description and starts at /ru. A draft language's interface is English,
  * so is its manifest (lang "en"), starting at its own address. Built once per language.
  */

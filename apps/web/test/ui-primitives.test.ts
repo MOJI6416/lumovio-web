@@ -6,7 +6,7 @@ import { rovingIndex } from "../src/components/ui/keyboard";
 
 const classes = (s: string) => s.split(" ");
 
-describe("cn: the caller's class wins over a primitive's class of the same kind (audit X-07)", () => {
+describe("cn: the caller's class wins over a primitive's class of the same kind", () => {
   it("keeps the design-system type scale apart from text colours", () => {
     expect(cn("text-body text-text-1", "text-danger")).toBe("text-body text-danger");
     expect(cn("text-body font-semibold", "text-base")).toBe("font-semibold text-base");
@@ -20,8 +20,8 @@ describe("cn: the caller's class wins over a primitive's class of the same kind 
   });
 });
 
-// cn.ts keeps a small configuration of its own (X-34); these are the conflicts the primitives and callers rely on.
-describe("cn: the minimal tailwind-merge configuration (X-34)", () => {
+// cn.ts keeps a small configuration of its own; these are the conflicts the primitives and callers rely on.
+describe("cn: the minimal tailwind-merge configuration", () => {
   it("never treats a type-scale size and a text colour as one kind", () => {
     expect(cn("text-body text-text-1")).toBe("text-body text-text-1");
     expect(cn("text-text-1", "text-body-s")).toBe("text-text-1 text-body-s");
@@ -72,7 +72,7 @@ describe("cn: the minimal tailwind-merge configuration (X-34)", () => {
   });
 });
 
-describe("Button variants (design-system 7.1)", () => {
+describe("Button variants", () => {
   it("has only the five design variants, none of them redrawn as a stage", () => {
     expect(classes(buttonClass("primary"))).toEqual(expect.arrayContaining(["bg-text-1", "text-bg"]));
     expect(classes(buttonClass("secondary"))).toEqual(expect.arrayContaining(["bg-surface-2", "border-line-2"]));

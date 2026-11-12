@@ -14,7 +14,7 @@ import { toast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
 import { invalidateAvailability, loadTorrentManager, type ManagedTorrent, type TorrentManagerData } from "@/lib/media/torrent-manage";
 
-// The TS7 removal (its confirmation and per-torrent results) loads when a removal is asked for.
+// The torrent removal (its confirmation and per-torrent results) loads when a removal is asked for.
 const RemoveTorrentsDialog = dynamic(() => import("@/components/connections/RemoveTorrentsDialog").then((m) => m.RemoveTorrentsDialog), { ssr: false });
 
 /** Where focus goes once a copy is gone from the list: the action that is still there. */
@@ -26,9 +26,9 @@ export type RemovalTarget = { connection: TorrentConnection; torrent: ManagedTor
 const focusFind = () => requestAnimationFrame(() => document.getElementById(FIND_SOURCE_ID)?.focus());
 
 /**
- * TS7's confirmation and results for one copy. It lives beside the list, not in the copy's row: the row goes as soon as
+ * Confirmation and results for one copy. It lives beside the list, not in the copy's row: the row goes as soon as
  * the removal updates availability, and the results (with a retry when only Lumovio's links are left) must stay until
- * the person closes them. Its "Remove" is the dialog's danger button — the only red one (SRC-15).
+ * the person closes them. Its "Remove" is the dialog's danger button — the only red one.
  */
 export function CopyRemovalDialog({ target, onClose, beforeRemove }: { target: RemovalTarget; onClose: () => void; beforeRemove?: (hashes: string[]) => Promise<void> }) {
   return (
@@ -46,9 +46,9 @@ export function CopyRemovalDialog({ target, onClose, beforeRemove }: { target: R
 }
 
 /**
- * "More" of a copy in "Where to watch" (design-system 7.15, TS8, SRC-15): details, and for a TorrServer copy of an adult
- * profile "Remove from TorrServer…", TS7's removal with its confirmation naming the server, the torrent and everything
- * linked to it. "Unlink from title" and "Unlink one episode" are gone (docs/torrserver-2026-11.md, 17: two items, not
+ * "More" of a copy in "Where to watch": details, and for a TorrServer copy of an adult
+ * profile "Remove from TorrServer…", the torrent removal with its confirmation naming the server, the torrent and
+ * everything linked to it. "Unlink from title" and "Unlink one episode" are gone (two items, not
  * five). A menu (a sheet on a phone) reached by touch, keyboard and remote; opening it never starts playback.
  */
 export function CopyActions({
@@ -91,7 +91,7 @@ export function CopyActions({
       }
       if (!torrent) {
         // Reading a full list already dropped the links of a torrent it no longer has; an empty list
-        // proves nothing (TS7), so then the copy stays.
+        // proves nothing, so then the copy stays.
         if (data.reconciled.some((r) => r.hash === hash && r.status === "removed")) {
           toast.info(t("copyNotOnServer", { server }));
           gone();

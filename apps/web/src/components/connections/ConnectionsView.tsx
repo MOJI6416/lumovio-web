@@ -26,11 +26,11 @@ const ServerPanel = dynamic(() => import("./ServerPanel").then((m) => m.ServerPa
 const AddConnectionDialog = dynamic(() => import("./AddConnectionDialog").then((m) => m.AddConnectionDialog), { ssr: false });
 const ConnectionHelp = dynamic(() => import("./ConnectionHelp").then((m) => m.ConnectionHelp), { ssr: false });
 
-/** A server not checked for this long (or never) is checked when the list opens (SRV-08). */
+/** A server not checked for this long (or never) is checked when the list opens. */
 const RECHECK_AFTER_MS = 24 * 3600_000;
 
 /**
- * Settings → Servers (S19, design-system 7.16; audit SRV-03…SRV-06): the servers as rows of one group, as the rest of the
+ * Settings → Servers: the servers as rows of one group, as the rest of the
  * settings — the type's mark, the name, the type and address, one line of fact, the status in words at the end — each
  * row opening the server's panel (state, check, scan or added releases, settings, who may use it, address, removing);
  * "Add server" is the group's last row, "Help with connecting" a row of its own. A server this profile can't use says
@@ -44,11 +44,11 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
   const [adding, setAdding] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   // The list the page was rendered with (./page): the rows are there at once, so nothing below them moves when they
-  // load (phones 2026-10-30: the footer jumped, CLS 0.26). It is read again here all the same: the check below goes by
+  // load (else the footer jumped on phones, CLS 0.26). It is read again here all the same: the check below goes by
   // this device's own read.
   const q = useQuery({ ...connectionsQuery, initialData: initial, refetchOnMount: "always" });
   const refresh = () => void qc.invalidateQueries({ queryKey: ["connections"] });
-  // "Not checked" doesn't wait for a press (SRV-08): the servers this profile may use that weren't checked for a day
+  // "Not checked" doesn't wait for a press: the servers this profile may use that weren't checked for a day
   // are checked as the list opens, one at a time, each row saying "Checking…" until its usual status comes back.
   const [due, setDue] = useState<string[] | null>(null);
   useEffect(() => {
@@ -71,7 +71,7 @@ export function ConnectionsView({ initial }: { initial?: { connections: Connecti
   return (
     <div className="space-y-8">
       <p className="sr-only">{t("intro")}</p>
-      {/* A failed load is not "no servers" (X-14): an error with Retry, not "Add server". */}
+      {/* A failed load is not "no servers": an error with Retry, not "Add server". */}
       <QueryState
         query={q}
         loading={
@@ -192,7 +192,7 @@ function ServerRow({
             </span>
             {!access && <span className="block">{t("noAccess")}</span>}
             {line && <span className="block">{line}</span>}
-            {/* What the last failed check ran into, in words (in place of a toast over the screen; phones 2026-10-30). */}
+            {/* What the last failed check ran into, in words (in place of a toast over the screen). */}
             {failure && !testing && <span className="block">{netErrorText(t, new MediaNetError(failure, failure), c.baseUrl)}</span>}
           </>
         }

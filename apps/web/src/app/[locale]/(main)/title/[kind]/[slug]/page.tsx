@@ -24,7 +24,7 @@ import { parseSlugId, titleHref } from "@/lib/slug";
 type Params = Promise<{ locale: string; kind: string; slug: string }>;
 
 /**
- * A title's address in a language: its name there in the slug (SH-13, Search Console 2026-10-29 — links and the
+ * A title's address in a language: its name there in the slug (links and the
  * canonical are the same address). The page's own language uses the name it shows; the others TMDB's name there.
  */
 const titlePath = (d: TitleDetails, own: string, l: string) => titleHref(d.kind, d.tmdbId, l === own ? d.title : (d.localTitles?.[l as "en"] ?? d.title));
@@ -51,7 +51,7 @@ const load = cache(async (kind: string, slug: string): Promise<TitleDetails | "b
     if (e instanceof ApiRequestError && e.code === "maturity_blocked") return "blocked";
     // Hidden at a rights holder's request (Admin → Catalog): the same for everyone.
     if (e instanceof ApiRequestError && e.code === "title_unavailable") return "unavailable";
-    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary" (SH-02).
+    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary".
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) return null;
     throw e;
   }
@@ -62,10 +62,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   // Metadata only: a page that fails to load says so itself.
   const d = await optional(load(kind, slug), null);
   if (!d) return {};
-  // A title closed to this profile isn't named in the tab either (SH-12).
+  // A title closed to this profile isn't named in the tab either.
   if (d === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
   if (d === "unavailable") return { title: (await getTranslations("titlePage"))("unavailableTitle"), robots: { index: false } };
-  // A link preview is landscape (11.3): the backdrop, else the brand image — a poster would be cropped to a strip.
+  // A link preview is landscape: the backdrop, else the brand image — a poster would be cropped to a strip.
   const image = tmdbImage(d.backdropPath, "w1280");
   const title = d.year ? `${d.title} (${d.year})` : d.title;
   // The canonical address carries the name in the page's language, as every link to it does; another slug redirects.
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 /**
- * A title's page (design-system 9, Title; 2026-11-06 from scratch): one page to scroll, as Apple TV's and the TV's —
+ * A title's page: one page to scroll, as Apple TV's and the TV's —
  * no tabs to guess at. The hero decides and starts; under it what starting needs — a series' episodes, then where to
  * watch it (the main button's own choices: the audio, the cut, the quality) — then the trailer and the videos, what is
  * like it, who made it and who is in it, and the reference at the foot: the ratings in full, the details, the
@@ -104,7 +104,7 @@ export default async function TitlePage({ params, searchParams }: { params: Para
   try {
     d = await load(kind, slug);
   } catch (e) {
-    // The API not answering a signed-in person is "temporarily unavailable" with Retry (8.5, C38), not the error page.
+    // The API not answering a signed-in person is "temporarily unavailable" with Retry, not the error page.
     if (meFailure(e) === "unavailable" && (await getMeState()) === "unavailable") {
       return (
         <ServiceUnavailable variant="page" />
@@ -138,7 +138,7 @@ export default async function TitlePage({ params, searchParams }: { params: Para
   };
   const core = titleCore(d, locale.slice(0, 2));
 
-  // The collection without TMDB's "(Collection)" and without this title (TTL-16).
+  // The collection without TMDB's "(Collection)" and without this title.
   const collection = d.collection ? { name: collectionName(d.collection.name), parts: d.collection.parts.filter((p) => p.id !== d.id) } : null;
   // Each title once on the page: what the collection shows isn't repeated in the recommendations.
   const shown = new Set([d.id, ...(collection?.parts.map((p) => p.id) ?? [])]);

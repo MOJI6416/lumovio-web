@@ -27,7 +27,7 @@ import { formatSize, isPack, packWords, QUALITY_MODES, ReleaseLine, studioShown,
 const CARD = "finder-card-h";
 
 /**
- * The sources screen's TorrServer search (design-system 7.15 «Экран источников», S26): "Where to watch" unfolded. The
+ * The sources screen's TorrServer search: "Where to watch" unfolded. The
  * same card says what will be watched — the release the pills pick, the white "Watch" when nothing else on the screen
  * starts first — and the same pills choose: the audio, the cut of the film, the quality. Here they narrow a list: under
  * the card, the other releases they leave, in the chosen order; folded under it, what can't be picked (other titles of
@@ -259,7 +259,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
 
   return (
     <>
-      {/* Results kept through an empty search: said to a screen reader, not on screen (37). */}
+      {/* Results kept through an empty search: said to a screen reader, not on screen. */}
       {kept && !failed && <p className="sr-only">{kept}</p>}
       <WatchCard
         id={CARD}
@@ -269,7 +269,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
         quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
         where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
         // On screen: a known risk (not "unknown" — most names don't give the codec; the details say it) and a failed
-        // search with "Retry"; that older results are shown is for a screen reader (37).
+        // search with "Retry"; that older results are shown is for a screen reader.
         note={
           (chosen.fit === "poor" || failed) && (
             <>
@@ -417,7 +417,7 @@ function QueryForm({ f, connections, lead, onCancel }: { f: Finder; connections:
 // A menu's button, not a switch: no aria-pressed (as PickPill and the catalog's pills).
 const NOT_TOGGLE = { "aria-pressed": undefined };
 
-/** The list's order (7.4 sort pill): its value, never "selected"; the quality mode is the "Quality" pill's. */
+/** The list's order (a sort pill): its value, never "selected"; the quality mode is the "Quality" pill's. */
 function SortPill({ value, onChange }: { value: Finder["sort"]; onChange: (s: Finder["sort"]) => void }) {
   const t = useTranslations("player");
   const tt = useTranslations("title");
@@ -454,7 +454,7 @@ function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResul
 }
 
 /**
- * One release (7.15): the card's anatomy at a row's size — what is heard, the marks with what they don't say and the
+ * One release: the card's anatomy at a row's size — what is heard, the marks with what they don't say and the
  * size, where from (seeders, tracker, date) — one label when something matters (a cinema recording, no seeders, another
  * season, a format this device may not play, already on the server, the profile's studio), "Watch" and "i".
  */

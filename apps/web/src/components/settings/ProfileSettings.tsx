@@ -29,7 +29,7 @@ export type ProfilePrefs = Pick<
   Profile,
   "uiLocale" | "metadataLocale" | "region" | "audioLanguages" | "subtitleLanguages" | "subtitleStyle" | "voiceStudios" | "releaseQuality" | "spoilers" | "showAnime"
 >;
-/** The request and the optimistic change for `save` of a group's or a sub-screen's useSettingsSave (8.8). */
+/** The request and the optimistic change for `save` of a group's or a sub-screen's useSettingsSave. */
 export type ProfileChange = (patch: Partial<ProfilePrefs>) => { request: () => Promise<void>; optimistic: () => () => void };
 
 const pick = (p: Profile): ProfilePrefs => ({
@@ -48,7 +48,7 @@ const pick = (p: Profile): ProfilePrefs => ({
 type Open = "audio" | "subtitles" | "style" | "public" | null;
 
 /**
- * Settings → Profile (S14, design-system 7.18, 8.8; audit SET-01, SET-02, PRF-13): the active profile's own choices as
+ * Settings → Profile: the active profile's own choices as
  * a short page that says what is chosen — Language and region (the interface language here is the profile's, the one
  * the site switches to), Audio and subtitles (rows with their values: audio, subtitles and their look open sub-screens;
  * the release quality is chosen in the row), Catalog, Spoilers, the public page and the way to every profile. Every choice
@@ -135,7 +135,7 @@ function LanguageSection({ value, change, kids }: SectionProps) {
           value={value.uiLocale ?? AUTO}
           onValueChange={async (v) => {
             const next = v === AUTO ? null : v;
-            // The site follows the profile's language as soon as it is saved (L10N-06).
+            // The site follows the profile's language as soon as it is saved.
             if ((await apply({ uiLocale: next })) && next && next !== locale) router.replace(pathname, { locale: next as never });
           }}
           options={options.ui(value.uiLocale)}
@@ -151,7 +151,7 @@ function LanguageSection({ value, change, kids }: SectionProps) {
           options={options.metadata}
         />
       </SettingsRow>
-      {/* The region decides which country's age ratings apply: a kids profile doesn't change it (PRF-13). */}
+      {/* The region decides which country's age ratings apply: a kids profile doesn't change it. */}
       {!kids && (
         <SettingsRow label={t("region")} description={t("regionHint")} htmlFor={`${ids}-region`}>
           <Combobox
@@ -176,7 +176,8 @@ function useLanguageList() {
 }
 
 /**
- * What the profile hears and reads (7.18): audio and subtitles — the languages in order, the studios — and the subtitles'
+ * What the profile hears and reads: audio and subtitles — the languages in order, the studios —
+ * and the subtitles'
  * look are rows with their values that open sub-screens; the release quality is a short choice right in its row.
  */
 function WatchSection({ value, change, kids, onOpen }: SectionProps & { onOpen: (o: Open) => void }) {
@@ -230,7 +231,7 @@ function WatchSection({ value, change, kids, onOpen }: SectionProps & { onOpen: 
   );
 }
 
-/** What Lumovio offers the profile (design-system 8.14): anime on or off. What's off is still found by name. */
+/** What Lumovio offers the profile: anime on or off. What's off is still found by name. */
 function CatalogSection({ value, change }: SectionProps) {
   const t = useTranslations("profiles");
   const ts = useTranslations("settings");
@@ -254,7 +255,7 @@ function CatalogSection({ value, change }: SectionProps) {
   );
 }
 
-/** What of an unwatched episode stays hidden until pressed (design-system 8.12): stills, descriptions, names. */
+/** What of an unwatched episode stays hidden until pressed: stills, descriptions, names. */
 function SpoilersSection({ value, change }: SectionProps) {
   const t = useTranslations("spoilers");
   const { state, save } = useSettingsSave();
@@ -312,7 +313,10 @@ function PublicDialog({ profile, onClose }: { profile: Profile; onClose: () => v
   return <PublicPageDialog profile={profile} initial={q.data} onClose={onClose} />;
 }
 
-/** The way to every profile's name, avatar, PIN, languages and region (an adult's; 8.10 hides it from a kids profile). */
+/**
+ * The way to every profile's name, avatar, PIN, languages and region
+ * (an adult's; hidden from a kids profile).
+ */
 function ProfilesRow() {
   const tn = useTranslations("nav");
   const t = useTranslations("profiles");

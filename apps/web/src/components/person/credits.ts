@@ -1,7 +1,7 @@
 import type { PersonDetails } from "@lumovio/contracts";
 
 /*
- * A person's credits sorted for their page (S08, design-system 9 "Person"): by what they did — acted, directed,
+ * A person's credits sorted for their page: by what they did — acted, directed,
  * wrote, produced, other crew work, or appeared as themselves — the way IMDb, Letterboxd and Kinopoisk split a
  * filmography, never "Crew" as one heap where a director's films sat among the ones they only produced.
  */

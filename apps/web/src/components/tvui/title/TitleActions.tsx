@@ -51,7 +51,7 @@ const TorrentProbe = dynamic(() => import("@/components/title/TorrentProbe").the
 });
 
 /*
- * A title's actions on a TV (design-system 8.1, 8.2, 10.3; TV document §4 "Страница тайтла", "Источники"): one zone in
+ * A title's actions on a TV: one zone in
  * a row — the main button by the site's table (Continue, Watch from the profile's copy or the recommended TorrServer
  * release, Find a source, the trailer), "Sources" (every copy and release, a new search: the sources screen), the
  * trailer when it isn't the main one, "Watchlist", "Rate" and "More" (Favourites, Watched, Not interested, Add to list,
@@ -150,7 +150,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const primary = plan.primary;
   const main = cn(tvButtonClass(), "min-w-56");
   const on = actions.inWatchlist;
-  // The sources screen: every copy, release and a new search, also when a source is already chosen (TV document §4).
+  // The sources screen: every copy, release and a new search, also when a source is already chosen.
   const showSources =
     !kids && primary?.kind !== "sources" && (avail.state.kind === "playable" || Boolean(manual));
 
@@ -211,7 +211,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             {t("trailer")}
           </TvButton>
         )}
-        {/* "Watchlist" and "More" are circles beside the labelled actions, as on the site (redesign-2026-11.md 2):
+        {/* "Watchlist" and "More" are circles beside the labelled actions, as on the site:
             + off, a check on; "Rate" is the first line of "More". */}
         <TvButton
           look="round"
@@ -255,7 +255,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   );
 }
 
-/** Where it plays from, in one line (7.14 item 7) — on a TV without links: the actions above are the next step. */
+/** Where it plays from, in one line — on a TV without links: the actions above are the next step. */
 function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kids: boolean }) {
   const t = useTranslations("titlePage");
   const tt = useTranslations("title");
@@ -265,7 +265,7 @@ function Availability({ summary: s, kids }: { summary: NonNullable<Summary>; kid
   switch (s.kind) {
     case "copy": {
       const others = s.others > 0 ? tt("moreCopies", { count: s.others }) : null;
-      // The quality as marks (QualityBadges, 7.15), never also in words.
+      // The quality as marks (QualityBadges), never also in words.
       text = s.marks?.length ? (
         <>
           {[t("onServer", { server: s.server }), resolutionBesideMarks(s.resolution)].filter(Boolean).join(" · ")}
@@ -414,7 +414,7 @@ function MoreLayer({
   const next = useRef<"rate" | "lists" | "phone" | null>(null);
   const setState = useSetLibraryState();
   const movie = d.kind === "movie";
-  // A whole series at once, taken back exactly with "Undo" (TTL-25), as the site's "More" does.
+  // A whole series at once, taken back exactly with "Undo", as the site's "More" does.
   const markShow = useAction({
     run: async (undoKey: string) => {
       const s = await api<TitleLibraryState>("/api/history/mark", {
@@ -436,7 +436,7 @@ function MoreLayer({
         <>
           <h2 className="text-h2 text-text-1">{d.title}</h2>
           <div data-zone="more" data-zone-axis="y" className="flex flex-col gap-3">
-            {/* The rating opens its own layer in this one's place (the hero's row has no "Rate" since the 2026-11 redesign). */}
+            {/* The rating opens its own layer in this one's place (the hero's row has no "Rate"). */}
             <TvButton
               look="row"
               aria-haspopup="dialog"

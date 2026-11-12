@@ -3,7 +3,7 @@ import { canRemuxInBrowser, containerName, type PlaybackCapabilities } from "../
 import { type AudioCoders, choosePlayback, remuxAudioRoute } from "../src/lib/media/playback-choice";
 import { compatibleMime } from "../src/lib/media/remux";
 
-// Capabilities as the browsers report them (tmp/player-compat/caps.json, 2026-10-25) or, for phones that weren't
+// Capabilities as the browsers report them or, for phones that weren't
 // available, as their platform documents them: the iPhone has only ManagedMediaSource (iOS 17.1+), or nothing.
 const chrome: PlaybackCapabilities = {
   video: { h264: true, hevc: true, av1: true, vp9: true, h264High10: true },

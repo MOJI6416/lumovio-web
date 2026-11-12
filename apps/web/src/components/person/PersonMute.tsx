@@ -12,10 +12,10 @@ import { useAction } from "@/lib/use-action";
 const KEY = ["recommendation-settings"];
 
 /**
- * "Don't show in recommendations" on a person's page (owner, 2026-10-25): the same list as Settings → Recommendations
+ * "Don't show in recommendations" on a person's page: the same list as Settings → Recommendations
  * → "Don't show" → People, so titles with this person stay out of the profile's picks. Changes at once, with "Undo";
  * shown only to a signed-in profile (a guest has no picks). One quiet button under the biography whose words say the
- * state (2026-11-06, the page from scratch): "Don't show in recommendations", once pressed "Show in recommendations".
+ * state: "Don't show in recommendations", once pressed "Show in recommendations".
  */
 export function PersonMute({ id, name }: { id: number; name: string }) {
   const t = useTranslations("person");

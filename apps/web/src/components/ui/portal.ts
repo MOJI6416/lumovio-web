@@ -12,7 +12,7 @@ export const PortalContainerContext = createContext<HTMLElement | null>(null);
 export const usePortalContainer = () => useContext(PortalContainerContext) ?? undefined;
 
 /*
- * The stage (design-system 3.5) is dark in either theme. A layer portalled into the body would take the page's theme
+ * The stage is dark in either theme. A layer portalled into the body would take the page's theme
  * — a light dialog over the dark sign-in wall or the player — so a layer opened from an element on a stage carries
  * the `stage` class itself and takes the same dark values. A layer portalled into another layer that is on a stage
  * inherits it the ordinary way.

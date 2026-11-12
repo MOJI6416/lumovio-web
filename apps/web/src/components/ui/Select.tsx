@@ -14,9 +14,9 @@ export interface SelectOption<V extends string = string> {
 }
 
 /**
- * `md` 44 and `lg` 48 as every field (7.6); `sm` 32 with 13/600 text — the height of FilterChip and Button `sm` — for
+ * `md` 44 and `lg` 48 as every field; `sm` 32 with 13/600 text — the height of FilterChip and Button `sm` — for
  * a select in a row of chips or small buttons (library filters, a list's header). On a phone `sm` is 44, as Button
- * `sm` there (5.6); on a TV every size is lg with body text (10.3), and so are the list's items.
+ * `sm` there; on a TV every size is lg with body text, and so are the list's items.
  */
 export type SelectSize = FieldSize | "sm";
 
@@ -58,7 +58,7 @@ export interface SelectProps<V extends string> {
 const full = lazyControl(() => import("./SelectRadix"));
 
 /**
- * A choice from a short list (design-system 7.6), drawn as a field with a chevron; up to ~10 options, longer lists
+ * A choice from a short list, drawn as a field with a chevron; up to ~10 options, longer lists
  * (languages, regions, studios) are a Combobox. Label it with Field (pass Field's id and describedBy) or
  * `aria-label`. The list opens below the field; ↑/↓, typing the first letters, Enter and Escape work as in a
  * native select.

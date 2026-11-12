@@ -39,7 +39,7 @@ function Buttons() {
   const samples = useSamples();
   const variants = Object.keys(samples) as ButtonVariant[];
   return (
-    <ShowcaseSection id="button" title={t("button")} source="ui/Button.tsx · buttonClass() · 7.1">
+    <ShowcaseSection id="button" title={t("button")} source="ui/Button.tsx · buttonClass()">
       {variants.map((v) => (
         <Demo key={v} title={v} className="items-start">
           {SIZES.map((s) => (
@@ -83,7 +83,7 @@ function Buttons() {
   );
 }
 
-/** `layout="stacked"`: the title hero's row of labelled actions on a phone (10.1, X-44); resize to see it below md. */
+/** `layout="stacked"`: the title hero's row of labelled actions on a phone; resize to see it below md. */
 function StackedDemo() {
   const t = useTranslations();
   return (
@@ -115,7 +115,7 @@ function IconButtons() {
   ];
   const plain: IconButtonVariant[] = ["ghost", "secondary"];
   return (
-    <ShowcaseSection id="icon-button" title={t("devUi.iconButton")} source="ui/IconButton.tsx · 7.2">
+    <ShowcaseSection id="icon-button" title={t("devUi.iconButton")} source="ui/IconButton.tsx">
       {plain.map((v) => (
         <Demo key={v} title={v} className="items-start">
           {ICON_SIZES.map((s) => (
@@ -186,7 +186,7 @@ function PressedDemo() {
 function Links() {
   const t = useTranslations();
   return (
-    <ShowcaseSection id="link" title={t("devUi.link")} source="ui/Link.tsx · linkClass() · 7.3">
+    <ShowcaseSection id="link" title={t("devUi.link")} source="ui/Link.tsx · linkClass()">
       <Demo title="inline">
         <p className="max-w-measure text-body text-text-2">
           {t.rich("devUi.linkInline", {

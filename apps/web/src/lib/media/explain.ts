@@ -3,7 +3,7 @@ import { parseRelease, type ReleaseTrack } from "./releases";
 
 /*
  * What the playback engines say in their own (English, technical) words, as facts the interface puts in the person's
- * language (design-system 2.1, PLR-06, PLR-07): why a file needs another player or is rebuilt, and what a file's audio
+ * language: why a file needs another player or is rebuilt, and what a file's audio
  * track is. Nothing here is shown as it is.
  */
 

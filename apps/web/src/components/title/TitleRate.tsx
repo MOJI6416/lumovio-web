@@ -10,9 +10,9 @@ import { api } from "@/lib/api";
 import type { TitleCore } from "./core";
 
 /**
- * "Rate" (design-system 8.1, TTL-22; the hero's own rating, ./YourRating): a small dialog (a sheet on a phone) with
+ * "Rate" (the hero's own rating, ./YourRating): a small dialog (a sheet on a phone) with
  * 1–10 — a press saves it at once; "Remove rating" in the same dialog takes it back. ←/→ move between the values.
- * Loaded when it is opened. `onSaved` hears the value the server kept (the star's click, 6.3.1).
+ * Loaded when it is opened. `onSaved` hears the value the server kept (the star's click).
  */
 export function TitleRate({
   title: d,
@@ -64,7 +64,7 @@ export function TitleRate({
             role="radio"
             aria-checked={rating === v}
             tabIndex={v === (rating ?? 1) ? 0 : -1}
-            // The chosen value is the one filled button; the rest are plain (one main element, 1.2).
+            // The chosen value is the one filled button; the rest are plain (one main element).
             variant={rating === v ? "primary" : "secondary"}
             onClick={() => void save(v)}
             onKeyDown={(e) => onKey(e, v)}

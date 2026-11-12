@@ -4,10 +4,10 @@ import { optionIsStudio, type PictureVersion, pictureVersions, type RankedReleas
 export { type Edition, editionOf };
 
 /*
- * What "Where to watch" offers to watch from a TorrServer search (design-system 7.15): one release, and the three
+ * What "Where to watch" offers to watch from a TorrServer search: one release, and the three
  * choices that lead to another — the audio, the cut of the film and the picture — each narrowing the one before it,
  * as Plex's Version / Audio pickers do before Play. The title hero's "Watch" starts the same pick with no choice made
- * (TorrentProbe), so both always say the same thing (TTL-06).
+ * (TorrentProbe), so both always say the same thing.
  */
 
 /** A cut on offer for the chosen audio: its best release and the resolutions it comes in (2160 first). */
@@ -18,8 +18,8 @@ export interface EditionOption {
 }
 
 /**
- * "Any" audio or cut: the sources screen lists every release (its pills narrow a list, design-system 7.15 «Экран
- * источников»), where "Where to watch" always holds one. Never an option's key or an Edition.
+ * "Any" audio or cut: the sources screen lists every release (its pills narrow a list), where
+ * "Where to watch" always holds one. Never an option's key or an Edition.
  */
 export const ANY = "*";
 
@@ -82,8 +82,8 @@ const cutOf = (x: RankedRelease, any: boolean) => editionOf(x.result.title) ?? (
  * director's where that is the film (Blade Runner: The Final Cut), the theatrical one where the others are for fans —
  * among the cuts whose best release reaches the best one's floor (`RankedRelease.floor`: an SD-only cut never wins) and
  * has a release that suits this device as well as the best of all (`RankedRelease.suits`: a cut found only in 4K HDR
- * isn't a 1080p screen's default — Oppenheimer's IMAX cut with a Ukrainian dub only in a UHD Remux;
- * docs/torrserver-2026-11.md 8); a tie goes to the theatrical cut, then the best release's. The others are offered
+ * isn't a 1080p screen's default — Oppenheimer's IMAX cut with a Ukrainian dub only in a UHD Remux); a tie
+ * goes to the theatrical cut, then the best release's. The others are offered
  * right beside it in the "Version" pill. `editions` come best first; `pool` is the audio's releases.
  */
 function defaultCut(editions: EditionOption[], pool: RankedRelease[]): Edition {
@@ -141,7 +141,7 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   const lead = anyCut ? (pool.find((x) => cutOf(x, true) === preferred) ?? inCut[0]) : inCut[0];
   // Every audio listed with nothing picked by hand (the sources screen's start): the card is the release "Where to
   // watch" starts — the profile's first audio in its own default cut — not the cut most seeded across every audio nor
-  // the rank's first of another audio (docs/torrserver-2026-11.md 7).
+  // the rank's first of another audio.
   const asTitle =
     anyVoice && options[0] && (choice.edition === ANY || choice.edition === null) && !choice.picture
       ? pickRelease(ranked, prefs, { voice: options[0].key, edition: null, picture: null }, max).chosen

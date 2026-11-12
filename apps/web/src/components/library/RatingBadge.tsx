@@ -9,16 +9,16 @@ import { lazy, Suspense, useState } from "react";
 const RateTitle = lazy(() => import("./RateTitle").then((m) => ({ default: m.RateTitle })));
 
 /**
- * The profile's own rating on a poster in "Ratings" (S09, design-system 7.12): "★ 9" on the art's top-end corner, on
+ * The profile's own rating on a poster in "Ratings": "★ 9" on the art's top-end corner, on
  * the stage's veil as the art's badge, and the control that changes it — the same 1–10 dialog (a sheet on a phone) as
- * the title's own "★ 8" (8.1), with "Remove rating" in it. Seen on every screen; a 44 px target on a phone.
+ * the title's own "★ 8", with "Remove rating" in it. Seen on every screen; a 44 px target on a phone.
  */
 export function RatingBadge({ title, value, onSaved }: { title: TitleSummary; value: number; onSaved: (value: number | null) => void }) {
   const t = useTranslations("titlePage");
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button /* ui-lint-ignore raw-button: the rating on a poster that opens its 1–10 dialog (7.12), a badge, not a Button */
+      <button /* ui-lint-ignore raw-button: the rating on a poster that opens its 1–10 dialog, a badge, not a Button */
         type="button"
         aria-label={t("ratedLabel", { value })}
         aria-haspopup="dialog"

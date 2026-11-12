@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { stagesFor, stageState } from "../src/lib/media/prepare-stages";
 
-describe("preparation stages (TS4)", () => {
+describe("preparation stages", () => {
   it("a release picked from search goes through every stage, the add first", () => {
     expect(stagesFor({ provider: "torrserver", bound: false }, { added: true, episode: false })).toEqual(["add", "files", "file", "probe", "play"]);
   });

@@ -182,13 +182,13 @@ export function LayersOverlays() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="menu" title={t("menu")} source="ui/Menu.tsx · 7.8">
+      <ShowcaseSection id="menu" title={t("menu")} source="ui/Menu.tsx">
         <MenuDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="popover" title={t("popover")} source="ui/Popover.tsx · 7.8">
+      <ShowcaseSection id="popover" title={t("popover")} source="ui/Popover.tsx">
         <PopoverDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="tooltip" title={t("tooltip")} source="ui/Tooltip.tsx · 7.8">
+      <ShowcaseSection id="tooltip" title={t("tooltip")} source="ui/Tooltip.tsx">
         <TooltipDemo />
       </ShowcaseSection>
     </>

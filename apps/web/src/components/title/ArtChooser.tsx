@@ -32,8 +32,8 @@ const same = (a: ArtImage | null, b: ArtImage | null) => Boolean(a && b && a.sou
 const thumb = (a: ArtImage) => (a.source === "tmdb" ? tmdbImage(a.path, "w300") : (a.previewUrl ?? a.url));
 
 /**
- * "Change picture" (title "More", design-system 8.16, C131): the profile's own background and logo for the title's page,
- * from the title's art at TMDB and fanart.tv, or "Lumovio's choice". A pick applies at once (8.8) and the page behind
+ * "Change picture" (title "More"): the profile's own background and logo for the title's page,
+ * from the title's art at TMDB and fanart.tv, or "Lumovio's choice". A pick applies at once and the page behind
  * redraws with it; every profile chooses for itself. Under the grid, an optional fanart.tv key of the person's own.
  */
 export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: MediaKind; tmdbId: number; title: string; open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -90,7 +90,7 @@ export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: 
           {() => (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               <li>
-                <button /* ui-lint-ignore raw-button: a picture tile (picture + its source), like a profile tile, 8.16 */ type="button" className={tile(!chosen)} aria-pressed={!chosen} onClick={() => void choose.run(null)}>
+                <button /* ui-lint-ignore raw-button: a picture tile (picture + its source), like a profile tile */ type="button" className={tile(!chosen)} aria-pressed={!chosen} onClick={() => void choose.run(null)}>
                   <span className={frame(!chosen, false)}>
                     <Sparkles aria-hidden className="size-6 text-text-2" />
                     {!chosen && mark}
@@ -103,7 +103,7 @@ export function ArtChooser({ kind, tmdbId, title, open, onOpenChange }: { kind: 
                 const src = thumb(a);
                 return (
                   <li key={a.path ?? a.url}>
-                    <button /* ui-lint-ignore raw-button: a picture tile (picture + its source), like a profile tile, 8.16 */ type="button" className={tile(selected)} aria-pressed={selected} onClick={() => void choose.run(a)}>
+                    <button /* ui-lint-ignore raw-button: a picture tile (picture + its source), like a profile tile */ type="button" className={tile(selected)} aria-pressed={selected} onClick={() => void choose.run(a)}>
                       <span className={frame(selected, part === "logo")}>
                         {/* biome-ignore lint/performance/noImgElement: a thumbnail from TMDB's or fanart.tv's own resizer */}
                         {src && <img src={src} alt="" loading="lazy" className={part === "logo" ? "max-h-full max-w-full object-contain" : "size-full object-cover"} />}

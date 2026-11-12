@@ -5,7 +5,7 @@ import { audioLanguages, languageCode } from "../src/lib/media/languages";
 import { copyAudio } from "../src/lib/media/copy-audio";
 import { languageRank, orderedSources, sourceRank } from "../src/lib/media/source-order";
 
-/** Jellyfin and Plex copies' audio languages (roadmap Stage 7 «Jellyfin track languages»): read, stored, ranked. */
+/** Jellyfin and Plex copies' audio languages: read, stored, ranked. */
 describe("audio languages of a server's tracks", () => {
   it("are ISO 639-1, each once, untagged tracks left out", () => {
     expect(audioLanguages(["rus", "eng", "rus", "und", null, "ukr"])).toEqual(["ru", "en", "uk"]);

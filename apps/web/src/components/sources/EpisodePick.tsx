@@ -12,10 +12,10 @@ import { api } from "@/lib/api";
 import { episodesOpen } from "@/lib/spoilers";
 
 /**
- * Which episode the sources screen is for (design-system 7.15 «Экран источников»): two pills of "Where to watch" —
+ * Which episode the sources screen is for: two pills of "Where to watch" —
  * "Season 2 ⌄", "Episode 3 ⌄" — each a menu with the current one ticked; another one opens the same screen for it (its
  * copies, and the releases that hold its season first). Specials last; an unwatched episode's name only where the
- * profile shows names (8.12). `href`: the screen's address for an episode.
+ * profile shows names. `href`: the screen's address for an episode.
  */
 export function EpisodePick({ details: d, season, episode, href }: { details: TitleDetails; season: number; episode: number; href: (season: number, episode: number) => string }) {
   const t = useTranslations("player");

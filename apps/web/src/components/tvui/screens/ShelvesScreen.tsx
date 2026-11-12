@@ -11,8 +11,8 @@ import type { TvItem, TvShelfData } from "../media/types";
 import type { ScreenLevel } from "../nav/TvNav";
 
 /*
- * A screen of shelves — the home and the Movies, Series and Anime sections (TV document §4 "Главная", design-system
- * 10.3): the spotlight at the top (the featured title with its actions first, then whatever card has the focus) and the
+ * A screen of shelves — the home and the Movies, Series and Anime sections: the spotlight at the top (the
+ * featured title with its actions first, then whatever card has the focus) and the
  * shelves under it, the focused shelf always at the same height under the spotlight (`data-scroll="pin"`), so the
  * remote never makes a shelf "fly past". ↑ from the first shelf goes to the featured title's actions. A card of
  * Continue watching has "More" (held OK, ../media/hold): the spotlight says so, and a removed card leaves the shelf at once.
@@ -39,8 +39,8 @@ export function ShelvesScreen({
   empty?: ReactNode;
 }) {
   const { hidden, hide } = useHidden();
-  // Removed cards leave their shelf at once; a shelf left empty goes (7.11: never an empty shelf). Unchanged shelves
-  // keep their identity, so their memoised cards don't render again.
+  // Removed cards leave their shelf at once; a shelf left empty goes (never an empty shelf). Unchanged
+  // shelves keep their identity, so their memoised cards don't render again.
   const shelves = useMemo(
     () =>
       hidden.size

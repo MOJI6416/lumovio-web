@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adultWithoutPin, showPinHint } from "../src/components/profiles/pin-hint";
 
-// "Set a PIN on adult profiles" on Who's watching? (design-system 8.10): when it shows and which profile it opens.
+// "Set a PIN on adult profiles" on Who's watching?: when it shows and which profile it opens.
 
 const adult = (name: string, hasPin = false) => ({ name, isKids: false, hasPin });
 const kid = (name: string, hasPin = false) => ({ name, isKids: true, hasPin });

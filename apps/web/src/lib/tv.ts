@@ -13,7 +13,7 @@ export function tvAppVersion(ua: string | null | undefined): string | null {
 }
 
 /**
- * The oldest TV app the site works with (TV document §11.1 «Обновления»): 1.3 is the first release CI signed with the
+ * The oldest TV app the site works with: 1.3 is the first release CI signed with the
  * release key and the site offers. An older app is asked to update; raise this when the site starts relying on
  * something a newer app adds. A local build is "1.0" — build it with `-PversionName=1.<n>` to skip the question.
  */
@@ -39,12 +39,12 @@ export function tvAppToUpdate(ua: string | null | undefined, latest: string | nu
   return v && latest && versionBelow(v, TV_APP_MIN_VERSION) && versionBelow(v, latest) ? v : null;
 }
 
-/** The device's choice of shell: "1" TV, "0" the site, absent — decided by the user agent (TV document §4.1). */
+/** The device's choice of shell: "1" TV, "0" the site, absent — decided by the user agent. */
 export const TV_COOKIE = "lumovio_tv";
 
 /**
  * Whether this device gets the TV shell: the TV app always; else the device's own choice (`/tv` sets it, the TV
- * settings and the account menu change it); else a TV's user agent. Never by the window's width (§4).
+ * settings and the account menu change it); else a TV's user agent. Never by the window's width.
  */
 export function isTvMode(cookie: string | null | undefined, ua: string | null | undefined): boolean {
   if (tvAppVersion(ua)) return true;
@@ -63,7 +63,7 @@ const SITE_ONLY = new Set(["link", "dev"]);
 
 /**
  * Where the TV shell answers an address (without the locale prefix), or null for the site's own page. One address for
- * every device (TV document §12.1): a title's link sent from a phone opens on the TV in the TV shell. Sign-in pages
+ * every device: a title's link sent from a phone opens on the TV in the TV shell. Sign-in pages
  * become the code screen (a password is never typed with a remote); the rest keeps its path under `tvui`, where a page
  * of the same name answers or the catch-all offers to continue on a phone.
  */

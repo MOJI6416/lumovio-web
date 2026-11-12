@@ -31,7 +31,7 @@ export interface RulesEdit {
 const LISTS: LibraryRulesList[] = ["watchlist", "favorites"];
 
 /**
- * "Save as list" (package F; design-system 7.9 Dialog): the current filters become a smart list's conditions, shown as
+ * "Save as list" (a Dialog): the current filters become a smart list's conditions, shown as
  * labels; a name (suggested from them); for the catalog the personal conditions — "On your servers", "Unwatched" —
  * which only the owner's view applies; for the library, which of the profile's lists it gathers from. With `edit`, the
  * same dialog saves the conditions back into that list ("Edit conditions") and returns to it. A new list says so in a
@@ -104,7 +104,7 @@ export function SaveRulesDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={edit ? t("rulesEditTitle", { list: edit.name }) : t("saveAsList")}
-      // How the list keeps itself up to date, for a screen reader: the conditions say what it is (1.2).
+      // How the list keeps itself up to date, for a screen reader: the conditions say what it is.
       description={<span className="sr-only">{target.from === "catalog" ? t("rulesCatalogHint", { limit: RULES_CATALOG_LIMIT }) : t("rulesLibraryHint")}</span>}
     >
       <form onSubmit={submit} className="space-y-5">

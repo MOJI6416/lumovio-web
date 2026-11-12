@@ -30,8 +30,8 @@ const TAP_PX = 12;
 const TAP_MS = 400;
 
 /**
- * The phone as the TV's remote (design-system 8.18, TV document §7.3; S56, C64, C204–C206), from scratch as Apple TV's
- * Remote: which TV and whether Lumovio is open on it; what it plays — the same block as after "Watch on TV" (CastRemote);
+ * The phone as the TV's remote, as Apple TV's Remote: which TV and whether Lumovio is open on it; what it
+ * plays — the same block as after "Watch on TV" (CastRemote);
  * a touch surface — a swipe is an arrow (a long one several), a touch is OK, its edges and middle are buttons too (a
  * mouse, a keyboard's arrows, a screen reader); under it Back, Home, Play/Pause and Text for the TV's search. Commands
  * take the TV's own way (the same navigation as its remote); one that didn't go is said, never lost silently.
@@ -115,7 +115,9 @@ export function RemoteControl() {
   );
 }
 
-/** Which TV, and whether Lumovio is open on it: a Select for several (their names are long, 7.5), the name for one. */
+/**
+ * Which TV, and whether Lumovio is open on it: a Select for several (their names are long), the name for one.
+ */
 function TvLine({ devices, tv, name, onChoose }: { devices: TvDevice[]; tv: TvDevice; name: ReturnType<typeof useTvName>; onChoose: (id: string) => void }) {
   const t = useTranslations("remote");
   const state = (

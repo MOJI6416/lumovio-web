@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { sharePage } from "@/components/share/share";
 
-/** "Share" of a public profile (8.15): the system's sheet on a phone, Lumovio's window with the link and a QR on a computer. */
+/** "Share" of a public profile: the system's sheet on a phone, Lumovio's window with the link and a QR on a computer. */
 export function ShareProfile({ title, url }: { title: string; url: string }) {
   const t = useTranslations("common");
   return (

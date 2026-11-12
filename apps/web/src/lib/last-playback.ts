@@ -2,7 +2,7 @@ import { api } from "./api";
 
 /*
  * The player's diagnostics (anonymous, for the admin's playback numbers) — and the last of them kept in this browser,
- * so a support request can attach it when the person agrees (admin handoff «Поддержка»). No title, no address.
+ * so a support request can attach it when the person agrees. No title, no address.
  */
 
 /** The body of /api/playback/diagnostics (contracts' PlaybackDiagnostic). */

@@ -28,7 +28,7 @@ async function load(token: string): Promise<ListInvitePreview | null | "unavaila
 const wide = buttonClass("primary", "lg", "w-full");
 
 /**
- * An invitation to a shared list (S32; LIB-19; design-system 9 "Library"): one question on the page's background — the
+ * An invitation to a shared list: one question on the page's background — the
  * list's cover, "You're invited to «X»", whose it is and how many titles, what joining lets you do — then "Join" and
  * "Not now". A link that opens nothing says so at once with the way on; a kids profile hears the real reason (kids
  * profiles don't join shared lists) and can switch profiles; a guest signs in first and comes back here.
@@ -39,8 +39,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const t = await getTranslations("library");
   const tc = await getTranslations("common");
   if (!me) {
-    // A guest learns at once that a link doesn't work (LIB-30) — the API says only that, nothing of the list; a working
-    // one (or no answer) gets the sign-in, back here afterwards (AUTH-02).
+    // A guest learns at once that a link doesn't work — the API says only that, nothing of the list; a working
+    // one (or no answer) gets the sign-in, back here afterwards.
     const valid = await serverApi<{ valid: boolean }>(`/api/invites/${encodeURIComponent(token)}/status`).then(
       (s) => s.valid,
       (e) => (e instanceof ApiRequestError && e.status === 400 ? false : null),

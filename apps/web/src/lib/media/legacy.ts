@@ -15,8 +15,8 @@ import {
 } from "./remux";
 
 /*
- * Old releases in AVI — Xvid/DivX (MPEG-4 Part 2), DivX 3, MPEG-2, with MP3, MP2 or AC-3 audio — played in the browser
- * (player document, P5): the AVI read by ranges (`avi.ts`), its video decoded in WebAssembly (FFmpeg's decoders,
+ * Old releases in AVI — Xvid/DivX (MPEG-4 Part 2), DivX 3, MPEG-2, with MP3, MP2 or AC-3 audio — played in
+ * the browser: the AVI read by ranges (`avi.ts`), its video decoded in WebAssembly (FFmpeg's decoders,
  * public/codecs/video.*) and encoded to H.264 by the browser's own encoder (WebCodecs, in hardware where there is one),
  * the audio decoded in WebAssembly and encoded to AAC (Opus in Firefox), all of it into the same Media Source engine as
  * the rebuild (`remux.ts`). Only for standard definition, and only on a device that decodes it at least 1.2× faster than

@@ -14,7 +14,7 @@ const base: PlanInput = {
 };
 const plan = (over: Partial<PlanInput>) => heroPlan({ ...base, ...over });
 
-describe("the title's main button (design-system 8.2, TTL-01)", () => {
+describe("the title's main button", () => {
   it("waits for availability, then continues where the profile stopped", () => {
     expect(plan({ watch: { kind: "loading" } }).primary).toEqual({ kind: "loading" });
     expect(plan({ watch: { kind: "playable", copies: 1 }, resume: true }).primary).toEqual({ kind: "resume" });
@@ -30,7 +30,7 @@ describe("the title's main button (design-system 8.2, TTL-01)", () => {
     expect(plan({ torrent: { state: "found", name: "torr", summary: "1080p" } }).primary).toEqual({ kind: "watchRelease" });
     // While the search runs, "Watch" opens the sources screen (it searches itself).
     expect(plan({ torrent: { state: "searching", name: "torr" } }).primary).toEqual({ kind: "sources", label: "watch" });
-    // Nothing found: the trailer, and the line says so instead of suggesting the TorrServer (TTL-06).
+    // Nothing found: the trailer, and the line says so instead of suggesting the TorrServer.
     const none = plan({ torrent: { state: "nothing", name: "torr" }, offers: ["Kinopoisk"] });
     expect(none.primary).toEqual({ kind: "trailer" });
     expect(none.summary).toEqual({ kind: "nothingFound", offers: ["Kinopoisk"] });
@@ -45,7 +45,7 @@ describe("the title's main button (design-system 8.2, TTL-01)", () => {
     expect(plan({ trailer: false }).primary).toBeNull();
   });
 
-  it("tells a guest what they can do, not to connect a server (TTL-13)", () => {
+  it("tells a guest what they can do, not to connect a server", () => {
     expect(plan({ signedIn: false, watch: { kind: "guest" } }).summary).toEqual({ kind: "guest" });
     expect(plan({ signedIn: false, watch: { kind: "guest" }, offers: ["Netflix"] }).summary).toEqual({ kind: "offers", offers: ["Netflix"] });
   });

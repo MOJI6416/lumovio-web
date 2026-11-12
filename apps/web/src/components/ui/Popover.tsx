@@ -22,9 +22,9 @@ export interface PopoverProps {
 }
 
 /**
- * Popover (design-system 7.8): explanations behind "i", "All ratings", "How it was picked", picking a rating.
+ * Popover: explanations behind "i", "All ratings", "How it was picked", picking a rating.
  * 280–360 wide on --surface-2; closes with Escape, a press outside and a TV remote's Back. On a phone it opens as a
- * bottom sheet with the title as its heading (7.9).
+ * bottom sheet with the title as its heading.
  */
 export function Popover({
   trigger,

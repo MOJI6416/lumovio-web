@@ -19,11 +19,11 @@ import { TvState } from "../shell/TvState";
 import { TvFinder } from "./TvFinder";
 
 /*
- * The sources screen on a TV (design-system 10.3 «Экран источников», S57, TS1–TS8 in the TV's composition): the same
+ * The sources screen on a TV: the same
  * viewing (components/player/WatchView) drawn for the remote — a stage with no menu and no blurred art, the header
  * (←, a small poster, the title, "Sources · S2 E3"), then one vertical slide of zones: the copies on the profile's
  * servers, the stages of starting one or its failure with the ways out, a file to pick, and the TorrServer search.
- * Unlinking and removing copies (TS7, TS8) continue on a phone: "More" on a copy offers its details and the QR.
+ * Unlinking and removing copies continue on a phone: "More" on a copy offers its details and the QR.
  */
 
 export interface TvCopyRow {
@@ -183,7 +183,7 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
                 {error.title}
               </h2>
               <p className="max-w-measure text-body-l text-text-2">{error.message}</p>
-              {/* The ways out, one zone (11.1, SRC-19): the first is where the focus lands. */}
+              {/* The ways out, one zone: the first is where the focus lands. */}
               <div data-zone="prep-actions" data-zone-axis="x" data-zone-entry="first" className="mt-2 flex flex-wrap gap-4">
                 {error.actions.map((a, i) => (
                   <TvButton key={a.label} icon={a.icon} loading={a.loading} data-tv-initial={i === 0 || undefined} onClick={a.run}>
@@ -394,7 +394,7 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
   );
 }
 
-/** A copy's details on a TV (7.15): the known facts, read in a card in the middle; Back closes it. */
+/** A copy's details on a TV: the known facts, read in a card in the middle; Back closes it. */
 function CopyDetailsLayer({ copy, all, onClose }: { copy: Availability; all: Availability[]; onClose: () => void }) {
   const tp = useTranslations("titlePage");
   const tc = useTranslations("common");

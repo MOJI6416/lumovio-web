@@ -27,7 +27,7 @@ const NEAR_DAYS = 14;
 const AHEAD_DAYS = 120;
 
 /**
- * The calendar (S11; design-system 9, «Календарь»): a timeline of the profile's shows and watchlist films, read top
+ * The calendar: a timeline of the profile's shows and watchlist films, read top
  * to bottom. "Out" — the past week as a shelf of the shows' art, what can be watched now; then today, always there to
  * find one's place, and each of the next two weeks' days; then "Later" — each show once, at the date it comes back.
  * A whole season dropped on one day is one line ("Season 1 · Episodes 1–8"). Every line opens the title's episodes,
@@ -43,7 +43,7 @@ export function CalendarView() {
     queryKey: ["calendar", "page", today, locale],
     queryFn: () => api<{ events: CalendarEvent[] }>(`/api/calendar?from=${dayAfter(today, -7)}&to=${dayAfter(today, AHEAD_DAYS)}`),
   });
-  // A failed load is not "nothing scheduled" (X-14).
+  // A failed load is not "nothing scheduled".
   return (
     <QueryState
       query={q}
@@ -84,7 +84,7 @@ function Timeline({ events, today }: { events: CalendarEvent[]; today: string })
   return (
     <div className="flex flex-col gap-8 lg:gap-10">
       {out.length > 0 && (
-        // A shelf keeps its own edge (5.3): out of the column's gutter, its first card on the column's edge.
+        // A shelf keeps its own edge: out of the column's gutter, its first card on the column's edge.
         <div className="-mx-(--gutter)">
           <Suspense fallback={<ShelfSkeleton />}>
             <OutShelf entries={out} today={today} />
@@ -141,8 +141,8 @@ function DayHeading({ day, today }: { day: string; today: string }) {
 }
 
 /**
- * A day's lines: the show's art 16:9, its name, the episode and (unless the profile hides them, 8.12) its name, and on the
- * end the air time in the viewer's zone with the channel — or, under "Later", the date.
+ * A day's lines: the show's art 16:9, its name, the episode and (unless the profile hides them) its name,
+ * and on the end the air time in the viewer's zone with the channel — or, under "Later", the date.
  */
 function Lines({ entries: list, dated }: { entries: Entry[]; dated?: boolean }) {
   const t = useTranslations("calendar");

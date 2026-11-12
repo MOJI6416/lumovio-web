@@ -6,8 +6,8 @@ import type { TitleCore } from "@/components/title/core";
 import { TitleRate } from "@/components/title/TitleRate";
 
 /**
- * The title page's "Rate" dialog for a card of "Ratings": the same 1–10, the same request and the same "Remove rating"
- * (8.1). TitleRate reads only the title's id and name, so a card's summary is enough.
+ * The title page's "Rate" dialog for a card of "Ratings": the same 1–10, the same request and the same
+ * "Remove rating". TitleRate reads only the title's id and name, so a card's summary is enough.
  */
 export function RateTitle({
   title,

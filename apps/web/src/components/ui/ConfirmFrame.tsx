@@ -15,9 +15,9 @@ import { Input, Textarea } from "./Input";
 import { LayerStageContext, PortalContainerContext } from "./portal";
 
 /*
- * The confirmation dialog itself (design-system 7.9, 8.3). Loaded only when something asks for a confirmation: the
+ * The confirmation dialog itself. Loaded only when something asks for a confirmation: the
  * hooks and types live in ./ConfirmDialog, which every screen imports, so a screen doesn't carry the dialog, its
- * fields and Radix Dialog in its first load (scripts/bundle-budget.mjs).
+ * fields and Radix Dialog in its first load (bundle budget).
  */
 
 interface FrameProps {

@@ -17,7 +17,7 @@ const SORTS = ["updated", "title", "size"] as const;
 type Sort = (typeof SORTS)[number];
 
 /**
- * "Lists" (S09, LIB-13, LIB-15): the profile's own and shared lists on the collection's grid, "New list" its first
+ * "Lists": the profile's own and shared lists on the collection's grid, "New list" its first
  * card (with following an MDBList list inside its dialog); the sort pill and the count over them. With no lists the
  * grid is that one card — the way to start is where the lists will be. A new list opens at once with a toast.
  */

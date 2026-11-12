@@ -27,7 +27,7 @@ export function titleCopies(a: TitleAvailability, holds: CopyFilter | null = nul
 
 /**
  * Which copies count for what the page is for: a series' season (`holdsByName` in lib/media/packs — a season-1 pack is no
- * copy of season 2, docs/torrserver-2026-11.md 20). Passed in, so this module stays small for every card that asks.
+ * copy of season 2). Passed in, so this module stays small for every card that asks.
  */
 export type CopyFilter = (s: Pick<Availability, "kind" | "label">) => boolean;
 

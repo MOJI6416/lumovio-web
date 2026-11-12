@@ -2,8 +2,8 @@ import { type ClassValue, clsx } from "clsx";
 import { createTailwindMerge, validators as v } from "tailwind-merge";
 
 /*
- * tailwind-merge with a small configuration of its own (audit X-34): only the kinds of class the primitives and
- * their callers' `className` use — spacing, sizes, flex/grid, position and layers, the type scale (4.2) and text
+ * tailwind-merge with a small configuration of its own: only the kinds of class the primitives and
+ * their callers' `className` use — spacing, sizes, flex/grid, position and layers, the type scale and text
  * colours, backgrounds, borders and radii, rings, outlines, shadows, opacity, motion, cursor. The full default
  * configuration knows every Tailwind utility and costs ~5 KB gzip more on every route.
  *
@@ -96,7 +96,7 @@ const merge = createTailwindMerge(() => ({
     ...each(["m", "mx", "my", "ms", "me", "mt", "mr", "mb", "ml"]),
     ...each(["space-x", "space-y"]),
     ...each(["size", "w", "min-w", "max-w", "h", "min-h", "max-h", "aspect"]),
-    // Type (4.2): the scale is a font size, the rest of `text-*` a colour
+    // Type: the scale is a font size, the rest of `text-*` a colour
     "font-size": [
       { text: ["base", v.isTshirtSize, ...TYPE, v.isArbitraryVariableLength, v.isArbitraryLength] },
     ],
@@ -142,7 +142,7 @@ const merge = createTailwindMerge(() => ({
     "gradient-from": [{ from: any }],
     "gradient-via": [{ via: any }],
     "gradient-to": [{ to: any }],
-    // Radii (6.1), borders, outlines, rings, shadows
+    // Radii, borders, outlines, rings, shadows
     rounded: [{ rounded: radius }],
     ...each(CORNERS, radius),
     "border-w": [{ border: length }],
@@ -184,7 +184,7 @@ const merge = createTailwindMerge(() => ({
       ["", "none", v.isTshirtSize, v.isArbitraryVariable, v.isArbitraryValue],
     ),
     "drop-shadow": [{ "drop-shadow": ["", ...any] }],
-    // Motion and transforms (6.3)
+    // Motion and transforms
     transition: [
       {
         transition: [
@@ -295,7 +295,7 @@ const merge = createTailwindMerge(() => ({
 /**
  * Joins class names; a later class wins over an earlier one of the same kind. Primitives put their own classes
  * first and the caller's `className` last — the caller's classes are for placement (margins, `grow`, width),
- * merging is the safety net that keeps a conflicting class from silently losing (design-system 7.1, audit X-07).
+ * merging is the safety net that keeps a conflicting class from silently losing.
  */
 export function cn(...values: ClassValue[]) {
   return merge(clsx(values));

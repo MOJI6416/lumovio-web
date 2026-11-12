@@ -1,7 +1,7 @@
 import type { WatchProvider } from "@lumovio/contracts";
 
 /*
- * Streaming services as a person knows them (TTL-26): TMDB lists a service's plan with ads as a service of its own
+ * Streaming services as a person knows them: TMDB lists a service's plan with ads as a service of its own
  * ("Netflix Standard with Ads", "Amazon Prime Video with Ads"), so the same service showed up twice in "Where to watch"
  * and in the hero's line. Such a plan is folded into its service; a channel sold through another store ("HBO Max Amazon
  * Channel") is a different place to subscribe and stays on its own.

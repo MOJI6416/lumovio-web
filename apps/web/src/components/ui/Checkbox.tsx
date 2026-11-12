@@ -5,8 +5,8 @@ import { type ReactNode, useEffect, useId, useRef } from "react";
 import { cn } from "./cn";
 import { peerFocusRing } from "./styles";
 
-// A native control under a drawn box (design-system 7.7): Space, labels, forms and screen readers work as usual.
-// The off box is drawn in --text-3 — the box is the only sign of the control, so it needs 3:1 (8.9).
+// A native control under a drawn box: Space, labels, forms and screen readers work as usual.
+// The off box is drawn in --text-3 — the box is the only sign of the control, so it needs 3:1.
 const HIT = "peer absolute inset-0 z-10 m-0 cursor-pointer appearance-none focus-visible:outline-none focus-visible:shadow-none disabled:cursor-not-allowed";
 const MARK = "pointer-events-none col-start-1 row-start-1";
 
@@ -49,7 +49,7 @@ export interface CheckboxProps {
   className?: string;
 }
 
-/** Choosing several objects: bulk actions, the import (design-system 7.7). 20 px, --radius-xs. */
+/** Choosing several objects: bulk actions, the import. 20 px, --radius-xs. */
 export function Checkbox({
   checked,
   onCheckedChange,
@@ -115,7 +115,7 @@ export interface RadioOption<V extends string> {
 }
 
 /**
- * One of 2–6 options with descriptions (design-system 7.7): default quality, the import method. Native radios in a
+ * One of 2–6 options with descriptions: default quality, the import method. Native radios in a
  * fieldset: ↑/↓/←/→ move and choose, Tab leaves the group. 20 px circles.
  */
 export function RadioGroup<V extends string>({
@@ -158,7 +158,7 @@ export function RadioGroup<V extends string>({
                   disabled={o.disabled}
                   onChange={() => onValueChange(o.value)}
                   onKeyDown={(e) => {
-                    // A TV remote's OK is Enter, which a native radio ignores: it chooses, like Space (C19). On a
+                    // A TV remote's OK is Enter, which a native radio ignores: it chooses, like Space. On a
                     // computer Enter inside a form keeps submitting it; outside one it chooses too.
                     if (e.key !== "Enter" || (e.currentTarget.form && !e.currentTarget.closest("[data-tv='1']"))) return;
                     e.preventDefault();

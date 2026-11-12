@@ -4,7 +4,7 @@ import { cn } from "@/components/ui/cn";
 const real = (p: ReactNode) => p !== null && p !== undefined && p !== false && p !== "";
 
 /**
- * A card's line of parts joined with " · " (2.2) that never cuts a part (2026-11-06): a part that doesn't fit on the
+ * A card's line of parts joined with " · " that never cuts a part: a part that doesn't fit on the
  * line is left out whole, so a narrow card shows "IMDb 7,2" and drops the year rather than "2026 · IM…" (the phone's
  * Top 10 card cut its rating). The parts come in order of importance — the rating first, as the billboard's line says
  * it; the first part alone too long for the line ends with "…". `wide` parts follow from a tablet up. `lead` stands
@@ -32,12 +32,12 @@ export function MetaLine({ parts, wide = [], lead, className }: { parts: ReactNo
 }
 
 /**
- * The text under a card's artwork (design-system 7.12): the name, always visible, in up to two lines (`title` 15/600),
+ * The text under a card's artwork: the name, always visible, in up to two lines (`title` 15/600),
  * and one line of metadata (`body-s`, --text-2) — "IMDb 7,8 · 2021 · Film", or what the shelf chose it by ("Added
- * 22 Oct", "Season 3 · episode 16 · 22 min left"). `meta` parts are joined with " · " (2.2), empty ones left out, and
+ * 22 Oct", "Season 3 · episode 16 · 22 min left"). `meta` parts are joined with " · ", empty ones left out, and
  * one that doesn't fit is left out whole (MetaLine); `wide` parts follow from a tablet up. A fact (`wrap`) too long for a
- * narrow card takes up to three lines rather than being cut ("Added 22 O…" says nothing, X-38). `align="center"` under a
- * person's round photo. `titleLang` marks a name in another language than the page's (a video's own title, 8.11).
+ * narrow card takes up to three lines rather than being cut ("Added 22 O…" says nothing). `align="center"` under a
+ * person's round photo. `titleLang` marks a name in another language than the page's (a video's own title).
  */
 export function CardMeta({
   title,
@@ -57,7 +57,7 @@ export function CardMeta({
   className?: string;
 }) {
   const parts = meta.filter(real);
-  // On TV the line is `body`: `body-s` would be under the 20 px a TV needs (4.2, 10.3).
+  // On TV the line is `body`: `body-s` would be under the 20 px a TV needs.
   const line = "mt-0.5 text-body-s text-text-2 in-data-[tv=1]:text-body";
   return (
     <div className={cn("mt-2 min-w-0", align === "center" && "text-center", className)}>

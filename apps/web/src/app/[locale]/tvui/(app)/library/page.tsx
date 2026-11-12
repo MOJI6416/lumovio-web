@@ -6,7 +6,7 @@ export async function generateMetadata() {
   return { robots: { index: false }, title: t("title") };
 }
 
-/** The library on a TV (S08 TV). */
+/** The library on a TV. */
 export default function TvLibraryPage() {
   return <LibraryScreen />;
 }

@@ -110,8 +110,8 @@ export function detectCapabilities(): PlaybackCapabilities {
 }
 
 /*
- * Whether 4K HEVC plays smoothly here (torrserver-release handoff §4: MediaCapabilities as an extra signal, never the
- * only one): "decodes HEVC" says nothing about a 4K stream on a weak TV or phone. `decodingInfo()` is asked once for a
+ * Whether 4K HEVC plays smoothly here (MediaCapabilities as an extra signal, never the only one):
+ * "decodes HEVC" says nothing about a 4K stream on a weak TV or phone. `decodingInfo()` is asked once for a
  * typical 4K release — HEVC Main 10, 3840 × 2160, 24 fps, 20 Mbit/s, as Media Source would get it (the in-browser
  * rebuild) or as a file — and its `smooth` kept on the device (localStorage, per browser version), so release search
  * ranks the same from the first answer on and rows don't move under the focus. null: not known (no API, refused, or

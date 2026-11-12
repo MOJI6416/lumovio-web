@@ -13,7 +13,7 @@ import { safeNext } from "@/lib/safe-next";
 import { attempt, FormError, localized, Screen, useWait, withNext } from "./shared";
 
 /**
- * The code step of a sign-in with two-step verification (S31, AUTH-08). The sixth digit of the app's code sends it —
+ * The code step of a sign-in with two-step verification. The sixth digit of the app's code sends it —
  * no button to look for; a wrong code is selected, so the next one replaces it. "Use a backup code" switches the field.
  * Opened without a sign-in in progress — or after it timed out — the screen says to sign in again, instead of a form
  * that fails with "Invalid two factor cookie".

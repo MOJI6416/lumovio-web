@@ -1,33 +1,33 @@
 @import "tailwindcss";
-/* 6.3.1 Light motion: the kit's own classes and keyframes (one source with the exported SVGs); the site's colours below. */
+/* Light motion: the kit's own classes and keyframes (one source with the exported SVGs); the site's colours below. */
 @import "../../brand/motion/motion.css" layer(components);
 
-/* 7.19 The site opened from a home screen (a phone's web app): no browser buttons around it. */
+/* The site opened from a home screen (a phone's web app): no browser buttons around it. */
 @custom-variant standalone (@media (display-mode: standalone));
 
-/* 7.14 The hero's art (2026-11-08): beside the text on a screen from md and no taller than 5:4 (`art-over`: a 16:9
+/* The hero's art: beside the text on a screen from md and no taller than 5:4 (`art-over`: a 16:9
    picture on the end side of the hero, the text on the stage before it); above the text on a phone, a portrait tablet
    or a squarish window (`art-band`: a band of art, the text under it). The two never apply at once. */
 @custom-variant art-over (@media (min-width: 48rem) and (min-aspect-ratio: 5/4));
 @custom-variant art-band (@media not all and (min-width: 48rem) and (min-aspect-ratio: 5/4));
 
 /* ───────────── Lumovio design tokens ─────────────
- * docs/design/design-system.md, sections 3–6 and 10.3. Components use role names only (bg-surface-1,
+ * Components use role names only (bg-surface-1,
  * text-text-2, z-dialog, rounded-sm …); hex and rgb() stay in this file.
  *
  * Dark is the default (:root, [data-theme="dark"]); light is a full equal ([data-theme="light"]); .stage gives
- * art, heroes and the player the dark values in both themes (3.5). The selectors match any element, so one part
+ * art, heroes and the player the dark values in both themes. The selectors match any element, so one part
  * of a page (the /dev/ui showcase) can show the other theme.
  *
  * Every role has its design value: lime is the one interface accent (selection, progress, focus, switches, tabs,
- * links), radii are roles. The old names (--border, --text-muted, --violet, --warm, --glow, --btn-* …) were removed in
- * Ф9 (3.7); only the roles below exist. */
+ * links), radii are roles. The old names (--border, --text-muted, --violet, --warm, --glow, --btn-* …) were removed;
+ * only the roles below exist. */
 
 :root,
 [data-theme="dark"],
 .stage {
   color-scheme: dark;
-  /* 3.2 Neutral roles */
+  /* Neutral roles */
   --bg: #0a0a0b;
   --surface-1: #161618;
   --surface-2: #1f1f22;
@@ -38,7 +38,7 @@
   --text-2: #a1a1a6;
   --text-3: #8a8a8f;
   --scrim: rgb(0 0 0 / 0.72);
-  /* 3.3 Accent — lime */
+  /* Accent — lime */
   --brand-mark: #dcfa63;
   --accent: #dcfa63;
   --accent-hover: #e7ff85;
@@ -52,27 +52,27 @@
   --switch-on: #dcfa63;
   --switch-knob-on: #0a0a0b;
   --link: #dcfa63;
-  --link-decoration: none; /* 7.3: action links are underlined only where --link is black (light, not on a stage) */
+  --link-decoration: none; /* Action links are underlined only where --link is black (light, not on a stage) */
   --on-accent: #0a0a0b;
-  /* 3.4 Statuses */
+  /* Statuses */
   --success: #34d399;
   --success-soft: color-mix(in srgb, var(--success) 12%, transparent);
   --warning: #fbbf24;
   --warning-soft: color-mix(in srgb, var(--warning) 12%, transparent);
   --danger: #f87171;
   --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
-  /* 7.20 Chart series, in this order (blue, orange, aqua, violet; checked for colour blindness on --surface-1) */
+  /* Chart series, in this order (blue, orange, aqua, violet; checked for colour blindness on --surface-1) */
   --chart-1: #3987e5;
   --chart-2: #d95926;
   --chart-3: #199e70;
   --chart-4: #9085e9;
-  /* 6.2 Depth: floating layers only */
+  /* Depth: floating layers only */
   --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.6);
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  /* 3.2 Neutral roles */
+  /* Neutral roles */
   --bg: #f5f5f7;
   --surface-1: #ffffff;
   --surface-2: #ececef;
@@ -83,7 +83,7 @@
   --text-2: #48484d;
   --text-3: #67676c;
   --scrim: rgb(10 10 11 / 0.45);
-  /* 3.3 Accent — on light, lime is a highlight on black, never text on white */
+  /* Accent — on light, lime is a highlight on black, never text on white */
   --brand-mark: #0a0a0b;
   --accent: #dcfa63;
   --accent-hover: #e7ff85;
@@ -99,19 +99,19 @@
   --link: #0a0a0b;
   --link-decoration: underline;
   --on-accent: #0a0a0b;
-  /* 3.4 Statuses */
+  /* Statuses */
   --success: #0f9d6a;
   --success-soft: color-mix(in srgb, var(--success) 10%, transparent);
   --warning: #b97200;
   --warning-soft: color-mix(in srgb, var(--warning) 10%, transparent);
   --danger: #d6264b;
   --danger-soft: color-mix(in srgb, var(--danger) 10%, transparent);
-  /* 7.20 Chart series (aqua under 3:1 on white: charts always carry a legend and their table) */
+  /* Chart series (aqua under 3:1 on white: charts always carry a legend and their table) */
   --chart-1: #2a78d6;
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
   --chart-4: #6250d6;
-  /* 6.2 */
+  /* Depth: floating layers only */
   --shadow-float: 0 16px 40px -12px rgb(10 12 16 / 0.25);
 }
 
@@ -129,13 +129,13 @@
   color: var(--text-1);
 }
 
-/* Theme-independent tokens. Sizes are rem, so the TV root size scales them (10.3). */
+/* Theme-independent tokens. Sizes are rem, so the TV root size scales them. */
 :root {
-  /* 3.5 Stage: always dark; text over art only on a scrim */
+  /* Stage: always dark; text over art only on a scrim */
   --bg-stage: #0a0a0b;
   --scrim-start: linear-gradient(90deg, rgb(10 10 11 / 0.92) 0%, rgb(10 10 11 / 0.55) 45%, transparent 75%);
   --scrim-bottom: linear-gradient(0deg, var(--bg-stage) 0%, transparent 40%);
-  /* 4.2 Type scale: phone (< 640) here, larger screens below */
+  /* Type scale: phone (< 640) here, larger screens below */
   --type-display: 2.25rem;
   --type-h1: 1.75rem;
   --type-h2: 1.25rem;
@@ -146,28 +146,28 @@
   --type-body-s: 0.8125rem;
   --type-caption: 0.75rem;
   --measure: 72ch;
-  /* 7.19 The header's height: 64 px under the status bar of a home-screen app (iOS standalone, viewport-fit=cover);
+  /* The header's height: 64 px under the status bar of a home-screen app (iOS standalone, viewport-fit=cover);
    * in a browser the inset is 0. Whatever sits under the header or sticks below it uses this. */
   --header-h: calc(4rem + env(safe-area-inset-top, 0px));
-  /* 5.3 Page gutter (.page-x) */
+  /* Page gutter (.page-x) */
   --gutter: 1rem;
-  /* 6.1 (xs, sm: @theme below; md, lg: Ф1) */
+  /* Radius (xs, sm, md, lg: @theme below) */
   --radius-full: 9999px;
-  /* 6.3 Motion */
+  /* Motion */
   --dur-fast: 120ms;
   --dur-base: 200ms;
   --dur-slow: 320ms;
   --dur-scene: 600ms;
-  /* 6.3.1 A loading state shows only after this: a quicker page comes without a flash. */
+  /* A loading state shows only after this: a quicker page comes without a flash. */
   --loader-delay: 300ms;
-  /* 6.6 Focus */
+  /* Focus */
   --focus-width: 3px;
   --focus-offset: 2px;
   --focus-halo: 0 0 0 5px rgb(0 0 0 / 0.45);
-  /* 10.3 TV: the whole interface scales with the root size — 1.25vw, 24 px on a 1920 window (the showcase's zoom) */
+  /* TV: the whole interface scales with the root size — 1.25vw, 24 px on a 1920 window (the showcase's zoom) */
   --tv-scale: 1.5;
-  /* 3.6, 7.17 Avatar palette — only for profile avatars (ui/Avatar.tsx). Twelve hues around the wheel, each a light to
-   * deep tint of itself, so neighbours stay apart at 32 px (PRF-20: the closest pair is ΔE2000 ≈ 16, was 5). Each name
+  /* Avatar palette — only for profile avatars (ui/Avatar.tsx). Twelve hues around the wheel, each a light to
+   * deep tint of itself, so neighbours stay apart at 32 px (the closest pair is ΔE2000 ≈ 16, was 5). Each name
    * keeps the hue nearest to its old gradient (aurora, the default, is still the sky blue). */
   --avatar-ember: linear-gradient(135deg, #f25a4a, #b3221c);
   --avatar-comet: linear-gradient(135deg, #ffa040, #d45a00);
@@ -181,7 +181,7 @@
   --avatar-dusk: linear-gradient(135deg, #c7a2ff, #8a55ea);
   --avatar-bloom: linear-gradient(135deg, #e866d6, #9a1488);
   --avatar-coral: linear-gradient(135deg, #ff86b0, #d6337a);
-  /* 3.6, 11.1 Subtitle text's second colour (the profile's choice; white is the stage's --text-1) — only for subtitles */
+  /* Subtitle text's second colour (the profile's choice; white is the stage's --text-1) — only for subtitles */
   --subtitle-yellow: #ffd60a;
 }
 
@@ -209,7 +209,7 @@
   }
 }
 
-/* 10.3 TV: 5 % safe area, a thicker focus ring. After the media queries so it wins over them. */
+/* TV: 5 % safe area, a thicker focus ring. After the media queries so it wins over them. */
 [data-tv="1"] {
   --gutter: 5vw;
   --focus-width: 0.1875rem;
@@ -263,7 +263,7 @@
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
     "Hiragino Sans", "Noto Sans CJK SC", "Malgun Gothic", sans-serif;
 
-  /* 4.2 Type scale: text-display, text-h1 … text-caption (size, line height, weight, tracking) */
+  /* Type scale: text-display, text-h1 … text-caption (size, line height, weight, tracking) */
   --text-display: var(--type-display);
   --text-display--line-height: 1.05;
   --text-display--font-weight: 800;
@@ -295,7 +295,7 @@
   --text-caption--font-weight: 600;
   --container-measure: var(--measure);
 
-  /* 6.2, 6.3: shadow-float, duration-fast … duration-scene */
+  /* Depth and motion: shadow-float, duration-fast … duration-scene */
   --shadow-float: var(--shadow-float);
   --transition-duration-fast: var(--dur-fast);
   --transition-duration-base: var(--dur-base);
@@ -305,17 +305,17 @@
 
 /* Theme-independent tokens that are Tailwind keys themselves (always emitted as variables). */
 @theme static {
-  /* 6.1 Radius roles: rounded-xs (labels), rounded-sm (fields, posters, menu rows), rounded-md (panels, menus, toasts,
-   * settings groups), rounded-lg (dialogs, sheets), rounded-full (buttons since the 2026-11 redesign). These replace
-   * Tailwind's own md (6 px) and lg (8 px) since Ф1; sm 12 and md 16 since redesign-2026-11.md 3. */
+  /* Radius roles: rounded-xs (labels), rounded-sm (fields, posters, menu rows), rounded-md (panels, menus, toasts,
+   * settings groups), rounded-lg (dialogs, sheets), rounded-full (buttons). These replace
+   * Tailwind's own md (6 px) and lg (8 px). */
   --radius-xs: 0.25rem;
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.25rem;
-  /* 6.1 A profile avatar's shape (rounded-avatar): a circle since the 2026-11 redesign (the approved mockups, as Apple TV
-   * and Disney+), was a squircle of 28%; part of its identity, not a size step. */
+  /* A profile avatar's shape (rounded-avatar): a circle (as Apple TV and Disney+); part of its identity,
+   * not a size step. */
   --radius-avatar: 50%;
-  /* 5.5 Layers: z-sticky … z-toast */
+  /* Layers: z-sticky … z-toast */
   --z-index-sticky: 20;
   --z-index-header: 50;
   --z-index-popover: 60;
@@ -323,18 +323,18 @@
   --z-index-scrim: 80;
   --z-index-dialog: 81;
   --z-index-toast: 100;
-  /* 6.3 Curves: ease-fast … ease-scene (pair with duration-*) */
+  /* Curves: ease-fast … ease-scene (pair with duration-*) */
   --ease-fast: cubic-bezier(0.2, 0, 0, 1);
   --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-slow: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-scene: ease-in-out;
-  /* 5.3 Containers: max-w-media — a media page, the header and the footer, centred past 1920; max-w-tool — a tool
+  /* Containers: max-w-media — a media page, the header and the footer, centred past 1920; max-w-tool — a tool
    * page's content (settings, import, calendar, stats, legal) from the page's left edge. */
   --container-media: 120rem;
   --container-tool: 75rem;
 }
 
-/* 5.3 One page gutter for header, pages and footer. */
+/* One page gutter for header, pages and footer. */
 @utility page-x {
   padding-inline: var(--gutter);
 }
@@ -355,18 +355,18 @@
   ::selection {
     background: color-mix(in oklab, var(--accent) 40%, transparent);
   }
-  /* One consistent, highly visible focus ring for keyboard and TV remotes; it follows the element's own radius (6.6). */
+  /* One consistent, highly visible focus ring for keyboard and TV remotes; it follows the element's own radius. */
   :focus-visible {
     outline: var(--focus-width) solid var(--focus);
     outline-offset: var(--focus-offset);
   }
-  /* Over art (a stage) the ring also gets a dark halo, so it reads on a light frame (6.6). A control that draws its
+  /* Over art (a stage) the ring also gets a dark halo, so it reads on a light frame. A control that draws its
    * ring on a child adds the halo there (components/ui/styles.ts). */
   .stage :focus-visible {
     box-shadow: var(--focus-halo);
   }
-  /* 7.8 A menu's items show where the pointer or the arrows are with their highlight (--surface-3), with no ring — the
-   * ring of a desktop menu read as the TV mode's (owner, 2026-10-25). On a TV the ring stays (10.3). Nor the stage's
+  /* A menu's items show where the pointer or the arrows are with their highlight (--surface-3), with no ring — the
+   * ring of a desktop menu read as the TV mode's. On a TV the ring stays. Nor the stage's
    * dark halo: a menu opened over art is still a solid panel, and the halo drew a thick black frame round the row. */
   [role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]):focus-visible {
     outline: none;
@@ -381,7 +381,7 @@
   }
   /* While the page scrolls (shell/Header sets data-scrolling until it stops), what passes under a still mouse pointer
    * takes no hover: a card's rise and ring and a shelf's arrows started one after another and re-rendered every frame,
-   * halving the frame rate on a slow computer (docs/qa/2026-10-29/perf-after.md). An invisible layer under the header
+   * halving the frame rate on a slow computer. An invisible layer under the header
    * takes the pointer meanwhile — turning pointer-events off on the page instead repainted all of it at each switch.
    * Touch screens and the TV have no such hover. */
   @media (hover: hover) {
@@ -395,7 +395,7 @@
   button:disabled {
     cursor: not-allowed;
   }
-  /* 8.11 In right-to-left languages the direction icons point the reading way: back and forward, a row's arrows,
+  /* In right-to-left languages the direction icons point the reading way: back and forward, a row's arrows,
    * a menu's "opens more", sign in and out, undo. Media controls (play, rewind) and the external-link arrow keep their
    * shape. Lucide names every icon in its class; one rule here instead of a flip on each icon. */
   [dir="rtl"]
@@ -416,7 +416,7 @@
 }
 
 @layer components {
-  /* 6.3.1 Light motion (components/ui/BrandMotion) in the site's roles: the mark lime on dark and on a stage, ink on
+  /* Light motion (components/ui/BrandMotion) in the site's roles: the mark lime on dark and on a stage, ink on
    * light; the word the text colour; the tick --success. */
   .lm-art {
     --lm-mark: var(--brand-mark);
@@ -457,7 +457,7 @@
       lm-screen-breathe var(--lm-loader-duration) ease-in-out calc(var(--loader-delay) + var(--lm-intro-duration) - var(--lm-loader-duration) * 0.43) infinite,
       lm-screen-open var(--lm-intro-duration) var(--lm-ease) var(--loader-delay) backwards;
   }
-  /* 7.11 A tint of the text colour, so it shows on the page and on any surface, in both themes and on a stage. */
+  /* A tint of the text colour, so it shows on the page and on any surface, in both themes and on a stage. */
   .skeleton {
     --skeleton: color-mix(in srgb, var(--text-1) 6%, transparent);
     --skeleton-shine: color-mix(in srgb, var(--text-1) 10%, transparent);
@@ -465,14 +465,14 @@
     background-size: 300% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
-  /* 7.13 A shelf off the screen isn't drawn until it comes near (performance-handoff §3, P2): a long home page or
+  /* A shelf off the screen isn't drawn until it comes near: a long home page or
    * landing paints and composites only what is on screen, so scrolling keeps its frame rate on a slow phone, and the
    * posters of far shelves wait until they are approached. Until it is first drawn it holds the height of a shelf of its
    * cards (the heading — the "All" link is the heading itself — and cards of media/card-sizes.ts: a frame's name on it,
-   * a poster's and a person's under the art in two lines; measured 2026-11-06 at 390, 768, 1440 and 1920 px; a Top 10
+   * a poster's and a person's under the art in two lines; measured at 390, 768, 1440 and 1920 px; a Top 10
    * shelf is a poster shelf's height since its posters are a poster card's), so the page's height — and where Back
    * returns — stays; then its own. The clip margin keeps a focus ring at its edge.
-   * The TV mode draws every shelf: its remote navigation measures the cards on each press (10.3; the TV shell decides). */
+   * The TV mode draws every shelf: its remote navigation measures the cards on each press (the TV shell decides). */
   .shelf {
     --shelf-h: 17.1rem;
     content-visibility: auto;
@@ -581,13 +581,13 @@
 }
 
 /*
- * The TV shell (app/[locale]/tvui; design-system 10.3, TV document §4). The root size follows the window's width —
+ * The TV shell (app/[locale]/tvui). The root size follows the window's width —
  * 24 px on a 1920 window, 16 on 1280, 12 on a 960 window of a TV with devicePixelRatio 2 — so every TV shows the same
  * composition; every size is in rem. The page itself never scrolls: zones slide (components/tvui/nav/engine.ts).
  */
 :root[data-tv="1"] {
   font-size: 1.25vw;
-  /* 4.2: nothing under body on a TV — `caption` (18 px on 1920) is body there: labels (Tag, "Recommended"), the
+  /* Nothing under body on a TV — `caption` (18 px on 1920) is body there: labels (Tag, "Recommended"), the
    * timeline's time, a torrent's peers while buffering. */
   --type-caption: var(--type-body);
 }
@@ -623,7 +623,7 @@
   transition: none;
 }
 /*
- * The TV's focus (10.3): the lime ring and a visible change of the item itself. Focus, not focus-visible: on a TV the
+ * The TV's focus: the lime ring and a visible change of the item itself. Focus, not focus-visible: on a TV the
  * focus is the selection, whether it came from the arrows, the pointer of LG's remote or the start of a screen.
  */
 .tv-focus {
@@ -649,8 +649,8 @@
 }
 
 /*
- * Text subtitles the browser draws (11.1, PLR-14): the stage's white with a dark edge on the picture, no box behind,
- * the site's font; the player fills the window, so their size follows its height — larger on a TV (10.3). ASS and PGS
+ * Text subtitles the browser draws: the stage's white with a dark edge on the picture, no box behind,
+ * the site's font; the player fills the window, so their size follows its height — larger on a TV. ASS and PGS
  * keep their own look (libass, pictures).
  *
  * The profile's look (`SubtitleStyle`, Settings → Profile → "Subtitle appearance"), as data-sub-* on the player and on

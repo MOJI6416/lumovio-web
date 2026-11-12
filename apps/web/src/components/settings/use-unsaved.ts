@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 /**
- * A form with typed changes that aren't saved yet (design-system 8.8, audit SET-01): leaving the page asks first
+ * A form with typed changes that aren't saved yet: leaving the page asks first
  * instead of dropping them. Closing or reloading the tab gets the browser's own question (`beforeunload`); a link
  * inside the site gets ours — "Leave without saving?" with "Stay" as the safe choice.
  */
@@ -54,7 +54,7 @@ export function useUnsavedChanges(dirty: boolean) {
 }
 
 /**
- * A settings dialog that is a form with "Save" (design-system 8.8): closing it — ×, Escape, a click outside, "Cancel" —
+ * A settings dialog that is a form with "Save": closing it — ×, Escape, a click outside, "Cancel" —
  * with typed changes asks first, "Close without saving?" with "Keep editing" as the safe choice; leaving the page asks
  * as `useUnsavedChanges` does. Returns the close to give the dialog's `onOpenChange` and its "Cancel".
  */

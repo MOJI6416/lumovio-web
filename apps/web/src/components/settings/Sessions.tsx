@@ -26,8 +26,8 @@ const auth = () => import("@/lib/auth-client").then((m) => m.authClient);
 const FIRST = 6;
 
 /**
- * Sign-ins from one browser ("Chrome · Windows"): repeated sign-ins with the same User-Agent become one row (SET-06),
- * different User-Agents never share one, so "Remove device" on a row signs out only that browser (SET-14).
+ * Sign-ins from one browser ("Chrome · Windows"): repeated sign-ins with the same User-Agent become one row,
+ * different User-Agents never share one, so "Remove device" on a row signs out only that browser.
  */
 interface Group {
   key: string;
@@ -70,7 +70,7 @@ const mark = (tv: boolean) => {
 };
 
 /**
- * Security → Where you're signed in (S17, audit SET-06): this device first, then the others, newest first, one row per
+ * Security → Where you're signed in: this device first, then the others, newest first, one row per
  * browser with the number of sign-ins. A row opens "Remove device «…»?" (not "Sign out" — that is leaving on this device);
  * "Remove all other devices" is a group of its own after the list — the risky one, its consequence said under it — and
  * asks first too. The list follows the answer.
@@ -187,7 +187,7 @@ export function Sessions() {
               ))}
               {count === 0 && <EmptyState variant="inline" title={t("noOtherDevices")} />}
             </SettingsSection>
-            {/* The risky one, apart and last: its consequence is said (1.2, principle 6) and it asks first (8.3). */}
+            {/* The risky one, apart and last: its consequence is said and it asks first. */}
             {count > 0 && (
               <SettingsSection>
                 <SettingsLink tone="danger" label={t("revokeOthers")} detail={t("revokeOthersHint")} onClick={() => void revokeOthers(count)} />

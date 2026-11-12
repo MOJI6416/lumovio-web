@@ -1,5 +1,5 @@
 /*
- * The TV shell's remote navigation (TV document §5, §12.2; design-system 10.3): the screen is made of zones — the menu,
+ * The TV shell's remote navigation: the screen is made of zones — the menu,
  * the hero, each shelf, a grid, filters, actions, seasons, episodes, a dialog — with explicit neighbours and a memory of
  * the last item. Geometry chooses only inside a zone and as the last resort, so ↓ from a shelf always lands on the next
  * shelf, never on a closer button of another block.
@@ -251,7 +251,7 @@ export function findTarget(
   }
 
   // Out of the zone: its neighbour that way, stepping over empty zones. From the item's whole column (a Top 10's
-  // numeral and poster), so ↓ from the first place lands on the first card below, not the second (owner, 2026-11-06).
+  // numeral and poster), so ↓ from the first place lands on the first card below, not the second.
   const from = columnOf(active).getBoundingClientRect();
   let next = neighbour(zone, dir, scope);
   if (next === "stop") return null;
@@ -329,7 +329,7 @@ function offsetIn(el: HTMLElement, box: HTMLElement): { left: number; top: numbe
   return { left, top };
 }
 
-/** Saved slide positions of a screen: the page's and each shelf's (by zone id), for Back (TV2). */
+/** Saved slide positions of a screen: the page's and each shelf's (by zone id), for Back. */
 export interface Shifts {
   page: number;
   rows: Record<string, number>;

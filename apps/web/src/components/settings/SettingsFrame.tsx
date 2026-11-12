@@ -13,10 +13,10 @@ import { prefetchLight } from "./queries";
 import { inSection, SettingsNav, useSettingsSections } from "./SettingsNav";
 
 /**
- * The Settings template (design-system 9): on a desktop (lg) the menu on the left (256) and the open section beside it
- * (up to 720) — both centred on the page as one block (owner, 2026-10-25) — with the section's name as the page's h1
+ * The Settings template: on a desktop (lg) the menu on the left (256) and the open section beside it
+ * (up to 720) — both centred on the page as one block — with the section's name as the page's h1
  * over it, in line with the profile's card at the top of the menu. Below lg /settings is the list of sections ("Settings"
- * as the h1) and a section is a page of its own: "← Settings" over the section's name (SET-03). One h1 either way: the
+ * as the h1) and a section is a page of its own: "← Settings" over the section's name. One h1 either way: the
  * header comes first in the DOM, so a phone reads it before the list; the desktop's grid puts it over the section. A page
  * under a section (a server's torrents) is a Tool page with its own header.
  */
@@ -28,7 +28,7 @@ export function SettingsFrame({ kids, children }: { kids: boolean; children: Rea
   const sections = kids ? all.filter((s) => s.kidsToo) : all;
   const frame = useRef<HTMLDivElement>(null);
   // Another section is being prepared (desktop, the menu beside it): the loader in the section's place, the menu and
-  // the page where they are (owner, 2026-11-06: the page jumped and nothing said it was loading).
+  // the page where they are (without it the page jumped and nothing said it was loading).
   const loading = useSectionLoading("/settings");
   // The adult sections' first answers, read once the page is idle: a section drawn from the router's cache (the menu
   // prefetches it whole, SettingsNav) then has its data too, without a skeleton.

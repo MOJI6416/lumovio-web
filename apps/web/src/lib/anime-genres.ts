@@ -5,7 +5,7 @@
 export const ANIME_GENRES = new Set([10759, 10765, 35, 18, 9648, 80, 10768, 10751, 10762]);
 
 /**
- * Movie genres for anime films (CAT-02: the series list gave 0 results there), by the same rule: each had
+ * Movie genres for anime films (the series list gave 0 results there), by the same rule: each had
  * 30+ Japanese animated films with 30+ votes on 2026-10-24. Documentary, western, history, music and war had
  * 0–27; animation itself is implied.
  */

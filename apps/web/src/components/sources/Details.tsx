@@ -10,7 +10,7 @@ import { Facts } from "./Facts";
 import { ReleaseLine, useReleaseFacts, useReleaseText } from "./release-text";
 
 /**
- * "Release details" (7.9, 7.15), one dialog wherever a release is shown — the card of "Where to watch", the sources
+ * "Release details", one dialog wherever a release is shown — the card of "Where to watch", the sources
  * screen and its rows, the sources over the player: the marks and the audio under the heading, every fact its name and
  * the indexer give, and "Watch". Centred from `md`, a bottom sheet on a phone; the TV's is tvui/sources/TvFinder.
  * `note` says for a screen reader what "Watch" does (adds it to the server, or plays the copy already there).

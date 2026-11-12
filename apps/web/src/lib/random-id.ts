@@ -1,7 +1,7 @@
 /**
  * A random UUID v4. `crypto.randomUUID` exists only in a secure context, and a page opened over plain http from a LAN
- * address (a phone on the local stand) isn't one — there the player used to fail at once; `getRandomValues` is
- * available everywhere.
+ * address (a phone on a local dev server) isn't one — there the player used to fail at once;
+ * `getRandomValues` is available everywhere.
  */
 export function randomId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();

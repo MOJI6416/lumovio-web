@@ -7,7 +7,7 @@ const result = (title: string, seeders = 10): TsSearchResult => ({ title, link: 
 const ARRIVAL = { title: "Прибытие", originalTitle: "Arrival", kind: "movie" as const, year: 2016, originalLanguage: "en" };
 const prefs: ReleasePrefs = { languages: ["ru"], studios: ["Пифагор"], quality: "auto", device: { hevc: true, hdr: true, uhd: false, dolbyVision: false } };
 
-/** A stored find keeps every picture version its audio option was found in (TS5), not only the best release's. */
+/** A stored find keeps every picture version its audio option was found in, not only the best release's. */
 describe("stored finds' picture versions", () => {
   const ranked = rankReleases(
     [

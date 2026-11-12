@@ -17,7 +17,7 @@ export interface PillOption<V extends string> {
 }
 
 /**
- * A filter pill with a list (design-system 7.4, as the catalog's): at rest it names the filter ("Length ⌄"), once
+ * A filter pill with a list (as the catalog's): at rest it names the filter ("Length ⌄"), once
  * chosen it shows the value as selected ("Up to 1 h 30 min ⌄"); its menu starts with `any` and a separator. With
  * `sort` it is the sort pill: always its value, never "selected" — a sort is not a filter. Its name for a screen reader
  * is "Filter: value"; it is a menu button, not a toggle (no `aria-pressed`).

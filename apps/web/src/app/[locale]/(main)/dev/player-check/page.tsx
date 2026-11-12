@@ -18,7 +18,7 @@ async function isAdmin() {
 }
 
 /**
- * The device check (S42; docs/player-compatibility-and-ux-2026-10-23.md P5): which formats this browser plays in
+ * The device check: which formats this browser plays in
  * Lumovio's player. Like /dev/ui, open to anyone on a development server; a production build shows it to admins only
  * and answers everyone else with a plain 404. Not linked from any navigation.
  */

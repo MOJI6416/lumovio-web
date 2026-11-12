@@ -14,7 +14,7 @@ export type Opened = { open: boolean; setOpen: (open: boolean) => void };
 export const NOT_TOGGLE = { "aria-pressed": undefined };
 
 /**
- * A filter pill (design-system 7.4): a FilterChip with the filter's name at rest, its value once chosen, and a
+ * A filter pill: a FilterChip with the filter's name at rest, its value once chosen, and a
  * chevron; its name for a screen reader is "Filter: value". What it opens (a menu or a popover, `children`) loads
  * when the pointer comes near, it gets the focus or the page is idle, and takes the light pill's place — open, if
  * it was pressed (ui/lazy-swap, as Select; bundle budget). The catalog's filters (BrowseView) and a section's genres

@@ -83,7 +83,7 @@ export async function mediaFetch(url: string, init: RequestInit & { timeoutMs?: 
     } catch (probe) {
       if (probe instanceof MediaNetError) throw probe;
       // Not even an opaque answer: the server is off, the name or port is wrong, or (https) its certificate is refused.
-      // fetch() can't tell which, so it isn't called a certificate problem (PLR-17).
+      // fetch() can't tell which, so it isn't called a certificate problem.
       throw new MediaNetError("unreachable", "The server is unreachable from this device");
     }
   }
@@ -96,7 +96,7 @@ export async function mediaFetch(url: string, init: RequestInit & { timeoutMs?: 
 const ADDRESS_SUSPECT: NetErrorCode[] = ["tls", "unreachable", "timeout", "mixed_content"];
 
 /**
- * A failed request to a typed server address, refined for the "add server" dialog (SRV-02): the
+ * A failed request to a typed server address, refined for the "add server" dialog: the
  * browser reports a host name that doesn't exist like a certificate or network problem, so Lumovio is
  * asked whether the name exists in DNS at all. `lookup` answers true / false / null (can't tell); only
  * a definite "no such name" becomes `not_found`, anything else keeps the original error.

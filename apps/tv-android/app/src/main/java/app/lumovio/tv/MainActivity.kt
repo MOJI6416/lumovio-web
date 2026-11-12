@@ -33,7 +33,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Lumovio for Android TV (docs/tv-mode-handoff-2026-10-23.md §11.1): one screen with a WebView that opens the site,
+ * Lumovio for Android TV: one screen with a WebView that opens the site,
  * which answers it with its TV shell (the user agent says `LumovioTV/<version>`). Everything — the interface, the data,
  * the player — is the site's; the app only gives what a TV browser can't: the remote's Back and media keys reach the
  * page, video goes full screen, the screen stays on while a video plays, `http://` servers at home can be reached
@@ -100,10 +100,10 @@ class MainActivity : Activity() {
     private val debuggable: Boolean get() = 0 != (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE)
 
     /**
-     * Updates come from the site (TV document §11.1): each release build publishes `downloads/lumovio-tv.json` and the
-     * APK next to it (.github/workflows/tv-app.yml). A newer version is offered once per start; "Update" downloads it
+     * Updates come from the site: each release build publishes `downloads/lumovio-tv.json` and the
+     * APK next to it (the release workflow). A newer version is offered once per start; "Update" downloads it
      * and hands it to the system installer, which asks the person — the first time also for leave to install from
-     * Lumovio. A debug build (a stand, another package) never updates itself.
+     * Lumovio. A debug build (a local dev server, another package) never updates itself.
      */
     private fun checkForUpdate() {
         if (debuggable) return

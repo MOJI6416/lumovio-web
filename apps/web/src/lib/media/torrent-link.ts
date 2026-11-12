@@ -3,8 +3,8 @@ import { api } from "@/lib/api";
 import { isSameTitle, packOf } from "./releases";
 
 /*
- * Linking torrents already on a TorrServer to titles (TS7 «Не связано в Lumovio»; docs/torrserver.md "Existing
- * torrents"): torrents added in TorrServer's own UI or another app, or unlinked earlier. The device reads the server's
+ * Linking torrents already on a TorrServer to titles: torrents added in TorrServer's own UI or another app,
+ * or unlinked earlier. The device reads the server's
  * list as always; Lumovio's API is asked only for catalog titles — by the words of a release's name or a title id the
  * torrent's own data names — never with a hash, a link or the whole name. A title is proposed with certainty only by
  * a stored id or by a name that fits exactly one title with its year; anything less is the person's choice, and

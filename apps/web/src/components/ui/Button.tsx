@@ -10,7 +10,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   /** `stacked`: icon over a caption below md (a row of labelled actions on a phone). */
   layout?: ButtonLayout;
-  /** Leading icon (design-system 6.4), sized by the button. */
+  /** Leading icon, sized by the button. */
   icon?: LucideIcon;
   /** Busy: the spinner takes the icon's place (or covers the label when there is no icon); the width stays. */
   loading?: boolean;

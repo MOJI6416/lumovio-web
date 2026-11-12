@@ -35,7 +35,7 @@ function Fields() {
   const t = useTranslations();
   const [query, setQuery] = useState("");
   return (
-    <ShowcaseSection id="fields" title={t("devUi.fields")} source="ui/Input.tsx · ui/Field.tsx · 7.6">
+    <ShowcaseSection id="fields" title={t("devUi.fields")} source="ui/Input.tsx · ui/Field.tsx">
       <div className="grid max-w-3xl gap-6 md:grid-cols-2">
         <Field label={t("connections.url")} hint={t("devUi.fieldAddressHint")}>
           {(id, d, invalid) => <Input id={id} aria-describedby={d} invalid={invalid} placeholder="http://192.168.1.10:8096" />}
@@ -84,7 +84,7 @@ function Selects() {
   const [lang, setLang] = useState<string | null>("uk");
   const [studios, setStudios] = useState<string[]>(["A24", "Studio Ghibli"]);
   return (
-    <ShowcaseSection id="select" title={t("devUi.select")} source="ui/Select.tsx · ui/Combobox.tsx · 7.6">
+    <ShowcaseSection id="select" title={t("devUi.select")} source="ui/Select.tsx · ui/Combobox.tsx">
       <Demo title="Select" note={t("devUi.selectNote")} className="block">
         <div className="grid max-w-3xl gap-6 md:grid-cols-2">
           <Field label={t("devUi.selectQuality")}>
@@ -171,7 +171,7 @@ function SmallSelectDemo() {
           },
         ]}
       />
-      {/* Combobox `sm` (a long list in the same row), "Any" as a value rather than a grey hint (X-39). */}
+      {/* Combobox `sm` (a long list in the same row), "Any" as a value rather than a grey hint. */}
       <Combobox
         multiple
         size="sm"

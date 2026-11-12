@@ -14,10 +14,10 @@ import type { ActionTitle } from "./usePersonalActions";
 const full = lazyControl(() => import("./CardMenu"));
 
 /**
- * Where the "More" button is seen (design-system 7.12, 8.3): `hover` — with a mouse on hover and keyboard focus, on a
+ * Where the "More" button is seen: `hover` — with a mouse on hover and keyboard focus, on a
  * touch screen a long press opens the same menu as a sheet (no button on every poster), on TV not at all (a card is
  * one focus stop; its actions are on the title page); `always` — also shown on touch screens and TV, where the menu
- * holds something the title page doesn't ("Remove from Continue watching", 8.3). Never pressable while unseen.
+ * holds something the title page doesn't ("Remove from Continue watching"). Never pressable while unseen.
  */
 const VISIBILITY = {
   hover:
@@ -29,7 +29,7 @@ const VISIBILITY = {
 export type MoreVisibility = keyof typeof VISIBILITY;
 
 /**
- * A card's "More" button (IconButton Ellipsis on the artwork, 8.1). Every card has one, the menu behind it is opened
+ * A card's "More" button (IconButton Ellipsis on the artwork). Every card has one, the menu behind it is opened
  * rarely: the menu, its actions and dialogs (./CardMenu) load when the pointer comes near the button, it gets the focus,
  * a long press asks for it or the browser is idle — then they take the button's place, open if it was already pressed
  * (bundle budget, as ui/Select). `openSignal` changes to open it from the card (a long press).
@@ -100,7 +100,7 @@ const LONG_PRESS_MS = 500;
 const MOVE_TOLERANCE = 10;
 
 /**
- * A long press on a card with a finger opens its "More" menu (7.12) instead of following the link; a short tap still
+ * A long press on a card with a finger opens its "More" menu instead of following the link; a short tap still
  * opens the title, a swipe still scrolls the shelf. Returns the handlers for the card's root and the signal for
  * CardMore. With a mouse the right button keeps the browser's own menu ("Open in new tab").
  */

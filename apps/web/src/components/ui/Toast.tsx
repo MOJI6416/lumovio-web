@@ -16,7 +16,7 @@ import { type ToastAction, type ToastItem, type ToastOptions, toastStore } from 
 export type { ToastAction, ToastOptions } from "./toast-store";
 
 // The confirmation dialog (Radix Dialog, fields) loads only once something asks for a confirmation, so the
-// Toaster on every page stays light (scripts/bundle-budget.mjs).
+// Toaster on every page stays light (bundle budget).
 const ConfirmHost = dynamic(() => import("./ConfirmFrame").then((m) => m.ConfirmHost), { ssr: false });
 const hasPending = () => confirmQueue.get().length > 0;
 
@@ -30,7 +30,7 @@ const options = (o: ToastOptions | ToastAction | undefined): ToastOptions =>
   o && "onClick" in o ? { action: o } : (o ?? {});
 
 /**
- * Toasts (design-system 7.10, audit X-31): for a result that isn't visible where it happened, or to offer "Undo".
+ * Toasts: for a result that isn't visible where it happened, or to offer "Undo".
  * Any tone takes one action: `toast.success(message, { action: { label, onClick } })`; `toast.info(message, action)`
  * still works. Rules (4 s / 7 s, at most 3, pause on hover and focus) live in ./toast-store. Returns the id for
  * `toast.dismiss(id)`. The message is already translated; an API error goes through lib/api-errors first.
@@ -46,10 +46,10 @@ export const toast = {
 const EMPTY: ToastItem[] = [];
 
 const ICON = {
-  // The tick draws itself (6.3.1): a success toast comes once the server has confirmed (8.3).
+  // The tick draws itself: a success toast comes once the server has confirmed.
   success: <SavedCheck />,
   error: <CircleAlert aria-hidden className="size-5 shrink-0 text-danger" />,
-  // Neutral: no blue (3.4).
+  // Neutral: no blue.
   info: <Info aria-hidden className="size-5 shrink-0 text-text-2" />,
 } as const;
 

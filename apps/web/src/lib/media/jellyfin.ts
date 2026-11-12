@@ -199,7 +199,7 @@ export function deviceProfile(caps: PlaybackCapabilities, maxBitrate: number) {
 /**
  * An address with the token. `ApiKey` is what Jellyfin 10.9+ expects (12.x rejects the legacy `api_key` on some
  * endpoints, e.g. trickplay); older servers only know `api_key`. Sending both works everywhere — but only once each: a
- * `TranscodingUrl` already carries `ApiKey`, and its HLS playlist answers 401 to a second one (2026-11-07, every copy
+ * `TranscodingUrl` already carries `ApiKey`, and its HLS playlist answers 401 to a second one (every copy
  * that needed HLS failed to start).
  */
 export function withJellyfinKey(url: string, token: string): string {
@@ -299,7 +299,7 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
     },
 
     /**
-     * What this sign-in has played (Import history, C134): every film and episode Jellyfin marks played, with the day
+     * What this sign-in has played (Import history): every film and episode Jellyfin marks played, with the day
      * last played; an episode with its series' name, year and ids. Resume positions are left on the server.
      */
     async history(onProgress: (p: ScanProgress) => void) {
@@ -366,7 +366,7 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
       const audio: AudioOption[] = audioStreams.map((s) => ({
         index: s.Index,
         // The track's own title ("Dub (Пифагор)") over Jellyfin's composed one ("Rus - AAC - Stereo - Default"): the player
-        // says the language and format itself (PLR-07).
+        // says the language and format itself.
         label: s.Title ?? s.DisplayTitle ?? s.Language ?? `#${s.Index}`,
         lang: s.Language ?? null,
         codec: s.Codec ?? null,
@@ -441,7 +441,7 @@ export function jellyfinClient(base: string, auth: { userId: string; accessToken
         type,
         mime: type === "hls" ? "application/vnd.apple.mpegurl" : null,
         // Its HLS playlist always lists the whole film (StartTimeTicks only starts the transcode there): without a seek
-        // a resume, a source switch or another audio track started over at 0:00 (2026-11-07).
+        // a resume, a source switch or another audio track started over at 0:00.
         seekToStart: type === "hls",
         method,
         methodNote,

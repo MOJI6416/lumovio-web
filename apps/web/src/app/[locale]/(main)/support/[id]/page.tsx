@@ -11,7 +11,7 @@ export async function generateMetadata() {
   return { title: t("title"), robots: { index: false } };
 }
 
-/** One of the person's requests (S61): the messages and their answer; the support's answer mail links here. */
+/** One of the person's requests: the messages and their answer; the support's answer mail links here. */
 export default async function SupportRequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const me = await getMeState();

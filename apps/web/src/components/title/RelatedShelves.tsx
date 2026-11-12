@@ -6,11 +6,11 @@ import { PosterCard } from "@/components/media/PosterCard";
 import { Row } from "@/components/media/Row";
 import { withNameLang } from "@/components/media/recommendation-copy";
 
-/** Fewer cards than this aren't a shelf of their own (7.13): they lead "More like this" instead. */
+/** Fewer cards than this aren't a shelf of their own: they lead "More like this" instead. */
 const SHELF_MIN = 3;
 
 /**
- * "More like this" on the title page (design-system 7.12, 7.13, TTL-16; 2026-11-06 shelves instead of the tab's grids):
+ * "More like this" on the title page (shelves, not grids):
  * the collection the title belongs to — named without TMDB's "(Collection)" and without the title itself — then what is
  * like it in the same form, then in another form, then the director's (a series': its creator's) other titles. Each is a
  * shelf of PosterCards; one with fewer than three cards doesn't stand alone: the collection's parts lead "More like
@@ -63,7 +63,7 @@ export function RelatedShelves({
         <Row
           id="more-by"
           title={t(moreBy.person.role === "director" ? "moreByDirector" : "moreByCreator", { name: moreBy.person.name })}
-          // A name TMDB has only in Latin letters on a ru/uk page is marked with its language (8.11, L10N-11).
+          // A name TMDB has only in Latin letters on a ru/uk page is marked with its language.
           heading={withNameLang(t(moreBy.person.role === "director" ? "moreByDirector" : "moreByCreator", { name: moreBy.person.name }), moreBy.person.name, locale)}
           note={t(moreBy.person.role === "director" ? "moreByDirectorNote" : "moreByCreatorNote", { name: moreBy.person.name })}
         >

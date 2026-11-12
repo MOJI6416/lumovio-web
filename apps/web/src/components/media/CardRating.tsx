@@ -22,7 +22,7 @@ const formatter = (locale: string, style: "one" | "percent") => {
 /**
  * The one score of a card: in a grid sorted by a score (IMDb's, Rotten Tomatoes', Metacritic's) that score, so the card
  * says what the order is by; else the Lumovio Score (null here: it draws itself, ScoreBadge), else IMDb's, else
- * TMDB's. Decimals in the locale's style (2.3: 7,8 in ru/uk, 7.8 in en); the Tomatometer in per cent, also in the
+ * TMDB's. Decimals in the locale's style (7,8 in ru/uk, 7.8 in en); the Tomatometer in per cent, also in the
  * locale's style ("84%", "84 %" in fr and de, "%84" in tr, as the title page's ratings say it), the Metascore as a number
  * of 100.
  */
@@ -38,7 +38,7 @@ function cardScore(t: Rated, locale: string): { brand: "imdb" | "rotten_tomatoes
 }
 
 /**
- * The one rating of a card or a billboard line (audit X-20): always with its source, never a bare star that reads as
+ * The one rating of a card or a billboard line: always with its source, never a bare star that reads as
  * the profile's own rating — the Lumovio Score with Lumovio's mark (sent only at medium or high confidence), a
  * service's score with its logo, TMDB's community score with the word "TMDB" (cardScore above).
  */

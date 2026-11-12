@@ -46,7 +46,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   // A profile switch (any of its screens, site or TV) drops the passwords held for the last profile: the next player
-  // request asks again, as the new profile, and a server not shared with it is refused (docs/torrserver-2026-11.md 33).
+  // request asks again, as the new profile, and a server not shared with it is refused.
   if (event.request.method === "POST" && url.pathname.startsWith("/api/profiles/select")) creds.clear();
 
   const m = url.pathname.match(/^\/__ts\/([0-9a-f-]{36})\/(.+)$/);
@@ -79,10 +79,10 @@ self.addEventListener("fetch", (event) => {
 });
 
 /*
- * The offline page (design-system 11.3, 7.11, audit SH-10): the page state — the logo where the header has it, in the
+ * The offline page: the page state — the logo where the header has it, in the
  * middle the projector going dark, "No connection" and Retry, the why for a screen reader — in the person's language and
  * theme, with nothing loaded from the network.
- * Language: the address (/ru/…, /de/…), else the saved choice (cookie), else the browser's; drafts get English (8.11).
+ * Language: the address (/ru/…, /de/…), else the saved choice (cookie), else the browser's; drafts get English.
  * A language joins OFFLINE_TEXT when it becomes "reviewed" (i18n/locales.ts).
  * Theme: the saved choice; dark by default. The logo paths are those of src/lib/brand.ts.
  * Retry has the focus from the start (a TV remote's OK presses it), and the page tries the site again every 15 s by

@@ -4,7 +4,7 @@ import { z } from "zod";
 export const MaturityLevel = z.enum(["kids", "family", "teen", "adult"]);
 export type MaturityLevel = z.infer<typeof MaturityLevel>;
 
-/** The avatar's colours (design-system 3.6, `--avatar-*`). */
+/** The avatar's colours (`--avatar-*`). */
 export const AVATARS = [
   "aurora",
   "ember",
@@ -22,7 +22,7 @@ export const AVATARS = [
 export type AvatarColor = (typeof AVATARS)[number];
 
 /**
- * A profile's avatar colour (design-system 7.17): the circle behind its photo, and with the name's first letter the
+ * A profile's avatar colour: the circle behind its photo, and with the name's first letter the
  * avatar itself when there is no photo (`Profile.photo`).
  */
 export type AvatarId = AvatarColor;
@@ -33,7 +33,7 @@ export function isAvatarId(v: unknown): v is AvatarId {
 }
 
 /**
- * The colour of a saved or sent avatar value. Until 2026-11-06 an avatar could carry a drawn mark after a dot
+ * The colour of a saved or sent avatar value. Older versions let an avatar carry a drawn mark after a dot
  * (`"ember.fox"`); the marks are gone and such a value reads as its colour with the letter. null: not an avatar colour.
  */
 export function avatarColorOf(v: unknown): AvatarId | null {
@@ -42,7 +42,7 @@ export function avatarColorOf(v: unknown): AvatarId | null {
   return rest.length === 0 && (mark === undefined || /^[a-z]+$/.test(mark)) && isAvatarId(color) ? color : null;
 }
 
-/** An avatar colour; a page still open from before 2026-11-06 may send one with its mark, which is dropped. */
+/** An avatar colour; a page still open from an older version may send one with its mark, which is dropped. */
 export const AvatarId = z
   .string()
   .refine((v) => avatarColorOf(v) !== null, { message: "Unknown avatar" })
@@ -61,7 +61,7 @@ export const ReleaseQuality = z.enum(["auto", "best", "small"]);
 export type ReleaseQuality = z.infer<typeof ReleaseQuality>;
 
 /**
- * What of an unwatched episode stays hidden until pressed (design-system 8.12): its still, its description, its name.
+ * What of an unwatched episode stays hidden until pressed: its still, its description, its name.
  * A guest gets the defaults.
  */
 export const SpoilerPrefs = z.object({ stills: z.boolean(), overviews: z.boolean(), names: z.boolean() });
@@ -69,7 +69,7 @@ export type SpoilerPrefs = z.infer<typeof SpoilerPrefs>;
 export const SPOILER_DEFAULTS: SpoilerPrefs = { stills: true, overviews: true, names: false };
 
 /**
- * How subtitles look in the player (design-system 11.1): the size, the text's colour, what keeps it readable on the
+ * How subtitles look in the player: the size, the text's colour, what keeps it readable on the
  * picture (a shadow, an outline or a box behind it) and how high it stands. Text subtitles take all four; ASS keeps its
  * own colours and edges (size and height apply), PGS and VobSub pictures take the size and height. A guest and a new
  * profile get the defaults.
@@ -88,7 +88,7 @@ export interface Profile {
   name: string;
   avatar: AvatarId;
   /**
-   * The profile's own photo (design-system 7.17): its address, a new one with every new photo, so it is cached for
+   * The profile's own photo: its address, a new one with every new photo, so it is cached for
    * good. null: the avatar is its colour with the name's first letter.
    */
   photo: string | null;
@@ -111,7 +111,7 @@ export interface Profile {
   releaseQuality: ReleaseQuality;
   spoilers: SpoilerPrefs;
   /**
-   * Anime offered to the profile (design-system 8.14): off — no Anime section, and no anime on shelves, grids, picks or
+   * Anime offered to the profile: off — no Anime section, and no anime on shelves, grids, picks or
    * "More like this". Search by name, a title's page and the profile's own lists and history keep it.
    */
   showAnime: boolean;
@@ -173,7 +173,7 @@ export interface LeaveCodeSent {
 }
 
 /**
- * A request to leave the kids profile approved on another device (TV document §12.6): the code and the address the TV
+ * A request to leave the kids profile approved on another device: the code and the address the TV
  * shows (QR), how long they work.
  */
 export interface ProfileApprovalRequest {
@@ -242,7 +242,7 @@ export interface AuthCapabilities {
 }
 
 /**
- * What a sign-in's User-Agent says (SET-14): a browser on a system, a TV (signed in with a code), an automated
+ * What a sign-in's User-Agent says: a browser on a system, a TV (signed in with a code), an automated
  * sign-in (a script or a headless browser; `browser` is the tool, "curl", "HeadlessChrome") or nothing to go by.
  * Names are proper nouns ("Chrome", "Windows"); the client words the rest in the interface language.
  */
@@ -265,7 +265,7 @@ export interface DeviceSession {
 }
 
 /*
- * "Watch on TV" (design-system 8.18, TV document §7.3): a phone or a computer sends what it shows to a TV of the same
+ * "Watch on TV": a phone or a computer sends what it shows to a TV of the same
  * account where Lumovio is open, the TV starts it, and the sender drives that viewing. The TV says what it plays
  * (`TvPlayback`) to the senders listening; `failure` is why a viewing didn't start there.
  */

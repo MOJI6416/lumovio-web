@@ -11,7 +11,7 @@ const CLAMP = { 3: "line-clamp-3", 4: "line-clamp-4", 6: "line-clamp-6" } as con
 const linesAt = (text: string, perLine: number) => text.split("\n").reduce((n, p) => n + Math.max(1, Math.ceil(p.length / perLine)), 0);
 
 /**
- * A text shown in a few lines with "More" (design-system 7.14 item 4, TTL-11; a person's biography, PER-02): the
+ * A text shown in a few lines with "More" (an overview, a person's biography): the
  * button appears only when the text is longer than that, opens it in place and closes it again ("Show less").
  * `label` names what opens ("the whole overview"); `className` carries the type style; the measure is 72 characters.
  */

@@ -19,7 +19,7 @@ import { CardRating, ratingText } from "./CardRating";
 import { POSTER_SIZES } from "./card-sizes";
 import { useDismissed } from "./shelf-context";
 
-/** The card's one personal mark (7.12): "Watched" outranks "Watchlist". */
+/** The card's one personal mark: "Watched" outranks "Watchlist". */
 export function useCardMark(title: Pick<TitleSummary, "id" | "kind">, enabled = true) {
   const { data: state } = useLibraryState(title.id, enabled);
   const watched = state ? state.watchedCount > 0 || Boolean(state.progress?.completed && title.kind === "movie") : false;
@@ -34,10 +34,10 @@ export function useRatingText() {
 }
 
 /**
- * Poster card (design-system 7.12, sizes 5.4): the poster with at most one badge ("On your server") and one personal
+ * Poster card: the poster with at most one badge ("On your server") and one personal
  * mark, the name in up to two lines and one line of metadata under it — the same in shelves, catalog grids, search,
  * lists and filmographies. The metadata is what the shelf chose it by ("Added 22 Oct", "In digital
- * since 13 Oct"), or the card's one rating, the year and the type. "More" (8.1) on the artwork; a long press on a touch
+ * since 13 Oct"), or the card's one rating, the year and the type. "More" on the artwork; a long press on a touch
  * screen opens it too. The width comes from the shelf or grid around it (./card-sizes).
  */
 export function PosterCard({
@@ -74,7 +74,7 @@ export function PosterCard({
   moreVisibility?: MoreVisibility;
   /** A control of the shelf laid over the artwork's top-end corner ("Like" in the starter). */
   children?: ReactNode;
-  /** @deprecated The name is always shown now (7.12); kept for callers until they are migrated. */
+  /** @deprecated The name is always shown now; kept for callers until they are migrated. */
   caption?: boolean;
 }) {
   const t = useTranslations("common");
@@ -89,12 +89,12 @@ export function PosterCard({
   const shelfFact = useCardFact(title);
   const fact = factProp ?? shelfFact;
   const press = useLongPress();
-  // The name and line under the poster, in a shelf as in a grid (2026-11-06, decided anew): a poster carries its own
+  // The name and line under the poster, in a shelf as in a grid: a poster carries its own
   // title lettering, and text laid over it read as text on text and hid up to half of a phone's poster; under it the
   // name is legible in any script and theme and the art is whole.
   if (useDismissed(title.id)) return null;
   const rating = title.sortScore || title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
-  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38). Else the
+  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating. Else the
   // rating first, then the year — as the billboard's line — so a narrow card that has room for one keeps the rating.
   const meta = subtitle ? [subtitle] : fact ? [factShown ?? fact] : [rating, title.year];
   const caption = (
@@ -115,7 +115,7 @@ export function PosterCard({
         data-title-id={title.id}
         data-on-server={title.onServer ? "" : undefined}
         draggable={false}
-        // The marks on the artwork are named here: an icon alone (or a title= hint) names nothing (audit X-21).
+        // The marks on the artwork are named here: an icon alone (or a title= hint) names nothing.
         aria-label={[
           `${title.title}${title.year ? ` (${title.year})` : ""}`,
           kindLabel,
@@ -139,7 +139,7 @@ export function PosterCard({
           mark={showState && !children ? mark : null}
           progress={fraction}
         />
-        {/* A name the catalog has only in Latin letters on a ru/uk page is marked as such (8.11, L10N-11). */}
+        {/* A name the catalog has only in Latin letters on a ru/uk page is marked as such. */}
         {caption}
       </Link>
       {(more || children) && (

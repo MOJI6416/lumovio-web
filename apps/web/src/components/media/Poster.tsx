@@ -3,8 +3,8 @@ import { Film, Tv } from "lucide-react";
 import { posterSrcSet, tmdbImage } from "@/lib/images";
 
 /**
- * A poster image for rows (history, calendar). Without artwork — the placeholder of 6.5: --surface-2 with the type's
- * icon, never "no image" text or the title squeezed into a 40 px box (LIB-23). `title` is the image's alt; leave it
+ * A poster image for rows (history, calendar). Without artwork — the placeholder: --surface-2 with the type's
+ * icon, never "no image" text or the title squeezed into a 40 px box. `title` is the image's alt; leave it
  * empty where the name stands next to it.
  */
 export function Poster({

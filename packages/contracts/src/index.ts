@@ -32,7 +32,7 @@ export const API_ERROR_CODES = [
   "kids_restricted",
   /** A TV's session and an action that is done on a phone or a computer (account, servers, import, profiles). */
   "tv_restricted",
-  /** The admin's request without a live admin session: confirm with the second factor first (admin handoff A0). */
+  /** The admin's request without a live admin session: confirm with the second factor first. */
   "step_up_required",
   /** An uploaded profile photo isn't a picture the server can read (JPEG, PNG, WebP, AVIF, GIF). */
   "unreadable_image",

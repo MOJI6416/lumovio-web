@@ -94,7 +94,7 @@ describe("mediaFetch on an HTTPS page", () => {
     expect(await codeOf("http://127.0.0.1:8090/echo")).toBe("local_network");
   });
 
-  it("calls an https server that doesn't answer at all unreachable, not a certificate problem (PLR-17)", async () => {
+  it("calls an https server that doesn't answer at all unreachable, not a certificate problem", async () => {
     onLumovio();
     vi.stubGlobal("fetch", vi.fn(refused));
     expect(await codeOf("https://torr.example.org/echo")).toBe("unreachable");

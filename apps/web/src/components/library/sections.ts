@@ -1,4 +1,4 @@
-/** The library's collections, each a page of its own under the library's screen (`/library?tab=…`, S09). */
+/** The library's collections, each a page of its own under the library's screen (`/library?tab=…`). */
 export const LIBRARY_SECTIONS = ["servers", "watchlist", "favorites", "history", "ratings", "lists"] as const;
 export type LibrarySection = (typeof LIBRARY_SECTIONS)[number];
 

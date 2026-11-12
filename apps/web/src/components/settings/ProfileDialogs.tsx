@@ -25,9 +25,10 @@ import type { ProfileChange, ProfilePrefs } from "./ProfileSettings";
 import { useDiscardGuard } from "./use-unsaved";
 
 /*
- * The profile's sub-screens (design-system 7.18): what the Profile page shows as a row with its value opens here, in a
+ * The profile's sub-screens: what the Profile page shows as a row with its value opens here, in a
  * dialog (a sheet on a phone) — the choices that need more room than a row. Each applies at once with "Saved" at the start
- * of the dialog's actions (8.8); "Done" closes it. The public page is a form: it waits for "Save" and asks before its
+ * of the dialog's actions; "Done" closes it.
+ * The public page is a form: it waits for "Save" and asks before its
  * changes are dropped. Loaded when one is opened (bundle budget: the combobox, the studios and the preview come with it).
  */
 
@@ -91,7 +92,7 @@ export function AudioDialog({ value, change, onClose, kids }: Common & { kids: b
     void save.save(c.request, c.optimistic);
   };
   const audio = value.audioLanguages;
-  // "Dubbing" first: any studio's dub as one entry of the order ("1 — Dubbing, 2 — LostFilm", docs/torrserver-2026-11.md 5).
+  // "Dubbing" first: any studio's dub as one entry of the order ("1 — Dubbing, 2 — LostFilm").
   const studios = [
     { value: DUBBING, label: tt("voice_dub").charAt(0).toUpperCase() + tt("voice_dub").slice(1), keywords: ["dub", "dubbing"] },
     ...VOICE_STUDIOS.filter((s) => audio.length === 0 || audio.includes(s.lang)).map((s) => ({
@@ -185,7 +186,7 @@ export function SubtitlesDialog({ value, change, onClose }: Common) {
 }
 
 /**
- * How subtitles look in the player (design-system 11.1): size, text colour, background, position — and the preview on a
+ * How subtitles look in the player: size, text colour, background, position — and the preview on a
  * frame of the picture's proportions that follows each choice. A kids profile has it too.
  */
 export function SubtitleStyleDialog({ value, change, onClose }: Common) {
@@ -224,8 +225,8 @@ export function SubtitleStyleDialog({ value, change, onClose }: Common) {
 }
 
 /**
- * The look on a frame of the picture's proportions (a stage, 3.5): a dark scene that lightens towards the bottom, so the
- * edge's part in reading it shows; the same CSS as the player's cues (globals.css `.subtitle-sample`).
+ * The look on a frame of the picture's proportions (a stage): a dark scene that lightens towards the bottom,
+ * so the edge's part in reading it shows; the same CSS as the player's cues (globals.css `.subtitle-sample`).
  */
 function SubtitlePreview({ style, label, sample }: { style: SubtitleStyle; label: string; sample: string }) {
   return (
@@ -247,9 +248,9 @@ export type PublicPage = { handle: string | null; isPublic: boolean; showFavorit
 const HANDLE = /^[a-z0-9_]{3,24}$/;
 
 /**
- * The profile's public page (S23, audit SET-05) as one form: the name and "about", whether the page is open and what it
+ * The profile's public page as one form: the name and "about", whether the page is open and what it
  * shows — kept as typed and checked on "Save", with the reason at the field; the address shown is the page's real one
- * (/u/…). Closing it with changes asks first (8.8). Showing favourites and ratings waits for the page to be open.
+ * (/u/…). Closing it with changes asks first. Showing favourites and ratings waits for the page to be open.
  */
 export function PublicPageDialog({ profile, initial, onClose }: { profile: Profile; initial: PublicPage; onClose: () => void }) {
   const t = useTranslations("settings");
@@ -331,7 +332,7 @@ export function PublicPageDialog({ profile, initial, onClose }: { profile: Profi
           <Button variant="secondary" disabled={busy} onClick={() => void close()}>
             {tc("cancel")}
           </Button>
-          {/* Off until something is changed (8.8). */}
+          {/* Off until something is changed. */}
           <Button type="submit" loading={busy} disabled={!dirty}>
             {tc("save")}
           </Button>

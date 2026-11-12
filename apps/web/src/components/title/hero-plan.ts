@@ -2,7 +2,7 @@ import type { QualityMark } from "@/components/sources/QualityBadges";
 import type { WatchState } from "@/lib/watch-state";
 
 /*
- * The title hero's main button and its one line of availability (design-system 8.2, 7.14 item 7), as data: what to
+ * The title hero's main button and its one line of availability, as data: what to
  * show, not how. TitleActions draws it; the rules are tested on their own (test/hero-plan.test.ts).
  */
 
@@ -26,7 +26,7 @@ export interface PlanInput {
   resume: boolean;
   /**
    * The copy the player starts with, when the profile's servers have one; `marks` — its quality marks (QualityBadges);
-   * `heard` — a TorrServer copy's audio by its release name, said as a found release's is (docs/torrserver-2026-11.md, 16).
+   * `heard` — a TorrServer copy's audio by its release name, said as a found release's is.
    */
   copy: { server: string; resolution: string | null; marks?: QualityMark[]; heard?: string | null; torrServer?: boolean; others: number } | null;
   torrent: TorrentState;
@@ -46,7 +46,7 @@ export type Primary =
   /** "Watch" while the search runs, or "Find a source" for a TorrServer without automatic search: the sources screen. */
   | { kind: "sources"; label: "watch" | "find" }
   | { kind: "trailer" }
-  /** No primary: "Watchlist" takes its place (8.2). */
+  /** No primary: "Watchlist" takes its place. */
   | null;
 
 export type Summary =
@@ -77,7 +77,7 @@ export function heroPlan(i: PlanInput): Plan {
   const t = i.torrent;
   const releaseAhead = t.state === "found" || t.state === "searching" || t.state === "manual";
 
-  // The main button (8.2): progress, a copy, a release, the trailer — in that order; "Watch" never opens an empty
+  // The main button: progress, a copy, a release, the trailer — in that order; "Watch" never opens an empty
   // screen: while the search runs it opens the sources screen, which searches itself.
   let primary: Primary;
   if (i.resume && (w.kind === "playable" || releaseAhead)) primary = { kind: "resume" };

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { A, H, L, LEGAL_CONTACT, type LegalDoc, P, ScoreMethodology, TmdbMark } from "./parts";
 import { RightsNoticeForm } from "./RightsNoticeForm";
 
-/** The legal pages in English — the version that has legal force (design-system 1.3, 8.11; L10N-01). */
+/** The legal pages in English — the version that has legal force. */
 export const DOCS_EN: Record<LegalDoc, () => ReactNode> = {
   terms: () => (
     <>

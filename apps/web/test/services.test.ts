@@ -6,7 +6,7 @@ import { serviceOf, serviceOffers } from "../src/components/title/services";
 const p = (id: number, name: string, kind: WatchProvider["kind"]): WatchProvider => ({ id, name, kind, logoPath: `/${id}.png` });
 const KINDS: WatchProvider["kind"][] = ["flatrate", "free", "ads", "rent", "buy"];
 
-describe("a streaming service once, its plan with ads folded in (TTL-26)", () => {
+describe("a streaming service once, its plan with ads folded in", () => {
   it("knows a plan with ads by its name", () => {
     expect(serviceOf("Netflix Standard with Ads")).toEqual({ name: "Netflix", withAds: true });
     expect(serviceOf("Amazon Prime Video with Ads")).toEqual({ name: "Amazon Prime Video", withAds: true });
@@ -39,7 +39,7 @@ describe("a streaming service once, its plan with ads folded in (TTL-26)", () =>
   });
 });
 
-describe("a person's name TMDB has only in Latin letters is marked with its language (8.11, L10N-11)", () => {
+describe("a person's name TMDB has only in Latin letters is marked with its language", () => {
   it("wraps the name in a ru/uk heading and leaves a translated one, or an English page, as text", () => {
     const marked = withNameLang("Режиссёр: Michael Mann", "Michael Mann", "ru") as unknown[];
     expect(marked[0]).toBe("Режиссёр: ");

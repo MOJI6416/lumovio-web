@@ -13,7 +13,7 @@ import { type ShareRequest, shareStore } from "./share";
 /**
  * Where a link can go from the share window: each service's own share address, opened in a new tab (nothing loads from
  * the service before the click). The marks are the services' own (Simple Icons, CC0; trademarks of their owners,
- * credited on the Credits page), drawn on a white disc in both themes (design-system 3.6).
+ * credited on the Credits page), drawn on a white disc in both themes.
  */
 const SERVICES: { name: string; mark: string; href: (r: ShareRequest) => string }[] = [
   { name: "Telegram", mark: "/brands/telegram.svg", href: (r) => `https://t.me/share/url?url=${enc(r.url)}&text=${enc(r.title)}` },

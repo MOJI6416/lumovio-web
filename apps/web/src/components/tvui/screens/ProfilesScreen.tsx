@@ -18,7 +18,7 @@ import { LeaveKids } from "./LeaveKids";
 type Choice = Profile;
 
 /**
- * "Who's watching?" on a TV (S24 TV, TV document §4 "Профили и вход", §7.1): big avatars in one row, the active profile
+ * "Who's watching?" on a TV: big avatars in one row, the active profile
  * marked; a profile with a PIN asks for it on the on-screen keypad (or the remote's digits); leaving a kids profile for
  * an adult one without a PIN is confirmed on a phone — never with the account password typed by remote. Managing
  * profiles is done on a phone or a computer. A choice reloads the shell in that profile, at the address the TV was
@@ -72,7 +72,7 @@ export function ProfilesScreen({
   const choose = (p: Choice) => {
     if (p.id === active?.id) return go();
     if (p.hasPin) return setPin({ profile: p, value: "", error: null });
-    // A kids session leaving for an adult profile without a PIN: confirmed elsewhere (TV document §7.1 item 5).
+    // A kids session leaving for an adult profile without a PIN: confirmed elsewhere.
     if (active?.isKids && (!p.isKids || p.maturity !== active.maturity)) return setLeaving(p);
     void select(p);
   };
@@ -86,7 +86,7 @@ export function ProfilesScreen({
       <h1 className="text-h1 text-text-1">{t("whoIsWatching")}</h1>
       <div
         data-zone="profiles"
-        // Many profiles wrap into rows (seen on the owner's TV): ↑↓ between the rows, ←→ along one.
+        // Many profiles wrap into rows: ↑↓ between the rows, ←→ along one.
         data-zone-axis="grid"
         className="flex max-w-full flex-wrap justify-center gap-10"
       >

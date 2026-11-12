@@ -3,10 +3,11 @@
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useState, useSyncExternalStore } from "react";
 
 /*
- * Shared behaviour of the floating layers (design-system 7.8–7.10): menus, popovers, dialogs, sheets and toasts. Where a layer is portalled lives in ./portal (part 1 of Ф1); this file holds the rest.
+ * Shared behaviour of the floating layers: menus, popovers, dialogs, sheets and toasts.
+ * Where a layer is portalled lives in ./portal; this file holds the rest.
  */
 
-/** Phones (< md, where the bottom tab bar is): menus and popovers open as a bottom sheet (7.8, 7.9, 10.1). */
+/** Phones (< md, where the bottom tab bar is): menus and popovers open as a bottom sheet. */
 const PHONE_QUERY = "(width < 48rem)";
 
 function subscribePhone(onChange: () => void) {
@@ -25,7 +26,7 @@ export function usePhoneLayout() {
 }
 
 /**
- * A TV remote's Back closes the top layer, as Escape does (10.3): Tizen 10009, webOS 461, and Backspace in TV mode
+ * A TV remote's Back closes the top layer, as Escape does: Tizen 10009, webOS 461, and Backspace in TV mode
  * when no field is being typed in. The caller closes the layer and calls `preventDefault()`, so the TV navigation
  * (components/tvui/nav/TvNav) sees the key handled and doesn't go back in history.
  */
@@ -57,7 +58,7 @@ export function isToastPress(e: Event) {
   return toastPresses.has(e) || isInToastRegion(e.target);
 }
 
-/** Where the focus was when a layer opened, to give it back on close (8.9, audit SRC-17). */
+/** Where the focus was when a layer opened, to give it back on close. */
 export interface FocusOrigin {
   el: HTMLElement | null;
   /** The trigger of the menu or sheet the focused element was in: a menu item is gone once its menu closes. */
@@ -88,7 +89,7 @@ export function captureFocus(): FocusOrigin {
 
 // Whether the last input was a pointer (mouse, touch, pen) rather than a key. Radix's menu and select triggers take no
 // focus from the mouse, so on a first visit, before any click has focused something, Chrome rings whatever focus a
-// script moves — the trigger focused again as its menu closes too (owner, 2026-10-29: a ring round the avatar after
+// script moves — the trigger focused again as its menu closes too (a ring round the avatar after
 // the account menu, gone after the first link). Layers give the focus back with `focusBack`.
 let pointerLast = false;
 if (typeof window !== "undefined") {

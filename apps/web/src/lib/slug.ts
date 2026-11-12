@@ -21,7 +21,7 @@ export function titleHref(kind: MediaKind, tmdbId: number, title?: string | null
 
 /**
  * A person's address is the id alone: their name is spelled differently by language (Latin on TMDB, localized here), and
- * one address per person keeps every link and the canonical the same (Search Console, 2026-10-29). Older addresses with
+ * one address per person keeps every link and the canonical the same. Older addresses with
  * a name redirect to it.
  */
 export function personHref(id: number, _name?: string): string {

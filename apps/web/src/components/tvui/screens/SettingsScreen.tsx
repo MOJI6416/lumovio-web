@@ -20,10 +20,10 @@ import { ContinueOnPhone } from "../shell/ContinueOnPhone";
 type Open = "phone" | "lang" | "theme" | "mode" | "keys" | null;
 
 /*
- * Settings on a TV (S14 TV; TV document §4 "Настройки/подключения", §7.2): what a TV may change itself — the profile,
+ * Settings on a TV: what a TV may change itself — the profile,
  * this TV's language, theme and shell — and a short status of the servers; everything that is set up (servers, account,
- * profiles, import) continues on a phone with a QR code. "About this TV" says what the TV is (for checking a new one,
- * TV document §10 step 0) and "Remote check" shows the codes of the keys pressed.
+ * profiles, import) continues on a phone with a QR code. "About this TV" says what the TV is (for checking a
+ * new one) and "Remote check" shows the codes of the keys pressed.
  */
 export function SettingsScreen({ me, servers, appVersion }: { me: Me; servers: ConnectionSummary[] | null; appVersion: string | null }) {
   const t = useTranslations("tvui");
@@ -156,7 +156,7 @@ export function SettingsScreen({ me, servers, appVersion }: { me: Me; servers: C
           value={mode}
           onClose={() => setOpen(null)}
           onPick={(v) => {
-            // The choice belongs to this device only (TV document §4.1): a cookie of this browser.
+            // The choice belongs to this device only: a cookie of this browser.
             document.cookie = v === "auto" ? `${TV_COOKIE}=; path=/; max-age=0; samesite=lax` : `${TV_COOKIE}=${v === "tv" ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
             window.location.assign(localizedPath(locale, v === "site" ? "/" : "/settings"));
           }}
@@ -176,7 +176,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-/** What this TV is: the facts a check of a new TV needs (TV document §10 step 0), nothing to press. */
+/** What this TV is: the facts a check of a new TV needs, nothing to press. */
 function About({ appVersion }: { appVersion: string | null }) {
   const t = useTranslations("tvui");
   const [facts, setFacts] = useState<[string, string][]>([]);
@@ -204,7 +204,7 @@ function About({ appVersion }: { appVersion: string | null }) {
 
 /**
  * The remote check: every key the page receives, with its name and code — so a new TV shows at once whether its
- * arrows, OK and Back reach the page (TV document §2, §10 step 0). Back closes it as any layer, and is listed too.
+ * arrows, OK and Back reach the page. Back closes it as any layer, and is listed too.
  */
 function KeysLayer({ onClose, label, close: closeLabel }: { onClose: () => void; label: string; close: string }) {
   const t = useTranslations("tvui");

@@ -19,9 +19,8 @@ import { routing } from "@/i18n/routing";
 import { getMeState } from "@/lib/server-api";
 import { TV_SHELL_HEADER } from "@/lib/tv";
 
-// Every interface language is Latin or Cyrillic (design-system 4.1): latin-ext carries the letters of pl, tr, de, fr,
+// Every interface language is Latin or Cyrillic: latin-ext carries the letters of pl, tr, de, fr,
 // es, it and pt-BR (ł ş ğ ı İ ä ß œ ç ã…). CJK names in the data fall back to the system fonts of --font-sans.
-// Onest since the 2026-11 redesign (docs/design/redesign-2026-11.md).
 const ui = Onest({
   subsets: ["latin", "latin-ext", "cyrillic"],
   variable: "--font-ui",
@@ -40,20 +39,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     title: { default: `${t("appName")} — ${t("tagline")}`, template: `%s · ${t("appName")}` },
     description: t("tagline"),
     applicationName: "Lumovio",
-    // The manifest in the page's language (L10N-10): app/manifest.ts for English, app/[locale]/manifest.webmanifest else.
+    // The manifest in the page's language: app/manifest.ts for English, app/[locale]/manifest.webmanifest else.
     manifest: locale === "en" ? "/manifest.webmanifest" : `/${locale}/manifest.webmanifest`,
-    // og:locale as language_TERRITORY (SH-13); public pages add their canonical and og:url (lib/seo.ts).
+    // og:locale as language_TERRITORY; public pages add their canonical and og:url (lib/seo.ts).
     openGraph: { siteName: "Lumovio", type: "website", ...ogLocale(locale), images: [OG_IMAGE] },
     twitter: { card: "summary_large_image" },
     appleWebApp: { capable: true, title: "Lumovio", statusBarStyle: "black-translucent", startupImage: APPLE_STARTUP_IMAGES },
-    // Next writes the standard `mobile-web-app-capable`; iOS has read startup images only with its own name (6.3.1).
+    // Next writes the standard `mobile-web-app-capable`; iOS has read startup images only with its own name.
     other: { "apple-mobile-web-app-capable": "yes" },
     formatDetection: { telephone: false },
   };
 }
 
 /**
- * The browser chrome follows the chosen theme, not the OS (X-28): the --bg of that theme (globals.css). Discord draws
+ * The browser chrome follows the chosen theme, not the OS: the --bg of that theme (globals.css). Discord draws
  * a shared link's stripe in the same colour — its crawler gets the logo's lime instead of the near-black page.
  */
 export async function generateViewport(): Promise<Viewport> {
@@ -86,7 +85,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   // Every page carries the client's messages in its HTML; the design-system showcase's (a tenth of the catalogue) only
   // its own page does (dev/ui), so the others download and parse less before they respond.
   const { devUi: _showcase, ...clientMessages } = messages;
-  // The API not answering is not "signed out" (SH-03): the header then offers no sign-in either.
+  // The API not answering is not "signed out": the header then offers no sign-in either.
   const me = meState === "unavailable" ? null : meState;
   const info = localeInfo(locale);
   const themePref = c.get("lumovio_theme")?.value ?? "dark";
@@ -113,7 +112,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             {children}
             <ThemeSync />
             <DragScroll />
-            {/* The launch of a viewing: one scene from "Watch" to the first frame, over the pages it passes (11.1). */}
+            {/* The launch of a viewing: one scene from "Watch" to the first frame, over the pages it passes. */}
             <LaunchHost />
           </Providers>
         </NextIntlClientProvider>

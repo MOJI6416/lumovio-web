@@ -12,7 +12,7 @@ const loadDialog = () => import("./CastDialog");
 const CastDialog = dynamic(loadDialog, { ssr: false });
 
 /**
- * "Watch on TV" (design-system 8.18, 6.4: `Tv`): a circle beside the button that starts the same viewing here — the title's
+ * "Watch on TV" (the `Tv` icon): a circle beside the button that starts the same viewing here — the title's
  * main button, a copy's "Watch" in "Where to watch", the player's bar. Drawn only while a TV of the account has Lumovio
  * open; a lime dot while that TV plays this title (`resume`: pressing it then opens its remote instead of sending again).
  * `target` is read at the press: the player's position and track as they are then.

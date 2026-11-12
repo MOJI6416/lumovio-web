@@ -6,9 +6,9 @@ import { Artwork } from "./Artwork";
 import { CardMeta } from "./CardMeta";
 
 /**
- * Person card (design-system 7.12, sizes 5.4): a round photo, or the person icon on --surface-2 without one; the name
+ * Person card: a round photo, or the person icon on --surface-2 without one; the name
  * and the role ("Paul Atreides", "Acting") under it. The width comes from the shelf or grid around it. `subtitleLang`
- * marks a subtitle the source doesn't translate (TMDB's character names, 8.11).
+ * marks a subtitle the source doesn't translate (TMDB's character names).
  */
 export function PersonCard({ person, subtitle, subtitleLang }: { person: PersonSummary; subtitle?: string | null; subtitleLang?: string }) {
   return (

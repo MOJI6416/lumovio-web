@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlaybackCapabilities } from "../src/lib/media/capabilities";
 
-// Preparing a TorrServer file (docs/torrserver-2026-11.md 23): what is waited for before the player gets the stream. The
+// Preparing a TorrServer file: what is waited for before the player gets the stream. The
 // server is a fake that answers each path when the test says so; the order of the requests is the point.
 
 const chrome: PlaybackCapabilities = {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { groupHistory } from "../src/components/library/history";
 import { librarySection } from "../src/components/library/sections";
 
-describe("library sections (S09)", () => {
+describe("library sections", () => {
   it("opens a collection's page by its tab, anything else is the library's screen", () => {
     expect(librarySection("watchlist")).toBe("watchlist");
     expect(librarySection("lists")).toBe("lists");

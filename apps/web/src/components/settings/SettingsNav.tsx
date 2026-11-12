@@ -10,7 +10,7 @@ import { Tag } from "@/components/ui/Badge";
 import { Link } from "@/i18n/navigation";
 import { prefetchSection } from "./queries";
 
-/** Whose setting it is (design-system 7.18): the profile's, this browser's, the account's — and help. */
+/** Whose setting it is: the profile's, this browser's, the account's — and help. */
 export type SettingsGroup = "profile" | "device" | "account" | "help";
 
 export interface SettingsSection {
@@ -25,9 +25,10 @@ export interface SettingsSection {
 }
 
 /**
- * The sections of the settings in menu order, grouped by whose they are (7.18): the profile (Profile — the profile's own
+ * The sections of the settings in menu order, grouped by whose they are:
+ * the profile (Profile — the profile's own
  * card at the top — and Recommendations), this device, the account, and Support. A kids profile has its profile's two
- * and This device (8.10). The import of history is a page of its own, offered on the Sync page (SET-03).
+ * and This device. The import of history is a page of its own, offered on the Sync page.
  */
 export function useSettingsSections(): SettingsSection[] {
   const t = useTranslations();
@@ -54,7 +55,7 @@ export function inSection(s: SettingsSection, pathname: string) {
 const GROUPS: SettingsGroup[] = ["profile", "device", "account", "help"];
 
 /**
- * The menu of the settings (design-system 7.18, 9 Settings): on a desktop (lg) a column on the left — the profile's card
+ * The menu of the settings: on a desktop (lg) a column on the left — the profile's card
  * (its avatar and name: whose settings these are), then the sections in groups split by space, the open one marked; below
  * lg the page /settings itself is that list — the card and the groups as panels of rows — and a section's page has
  * "← Settings" over its h1 and no menu.
@@ -76,7 +77,7 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
               {items.map((s) => {
                 const active = inSection(s, pathname);
                 // A section is prefetched whole — its server part too, not only the loading boundary there isn't — so
-                // the press shows it from the router's cache, without a trip to the server (2026-11-07: ~0.3 s felt
+                // the press shows it from the router's cache, without a trip to the server (~0.3 s felt
                 // heavy). Support is a page of its own, as any link.
                 const full = s.group !== "help" ? true : undefined;
                 // Its data too, from the first sign of the person heading there (pointer, focus, press).
@@ -102,7 +103,7 @@ export function SettingsNav({ sections, pathname, index, className }: { sections
                 );
                 return (
                   <li key={s.href}>
-                    {/* The phone's and tablet's list: a row per section, its whole width a target (5.6). */}
+                    {/* The phone's and tablet's list: a row per section, its whole width a target. */}
                     <Link
                       href={s.phoneHref ?? s.href}
                       prefetch={full}

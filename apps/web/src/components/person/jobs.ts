@@ -1,6 +1,6 @@
 /*
- * TMDB's crew jobs and departments come in English (TTL-07, PER-01, PER-02): the common ones are said in the interface
- * language through `personPage.job_*` keys; any other is shown as TMDB gives it, marked `lang="en"` (8.11).
+ * TMDB's crew jobs and departments come in English: the common ones are said in the interface
+ * language through `personPage.job_*` keys; any other is shown as TMDB gives it, marked `lang="en"`.
  */
 
 const JOBS = [

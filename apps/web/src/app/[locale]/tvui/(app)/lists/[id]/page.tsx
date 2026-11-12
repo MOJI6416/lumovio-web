@@ -11,7 +11,7 @@ export async function generateMetadata() {
   return { robots: { index: false } };
 }
 
-/** A list on a TV (S10 TV): a list this profile can't open is said, with the way back. */
+/** A list on a TV: a list this profile can't open is said, with the way back. */
 export default async function TvListPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const t = await getTranslations("tvui");

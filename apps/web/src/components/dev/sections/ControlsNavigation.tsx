@@ -62,7 +62,7 @@ function UrlTabs() {
   );
 }
 
-/** The seasons of a long series as pill tabs, in a narrow box so the row scrolls (S07, owner 2026-10-25). */
+/** The seasons of a long series as pill tabs, in a narrow box so the row scrolls. */
 function Seasons() {
   const t = useTranslations();
   const [season, setSeason] = useState("9");
@@ -83,7 +83,7 @@ function Segmented() {
   const [quality, setQuality] = useState<"auto" | "best" | "small">("auto");
   const [year, setYear] = useState("2026");
   return (
-    <ShowcaseSection id="segmented" title={t("devUi.segmented")} source="ui/SegmentedControl.tsx · 7.5">
+    <ShowcaseSection id="segmented" title={t("devUi.segmented")} source="ui/SegmentedControl.tsx">
       <Demo title="2" note={t("devUi.segmentedNote")}>
         <SegmentedControl
           label={t("devUi.segSearchMode")}
@@ -123,7 +123,7 @@ export function ControlsNavigation() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="tabs" title={t("tabs")} source="ui/Tabs.tsx · 7.5">
+      <ShowcaseSection id="tabs" title={t("tabs")} source="ui/Tabs.tsx">
         <Demo title="Tabs" note={t("tabsNote")} className="block">
           <StateTabs />
         </Demo>

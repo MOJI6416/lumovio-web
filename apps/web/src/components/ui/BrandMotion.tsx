@@ -9,7 +9,7 @@ import {
 import { cn } from "./cn";
 
 /*
- * Light motion (design-system 6.3.1): the kit's vectors drawn inline with its own CSS (brand/motion/motion.css, in
+ * Light motion: the kit's vectors drawn inline with its own CSS (brand/motion/motion.css, in
  * globals.css), so they need no request, take the theme's colours (--brand-mark: lime on dark and on a stage, ink on
  * light) and stand still at their final frame with reduced motion. Decorative: whatever shows them says what happens.
  */
@@ -20,7 +20,7 @@ const LOADER_SIZE = { md: "size-12", lg: "size-16" } as const;
 
 /**
  * The loader: light passes from the projector to the screen, 1.6 s, looped. Where a page or a stream is awaited (route
- * loading, the player); a button's own action keeps its small spinner (7.1). `md` 48, `lg` 64 — rem, so larger on a TV.
+ * loading, the player); a button's own action keeps its small spinner. `md` 48, `lg` 64 — rem, so larger on a TV.
  */
 export function BrandLoader({
   size = "md",
@@ -72,12 +72,12 @@ export function BrandIntro({ className }: { className?: string }) {
 }
 
 const CHECK_SIZE = { sm: "size-4", md: "size-5" } as const;
-// The kit's tick is drawn for 64 px (a 3 px line); at an icon's size it keeps an icon's line, ~1.7 px (6.4).
+// The kit's tick is drawn for 64 px (a 3 px line); at an icon's size it keeps an icon's line, ~1.7 px.
 const CHECK_STROKE = { sm: 6.8, md: 5.4 } as const;
 
 /**
  * The confirmation: a --success tick draws itself in a soft ring (320 ms, once), where a status icon would be — only
- * once the server has confirmed (8.3): a success toast, "Saved" of a settings section, a finished step.
+ * once the server has confirmed: a success toast, "Saved" of a settings section, a finished step.
  */
 export function SavedCheck({
   size = "md",
@@ -110,8 +110,8 @@ export function SavedCheck({
 export type ActionMarkKind = keyof typeof MOTION_ACTION_PATHS;
 
 /**
- * A personal action confirmed (6.3.1): the heart of Favourites, the thumb of "Like", the star of a rating — Lucide's own
- * shapes — settle, draw and fill once (280 / 240 / 320 ms), only after the server has said yes (8.3). In the kit's
+ * A personal action confirmed: the heart of Favourites, the thumb of "Like", the star of a rating — Lucide's own
+ * shapes — settle, draw and fill once (280 / 240 / 320 ms), only after the server has said yes. In the kit's
  * colours (lime on dark, ink on light) where it stands alone, as in a toast; `text-current` takes a button's. `drawn`:
  * the outline was already on the screen (a button's icon), so only the fill and the settle play.
  */

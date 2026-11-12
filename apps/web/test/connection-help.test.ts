@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { diagnosisSteps } from "../src/components/connections/connection-help";
 
-/** The steps under a failed connection (C105): what to try, by what went wrong, the server type and its address. */
+/** The steps under a failed connection: what to try, by what went wrong, the server type and its address. */
 describe("diagnosisSteps", () => {
   it("leads an unanswered server through on → open it here → away from home", () => {
     expect(diagnosisSteps("timeout", "jellyfin", "http://192.168.1.10:8096")).toEqual(["stepServerOn", "stepOpenAddress", "stepSameNetwork"]);

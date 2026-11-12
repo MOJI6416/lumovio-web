@@ -5,7 +5,7 @@ const V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("randomId — also where crypto.randomUUID is missing (http from a LAN address, phones 2026-10-30)", () => {
+describe("randomId — also where crypto.randomUUID is missing (http from a LAN address, as on a phone)", () => {
   it("is crypto.randomUUID where there is one", () => {
     const spy = vi.spyOn(crypto, "randomUUID");
     expect(randomId()).toMatch(V4);

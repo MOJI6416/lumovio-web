@@ -17,7 +17,7 @@ export interface RecommendationSeed {
   rating: number | null;
 }
 
-/** Where a pick comes from — the stage of recommendations that proposed it (docs/curation.md, "For you"). */
+/** Where a pick comes from — the stage of recommendations that proposed it. */
 export type RecommendationSource =
   /** Recommended for a title the profile likes (TMDB's recommendations of it, same form, shared genres). */
   | "because"
@@ -143,7 +143,7 @@ export interface TasteProfile {
   signals: TasteSignal[];
   interests: TasteInterests;
   prefs: RecommendationPrefs;
-  /** A kids profile: titles not checked against its age limit in time were left out; asked again (PRF-19). */
+  /** A kids profile: titles not checked against its age limit in time were left out; asked again. */
   incomplete?: true;
 }
 
@@ -172,7 +172,7 @@ export const TitleOpened = z.object({ titleId: TitleId });
 export type TitleOpened = z.infer<typeof TitleOpened>;
 
 /**
- * Discovery counters sent by the page (C5): what a shelf card did, with its page, shelf and position.
+ * Discovery counters sent by the page: what a shelf card did, with its page, shelf and position.
  * Nothing identifies the profile or the title.
  */
 export const DiscoveryEvents = z.object({

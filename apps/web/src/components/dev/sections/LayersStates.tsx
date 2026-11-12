@@ -47,7 +47,7 @@ function SkeletonDemo() {
   );
 }
 
-/** The Light motion kit as the site draws it (6.3.1): "Replay" remounts a one-shot animation. */
+/** The Light motion kit as the site draws it: "Replay" remounts a one-shot animation. */
 function BrandMotionDemo() {
   const t = useTranslations("devUi");
   const [intro, setIntro] = useState(0);
@@ -371,7 +371,7 @@ function QueryDemo() {
   );
 }
 
-/** Spoiler (7.21): a still and a description, hidden and shown; "Hide spoilers" puts both back. */
+/** Spoiler: a still and a description, hidden and shown; "Hide spoilers" puts both back. */
 function SpoilerDemo() {
   const t = useTranslations("devUi");
   const ts = useTranslations("spoilers");
@@ -402,33 +402,33 @@ export function LayersStates() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="skeleton" title={t("skeleton")} source="ui/Skeleton.tsx · 7.11">
+      <ShowcaseSection id="skeleton" title={t("skeleton")} source="ui/Skeleton.tsx">
         <SkeletonDemo />
       </ShowcaseSection>
       <ShowcaseSection
         id="brand-motion"
         title={t("brandMotion")}
-        source="ui/BrandMotion.tsx, shell/RouteLoading.tsx · 6.3.1"
+        source="ui/BrandMotion.tsx, shell/RouteLoading.tsx"
       >
         <BrandMotionDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="progress" title={t("progressSteps")} source="ui/Progress.tsx · 7.11">
+      <ShowcaseSection id="progress" title={t("progressSteps")} source="ui/Progress.tsx">
         <ProgressDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="empty-state" title={t("emptyState")} source="ui/EmptyState.tsx · 7.11">
+      <ShowcaseSection id="empty-state" title={t("emptyState")} source="ui/EmptyState.tsx">
         <EmptyDemo />
       </ShowcaseSection>
       <ShowcaseSection
         id="error-state"
         title={t("errorState")}
-        source="ui/ErrorState.tsx, lib/api-errors.ts · 7.11, 8.5"
+        source="ui/ErrorState.tsx, lib/api-errors.ts"
       >
         <ErrorDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="query-state" title={t("queryState")} source="ui/QueryState.tsx · 8.4">
+      <ShowcaseSection id="query-state" title={t("queryState")} source="ui/QueryState.tsx">
         <QueryDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="spoiler" title={t("spoiler")} source="ui/Spoiler.tsx, media/Artwork.tsx · 7.21, 8.12">
+      <ShowcaseSection id="spoiler" title={t("spoiler")} source="ui/Spoiler.tsx, media/Artwork.tsx">
         <SpoilerDemo />
       </ShowcaseSection>
     </>

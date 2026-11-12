@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { COLLECTION_GRID } from "./ListGrid";
 
 /*
- * The library's placeholders (7.11), in the layout that comes — built from ui/Skeleton only, so the page's first load
+ * The library's placeholders, in the layout that comes — built from ui/Skeleton only, so the page's first load
  * doesn't carry the cards' modules (the sections themselves load lazily, LibraryView).
  */
 
@@ -29,7 +29,7 @@ export function ToolbarSkeleton() {
   );
 }
 
-/** A collection's grid (5.4, edge to edge); `square` for lists. */
+/** A collection's grid (edge to edge); `square` for lists. */
 export function GridSkeleton({ count = 12, shape = "poster", toolbar = false }: { count?: number; shape?: "poster" | "square"; toolbar?: boolean }) {
   return (
     <div aria-hidden>

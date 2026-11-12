@@ -53,7 +53,7 @@ const num = (v: string | null | undefined) => (v && /^\d+$/.test(v) ? v : "");
 /** Filters from the URL; shared by the server page (first page SSR) and the client grid. */
 export function browseState(get: (k: string) => string | null | undefined, anime: boolean): BrowseState {
   const sort = get("sort");
-  // A range written backwards ("from 2020 to 2010", an old link) means the same years, not an empty grid (CAT-06).
+  // A range written backwards ("from 2020 to 2010", an old link) means the same years, not an empty grid.
   const [yearFrom, yearTo] = [num(get("yearFrom")), num(get("yearTo"))].sort((a, b) => (a && b ? Number(a) - Number(b) : 0));
   return {
     sort: SORTS.includes(sort as BrowseState["sort"]) ? (sort as BrowseState["sort"]) : "popularity",

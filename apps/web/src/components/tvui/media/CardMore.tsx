@@ -16,8 +16,8 @@ import { TvLayer } from "../nav/TvLayer";
 import { useTvNav } from "../nav/TvNav";
 
 /*
- * The panel of a TV card's "More" (./hold, design-system 8.3, 10.3): the title's name and its removal — from Continue
- * watching (HOME-01), from the history (the title's every viewing, LIB-25), from a list (LIB-01) — with the site's
+ * The panel of a TV card's "More" (./hold): the title's name and its removal — from Continue
+ * watching, from the history (the title's every viewing), from a list — with the site's
  * requests and words. Done, the card is gone from its screen at once and the panel says what happened, with "Undo"
  * focused: the TV's toast, which a remote can reach. Back or "Close" ends it, the focus on the card that took the
  * removed one's place; after Undo, on the card again. The screen's data follows once the panel closes.
@@ -35,7 +35,7 @@ export function CardMoreLayer({
   onClose,
 }: {
   target: CardTarget;
-  /** Takes the card off its screen at once (8.3); returns how to put it back. */
+  /** Takes the card off its screen at once; returns how to put it back. */
   hide: () => () => void;
   onClose: () => void;
 }) {
@@ -60,7 +60,7 @@ export function CardMoreLayer({
             label: t("library.removeFromHistory"),
             done: t("library.entryRemoved", { title: x.title }),
             failed: t("library.entryRemoveFailed", { title: x.title }),
-            // Every viewing of the title up to now, also those the page hasn't loaded (the site's row span, LIB-27).
+            // Every viewing of the title up to now, also those the page hasn't loaded (the site's row span).
             run: () =>
               api("/api/history/remove", {
                 method: "POST",

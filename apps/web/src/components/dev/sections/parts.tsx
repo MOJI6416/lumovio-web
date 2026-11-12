@@ -10,7 +10,7 @@ export function ShowcaseSection({
 }: {
   id: string;
   title: string;
-  /** "ui/Button.tsx · 7.1" — the file and the design-system section. */
+  /** Where the component lives: its source files (and helpers), joined by " · " or commas. */
   source: string;
   children: ReactNode;
 }) {
@@ -47,7 +47,7 @@ export function Cell({ label, children }: { label: string; children: ReactNode }
 }
 
 /**
- * Artwork with the start scrim, the way heroes and the player show controls. `stage` marks it as a stage (3.5);
+ * Artwork with the start scrim, the way heroes and the player show controls. `stage` marks it as a stage;
  * without it the block is plain art as on today's site, where the old on-art button names draw the stage values
  * themselves.
  */

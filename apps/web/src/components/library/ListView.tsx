@@ -45,17 +45,17 @@ const RulesNotice = lazy(() => import("./RulesNotice").then((m) => ({ default: m
 
 const SORTS = ["list", "added", "title", "year", "rating"] as const;
 type Sort = (typeof SORTS)[number];
-/** Cards drawn at a time (LIB-14): a Top 250 isn't 13 000 px of posters at once; "Show more" draws the next ones. */
+/** Cards drawn at a time: a Top 250 isn't 13 000 px of posters at once; "Show more" draws the next ones. */
 const PAGE = 60;
 
 /**
- * A list (S10, Collection template; LIB-06…LIB-08, LIB-14…LIB-16): "← Lists" for its members, the name, the owner's
+ * A list (the Collection template): "← Lists" for its members, the name, the owner's
  * description, one line of facts — who sees it (the owner), whose it is (anyone else), the members as faces and names
  * that open "Members", where a followed list comes from — and the actions: "Share" (when it isn't private), a smart
  * list's "Edit conditions" (its owner), "More" (edit, members, invite, refresh or unfollow, delete or leave). A smart
  * list's conditions stand under the heading as labels. The filters, the sort and a search over the grid edge to edge,
- * drawn 60 at a time; a title leaves from its card's "More" with "Undo" (LIB-01). "Added by" is said only where more
- * than one person added titles. The server sends the list page by page (LIB-24): "Show more" goes on to the next one,
+ * drawn 60 at a time; a title leaves from its card's "More" with "Undo". "Added by" is said only where more
+ * than one person added titles. The server sends the list page by page: "Show more" goes on to the next one,
  * and a search, a type chip or a sort first loads the rest, so they work on the whole list.
  */
 export function ListView({ initial }: { initial: ListDetails }) {
@@ -73,7 +73,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
     initialPageParam: 0,
     getNextPageParam: (last) => last.nextOffset ?? undefined,
     initialData: { pages: [initial], pageParams: [0] },
-    // A smart list being filled by its conditions (package F) is asked again until it is (about two minutes at most).
+    // A smart list being filled by its conditions is asked again until it is (about two minutes at most).
     refetchInterval: (query) => (query.state.data?.pages[0]?.rules?.status === "pending" && query.state.dataUpdateCount < 40 ? 3000 : false),
   });
   const l: ListDetails = { ...q.data.pages[0]!, items: mergedItems(q.data.pages) };
@@ -95,7 +95,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
   const key = ["list", l.id];
   const refresh = () => qc.invalidateQueries({ queryKey: key });
 
-  // A title is removed at once, with "Undo" (LIB-01); the card's state, the lists' counts and covers follow.
+  // A title is removed at once, with "Undo"; the card's state, the lists' counts and covers follow.
   const removeTitle = useAction({
     run: (item: Item) => api(`/api/lists/${l.id}/items/${item.title.id}`, { method: "DELETE" }),
     optimistic: (item: Item) => {
@@ -124,7 +124,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
 
   const share = () => sharePage({ title: l.name, url: window.location.href.split("?")[0]! });
 
-  // Deleting and leaving are confirmed first (8.3); the request runs in the dialog.
+  // Deleting and leaving are confirmed first; the request runs in the dialog.
   const deleteOrLeave = async () => {
     const ok = await confirm({
       ...(isOwner
@@ -156,11 +156,11 @@ export function ListView({ initial }: { initial: ListDetails }) {
     void refresh();
   };
 
-  // A member came here from their library: "← Lists" (or the system list's page) over the h1 (8.7, LIB-07).
+  // A member came here from their library: "← Lists" (or the system list's page) over the h1.
   const back = !isMember ? undefined : custom ? { href: "/library?tab=lists", label: t("lists") } : { href: `/library?tab=${l.kind}`, label: t(l.kind) };
 
   const needle = query.trim().toLocaleLowerCase(locale);
-  // A search, a type chip or a sort works on the whole list: the pages not loaded yet come first (LIB-24). So does
+  // A search, a type chip or a sort works on the whole list: the pages not loaded yet come first. So does
   // a first page with nothing a kids profile may see.
   const narrowed = Boolean(needle || filters.show || sort !== "list");
   const completing = (narrowed || l.items.length === 0) && q.hasNextPage;
@@ -274,7 +274,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
           <RulesNotice list={l} isOwner={isOwner} canEdit={canEdit} />
         </Suspense>
       )}
-      {/* What a followed list does with titles, for a screen reader (1.2). */}
+      {/* What a followed list does with titles, for a screen reader. */}
       {l.source && (
         <p className="sr-only">
           {tr("library.sourceRules")} {l.source.total !== null && l.source.total > l.source.limit ? t("sourceLimit", { limit: l.source.limit }) : ""}
@@ -379,13 +379,13 @@ export function ListView({ initial }: { initial: ListDetails }) {
                     key={i.title.id}
                     title={i.title}
                     subtitle={byWhom && i.addedBy ? t("addedBy", { name: i.addedBy.name }) : (l.source || l.rules) && !i.fromSource ? t("sourceOwnAddition") : undefined}
-                    // Removing is in the card's "More", seen on touch screens too (LIB-01, 8.3).
+                    // Removing is in the card's "More", seen on touch screens too.
                     more={canEdit ? { remove: { label: t("removeFromList"), run: () => void removeTitle.run(i) } } : true}
                     moreVisibility={canEdit ? "always" : undefined}
                   />
                 ))}
               </ListGrid>
-              {/* The next page that didn't come: what is here stays, Retry in the button's place (8.4). */}
+              {/* The next page that didn't come: what is here stays, Retry in the button's place. */}
               <LoadMore
                 onMore={showMore}
                 onRetry={() => void fetchNextPage()}
@@ -412,7 +412,7 @@ export function ListView({ initial }: { initial: ListDetails }) {
 }
 
 /**
- * Where a followed list comes from, as one fact of the line under its name (LIB-08, C23): "MDBList · by snoak · updated
+ * Where a followed list comes from, as one fact of the line under its name: "MDBList · by snoak · updated
  * 23 Oct", the source's own page as a link (44 px on a phone). Refreshing and unfollowing are in "More"; a problem is
  * a warning over the grid.
  */

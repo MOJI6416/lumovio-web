@@ -1,6 +1,6 @@
 # Lumovio — Light
 
-The owner approved the Light identity on 2026-10-22. Two separated pieces suggest a
+The Light identity: two separated pieces suggest a
 projector's light opening into a screen.
 
 The production symbol uses manually drawn geometry. `src/lib/brand.ts` is the shared
@@ -11,7 +11,7 @@ No webfont or external request is needed to display the logo.
 Run `pnpm --filter @lumovio/web brand:build` with Node 24+ after changing the paths.
 Generated outputs are committed so a normal application build needs no graphics tools.
 
-Motion (2026-10-30): [Light motion kit and offline preview](motion/README.md) — launch intros, loading and
+Motion: [Light motion kit and offline preview](motion/README.md) — launch intros, loading and
 confirmation animations, and matching static posters. The site draws them inline (first-load intro, page and player
 loader, confirmation tick). Regenerate the exports with `pnpm --filter @lumovio/web brand:motion`.
 

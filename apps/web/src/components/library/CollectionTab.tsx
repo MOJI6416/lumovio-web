@@ -24,7 +24,7 @@ import { systemListQuery } from "./whole-list";
 import { editListId, libraryRules } from "./rules-url";
 import type { RulesEdit } from "./SaveRulesDialog";
 
-// Loaded when used (bundle budget): "Save as list" and "Edit conditions" of a smart list (package F).
+// Loaded when used (bundle budget): "Save as list" and "Edit conditions" of a smart list.
 const SaveRulesDialog = lazy(() => import("./SaveRulesDialog").then((m) => ({ default: m.SaveRulesDialog })));
 const EditRulesBar = lazy(() => import("./EditRulesBar").then((m) => ({ default: m.EditRulesBar })));
 
@@ -35,9 +35,9 @@ const SORTS = ["added", "title", "year", "rating"] as const;
 type Sort = (typeof SORTS)[number];
 
 /**
- * "Watchlist" and "Favourites" (S09), each a page of its own: the row of filter pills with the sort (8.4, 7.4) over the
- * collection's grid edge to edge (5.4), 60 at a time with "Show more" (as a list, LIB-14). Filters work on the whole
- * list (every page of it, LIB-24), at once; their state is in the address.
+ * "Watchlist" and "Favourites", each a page of its own: the row of filter pills with the sort over the
+ * collection's grid edge to edge, 60 at a time with "Show more" (as a list). Filters work on the whole
+ * list (every page of it), at once; their state is in the address.
  */
 export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites"; locale: string }) {
   const t = useTranslations("library");
@@ -47,7 +47,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
   const sorts = useTitleSorts();
   const q = useQuery(systemListQuery(kind));
   const filters = readFilters(params);
-  // "Save as list" (null) or a smart list's "Edit conditions" (its list) open the dialog; false — closed (package F).
+  // "Save as list" (null) or a smart list's "Edit conditions" (its list) open the dialog; false — closed.
   const [saving, setSaving] = useState<RulesEdit | null | false>(false);
   const editing = editListId(params);
   const sort = readSort<Sort>(params, SORTS, "added");
@@ -106,7 +106,7 @@ export function CollectionTab({ kind, locale }: { kind: "watchlist" | "favorites
           <EmptyState
             icon={Icon}
             title={kind === "watchlist" ? t("emptyWatchlist") : t("emptyFavorites")}
-            // How a title gets here, for a screen reader: the heading and "Find titles" say enough (1.2).
+            // How a title gets here, for a screen reader: the heading and "Find titles" say enough.
             about={kind === "watchlist" ? t("emptyWatchlistHint") : t("emptyFavoritesHint")}
             action={
               <Link href="/search" className={buttonClass("primary")}>

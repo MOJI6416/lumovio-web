@@ -6,9 +6,9 @@ import { cn } from "./cn";
 import { groupFocusRing } from "./styles";
 
 /**
- * Profile avatars (design-system 7.17, the owner's choice of 2026-11-06): the profile's own photo, or one of twelve
- * colours with the name's first letter. The colours are the avatar palette `--avatar-*` in globals.css (3.6): hues far
- * enough apart to tell profiles apart at 32 px (PRF-20); the photo lies on its colour, which shows while it loads.
+ * Profile avatars: the profile's own photo, or one of twelve
+ * colours with the name's first letter. The colours are the avatar palette `--avatar-*` in globals.css: hues far
+ * enough apart to tell profiles apart at 32 px; the photo lies on its colour, which shows while it loads.
  * Keyed by every contracts `AvatarColor` (the type checks none is missing), so the editor takes its list from here:
  * importing the `AVATARS` value from @lumovio/contracts would bring zod into the page (≈ 30 KB gzip).
  */
@@ -31,7 +31,7 @@ const AVATAR_BACKGROUND: Record<AvatarColor, string> = {
 export const AVATAR_COLORS = Object.keys(AVATAR_BACKGROUND) as AvatarColor[];
 
 /**
- * An avatar value's colour. A value with a drawn mark after a dot (saved before 2026-11-06) reads as its colour, and an
+ * An avatar value's colour. A value with a drawn mark after a dot (saved by older versions) reads as its colour, and an
  * unknown one as the default colour, so any value still draws.
  */
 export function avatarColor(avatar: string): AvatarColor {
@@ -41,8 +41,8 @@ export function avatarColor(avatar: string): AvatarColor {
 
 /**
  * A profile's circle: its photo, or its colour with the name's first letter. Without a photo and a name (an editor
- * before anything is typed) it is the colour alone, never a "?" (PRF-09, PRF-20). Decorative: the name always stands
- * next to it. `size` in px, or a CSS length (the TV shell's are in rem, 10.3).
+ * before anything is typed) it is the colour alone, never a "?". Decorative: the name always stands
+ * next to it. `size` in px, or a CSS length (the TV shell's are in rem).
  */
 export function ProfileAvatar({
   avatar,
@@ -77,15 +77,15 @@ export interface AvatarButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
   avatar: string;
   photo?: string | null;
   name: string;
-  /** Before the avatar: the kids profile's Tag (8.10). */
+  /** Before the avatar: the kids profile's Tag. */
   before?: ReactNode;
 }
 
 /**
- * The header's account button (7.17, 7.19): the profile's 36 px avatar itself, nothing after it, so it stands on the
- * page's end edge as the logo stands on its start edge (owner, 2026-10-25) — a step larger than the header's 32 px
- * actions beside it (search, language and theme): you, not one more button (2026-11-07). Hover and an open menu ring
- * the avatar with --line-2 (as a card, 6.3); the keyboard's ring goes round the avatar too — the button is wider than it, with
+ * The header's account button: the profile's 36 px avatar itself, nothing after it, so it stands on the
+ * page's end edge as the logo stands on its start edge — a step larger than the header's 32 px
+ * actions beside it (search, language and theme): you, not one more button. Hover and an open menu ring
+ * the avatar with --line-2 (as a card); the keyboard's ring goes round the avatar too — the button is wider than it, with
  * the avatar at its end, so a ring round the button stood off-centre. 40 px tall (44 on a phone, the avatar at its
  * end; 48 on a TV). The accessible name comes with `aria-label`.
  */

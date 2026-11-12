@@ -29,7 +29,7 @@ export interface NavApi {
   leave: (fallback: string) => void;
   /**
    * Changes the address's query for a state of the same screen (a grid's filters, a library tab): kept in the history
-   * entry for Back (TV2), without the screen starting over at its first item.
+   * entry for Back, without the screen starting over at its first item.
    */
   replaceQuery: (query: URLSearchParams) => void;
   /** Focuses `el` and brings it into view. */

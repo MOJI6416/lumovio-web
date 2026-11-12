@@ -1,5 +1,5 @@
 /**
- * Which episodes of a series are open — nothing about them hidden as a spoiler (design-system 8.12): every episode up
+ * Which episodes of a series are open — nothing about them hidden as a spoiler: every episode up
  * to the last watched one of the regular seasons, by season and episode number, so gaps in the marks don't hide what
  * was seen; and any marked one, specials included. An unknown library state (loading, a guest) opens nothing, so a
  * spoiler is hidden first and shown after, never the other way round. Keys are `watchedEpisodes`' `s{season}e{episode}`.

@@ -100,7 +100,7 @@ describe("pickRelease with the profile's order of studios (1 — LostFilm, 2 —
     expect(pickRelease(rankReleases([sd, rezka720, lost720], dexter, order), order).chosen?.result).toBe(lost720);
   });
 
-  // docs/torrserver-2026-11.md, 6: an almost dead release never wins over a live one, the profile's first studio's either.
+  // An almost dead release never wins over a live one, the profile's first studio's either.
   it("doesn't start the first studio's release when it is almost dead (one or two seeders) and another studio's is alive", () => {
     const lost = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (LostFilm) + Original", 2);
     const rezka = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (HDRezka Studio) + Original", 40);
@@ -110,7 +110,7 @@ describe("pickRelease with the profile's order of studios (1 — LostFilm, 2 —
   });
 });
 
-describe("what plays by default: the whole pick on the owner's torr answers (2026-11-08)", () => {
+describe("what plays by default: the whole pick on real TorrServer answers", () => {
   const GB = 1024 ** 3;
   const dune2 = { title: "Dune: Part Two", originalTitle: null, kind: "movie" as const, year: 2024, originalLanguage: "en" };
   const dexter = { title: "Декстер: Воскрешение", originalTitle: "Dexter: Resurrection", kind: "tv" as const, year: 2025, originalLanguage: "en" };
@@ -129,7 +129,7 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
     const weak = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 2, 14 * GB, "Kinozal");
     const healthy = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 40, 9 * GB, "Kinozal");
     expect(rankReleases([weak, healthy], dune2, ru())[0]!.result).toBe(healthy);
-    // The owner's words (docs/torrserver-2026-11.md, 6): "4K with 2 peers is worse than Full HD with 20". Unknown seeders
+    // "4K with 2 peers is worse than Full HD with 20". Unknown seeders
     // are not weak.
     const uhd = { hevc: true, hdr: true, uhd: true, dolbyVision: false };
     const weak4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 2, 30 * GB, "Kinozal");
@@ -210,12 +210,12 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
   });
 });
 
-describe("a release whose name counts its voice-overs without naming them, its file read (F1, owner 2026-11-08)", () => {
+describe("a release whose name counts its voice-overs without naming them, its file read (F1)", () => {
   const GB = 1024 ** 3;
   const f1 = { title: "F1", originalTitle: null, kind: "movie" as const, year: 2025, originalLanguage: "en" };
   const uhd = result("F1 / F1: The Movie [2025, WEB-DL 2160p, HDR10, Dolby Vision] [Hybrid] 3x Dub (Movie Dubbing, Jaskier, RHS) + 6x MVO + AVO + VO + Dub (Ukr) + Original (Eng) + Sub (Rus, Ukr, Eng)", 28, 34.8 * GB);
   const fhd = result("F1 / F1: The Movie [2025, WEB-DL 1080p] Dub (Movie Dubbing, RHS, Jaskier) + MVO (Jaskier, TVShows, HDrezka, LostFilm) + AVO + VO + Dub (Ukr) + Original (Eng)", 124, 26.4 * GB);
-  // The 4K file as TorrServer's ffprobe read it on the owner's torr.
+  // The 4K file as a real TorrServer's ffprobe read it.
   const file = ["rus|Дубляж, Movie Dubbing", "rus|Дубляж, Jaskier", "rus|Дубляж, Red Head Sound", "rus|Дубляж, Dragon Studio", "rus|MVO, Jaskier", "rus|MVO, TVShows", "rus|MVO, HDRezka Studio", "rus|MVO, LostFilm", "rus|MVO, LE-Production", "rus|AVO, Ю. Сербин", "rus|VO, М. Яроцкий", "ukr|Дубляж, Postmodern", "eng|Original"];
   const tv = prefs({ languages: ["ru"], studios: ["LostFilm", "HDrezka Studio"], device: { hevc: true, hdr: true, uhd: true, dolbyVision: true } });
 
@@ -301,14 +301,14 @@ describe("pickRelease for the sources screen (ANY)", () => {
   const p = prefs({ languages: ["uk"] });
   const ranked = rankReleases(releases, lotr, p);
 
-  it("keeps every audio and every cut, and starts with the release Where to watch starts (docs/torrserver-2026-11.md 7)", () => {
+  it("keeps every audio and every cut, and starts with the release Where to watch starts", () => {
     const x = pickRelease(ranked, p, { voice: ANY, edition: ANY, picture: null });
     expect(x.option).toBeUndefined();
     expect(x.pool).toHaveLength(3);
     expect(x.editions.map((e) => e.key).sort()).toEqual(["extended", "theatrical"]);
     // The profile's audio (Ukrainian dub) in its own cut — chosen alike on both (once the screen took the cut most
     // seeded across every audio). On this screen without 4K and HDR that is the theatrical 1080p: the extended cut,
-    // seeded more, only comes as a 4K HDR Remux (8).
+    // seeded more, only comes as a 4K HDR Remux.
     expect(x.chosen).toBe(pickRelease(ranked, p).chosen);
     expect(x.chosen?.result.title).toContain("[Theatrical Cut] Dub (Ukr)");
     expect(x.edition).toBe("theatrical");
@@ -335,7 +335,7 @@ describe("pickRelease for the sources screen (ANY)", () => {
   });
 });
 
-// docs/torrserver-2026-11.md, 4 and 5: "Dubbing" in the profile's studios, and kinds of translation that are no option.
+// "Dubbing" in the profile's studios, and kinds of translation that are no option.
 describe("the profile's Dubbing, and multi-voice as no option of its own", () => {
   const dune2 = { title: "Dune: Part Two", originalTitle: null, kind: "movie" as const, year: 2024, originalLanguage: "en" };
   const dub = result("Dune: Part Two [2024, WEB-DL 1080p] Dub (Movie Dubbing) + Original (Eng)", 60);

@@ -4,9 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { FocusColumn } from "./FocusColumn";
 
 /**
- * A guest on a list that isn't open to everyone, or on an invitation (S10, S32; 8.6): the sign-in as the sign-in pages
- * have it (design-system 9 "Вход") — the question, "Sign in" and "Create account" stacked, back to `next` afterwards
- * (AUTH-02); what happens next is for a screen reader. A server component: the page brings no script for it (bundle
+ * A guest on a list that isn't open to everyone, or on an invitation: the sign-in as the sign-in pages
+ * have it — the question, "Sign in" and "Create account" stacked, back to `next` afterwards;
+ * what happens next is for a screen reader. A server component: the page brings no script for it (bundle
  * budget). The page shell stays: the header, the footer, the tab bar.
  */
 export async function SignInColumn({ reason, next }: { reason: "listOpen" | "invite"; next: string }) {

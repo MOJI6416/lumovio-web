@@ -4,9 +4,9 @@ import { Slider as S } from "radix-ui";
 import { cn } from "./cn";
 
 /**
- * A value on a scale (design-system 7.7): a 4 px --surface-3 track filled with --progress and a 16 px knob in the
+ * A value on a scale: a 4 px --surface-3 track filled with --progress and a 16 px knob in the
  * text colour (white on dark and on the stage; black on light, where a white knob would vanish). `player` grows the
- * track to 6 px under the pointer (11.1). Arrows, Page Up/Down, Home and End move it; on a phone the whole 44 px
+ * track to 6 px under the pointer. Arrows, Page Up/Down, Home and End move it; on a phone the whole 44 px
  * strip takes the touch.
  */
 export function Slider({

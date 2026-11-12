@@ -2335,7 +2335,15 @@
     "markEarlier": "Öncekileri de işaretle",
     "episodeNumber": "{n}. Bölüm",
     "specialNumber": "Özel bölüm {n}",
-    "playEpisode": "İzle: {episode}"
+    "playEpisode": "İzle: {episode}",
+    "upcomingRelease": "{date} tarihinde çıkıyor",
+    "upcomingPremiere": "{date} tarihinde başlıyor",
+    "upcomingUnannounced": "Çıkış tarihi açıklanmadı",
+    "upcomingSeason": "{season}. sezon {date} tarihinde başlıyor",
+    "upcomingEpisode": "Yeni bölüm {date}",
+    "addToCalendar": "Takvime ekle",
+    "calendarGoogle": "Google Takvim",
+    "calendarOther": "Apple, Outlook ve diğerleri"
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",

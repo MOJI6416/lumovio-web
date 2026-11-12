@@ -21,7 +21,7 @@ import { Row } from "./Row";
 /** Watchlist titles searched per visit to the home page, one after another. */
 const PER_VISIT = 4;
 
-// Titles this device searched lately (35): a search that failed or came back empty after results stores nothing, and
+// Titles this device searched lately: a search that failed or came back empty after results stores nothing, and
 // without this the same first titles were searched again on every visit, the rest never. Marked as each search starts,
 // so a loop started again (new settings) doesn't repeat one either. Without storage, only the stored answers count.
 const TRIED_KEY = "lumovio.finds.tried";
@@ -123,9 +123,9 @@ export function TorrentFindsRow() {
   if (!torrServer || shown.length === 0) return null;
   const names = new Intl.DisplayNames([locale], { type: "language" });
   const audio = (b: TorrentFindBest) => [prefs.languages.length > 1 && b.language ? names.of(b.language) : null, b.studio ?? (b.voice ? tt(`voice_${b.voice}`) : null)];
-  // Said in full: every picture version it was found in (TS5): "Dub · 1080p, 4K HDR".
+  // Said in full: every picture version it was found in: "Dub · 1080p, 4K HDR".
   const badge = (b: TorrentFindBest) => [...audio(b), findPictureText(b)].filter(Boolean).join(" · ");
-  // Shown: what is heard, then its best version as marks (QualityBadges, 7.15): "Dub [4K] [HDR]".
+  // Shown: what is heard, then its best version as marks (QualityBadges): "Dub [4K] [HDR]".
   const shownFact = (b: TorrentFindBest) => {
     const marks = findMarks(b);
     return marks.length ? <QualityLine marks={marks} words={[findResolutionWord(b), audio(b).filter(Boolean).join(" · ")]} /> : undefined;

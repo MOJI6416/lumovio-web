@@ -30,13 +30,13 @@ const CreateProfile = dynamic(() => loadManager().then((m) => m.CreateProfile), 
 const PinOffer = dynamic(() => loadManager().then((m) => m.PinOffer), { ssr: false });
 const EditView = dynamic(() => loadEditor().then((m) => m.EditView));
 
-/** How many profiles an account can have (the API's limit, PRF-08). */
+/** How many profiles an account can have (the API's limit). */
 export const MAX_PROFILES = 8;
 
 /**
  * What switching to a protected profile asks for: its PIN, or — leaving a kids profile for an adult one without a PIN —
  * the account password or a code mailed to the account. An account without a password (social sign-in only) gets the
- * code straight away; one with it starts at the password and can take the code instead (PRF-01, docs/limitations.md).
+ * code straight away; one with it starts at the password and can take the code instead.
  */
 type Prompt = { profile: Profile; mode: "pin" | "password" | "code" } | null;
 
@@ -70,7 +70,7 @@ const pushed = () => ((window.history.state as Record<string, unknown> | null)?.
 const isPicker = (search: string) => !new URLSearchParams(search).has("manage");
 
 /**
- * The three views of /profiles (design-system 7.17, the Picker template, 9): "Who's watching?" (`/profiles`), Manage
+ * The three views of /profiles (the Picker template): "Who's watching?" (`/profiles`), Manage
  * profiles (`?manage=1`) and a profile's page (`?manage=1&edit=<id>`). Each has its own address, so the browser's Back,
  * a reload and a link from the account menu or the settings land on it; moving between them changes the address in
  * place, without a trip to the server.
@@ -115,20 +115,20 @@ function viewHref(next: string, query: Record<string, string>) {
 }
 
 /**
- * "Who's watching?" (design-system 7.17, 9 «Picker»; audit PRF-07…PRF-10): only the choice — the question, the profiles'
+ * "Who's watching?": only the choice — the question, the profiles'
  * faces and names (a lock where a PIN is asked, "Kids" under a kids profile, the current one ringed), "Add profile" as a
  * tile while there is room, then "Manage profiles" and "Sign out". One press opens the profile in its own interface
- * language (L10N-06), through the account menu's moment: the chosen face on the stage with the loader (7.19). A session
+ * language, through the account menu's moment: the chosen face on the stage with the loader. A session
  * without a profile and an account of one profile without a PIN skip the question. Manage profiles and a profile's page
  * are views of this page (`ProfileManager`, `ProfileEditor`).
  */
 export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState | null }) {
   const t = useTranslations("profiles");
   const tc = useTranslations("common");
-  // The code field and "Send again" say what the sign-in's code steps say (AUTH-09).
+  // The code field and "Send again" say what the sign-in's code steps say.
   const ta = useTranslations("auth");
   const locale = useLocale();
-  // A kids profile doesn't manage profiles (8.10): the address alone doesn't open those views.
+  // A kids profile doesn't manage profiles: the address alone doesn't open those views.
   const inKids = me.activeProfile?.isKids ?? false;
   const { params, manage, edit, viaPicker, go: goView, onClickCapture } = useViews(inKids);
   const next = safeNext(params.get("next"), "/");
@@ -160,7 +160,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   const full = profiles.length >= limit;
 
   const to = (path: string, lang = locale) => (lang === "en" ? path : `/${lang}${path === "/" ? "" : path}`);
-  // The profile's own interface language, when it has one, is the site's language from here on (L10N-06).
+  // The profile's own interface language, when it has one, is the site's language from here on.
   const go = (p: Profile) => {
     const lang = p.uiLocale && (LOCALE_CODES as readonly string[]).includes(p.uiLocale) ? p.uiLocale : locale;
     window.location.href = to(next, lang);
@@ -176,7 +176,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   async function select(p: Profile, extra: { pin?: string; password?: string; code?: string } = {}) {
     setBusy(true);
     setError(null);
-    // The account menu's moment (7.19): the chosen face on the stage while the session changes hands.
+    // The account menu's moment: the chosen face on the stage while the session changes hands.
     if (!prompt) setSwitching(p);
     try {
       await api("/api/profiles/select", { method: "POST", json: { profileId: p.id, ...extra } });
@@ -245,7 +245,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
     if (p) return choose(p);
     if (straightIn) void select(straightIn);
     // From the account menu's "+" (/profiles?add=1): the new profile's first step at once, over "Who's watching?" —
-    // not Manage profiles first (owner, 2026-11-07). The address loses `add`, so Back and a reload don't open it again.
+    // not Manage profiles first. The address loses `add`, so Back and a reload don't open it again.
     if (params.get("add") === "1" && !inKids && !full) {
       const url = new URL(window.location.href);
       url.searchParams.delete("add");
@@ -282,7 +282,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
 
   const editing = edit ? profiles.find((p) => p.id === edit) : undefined;
   // A new view is a new page to the person: it starts at the top, and the focus is on its heading — where a screen
-  // reader reads from and the keyboard goes on from (8.9). Not on arrival: the page itself starts there.
+  // reader reads from and the keyboard goes on from. Not on arrival: the page itself starts there.
   const view = editing ? editing.id : manage ? "manage" : "pick";
   const arrived = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the view changes, which is all `view` is for
@@ -356,7 +356,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
         // From `sm` the question and the faces stand in the middle of the screen, a little above its centre.
         <div className="flex flex-col items-center text-center sm:min-h-[calc(100dvh-var(--header-h)-7rem)] sm:justify-center sm:pb-16">
           <h1 className="text-balance text-h1 text-text-1">{t("whoIsWatching")}</h1>
-          {/* Leaving a kids profile: what it takes is said by the dialog that asks for it (8.10). */}
+          {/* Leaving a kids profile: what it takes is said by the dialog that asks for it. */}
           {inKids && <p className="sr-only">{hasPassword ? t("leaveKidsHint") : t("leaveKidsHintNoPassword")}</p>}
           <ul
             // The faces: 88 in three columns on a phone (eight profiles and "Add" in the first screen), 120 from `sm`,
@@ -367,10 +367,10 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
               const current = p.id === currentId;
               return (
                 <li key={p.id} className="w-full sm:w-36 xl:w-40">
-                  <button /* ui-lint-ignore raw-button: a profile tile (its face and name), 7.17 */
+                  <button /* ui-lint-ignore raw-button: a profile tile (its face and name) */
                     type="button"
                     // Not `disabled` while a choice is in flight: a disabled button drops the focus, and the PIN or
-                    // password dialog that follows would have nowhere to give it back on Escape (C27).
+                    // password dialog that follows would have nowhere to give it back on Escape.
                     aria-disabled={busy || undefined}
                     aria-current={current ? "true" : undefined}
                     onClick={() => choose(p)}
@@ -405,7 +405,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
             {!inKids && !full && (
               // At the limit there is no tile (as Netflix): Manage profiles says why "Add profile" is off.
               <li className="w-full sm:w-36 xl:w-40">
-                <button /* ui-lint-ignore raw-button: the "Add profile" tile, 7.17 */
+                <button /* ui-lint-ignore raw-button: the "Add profile" tile */
                   type="button"
                   disabled={busy}
                   onClick={() => setCreating(true)}
@@ -427,7 +427,7 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
                 {t("manage")}
               </Link>
             )}
-            {/* Not on a TV: signing out there is in the TV's settings, and the TV keeps its own shell (10.3). */}
+            {/* Not on a TV: signing out there is in the TV's settings, and the TV keeps its own shell. */}
             <Button variant="tertiary" icon={LogOut} loading={busy && !prompt && !switching} onClick={() => void signOut()} className="in-data-[tv=1]:hidden">
               {tc("signOut")}
             </Button>
@@ -559,7 +559,8 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
       )}
 
       {switching && (
-        // As the account menu does it (7.19): the chosen profile on the stage, over everything, while the page opens.
+        // As the account menu does it: the chosen profile on the stage, over everything,
+        // while the page opens.
         <div role="status" aria-label={tc("loading")} className="stage fixed inset-0 z-scrim grid animate-fade-in place-items-center bg-stage">
           <div className="flex flex-col items-center gap-8">
             <ProfileAvatar avatar={switching.avatar} photo={switching.photo} name={switching.name} size={96} />

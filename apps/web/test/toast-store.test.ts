@@ -6,7 +6,7 @@ import {
   TOAST_SHORT_MS,
 } from "../src/components/ui/toast-store";
 
-// design-system 7.10, audit X-31: at most 3, 4 s / 7 s, paused while hovered or focused.
+// Toasts: at most 3, 4 s / 7 s, paused while hovered or focused.
 
 beforeEach(() => {
   vi.useFakeTimers();

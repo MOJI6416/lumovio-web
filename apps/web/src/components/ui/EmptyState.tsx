@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "./cn";
 
 /**
- * Where a state stands (design-system 7.11): the whole page (404, a closed page, the API down — the page's h1, in the
+ * Where a state stands: the whole page (404, a closed page, the API down — the page's h1, in the
  * middle of the space under the header), a section of a page (an empty list, a failed tab — under the section's own
  * header) or one line in place of a part that failed while the rest of the page works (a shelf, the next page).
  */
@@ -12,9 +12,9 @@ export type StateVariant = "page" | "section" | "inline";
 const ICON: Record<StateVariant, string> = { page: "size-12", section: "size-8", inline: "size-5" };
 
 /**
- * The one layout of every state (design-system 7.11): a bare glyph, what happened in a few words, and one way on —
+ * The one layout of every state: a bare glyph, what happened in a few words, and one way on —
  * nothing else in sight. Why, and what comes after, is `about`: said by a screen reader after the heading, never shown
- * (the site keeps no explaining paragraphs, 1.2). `note` is the rare visible line for a limit the person can't guess —
+ * (the site keeps no explaining paragraphs). `note` is the rare visible line for a limit the person can't guess —
  * a kids profile, an age limit, a title taken down — and the search's own query. Not for a failed load — that is
  * ErrorState, built on this — and never for a shelf: an empty shelf is hidden. Works in server components too.
  */
@@ -51,7 +51,7 @@ export function EmptyState({
   /** Placement only. */
   className?: string;
 }) {
-  // A state's heading has no full stop (2.2), even when its words are a sentence elsewhere ("Nothing on these filters.").
+  // A state's heading has no full stop, even when its words are a sentence elsewhere ("Nothing on these filters.").
   const heading = /[^.]\.$/.test(title) ? title.slice(0, -1) : title;
   if (variant === "inline")
     return (

@@ -12,7 +12,7 @@ export const PREFS_TRIGGER_ID = "prefs-menu-trigger";
 const full = lazyControl(() => import("./AccountMenuFull"));
 
 /**
- * The header's "Language and theme" for a visitor who isn't signed in (SH-07): a Globe button before "Sign in", on a
+ * The header's "Language and theme" for a visitor who isn't signed in: a Globe button before "Sign in", on a
  * desktop and a phone.
  * The menu behind it (Radix menu, theme and language controls) is the account menu's module, so it loads as that one
  * does — when the pointer comes near, the button gets the focus or the browser is idle (bundle budget, ui/lazy-swap).

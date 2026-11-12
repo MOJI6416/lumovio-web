@@ -15,10 +15,10 @@ const decode = (path: string) => {
 };
 
 /**
- * "← Parent" and "← To the title" (design-system 8.7): back through the history when the page before this one is that
+ * "← Parent" and "← To the title": back through the history when the page before this one is that
  * very page (the place and the scroll come back), else that page in this one's place — never a new entry. A new entry
- * would put this page behind its parent, and the app's own Back (7.19) or the browser's would come back to it: the
- * title and its sources screen sent each other round in a loop (owner, 2026-10-30).
+ * would put this page behind its parent, and the app's own Back or the browser's would come back to it: the
+ * title and its sources screen sent each other round in a loop.
  */
 export function useGoUp() {
   const router = useRouter();

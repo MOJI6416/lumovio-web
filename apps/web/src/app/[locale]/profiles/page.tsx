@@ -14,7 +14,7 @@ export async function generateMetadata() {
 }
 
 /**
- * "Not now" of the hint to set a PIN on adult profiles (8.10). null when it can't be read — signed out, a kids session
+ * "Not now" of the hint to set a PIN on adult profiles. null when it can't be read — signed out, a kids session
  * (403), the API down — and then the hint isn't shown.
  */
 async function pinHintState(): Promise<PinHintState | null> {
@@ -29,7 +29,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Pro
   // Side by side: the hint's state doesn't wait for the session's.
   const [me, pinHint] = await Promise.all([getMeState(), pinHintState()]);
   if (!me) {
-    // Signed out: sign-in comes back through this choice anyway, so it keeps only where that was to lead (AUTH-06).
+    // Signed out: sign-in comes back through this choice anyway, so it keeps only where that was to lead.
     const { next } = await searchParams;
     const back = safeNext(typeof next === "string" ? next : null);
     redirect({ href: `/auth/sign-in${back === "/" ? "" : `?next=${encodeURIComponent(back)}`}`, locale: await getLocale() });
@@ -37,10 +37,10 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Pro
   const t = await getTranslations("profiles");
   const tn = await getTranslations("nav");
   return (
-    // The Picker template (design-system 9): the page's own background in its theme, as sign-in before it — no art to
-    // hold, so no stage (3.5) — the logo where the header has it, the question and the faces in the middle.
+    // The Picker template: the page's own background in its theme, as sign-in before it — no art to
+    // hold, so no stage — the logo where the header has it, the question and the faces in the middle.
     <div className="min-h-dvh bg-bg pb-16">
-      {/* The logo where the header has it: a 64 bar on the page gutter (SH-15), below a home-screen app's status bar (7.19). */}
+      {/* The logo where the header has it: a 64 bar on the page gutter, below a home-screen app's status bar. */}
       <div className="page-x mx-auto flex h-(--header-h) max-w-media items-center pt-[env(safe-area-inset-top)]">
         <Link href="/" className="flex h-11 items-center rounded-xs text-text-1" aria-label={`Lumovio — ${tn("home")}`}>
           <Wordmark />

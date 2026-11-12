@@ -22,7 +22,7 @@ function Toggles() {
   const all = KINDS.every((k) => kinds.has(k));
   const some = !all && KINDS.some((k) => kinds.has(k));
   return (
-    <ShowcaseSection id="toggles" title={t("devUi.toggles")} source="ui/Switch.tsx · ui/Checkbox.tsx · 7.7">
+    <ShowcaseSection id="toggles" title={t("devUi.toggles")} source="ui/Switch.tsx · ui/Checkbox.tsx">
       <Demo title="Switch" note={t("devUi.switchNote")} className="block">
         <div className="flex max-w-xl flex-col divide-y divide-line">
           <Switch
@@ -104,7 +104,7 @@ function Sliders() {
   const [time, setTime] = useState(3730);
   const total = 9300;
   return (
-    <ShowcaseSection id="slider" title={t("devUi.slider")} source="ui/Slider.tsx · 7.7">
+    <ShowcaseSection id="slider" title={t("devUi.slider")} source="ui/Slider.tsx">
       <Demo title="default" className="block">
         <div className="flex max-w-md flex-col gap-6">
           <Cell label={`${t("common.volume")} · ${t("devUi.percent", { value: volume })}`}>

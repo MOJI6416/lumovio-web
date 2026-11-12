@@ -8,12 +8,12 @@ import { api } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-errors";
 
 /**
- * The speed meter (docs/performance-handoff-2026-10-24.md §5.2, design-system 10.3 "Замер"): `?perf=1` turns it on for
+ * The speed meter: `?perf=1` turns it on for
  * the tab (`?perf=0` or "Turn off" — off), and only then is this code loaded. It measures, from the page itself (a TV's
  * browser has no developer tools): input → the frame after it (the event's own time to a double requestAnimationFrame,
  * every key and tap), Event Timing's interaction durations, long tasks and long animation frames where the browser has
  * them, the page's elements and Chromium's JS heap. p50 / p95 / p99 / max over the screen; "Send" posts the summary to the
- * API for the owner's admin (only the owner's session may); on a TV — where the panel can't be reached by the remote —
+ * API for the admin (only an admin's session may); on a TV — where the panel can't be reached by the remote —
  * the summary goes by itself every minute while there is something new.
  */
 interface Stat {

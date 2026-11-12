@@ -17,9 +17,9 @@ import { type Prefs, usePrefs } from "./prefs";
 const auth = () => import("@/lib/auth-client").then((m) => m.authClient);
 
 /**
- * Settings → Privacy and data (S23, design-system 7.18): what AI search may read, a copy of everything, and — apart and
- * last — deleting the account, its consequence said under it and asked with a typed word (8.3). The profile's public
- * page is the profile's (Settings → Profile).
+ * Settings → Privacy and data: what AI search may read, a copy of everything, and — apart and
+ * last — deleting the account, its consequence said under it and asked with a typed word. The profile's
+ * public page is the profile's (Settings → Profile).
  */
 export function PrivacySettings() {
   const t = useTranslations("settings");
@@ -45,7 +45,7 @@ export function PrivacySettings() {
   );
 }
 
-/** What AI search may read (SET-08): said in the same words as the recommendations page. */
+/** What AI search may read: said in the same words as the recommendations page. */
 function AiSection() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
@@ -68,7 +68,7 @@ function AiSection() {
   );
 }
 
-/** The last group (8.8): deleting the account, confirmed by typing a word; it goes after the link in the e-mail. */
+/** The last group: deleting the account, confirmed by typing a word; it goes after the link in the e-mail. */
 function DangerZone() {
   const t = useTranslations("settings");
   const tr = useTranslations();

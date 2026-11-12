@@ -17,7 +17,7 @@ export interface SwitchProps {
 }
 
 /**
- * A switch, 44 × 24 (design-system 7.7): for a setting that applies at once — no Save button after it. With a
+ * A switch, 44 × 24: for a setting that applies at once — no Save button after it. With a
  * visible label it is a row: label and description at the start, the switch at the end. A native checkbox with the
  * switch role underneath, so Space, labels and forms work as usual; on a phone the hit area is 44 px tall.
  */

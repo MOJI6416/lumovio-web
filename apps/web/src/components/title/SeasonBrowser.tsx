@@ -36,15 +36,15 @@ type SpoilerPart = "still" | "name" | "overview";
 type Spoilers = Record<SpoilerPart, boolean | null>;
 
 /**
- * "Episodes" (design-system 7.12 EpisodeRow, S07, C12; 2026-11-06 the first section under a series' hero — choosing the
+ * "Episodes" (the first section under a series' hero — choosing the
  * episode is starting): one line on top — the heading, the season as one select-pill ("Season 2 ⌄", specials last; a
  * series of one season has nothing to choose), "7 episodes · 2008" and the season's actions at the end (on a phone
  * they scroll in a line of their own) — and the episodes as one horizontal strip of cards: the 16:9 still, its number,
  * date and length, the name, two lines of overview, "Watched" (IconButton pressed: changes at once, pressing again
  * takes it back). It opens on the profile's season. Marking an episode while
- * earlier ones are unwatched offers "Mark the earlier ones too" (the series' "up to this episode", 8.1). "Mark season
+ * earlier ones are unwatched offers "Mark the earlier ones too" (the series' "up to this episode"). "Mark season
  * watched" / "Unmark season" say what they did with "Undo", which puts back exactly what was there — the old dates
- * included (TTL-05, TTL-25). "Next episode" goes to the first unwatched aired one. Spoilers (8.12): after the last
+ * included. "Next episode" goes to the first unwatched aired one. Spoilers: after the last
  * watched episode the stills and descriptions (and names, if the profile hides them) are hidden until pressed (ui/
  * Spoiler); "Show spoilers" shows them all for this visit, then "Hide spoilers" puts them back, those shown one by one too.
  */
@@ -130,7 +130,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   const mark = (body: Record<string, unknown>) => api<TitleLibraryState>("/api/history/mark", { method: "POST", json: { titleId: d.id, ...body } });
   const undo = async (undoKey: string) => setState(await api<TitleLibraryState>("/api/history/mark/undo", { method: "POST", json: { undoKey } }));
 
-  // One episode's check: it changes at once and a failure puts it back with a toast (8.3); pressing again undoes it.
+  // One episode's check: it changes at once and a failure puts it back with a toast; pressing again undoes it.
   const markEpisode = useAction({
     run: async (e: Ep, watched: boolean) => {
       const s = await mark({ season: e.season, episode: e.episode, watched });
@@ -196,7 +196,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
         <h2 id="episodes-h" className="text-h2 text-text-1">
           {t("episodesTitle")}
         </h2>
-        {/* The season is one control showing its value (redesign-2026-11.md 5); a series of one season has nothing to
+        {/* The season is one control showing its value; a series of one season has nothing to
             choose: its facts and actions only. */}
         {tabs.length > 1 && (
           <Select
@@ -292,7 +292,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
 const CARD_W = "w-64 shrink-0 sm:w-72 md:w-80";
 
 /**
- * A season's episodes as one horizontal strip (redesign-2026-11.md 5), across the page's gutter: it scrolls with a swipe
+ * A season's episodes as one horizontal strip, across the page's gutter: it scrolls with a swipe
  * and snaps; with a mouse, arrows at the edges on hover (as a shelf, media/Row). The cards' own links and buttons take
  * the focus in order, and the strip follows it.
  */
@@ -344,8 +344,8 @@ function EpisodeStrip({ listRef, children }: { listRef: RefObject<HTMLOListEleme
 }
 
 /**
- * One episode (7.12; a card of the strip since redesign-2026-11.md 5): the still, "4 episode · 17 Feb 2008 · 49 min" with
- * "Watched", the name, two lines. A part that could spoil the plot is a Spoiler (7.21) — the still, the name, the
+ * One episode (a card of the strip): the still, "4 episode · 17 Feb 2008 · 49 min" with
+ * "Watched", the name, two lines. A part that could spoil the plot is a Spoiler — the still, the name, the
  * description each shown by its own press.
  */
 function EpisodeRow({

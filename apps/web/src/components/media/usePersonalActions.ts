@@ -16,7 +16,7 @@ import { useAction } from "@/lib/use-action";
 import { sharePage } from "@/components/share/share";
 
 /*
- * The personal actions on a title (design-system 8.1) — one set of requests, on-screen changes, toasts and "Undo" for
+ * The personal actions on a title — one set of requests, on-screen changes, toasts and "Undo" for
  * the title page's actions (title/TitleActions) and a card's "More" menu (media/CardMenu). The rating and following a
  * series stay with the title page.
  */
@@ -32,7 +32,7 @@ export interface ActionTitle {
   title: string;
 }
 
-/** Which sign-in sheet a guest's press opens, and the action to finish after signing in (8.6). */
+/** Which sign-in sheet a guest's press opens, and the action to finish after signing in. */
 const GATE_OF: Record<string, [GateReason, GuestIntent["action"]?]> = {
   wl: ["watchlist", "watchlist"],
   fav: ["favorite", "favorite"],
@@ -48,12 +48,12 @@ export interface LibraryChange {
   /** A change elsewhere on the screen (a card leaving its shelf); returns how to put it back. */
   // biome-ignore lint/suspicious/noConfusingVoidType: a change that needs no putting back returns nothing
   also?: () => (() => void) | void;
-  /** The toast, for changes that are taken back with "Undo" (8.1); none where the control shows the result. */
+  /** The toast, for changes that are taken back with "Undo"; none where the control shows the result. */
   success?: string;
-  /** The toast's mark of the confirmed action (6.3.1). */
+  /** The toast's mark of the confirmed action. */
   icon?: ToastOptions["icon"];
   undo?: () => Promise<unknown>;
-  /** The failure's own words, where the general ones would mislead (TTL-30); and "Retry" in its toast. */
+  /** The failure's own words, where the general ones would mislead; and "Retry" in its toast. */
   error?: string;
   retry?: () => void;
 }
@@ -81,11 +81,11 @@ export function usePersonalActions(t: ActionTitle) {
   const signedIn = Boolean(me?.activeProfile);
   const [busy, setBusy] = useState<string | null>(null);
 
-  // A guest's personal action opens the sign-in sheet named after it, and is done after signing in (8.6, AUTH-01).
+  // A guest's personal action opens the sign-in sheet named after it, and is done after signing in.
   const [gate, setGate] = useState<{ open: boolean; reason: GateReason; intent?: GuestIntent }>({ open: false, reason: "watchlist" });
   const requireAuth = (reason: GateReason, action?: GuestIntent["action"]) => setGate({ open: true, reason, intent: action && { titleId: t.id, action } });
 
-  // Every personal action (8.3): the control changes at once, a failure puts it back with a toast in words, and the
+  // Every personal action: the control changes at once, a failure puts it back with a toast in words, and the
   // reversible ones (Favourites, Watched, Not interested) offer "Undo".
   const change = useAction({
     run: async (c: LibraryChange) => {
@@ -132,9 +132,9 @@ export function usePersonalActions(t: ActionTitle) {
   const hideRequest = (on: boolean, reason?: HideReason) =>
     api<TitleLibraryState>("/api/recommendations/feedback", { method: "POST", json: { titleId: t.id, kind: "hide", on, ...(reason ? { reason } : {}) } });
 
-  /** "Watchlist": the control shows the result, no toast (8.1); `announce` adds the toast with Undo (after signing in). */
+  /** "Watchlist": the control shows the result, no toast; `announce` adds the toast with Undo (after signing in). */
   const setWatchlist = (on: boolean, announce = false) => {
-    // An add counts for the shelf the title was opened from (anonymous, C5).
+    // An add counts for the shelf the title was opened from (anonymous).
     if (on && signedIn) trackOutcome(t.id, "watchlist");
     return mutate({
       key: "wl",
@@ -175,9 +175,9 @@ export function usePersonalActions(t: ActionTitle) {
     });
   };
   /**
-   * After "New list" in the picker: the title goes into it, said in a toast with "Undo" (TTL-26) — the picker is
+   * After "New list" in the picker: the title goes into it, said in a toast with "Undo" — the picker is
    * closed by then, so the check box is not there to show it. "Undo" takes the title out; the new list stays. If the
-   * title can't be added, the toast says the list is there all the same, with "Retry" (TTL-30).
+   * title can't be added, the toast says the list is there all the same, with "Retry".
    */
   const addToNewList = (l: ListSummary): Promise<void> =>
     mutate({

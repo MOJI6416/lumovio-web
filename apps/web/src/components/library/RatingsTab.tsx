@@ -34,8 +34,8 @@ const SORTS = ["rated", "high", "low", "title"] as const;
 type Sort = (typeof SORTS)[number];
 
 /**
- * Ratings (S09, LIB-12): the rated titles as posters, the profile's own rating "★ 9" on each — the control that changes
- * it, with the title page's 1–10 dialog (8.1); "Remove rating" in the card's "More", gone at once with "Undo" in the
+ * Ratings: the rated titles as posters, the profile's own rating "★ 9" on each — the control that changes
+ * it, with the title page's 1–10 dialog; "Remove rating" in the card's "More", gone at once with "Undo" in the
  * toast putting the same value back. Sorted by date, by value or by name; the type chips where both kinds are rated.
  * Drawn 60 at a time with "Show more", sorted and filtered over all of them.
  */

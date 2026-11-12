@@ -17,7 +17,7 @@ export interface SortChoice<S extends string> {
 }
 
 /**
- * The filters of a collection — Watchlist, Favourites, Ratings, a list (S09, S10; design-system 8.4, 7.4): the same
+ * The filters of a collection — Watchlist, Favourites, Ratings, a list: the same
  * row of pills as the catalog's. The type as one-choice chips (only when the collection holds both films and series —
  * a filter that changes nothing isn't offered), "Length ⌄" and, with "Series" chosen, "Status ⌄" as pills with a
  * menu, "On your servers" and "Not watched yet" as chips; on the end the sort pill, the count and an action on what
@@ -52,7 +52,7 @@ export function CollectionToolbar<S extends string>({
   total: number;
   /** A control over the row (the search inside a list). */
   children?: ReactNode;
-  /** An action on what the filters show, after the count ("Save as list", package F). */
+  /** An action on what the filters show, after the count ("Save as list"). */
   action?: ReactNode;
 }) {
   const t = useTranslations("library");

@@ -13,7 +13,7 @@ import { type BrowserFacts, browserFacts, type ClipResult, REFERENCE_CLIPS, repo
 import { useAction } from "@/lib/use-action";
 
 /**
- * "Device check" (S42, /dev/player-check; docs/player-compatibility-and-ux-2026-10-23.md P5): what this browser can
+ * "Device check" (/dev/player-check): what this browser can
  * play and which formats of real releases open in Lumovio's player here — each reference clip started the way the
  * player would, muted — with a report to copy and send. A Tool page: the header, then two panels.
  */

@@ -15,10 +15,10 @@ const CreateListDialog = lazy(() => import("./CreateListDialog").then((m) => ({ 
 const ConnectListDialog = lazy(() => import("./ConnectListDialog").then((m) => ({ default: m.ConnectListDialog })));
 
 /**
- * "New list" as the first card of the lists (design-system 7.12, as Apple Music's "New Playlist"): a ListCard's square
+ * "New list" as the first card of the lists (as Apple Music's "New Playlist"): a ListCard's square
  * on --surface-2 with a plus and its name under it, the hover and focus of a card. It opens the "New list" dialog —
  * with following an MDBList list as the other way to start one, where the server can — and the new list opens with a
- * toast, so adding titles is right there (LIB-15). The library's shelf and the Lists page use it alike.
+ * toast, so adding titles is right there. The library's shelf and the Lists page use it alike.
  */
 export function NewListTile() {
   const t = useTranslations("library");
@@ -41,7 +41,7 @@ export function NewListTile() {
   };
   return (
     <div className="group/card w-full min-w-0">
-      <button /* ui-lint-ignore raw-button: the "New list" tile among the lists' cards (7.12), a card, not a Button */
+      <button /* ui-lint-ignore raw-button: the "New list" tile among the lists' cards, a card, not a Button */
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen("create")}

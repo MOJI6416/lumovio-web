@@ -32,7 +32,7 @@ function Chips() {
       return n;
     });
   return (
-    <ShowcaseSection id="chips" title={t("chips")} source="ui/Chip.tsx · 7.4">
+    <ShowcaseSection id="chips" title={t("chips")} source="ui/Chip.tsx">
       <Demo title="FilterChip" note={t("filterChipNote")} className="gap-2">
         {genres.map((g) => (
           <FilterChip key={g.id} selected={on.has(g.id)} count={g.count} onClick={() => toggle(g.id)}>
@@ -67,7 +67,7 @@ function Chips() {
 function Badges() {
   const t = useTranslations();
   return (
-    <ShowcaseSection id="badges" title={t("devUi.badges")} source="ui/Badge.tsx · 7.4">
+    <ShowcaseSection id="badges" title={t("devUi.badges")} source="ui/Badge.tsx">
       <Demo title="Tag">
         <Tag>{t("devUi.tagKids")}</Tag>
         <Tag>{t("devUi.tagYourLanguage")}</Tag>

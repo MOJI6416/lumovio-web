@@ -1,5 +1,5 @@
 /*
- * Where a streaming service's own search for a title is (TTL-12): TMDB gives its offers by provider id without a link
+ * Where a streaming service's own search for a title is: TMDB gives its offers by provider id without a link
  * to the service, so "Watch" opens the service's search for the title's name — only for the services whose search
  * address is stable and public. Others have no "Watch" of their own: the section links TMDB's offers page once.
  */

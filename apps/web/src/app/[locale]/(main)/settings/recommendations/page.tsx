@@ -7,7 +7,7 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
-/** The genres load in their own section, with an error and "Retry" there instead of an empty list (SET-12). */
+/** The genres load in their own section, with an error and "Retry" there instead of an empty list. */
 export default async function Page() {
   await signInFirst("/settings/recommendations");
   return <RecommendationSettings />;

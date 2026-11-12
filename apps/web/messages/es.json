@@ -2335,7 +2335,15 @@
     "markEarlier": "Marcar también los anteriores",
     "episodeNumber": "Episodio {n}",
     "specialNumber": "Especial {n}",
-    "playEpisode": "Ver {episode}"
+    "playEpisode": "Ver {episode}",
+    "upcomingRelease": "Se estrena el {date}",
+    "upcomingPremiere": "Se estrena el {date}",
+    "upcomingUnannounced": "Fecha de estreno sin anunciar",
+    "upcomingSeason": "La temporada {season} se estrena el {date}",
+    "upcomingEpisode": "Nuevo episodio el {date}",
+    "addToCalendar": "Añadir al calendario",
+    "calendarGoogle": "Google Calendar",
+    "calendarOther": "Apple, Outlook y otros"
   },
   "personPage": {
     "noCreditsKids": "No hay títulos disponibles en un perfil infantil",

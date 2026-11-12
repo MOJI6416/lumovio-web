@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 
-/** How long the art on screen may keep the cover after the page has come, and the whole wait at most (6.3.1). */
+/** How long the art on screen may keep the cover after the page has come, and the whole wait at most. */
 const ART_WAIT_MS = 1000;
 const MAX_WAIT_MS = 8000;
 /** --dur-base: the cover's fade. */
@@ -74,8 +74,8 @@ if (typeof window !== "undefined" && ios())
   });
 
 /**
- * Back and Forward on an iPhone or iPad (design-system 6.3.1, 8.7): during a swipe iOS shows its snapshot of the page,
- * and after it the live page blinked, however it was drawn (owner, 2026-10-30 — even with the previous page's DOM kept).
+ * Back and Forward on an iPhone or iPad: during a swipe iOS shows its snapshot of the page,
+ * and after it the live page blinked, however it was drawn (even with the previous page's DOM kept).
  * So a page from the history comes under a cover of the page's colour, over the header, with the loader after
  * --loader-delay; the cover fades once the router has put the page in, the scroll is restored and the art on screen is
  * ready. Elsewhere Back shows the page at once, as before.

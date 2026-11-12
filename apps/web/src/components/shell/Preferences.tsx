@@ -10,8 +10,8 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { getThemePref, onThemeChange, setTheme, type ThemePref } from "@/lib/prefs";
 
 /*
- * Theme and interface language, for everyone — the header's "Language and theme" for guests (SH-07), the account menu
- * for the signed in (SH-08), the sign-in pages' language field. One state for all: choosing in one place updates the rest.
+ * Theme and interface language, for everyone — the header's "Language and theme" for guests, the account menu
+ * for the signed in, the sign-in pages' language field. One state for all: choosing in one place updates the rest.
  */
 
 export const THEMES: ThemePref[] = ["dark", "light", "system"];

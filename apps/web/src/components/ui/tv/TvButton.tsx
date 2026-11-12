@@ -3,16 +3,16 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "../cn";
 
 /*
- * The TV variant of Button and IconButton (design-system 7.1, 7.2, 10.3): 66 px high on a 1920 window (a remote's target
+ * The TV variant of Button and IconButton: 66 px high on a 1920 window (a remote's target
  * is at least 64), text at `body`. At rest every button is the same quiet fill — the main action is the first one and
  * where a screen starts; the focused one turns white with the lime ring and grows a little, so the selection is never in
- * doubt on any art (audit X-24). `round` is the icon-only one (player, "More"), its name in `label`.
+ * doubt on any art. `round` is the icon-only one (player, "More"), its name in `label`.
  */
 
 export type TvButtonLook = "pill" | "round" | "row";
 
 const LOOKS: Record<TvButtonLook, string> = {
-  // A pill as the site's buttons since the 2026-11 redesign (one family on every screen).
+  // A pill as the site's buttons (one family on every screen).
   pill: "h-11 min-w-11 px-5 gap-3 rounded-full",
   round: "size-11 rounded-full [&_svg]:size-6",
   // A full-width line of a list (settings, sources, tracks): label at the start, its value or mark at the end.

@@ -21,11 +21,11 @@ import { apiErrorKey, importUploadErrorKey } from "@/lib/api-errors";
 import { EXPORT_PAGE, LABEL } from "./import-shared";
 import { ServerHistoryRead } from "./ServerHistoryRead";
 
-/** As Settings → Sync colours an account's state (7.4). */
+/** As Settings → Sync colours an account's state. */
 const ACCOUNT_STATUS: Record<IntegrationAccount["status"], Status> = { ok: "success", connecting: "neutral", reauth: "warning", error: "danger" };
 
 /**
- * A source's window (S13; design-system 9 «Импорт»): everything to bring its history in, on the screen where its tile
+ * A source's window: everything to bring its history in, on the screen where its tile
  * was tapped. In order — the profile it goes to (only when there is a choice); Trakt and Simkl first offer signing in,
  * after which the history keeps coming by itself, then the file; the file: how to get it with a link to the service's
  * export page, "Choose file" (a file dropped anywhere on the window works too). A connected server is read instead.
@@ -41,7 +41,7 @@ export function SourceDialog({ info, onClose }: { info: ImportSourceInfo; onClos
   const source = info.source;
   const service = LABEL[source];
   const profiles = me?.profiles ?? [];
-  // Adults first; a kids profile is never the default target (IMP-05).
+  // Adults first; a kids profile is never the default target.
   const ordered = [...profiles.filter((p) => !p.isKids), ...profiles.filter((p) => p.isKids)];
   const [profileId, setProfileId] = useState(me?.activeProfile && !me.activeProfile.isKids ? me.activeProfile.id : (ordered[0]?.id ?? ""));
   const target = profiles.find((p) => p.id === profileId);
@@ -67,7 +67,7 @@ export function SourceDialog({ info, onClose }: { info: ImportSourceInfo; onClos
   };
 
   const upload = async (file: File) => {
-    // Only the files the source exports (IMP-05): a .txt is refused here, in words, before any upload.
+    // Only the files the source exports: a .txt is refused here, in words, before any upload.
     const ext = /\.[a-z0-9]+$/i.exec(file.name)?.[0]?.toLowerCase() ?? "";
     if (!info.accept.includes(ext)) {
       toast.error(t("errWrongType", { source: service, types: info.accept.join(", ") }));
@@ -136,7 +136,7 @@ export function SourceDialog({ info, onClose }: { info: ImportSourceInfo; onClos
               {ts("connect", { service })}
             </h3>
             {linked ? (
-              // Its state as Sync says it (7.4): "Connected", or "Sign-in needed" with the way there.
+              // Its state as Sync says it: "Connected", or "Sign-in needed" with the way there.
               <div className="flex flex-col items-start gap-2">
                 <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body text-text-1">
                   {t("accountLinked", { source: service, profile: target?.name ?? "" })}

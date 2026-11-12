@@ -6,6 +6,6 @@ app/build/
 *.iml
 .kotlin/
 
-# The release key and its password (release.local.md): the owner keeps them, CI has them as secrets.
+# The release key and its password: kept outside the repository, CI has them as secrets.
 *.jks
 *.keystore

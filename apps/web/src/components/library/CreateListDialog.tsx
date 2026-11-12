@@ -15,8 +15,8 @@ import { api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 
 /**
- * "New list" (S09, S10; design-system 7.9): its name, who sees it, shared or not — then "Create list". A description
- * is added later in "Edit list", where it is read. The one way to create a list (LIB-13); `onFollow` adds the other way
+ * "New list": its name, who sees it, shared or not — then "Create list". A description
+ * is added later in "Edit list", where it is read. The one way to create a list; `onFollow` adds the other way
  * to start one — following an MDBList list — as a quiet button under the fields, not a second button beside "New list".
  * A kids profile's lists stay private and its own (the server refuses anything else), so it isn't asked.
  */
@@ -38,7 +38,7 @@ export function CreateListDialog({
   const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<ListVisibility>("private");
   const [collaborative, setCollaborative] = useState(false);
-  // The new list shows up where it was asked for; a failure says why in a toast (8.3).
+  // The new list shows up where it was asked for; a failure says why in a toast.
   const create = useAction({
     run: async () => {
       const l = await api<ListSummary>("/api/lists", { method: "POST", json: { name: name.trim(), description: null, visibility, collaborative } });

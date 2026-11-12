@@ -25,7 +25,7 @@ function snapTarget(el: HTMLElement): number | null {
 }
 
 /**
- * Drag a row sideways with the mouse (owner, 2026-11-06): press the left button anywhere in a `.scroll-row` and move.
+ * Drag a row sideways with the mouse: press the left button anywhere in a `.scroll-row` and move.
  * A touch screen already swipes and a TV has its remote, so only a mouse drags. The press doesn't focus the card under
  * it (a focused card would pull the row to itself) and the cards don't react to the pointer while it drags; let go
  * mid-throw and the row glides on, slowing down, then eases onto the nearest card — the row's snapping is off until

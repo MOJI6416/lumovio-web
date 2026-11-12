@@ -3,7 +3,7 @@ import { ApiRequestError } from "@/lib/api";
 
 type Translate = ReturnType<typeof useTranslations<"profiles">>;
 
-/** Profile API errors in the person's language (PRF-06, PRF-07): never the API's own English message. */
+/** Profile API errors in the person's language: never the API's own English message. */
 export function profileErrorText(t: Translate, e: unknown, context: "pin" | "password" | "code" | "save" | "delete"): string {
   if (!(e instanceof ApiRequestError)) return t("errGeneric");
   switch (e.code) {

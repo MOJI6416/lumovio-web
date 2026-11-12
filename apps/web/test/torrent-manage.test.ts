@@ -2,7 +2,7 @@ import type { ConnectionTorrentIndex, TorrentIndexEntry } from "@lumovio/contrac
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaNetError } from "../src/lib/media/net";
 
-// TS7: removing torrents from a TorrServer and reconciling Lumovio's index with what the server
+// Removing torrents from a TorrServer and reconciling Lumovio's index with what the server
 // really has. The server and the API are fakes; the order and content of the calls is the point.
 
 const server = { list: vi.fn(), remove: vi.fn() };
@@ -149,13 +149,13 @@ describe("the server's list next to the index", () => {
       [PACK],
     );
     expect(rows.map((r) => r.hash)).toEqual([H.pack, H.other]);
-    // Added under the film's name before SRC-06: that name is what it was added for.
+    // Added under the film's name in older versions: that name is what it was added for.
     expect(rows[0]).toMatchObject({ name: "Fixture Show (2020)", fromLumovio: true, addedFor: "Fixture Show (2020)", sizeBytes: 100, active: false, release: { resolution: 1080 } });
     expect(rows[0]!.links).toHaveLength(4);
     expect(rows[1]).toMatchObject({ name: "Some.Show.S01.2160p.HDR.mkv", links: [], fromLumovio: false, addedFor: null, active: true, sizeBytes: 5 * 1024 ** 3, release: { resolution: 2160, hdr: true } });
   });
 
-  it("names a torrent added from Lumovio by its release, and keeps the film it was added for (SRC-06)", () => {
+  it("names a torrent added from Lumovio by its release, and keeps the film it was added for", () => {
     const release = "Дюна / Dune (2021) WEB-DL 2160p | HEVC | SDR | MVO (HDrezka Studio)";
     const [row] = managedTorrents([listed(H.other, { title: release, data: JSON.stringify({ lumovio: { titleId: "movie:438631", season: null, title: "Дюна (2021)" } }) })], []);
     expect(row).toMatchObject({ name: release, fromLumovio: true, addedFor: "Дюна (2021)", release: { resolution: 2160, studios: ["HDrezka Studio"] } });
@@ -219,7 +219,7 @@ describe("opening the manager", () => {
   });
 });
 
-describe("a source whose torrent left the server (SRC-03)", () => {
+describe("a source whose torrent left the server", () => {
   it("is gone only by a list that has other torrents and not it; an empty or broken list proves nothing", () => {
     expect(presenceIn([listed(H.pack), listed(H.other)], H.pack.toUpperCase())).toBe("present");
     expect(presenceIn([listed(H.other)], H.pack)).toBe("gone");
@@ -228,7 +228,7 @@ describe("a source whose torrent left the server (SRC-03)", () => {
   });
 });
 
-describe("watched in this profile (TS7 filter)", () => {
+describe("watched in this profile", () => {
   const states = new Map([
     ["movie:1", { watchedCount: 1, watchedEpisodes: [] }],
     ["movie:2", { watchedCount: 0, watchedEpisodes: [] }],

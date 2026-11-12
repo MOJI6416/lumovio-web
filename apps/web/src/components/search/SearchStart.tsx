@@ -11,7 +11,7 @@ import { recentSearches, useRecentSearches } from "./recent-searches";
 import type { GenreTile as Tile } from "./search-model";
 
 /**
- * A search without a query (design-system 9 "Search"), never an empty page: the recent searches (a press searches
+ * A search without a query, never an empty page: the recent searches (a press searches
  * again, "Clear" forgets them), what's popular now as a shelf, and the genres as picture tiles that open the catalog.
  */
 export function SearchStart({ popular, tiles, onRecent }: { popular: TitleSummary[]; tiles: Tile[]; onRecent: (q: string) => void }) {

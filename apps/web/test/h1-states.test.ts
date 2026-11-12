@@ -3,7 +3,7 @@ import { ApiRequestError } from "../src/lib/api";
 import { meFailure } from "../src/lib/me-state";
 import { MediaNetError, refineAddressError } from "../src/lib/media/net";
 
-describe("a failed /api/me: sign in or 'temporarily unavailable' (SH-03)", () => {
+describe("a failed /api/me: sign in or 'temporarily unavailable'", () => {
   it("sends only a missing session to sign in", () => {
     expect(meFailure(new ApiRequestError(401, "unauthorized", "Sign in required"))).toBe("signed-out");
     expect(meFailure(new ApiRequestError(403, "forbidden", "Forbidden"))).toBe("signed-out");
@@ -18,7 +18,7 @@ describe("a failed /api/me: sign in or 'temporarily unavailable' (SH-03)", () =>
   });
 });
 
-describe("add-server errors for a host name that doesn't exist (SRV-02)", () => {
+describe("add-server errors for a host name that doesn't exist", () => {
   const url = "http://no-such-host.invalid:8096";
   it("turns certificate, unreachable, timeout and mixed-content errors into 'not found' when DNS says so", async () => {
     for (const code of ["tls", "unreachable", "timeout", "mixed_content"] as const) {

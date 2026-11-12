@@ -7,19 +7,19 @@ import { capitalize, formatDate, languageName, regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { ExternalLinks, FactsInfo } from "./parts";
 
-// TMDB's statuses, said in the interface language (TTL-07).
+// TMDB's statuses, said in the interface language.
 const STATUSES = ["Rumored", "Planned", "In Production", "Post Production", "Released", "Canceled", "Returning Series", "Ended", "Pilot"];
 
-// "Elsewhere": quiet links that leave the site (↗), 44 px tall on a phone (5.6).
+// "Elsewhere": quiet links that leave the site (↗), 44 px tall on a phone.
 const LINK = "inline-flex min-h-8 items-center gap-1 text-body text-text-1 underline decoration-1 underline-offset-3 hover:decoration-2 max-sm:min-h-11";
 
 /**
- * "Details" (S06, S07, C13; TTL-07, TTL-10, TTL-16, TTL-21; 2026-11-06 the reference at the foot of the page, not a
+ * "Details" (the reference at the foot of the page, not a
  * tab): one grid of what the hero doesn't say — the genres as links to the catalog, the status in the interface
  * language, the full release date, the number of episodes and their numbering, countries, languages, networks (TMDB's
  * keywords in English only, they have no translation) and, last, the title on other sites (TMDB, IMDb, Wikidata, its own
  * site, Letterboxd, Kinopoisk…). The credits for the data and the art (TMDB, Fanart.tv) are in the "i" by the heading.
- * The ratings, the people and the soundtrack are sections of their own (the page, 9 Title).
+ * The ratings, the people and the soundtrack are sections of their own on the page.
  */
 export async function TitleFacts({ details: d, locale }: { details: TitleDetails; locale: string }) {
   const t = await getTranslations("title");
@@ -30,7 +30,7 @@ export async function TitleFacts({ details: d, locale }: { details: TitleDetails
     rows.push([
       tb("genres"),
       // Each genre its own target, 44 px tall on a phone and 32 from a tablet, in rows that tall: two lines of genres
-      // never take each other's presses (as the hero's credits, 7.14).
+      // never take each other's presses (as the hero's credits).
       <span key="g" className="flex flex-wrap gap-x-1">
         {d.genres.map((g, i) => (
           <span key={g.id} className="inline-flex items-center whitespace-nowrap">
@@ -67,7 +67,7 @@ export async function TitleFacts({ details: d, locale }: { details: TitleDetails
       <span key="n" className="flex flex-wrap items-center gap-2">
         {d.networks.map((n) =>
           n.logoPath ? (
-            // A white plate in both themes: network logos are drawn for a light background (3.6).
+            // A white plate in both themes: network logos are drawn for a light background.
             <span key={n.id} className="rounded-sm bg-white px-2 py-1">
               <img src={tmdbImage(n.logoPath, "w92") ?? undefined} alt={n.name} className="h-5 w-auto" loading="lazy" />
             </span>

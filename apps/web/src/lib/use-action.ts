@@ -9,7 +9,7 @@ import { safeNext } from "./safe-next";
 export type { ActionEnv, ActionOptions, ActionResult } from "./action";
 
 /*
- * Every user action that changes data goes through one helper (design-system 8.3; audit X-15):
+ * Every user action that changes data goes through one helper:
  * pending → success (a visible change and/or a toast, with "Undo" when it can be taken back) → or failure (the
  * optimistic change rolled back and a toast in words from lib/api-errors). A failure is never swallowed and success
  * is never shown for a request that failed.
@@ -75,7 +75,7 @@ export function useAction<A extends unknown[], R>(options: ActionOptions<A, R>) 
   return { run, pending: count > 0 };
 }
 
-/** The save state of a settings section (8.8), shown by SettingsSection. */
+/** The save state of a settings section, shown by SettingsSection. */
 export type SaveState =
   | { status: "idle" }
   | { status: "saving" }
@@ -83,7 +83,7 @@ export type SaveState =
   | { status: "error"; message: string; retry: () => void };
 
 /**
- * Settings that apply at once (8.8): `save(request, optimistic?)` changes the screen, sends the request, shows
+ * Settings that apply at once: `save(request, optimistic?)` changes the screen, sends the request, shows
  * "Saved" by the section's title for a moment; on failure rolls back and leaves the error in the section
  * (InlineAlert with "Retry"), not a toast.
  */

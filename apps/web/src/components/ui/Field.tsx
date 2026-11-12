@@ -3,7 +3,7 @@ import { type ReactNode, useId } from "react";
 import { cn } from "./cn";
 
 /**
- * A labelled field (design-system 7.6): the label above (13/600), the control, then a hint (12, --text-3) or an
+ * A labelled field: the label above (13/600), the control, then a hint (12, --text-3) or an
  * error (12, --danger, with an icon) that replaces it. The control gets the id, the description id and whether
  * there is an error: `{(id, describedBy, invalid) => <Input id={id} aria-describedby={describedBy} invalid={invalid} />}`.
  * `hideLabel` keeps the label for screen readers only (a search field with its icon).

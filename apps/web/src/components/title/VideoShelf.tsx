@@ -10,7 +10,7 @@ import { LANDSCAPE_SIZES } from "@/components/media/card-sizes";
 import { Row } from "@/components/media/Row";
 import { TrailerDialog, videoPage } from "./TrailerDialog";
 
-// TMDB's video types, said in the interface language (TTL-07).
+// TMDB's video types, said in the interface language.
 const TYPES = ["Trailer", "Teaser", "Clip", "Featurette", "Behind the Scenes", "Bloopers", "Opening Credits", "Recap"] as const;
 const typeKey = (type: string) => ((TYPES as readonly string[]).includes(type) ? `videoType_${type.replace(/ /g, "")}` : null);
 const ORDER = (type: string) => {
@@ -19,7 +19,7 @@ const ORDER = (type: string) => {
 };
 
 /**
- * "Videos" on the title page (design-system 7.12, 7.13, C13; 2026-11-06 a shelf, right after what starting needs — the
+ * "Videos" on the title page (a shelf, right after what starting needs — the
  * episodes, "Where to watch"): 16:9 cards of the shelf with the name and "Trailer ·
  * Russian" on the frame's foot (ArtCaption, ▶ before it: a press plays), as every card of a shelf — trailers first, the
  * interface language's first among them. A card is a link to the video's page; a press plays it here, in the
@@ -64,7 +64,7 @@ export function VideoShelf({ videos, title }: { videos: Video[]; title: string }
                   sizes={LANDSCAPE_SIZES}
                   placeholder="movie"
                 />
-                {/* The video's own title is in its language ("Official Trailer" on a Russian page, TTL-07). */}
+                {/* The video's own title is in its language ("Official Trailer" on a Russian page). */}
                 <ArtCaption
                   shape="landscape"
                   title={v.name}

@@ -2690,7 +2690,15 @@
     "markEarlier": "Отметить и предыдущие",
     "episodeNumber": "{n} серия",
     "specialNumber": "Спецвыпуск {n}",
-    "playEpisode": "Смотреть: {episode}"
+    "playEpisode": "Смотреть: {episode}",
+    "upcomingRelease": "Выйдет {date}",
+    "upcomingPremiere": "Премьера {date}",
+    "upcomingUnannounced": "Дата выхода не объявлена",
+    "upcomingSeason": "{season} сезон выйдет {date}",
+    "upcomingEpisode": "Новая серия {date}",
+    "addToCalendar": "Добавить в календарь",
+    "calendarGoogle": "Google Календарь",
+    "calendarOther": "Apple, Outlook и другие"
   },
   "personPage": {
     "noCreditsKids": "Работ, доступных в детском профиле, нет",

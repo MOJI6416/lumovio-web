@@ -16,7 +16,7 @@ import { withEnglish } from "../src/i18n/messages";
 
 const MESSAGES = join(__dirname, "..", "messages");
 
-describe("languages offered for the interface (L10N-02)", () => {
+describe("languages offered for the interface", () => {
   it("offers only finished translations", () => {
     expect(INTERFACE_LOCALES.map((l) => l.code).sort()).toEqual(["de", "en", "es", "fr", "it", "pl", "pt-BR", "ru", "tr", "uk"]);
     expect(isInterfaceLocale("ru")).toBe(true);
@@ -33,7 +33,7 @@ describe("languages offered for the interface (L10N-02)", () => {
 
   it("keeps the current draft language in the picker so the person can see it and leave it", () => {
     expect(interfaceLocaleOptions("ru").map((l) => l.code).sort()).toEqual(INTERFACE_LOCALES.map((l) => l.code).sort());
-    // Every language is finished since 2026-10-29; a draft added later stays in the picker while it is the current one.
+    // Every language is finished now; a draft added later stays in the picker while it is the current one.
     for (const draft of LOCALES.filter((l) => l.status === "draft")) {
       expect(interfaceLocaleOptions(draft.code).map((l) => l.code)).toContain(draft.code);
     }
@@ -69,7 +69,7 @@ describe("languages offered for the interface (L10N-02)", () => {
   });
 });
 
-describe("browser language never selects a draft (L10N-02)", () => {
+describe("browser language never selects a draft", () => {
   it("narrows Accept-Language to interface languages", () => {
     expect(interfaceAcceptLanguage("nl-NL,nl;q=0.9")).toBe("");
     expect(interfaceAcceptLanguage("ar-EG,ar;q=0.9,en;q=0.5")).toBe("en;q=0.5");
@@ -96,7 +96,7 @@ describe("browser language never selects a draft (L10N-02)", () => {
   });
 });
 
-describe("languages taken out of Lumovio (2026-10-29)", () => {
+describe("languages taken out of Lumovio", () => {
   it("are gone from the registry", () => {
     for (const code of REMOVED_LOCALES) expect(LOCALES.some((l) => l.code === code)).toBe(false);
   });

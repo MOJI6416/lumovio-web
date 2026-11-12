@@ -8,6 +8,6 @@ export const routing = defineRouting({
   localePrefix: "as-needed",
   localeCookie: { name: "lumovio_locale", maxAge: 60 * 60 * 24 * 365 },
   // hreflang comes from each public page's metadata (lib/seo.ts), finished languages only; next-intl's own Link
-  // header would list all 16, drafts included, for every address — personal pages too (SH-13).
+  // header would list all 16, drafts included, for every address — personal pages too.
   alternateLinks: false,
 });

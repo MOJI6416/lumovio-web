@@ -15,7 +15,7 @@ const SIZE = {
 } as const;
 
 /**
- * The search field (design-system 7.6 "Поиск"): a pill on --surface-2 with the search icon, the text and, while there
+ * The search field: a pill on --surface-2 with the search icon, the text and, while there
  * is text, the clear button; focus is the field's --focus border and halo around the whole pill. The header's and the
  * search page's; `trailing` goes after the clear button.
  */

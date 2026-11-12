@@ -19,7 +19,7 @@ function LazyShareHost() {
   return open ? <ShareHost /> : null;
 }
 
-// The speed meter (`?perf=1`, performance handoff §5.2) loads only in a tab that turned it on.
+// The speed meter (`?perf=1`) loads only in a tab that turned it on.
 const PerfMeter = dynamic(() => import("../perf/PerfMeter").then((m) => m.PerfMeter), { ssr: false });
 const PERF_KEY = "lumovio.perf";
 
@@ -52,7 +52,7 @@ function PerfGate({ tv }: { tv: boolean }) {
 
 /**
  * The e-mailed link that deletes the account lands on home with `?account=deleted` (PrivacySettings): said once, then
- * the address is cleaned — the person came as a guest with no word of it (stand QA, 2026-11-06).
+ * the address is cleaned — the person came as a guest with no word of it.
  */
 function AccountDeletedNotice() {
   const t = useTranslations("settings");
@@ -68,7 +68,7 @@ function AccountDeletedNotice() {
 
 interface Session {
   me: Me | null;
-  /** /api/me didn't answer (network, timeout, 5xx): `me` is unknown, not "signed out" (SH-03). */
+  /** /api/me didn't answer (network, timeout, 5xx): `me` is unknown, not "signed out". */
   apiDown: boolean;
   tv: boolean;
   locale: string;
@@ -77,9 +77,9 @@ interface Session {
 const SessionContext = createContext<Session>({ me: null, apiDown: false, tv: false, locale: "en" });
 
 export const useSession = () => useContext(SessionContext);
-// The clean-up of what Lumovio added to the profile's TorrServers (lib/media/torrent-sweep, docs/torrserver-2026-11.md
-// 18а): an adult profile's, at most every 12 hours on a device, 15 s after a page opens — never on the player's page,
-// whose start shares the server (23б), nor the TV's. Without storage it doesn't run (it would on every page).
+// The clean-up of what Lumovio added to the profile's TorrServers (lib/media/torrent-sweep):
+// an adult profile's, at most every 12 hours on a device, 15 s after a page opens — never on the player's page,
+// whose start shares the server, nor the TV's. Without storage it doesn't run (it would on every page).
 const SWEEP_EVERY_MS = 12 * 3_600_000;
 
 function TorrentSweep({ profileId, client }: { profileId: string; client: QueryClient }) {

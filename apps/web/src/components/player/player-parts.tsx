@@ -28,10 +28,10 @@ import { useWhy } from "./use-why";
  * timing's numbers, playback info, the episode list and the keys.
  */
 
-/** The player's layers (design-system 11.1): a menu over its button on a PC and a TV, a sheet on a phone; keys in a dialog. */
+/** The player's layers: a menu over its button on a PC and a TV, a sheet on a phone; keys in a dialog. */
 export type PlayerPanel = "none" | "tracks" | "settings" | "info" | "episodes" | "source" | "help";
 
-/** Every season of a series, for the in-player episode list (PLR-11: not only the current season). */
+/** Every season of a series, for the in-player episode list (not only the current season). */
 export interface EpisodesInfo {
   titleId: string;
   tmdbId: number;
@@ -42,7 +42,7 @@ export interface EpisodesInfo {
   href: (season: number, episode: number) => string;
 }
 
-/** This title's copies for the "Source" panel, and the search for another release (PLR-03). */
+/** This title's copies for the "Source" panel, and the search for another release. */
 export interface SourcesInfo {
   /** `title`: the copy's marks and words (QualityLine). */
   list: { key: string; kind: Availability["kind"]; title: ReactNode; meta: string; current: boolean; failed: boolean }[];
@@ -75,7 +75,7 @@ export function useTrackWords(originalLanguage: string | null) {
   };
 }
 
-/** "Stats for nerds" (PLR-06): what plays, how the stream reaches this device and why, in words; refreshed every second. */
+/** "Stats for nerds": what plays, how the stream reaches this device and why, in words; refreshed every second. */
 export function InfoBody({ prepared, info, bufferedAhead }: { prepared: PreparedPlayback; info: { version: string; server: string }; bufferedAhead: number }) {
   const t = useTranslations("player");
   const one = new Intl.NumberFormat(useLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -119,7 +119,7 @@ export function InfoBody({ prepared, info, bufferedAhead }: { prepared: Prepared
 }
 
 /**
- * The episodes of any season (PLR-11), the one playing marked; an episode opens in this player. Spoilers (8.12): the
+ * The episodes of any season, the one playing marked; an episode opens in this player. Spoilers: the
  * stills (and names, if the profile hides them) of unwatched episodes are blurred, with no button — pressing the row
  * plays it; the one playing is open.
  */
@@ -192,7 +192,7 @@ export function EpisodesBody({ episodes: e, onPick }: { episodes: EpisodesInfo; 
   );
 }
 
-/** Only what works for this video, plus the ways without keys (PLR-13). */
+/** Only what works for this video, plus the ways without keys. */
 export function ShortcutRows({ subtitles, next, segments }: { subtitles: boolean; next: boolean; segments: boolean }) {
   const t = useTranslations("player");
   const ts = useTranslations("subtitles");
@@ -235,7 +235,7 @@ const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), [tabi
 export const focusChoice = (el: HTMLElement | null) => (el?.querySelector<HTMLElement>('[aria-checked="true"], input:checked') ?? el?.querySelector<HTMLElement>(FOCUSABLE) ?? el)?.focus({ preventScroll: true });
 
 /**
- * A menu of the player over the picture (11.1), the site's (PlayerMenus) and the TV's (PlayerPanels): above its button,
+ * A menu of the player over the picture, the site's (PlayerMenus) and the TV's (PlayerPanels): above its button,
  * aligned to the button's end, as tall as the room above it — no veil, nothing moves aside: the film stays in view and
  * plays on. The chosen row (else the first control) takes the focus, which goes back to the button when the surface
  * closes; a row the keys or a remote move to is scrolled into view. `over="bar"` (a TV): over the whole block of

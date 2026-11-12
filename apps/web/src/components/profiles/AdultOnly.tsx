@@ -6,7 +6,7 @@ import { KidsRestricted } from "./KidsRestricted";
 
 /**
  * A page that needs an account sends a signed-out visitor to sign in with the way back to `from` — the very page,
- * not the section's start (AUTH-06). An API that doesn't answer is not "signed out" (SH-03): the page says so itself.
+ * not the section's start. An API that doesn't answer is not "signed out": the page says so itself.
  */
 export async function signInFirst(from: string) {
   const me = await getMeState();

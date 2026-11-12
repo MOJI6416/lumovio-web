@@ -2,7 +2,7 @@ import type { CatalogSearch, PersonSummary, TitleSummary } from "@lumovio/contra
 import { describe, expect, it } from "vitest";
 import { genreTiles, groupResults, isEmpty, looksDescriptive, tilesFor } from "../src/components/search/search-model";
 
-// The search's one logic for the header, the page and the TV (design-system 9 "Search", 2026-11-06).
+// The search's one logic for the header, the page and the TV.
 
 const title = (id: number, kind: "movie" | "tv", extra: Partial<TitleSummary> = {}): TitleSummary => ({
   id: `${kind}:${id}`,

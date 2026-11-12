@@ -6,10 +6,10 @@ import { LinkChip } from "@/components/ui/Chip";
 import { FilterPill } from "./FilterPill";
 
 /**
- * A section's heading row, over the top of its billboard (design-system 7.14, section mode; 2026-11-08): the name (on a
+ * A section's heading row, over the top of its billboard: the name (on a
  * phone the section switch above names it; the h1 stays for screen readers), then two pills of the catalog grid's own
- * family (7.4) — "All films ›", a link to the section's whole grid, and "Genres ⌄", a menu of genres, each opening that
- * grid with the genre (↑/↓ move through the menu and only Enter opens one, CAT-01). No form field and no lime link over
+ * family — "All films ›", a link to the section's whole grid, and "Genres ⌄", a menu of genres, each opening that
+ * grid with the genre (↑/↓ move through the menu and only Enter opens one). No form field and no lime link over
  * the art: they read as a form laid on the picture. One line; on a phone the pills scroll sideways
  * in it rather than wrap down over the art.
  */

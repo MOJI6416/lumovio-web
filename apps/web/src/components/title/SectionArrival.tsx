@@ -7,7 +7,7 @@ import { TITLE_SECTIONS } from "./core";
 const TAKE_OVER = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
 /**
- * Opens the section a link asked for (9, Title): `?tab=episodes` and the other tabs' addresses of before 2026-11 (the
+ * Opens the section a link asked for: `?tab=episodes` and the other tabs' older addresses (the
  * calendar, the library, the player) and `#episodes` (a card's "Mark episodes"). The section comes to the top at once;
  * while the parts above it settle (where to watch, the shelves) it is kept there, until the person scrolls or 3 s pass.
  * The address loses the old parameter, so Back to this page returns to where it was left, not to the section again.

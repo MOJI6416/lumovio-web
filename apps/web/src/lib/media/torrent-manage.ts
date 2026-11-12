@@ -8,7 +8,7 @@ import { torrServerFor } from "./torrent-source";
 import type { TsTorrent } from "./torrserver";
 
 /**
- * Managing what is added to a TorrServer (TS7): its own list, read from this device like all other
+ * Managing what is added to a TorrServer: its own list, read from this device like all other
  * TorrServer traffic, next to what Lumovio's availability index links to each torrent; real removal by
  * hash, checked against the server's list before the index changes. Lumovio's servers never contact
  * the TorrServer.
@@ -40,7 +40,7 @@ export interface ManagedTorrent {
   /** Added through Lumovio (it leaves its mark in the torrent's data). */
   fromLumovio: boolean;
   /**
-   * When Lumovio brought it (ms), from its mark's `added`: set only by an add that found the torrent new (since 2026-11-12),
+   * When Lumovio brought it (ms), from its mark's `added`: set only by an add that found the torrent new,
    * so surely Lumovio's — an older mark may sit on the person's torrent an add rewrote. Null without it.
    */
   claimedAt: number | null;
@@ -55,7 +55,10 @@ export interface ManagedTorrent {
   addedAt: number | null;
 }
 
-/** Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title, added } }` (`title` since SRC-06, `added` 18а). */
+/**
+ * Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title, added } }`
+ * (older marks may lack `title` and `added`).
+ */
 function lumovioData(data: string | undefined): { titleId?: string; title?: string; added?: unknown } | null {
   try {
     const mark = data ? JSON.parse(data)?.lumovio : null;
@@ -84,7 +87,7 @@ export function managedTorrents(list: ListedTorrent[], index: TorrentIndexEntry[
         active: t.stat === 1 || t.stat === 2 || t.stat === 3,
         fromLumovio: mark !== null,
         claimedAt: typeof mark?.added === "number" && mark.added > 0 ? mark.added : null,
-        // Before SRC-06 a torrent was added under the film's name: that name is what it was added for.
+        // In older versions a torrent was added under the film's name: that name is what it was added for.
         addedFor: typeof mark?.title === "string" ? mark.title : mark && t.title ? t.title : null,
         mark: markedTitle(t.data),
         links: own,
@@ -113,7 +116,7 @@ export function removalScope(t: Pick<ManagedTorrent, "links">): { titles: string
 export type WatchedState = { watchedCount: number; watchedEpisodes: string[] };
 
 /**
- * "Watched in this profile" (TS7 filter): every film the torrent is linked to watched to the end in this profile, and
+ * The "Watched in this profile" filter: every film the torrent is linked to watched to the end in this profile, and
  * every episode its files are bound to. A series' torrent whose files aren't bound to episodes yet tells nothing, so it
  * isn't counted; nor is one not linked at all. It helps make a list to remove — it says nothing of other profiles.
  */
@@ -227,8 +230,8 @@ export function forgetTorrents(connectionId: string, hashes: string[]): Promise<
 }
 
 /**
- * Whether a torrent is still on a TorrServer, by the server's full list (SRC-03): "gone" only from a list that holds
- * other torrents but not this one — an empty or unreadable list proves nothing (TS7), so it is "unknown".
+ * Whether a torrent is still on a TorrServer, by the server's full list: "gone" only from a list that holds
+ * other torrents but not this one — an empty or unreadable list proves nothing, so it is "unknown".
  */
 export function presenceIn(raw: unknown, hash: string): "present" | "gone" | "unknown" {
   let list: ListedTorrent[];

@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { getMeState } from "@/lib/server-api";
 
 /**
- * A title closed to this profile by its age limit (design-system 8.10, PRF-04): said plainly in the page state (7.11)
+ * A title closed to this profile by its age limit: said plainly in the page state
  * — the limit is its one visible line — with the way out: "Switch profile" — "Leave the kids profile" in a kids one (the picker, PIN or password) — and "Home". Shared by the title page, /watch and the person page (`person` words it for a person).
  */
 export async function MaturityBlocked({ from, person = false }: { from: string; person?: boolean }) {

@@ -54,9 +54,9 @@ async function watchedStates(titleIds: string[]): Promise<Map<string, WatchedSta
 }
 
 /**
- * "TorrServer → Added torrents" (S20, C35; design-system 9 Tool; SRC-20): the server's own list, read from this
+ * "TorrServer → Added torrents" (the Tool template): the server's own list, read from this
  * device, with what Lumovio links to each torrent — the film or series a link to its page. Every full read reconciles
- * the index with it; removal is by hash, one or several at a time, after a confirmation (7.9) that names the server,
+ * the index with it; removal is by hash, one or several at a time, after a confirmation that names the server,
  * each torrent and what goes with it. Checkboxes are 44 px on a phone and "Remove selected" stays in sight in a bar at
  * the bottom while the list scrolls. Errors in words. Adult profiles with access to the server only (the API refuses
  * the others too); without access it says so instead of failing.
@@ -118,11 +118,11 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
 
   if (kids) return <EmptyState icon={ListVideo} title={t("kidsOnly")} />;
   if (conns.isLoading) return <Skeleton shape="md" className="h-40 w-full" />;
-  // The servers didn't load: an error with Retry, not "no such server" (X-14).
+  // The servers didn't load: an error with Retry, not "no such server".
   if (!conns.data && conns.isError) return <ErrorState error={conns.error} onRetry={() => void conns.refetch()} retrying={conns.isFetching} />;
   if (!conn) return <EmptyState icon={ListVideo} title={t("notFound")} action={<ServersLink />} />;
   if (conn.kind !== "torrserver") return <EmptyState icon={ListVideo} title={t("notTorrServer")} action={<ServersLink />} />;
-  // The list comes through the profile's own access to the server (SRV-03): without it, said — not a failed read.
+  // The list comes through the profile's own access to the server: without it, said — not a failed read.
   if (!access) return <EmptyState icon={Lock} title={t("noAccessTitle", { profile: me?.activeProfile?.name ?? "" })} about={t("noAccessText", { server: conn.name })} action={<ServersLink />} />;
 
   const titles = data.data?.titles ?? {};
@@ -156,7 +156,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
       else n.add(hash);
       return n;
     });
-  // Picking many at once takes only what Lumovio added: the person's own releases are picked one by one (finding 29).
+  // Picking many at once takes only what Lumovio added: the person's own releases are picked one by one.
   const ours = rows.filter((x) => x.fromLumovio);
   const oursAll = all.filter((x) => x.fromLumovio);
   const allShown = ours.length > 0 && ours.every((x) => selected.has(x.hash));
@@ -193,14 +193,14 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
   );
 
   return (
-    // "← Servers", the h1 with the server's name and what the page does come from the page (PageHeader, 8.7).
+    // "← Servers", the h1 with the server's name and what the page does come from the page (PageHeader).
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} onClear={() => setQuery("")} placeholder={t("searchPlaceholder")} aria-label={t("search")} className="min-w-0 flex-1 basis-60" />
         <Button variant="secondary" icon={RefreshCw} onClick={refresh} loading={data.isFetching}>
           {t("refresh")}
         </Button>
-        {/* Everything Lumovio added, in one press — the person's own releases never (docs/torrserver-2026-11.md, 18). */}
+        {/* Everything Lumovio added, in one press — the person's own releases never. */}
         {oursAll.length > 0 && (
           <Button variant="danger-tertiary" icon={Trash2} onClick={() => setRemoving(oursAll)}>
             {t("clearOurs", { count: oursAll.length })}
@@ -283,7 +283,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
               )}
             </fieldset>
           )}
-          {/* It helps make a list to remove; it says nothing of the other profiles (TS7). */}
+          {/* It helps make a list to remove; it says nothing of the other profiles. */}
           {shownFilter === "watched" && <p className="px-1 text-body-s text-text-2">{t("watchedNote", { profile: me?.activeProfile?.name ?? "" })}</p>}
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 text-body-s text-text-2">
             <Checkbox
@@ -320,7 +320,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
         </section>
       ) : null}
 
-      {/* The bulk action stays in sight while the list scrolls (SRC-20), above the phone's bottom bar. */}
+      {/* The bulk action stays in sight while the list scrolls, above the phone's bottom bar. */}
       {shownSelected.length > 0 && (
         <section className="sticky bottom-20 z-sticky flex items-center gap-2 rounded-md border border-line bg-surface-1 p-2 shadow-float md:bottom-4 md:gap-3 md:p-3" aria-label={t("selection")}>
           <IconButton icon={X} label={t("clearSelection")} onClick={() => setSelected(new Set())} />
@@ -362,7 +362,7 @@ function ServersLink() {
 /**
  * One added torrent: what it is linked to (each film or series a link to its page, with the episodes a pack's files are
  * bound to), the release in words and its full name, size, when it was added and whether it plays now; one statement of
- * where it came from (SRC-06), never "not linked · added from Lumovio" side by side.
+ * where it came from, never "not linked · added from Lumovio" side by side.
  */
 function TorrentRow({
   x,
@@ -389,7 +389,7 @@ function TorrentRow({
   const links = useLinks()(x, titles);
   const info = parseRelease(x.name);
   const audio = text.audio({ info, language: null });
-  // The release as its quality marks and words (ReleaseLine, 7.15), or in words when its name gives no marks.
+  // The release as its quality marks and words (ReleaseLine), or in words when its name gives no marks.
   const quality = releaseMarks(info).length ? <ReleaseLine info={info} rest={[audio]} /> : [info.resolution !== null || info.source !== null ? text.picture(info) : null, audio].filter(Boolean).join(" · ") || null;
   const name = links[0]?.title ?? x.name;
   const origin = links.length > 0 ? (x.fromLumovio ? null : t("notFromLumovio")) : x.fromLumovio ? (x.addedFor ? t("addedForUnlinked", { title: x.addedFor }) : t("addedUnlinked")) : t("notLinkedOutside");
@@ -417,7 +417,7 @@ function TorrentRow({
         {links.length > 0 && quality && <p className="text-body-s text-text-1">{quality}</p>}
         <p className="text-body-s break-words text-text-3">{x.name}</p>
         {origin && <p className="text-body-s text-text-2">{origin}</p>}
-        {/* Not linked: the title it looks like, when one is sure, or how many fit; linking is the person's choice (C133). */}
+        {/* Not linked: the title it looks like, when one is sure, or how many fit; linking is the person's choice. */}
         {links.length === 0 && (
           <div className="flex flex-wrap items-center gap-x-3">
             {match?.status === "sure" && <p className="text-body-s text-text-1">{t("looksLike", { title: titleName(match.title) })}</p>}

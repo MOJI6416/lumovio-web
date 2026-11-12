@@ -2690,7 +2690,15 @@
     "markEarlier": "Mark earlier ones too",
     "episodeNumber": "Episode {n}",
     "specialNumber": "Special {n}",
-    "playEpisode": "Watch {episode}"
+    "playEpisode": "Watch {episode}",
+    "upcomingRelease": "Coming {date}",
+    "upcomingPremiere": "Premieres {date}",
+    "upcomingUnannounced": "Release date not announced",
+    "upcomingSeason": "Season {season} premieres {date}",
+    "upcomingEpisode": "New episode {date}",
+    "addToCalendar": "Add to calendar",
+    "calendarGoogle": "Google Calendar",
+    "calendarOther": "Apple, Outlook and others"
   },
   "personPage": {
     "noCreditsKids": "No titles available in a kids profile",

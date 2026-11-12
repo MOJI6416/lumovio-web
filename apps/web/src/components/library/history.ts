@@ -1,7 +1,7 @@
 import type { HistoryEntry, TitleSummary } from "@lumovio/contracts";
 import { localDay } from "@/lib/format";
 
-/** One row of the history: a title on one day, with every watch of it that day (LIB-11: no identical rows). */
+/** One row of the history: a title on one day, with every watch of it that day (no identical rows). */
 export interface Group {
   key: string;
   day: string;
@@ -26,7 +26,7 @@ export function groupHistory(entries: HistoryEntry[]): { day: string; groups: Gr
   return days;
 }
 
-/** "1 сезон · 4 серия", "1 сезон · 4–6 серия", "3 серии" — the format of 2.3 for what was watched in a group. */
+/** "1 сезон · 4 серия", "1 сезон · 4–6 серия", "3 серии" — the format for what was watched in a group. */
 export function episodesOf(entries: HistoryEntry[]) {
   const eps = [
     ...new Map(

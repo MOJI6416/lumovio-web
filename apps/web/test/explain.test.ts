@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { audioTrackFacts, languageCode, playbackReasons } from "../src/lib/media/explain";
 
-describe("playbackReasons (PLR-06)", () => {
+describe("playbackReasons", () => {
   it("reads the engines' notes as facts, never as text to show", () => {
     expect(playbackReasons("container avi")).toEqual([{ kind: "container", value: "AVI" }]);
     expect(playbackReasons("audio dts")).toEqual([{ kind: "audio", value: "DTS" }]);
@@ -29,7 +29,7 @@ describe("playbackReasons (PLR-06)", () => {
   });
 });
 
-describe("audio track facts (PLR-07)", () => {
+describe("audio track facts", () => {
   it("reads a dubbing's language, kind and studio from the track's own tags", () => {
     const f = audioTrackFacts("Dub (Пифагор) AAC", "rus");
     expect([f.language, f.track?.voice, f.track?.studio, f.title]).toEqual(["ru", "dub", "Пифагор", null]);

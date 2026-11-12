@@ -23,19 +23,19 @@ import {
 } from "./engine";
 
 /*
- * The TV shell's navigation provider (TV document §5 TV1–TV3, §12.2–12.3): arrows by zones (./engine), OK once per
+ * The TV shell's navigation provider: arrows by zones (./engine), OK once per
  * press, Back by one step — the top layer, then what the screen defines, then the previous screen —, every layer an
  * entry in the history (so a TV browser that handles Back itself, without a keydown, still closes only the layer), and
  * the focus and slides of each screen kept for the way back.
  */
 
-/** A screen's place: the home, a section of the menu, or something opened from them (TV document TV3). */
+/** A screen's place: the home, a section of the menu, or something opened from them. */
 export type ScreenLevel = "home" | "section" | "detail";
 
 interface Layer {
   id: number;
   close: () => void;
-  /** What had the focus when the layer opened: it gets it back (TV2). */
+  /** What had the focus when the layer opened: it gets it back. */
   opener: HTMLElement | null;
   /** Where the opener stood — its zone, key and place —, for when the layer took it away (a removed card). */
   from: { zone: string; key: string | null; index: number } | null;
@@ -221,7 +221,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // A page whose content grows or shrinks under the focus (a season's episodes arriving, a description loading) brings
-  // the focused item back into view, so data arriving never leaves it under the edge (TV2).
+  // the focused item back into view, so data arriving never leaves it under the edge.
   const resized = useRef<ResizeObserver | null>(null);
   const watchSize = useCallback((el: HTMLElement) => {
     const content = el.closest<HTMLElement>("[data-tv-content]");
@@ -325,7 +325,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
     const inNav = Boolean(nav?.contains(document.activeElement));
     if (level !== "detail") {
       // Home and the menu's sections: Back first goes to the menu, then from a section to the home (Netflix's way); on
-      // the home's menu the TV app asks whether to leave, a browser stays (TV document TV3: never thrown out).
+      // the home's menu the TV app asks whether to leave, a browser stays (never thrown out).
       if (!inNav && nav) {
         const current = nav.querySelector<HTMLElement>("[aria-current=page]") ?? itemsOf(nav)[0];
         focus(current, { reveal: false });
@@ -426,7 +426,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
         const layer = closed;
         // An inline layer leaves the focus to its screen (the player puts it on the picture).
         if (layer.inline || opened) return;
-        // After React removed the layer: back on what opened it (or where it stood), else the screen's start (TV2).
+        // After React removed the layer: back on what opened it (or where it stood), else the screen's start.
         requestAnimationFrame(() => {
           const el = returnTarget(layer);
           if (el) focus(el, { reveal: el !== layer.opener });
@@ -453,7 +453,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (e.key === "Enter" && e.repeat) {
-        // OK held down activates once (TV3).
+        // OK held down activates once.
         e.preventDefault();
         return;
       }
@@ -470,8 +470,9 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [back, move]);
 
-  // LG's Magic Remote is a pointer: the item under it is the selection, and the arrows go on from there (TV document
-  // §2). Only a real movement counts — a shelf sliding under a still pointer doesn't move the focus. The wheel steps.
+  // LG's Magic Remote is a pointer: the item under it is the selection, and the arrows go on from there.
+  // Only a real movement counts — a shelf sliding under a still pointer doesn't move the focus.
+  // The wheel steps.
   useEffect(() => {
     let wheelAt = 0;
     const onPointer = (e: PointerEvent) => {
@@ -497,7 +498,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   }, [focus, move, scope]);
 
   // Memory: every focus inside a zone is remembered; a focused item that disappears (a list refreshed) hands the focus
-  // to its neighbour in the same zone instead of losing it to the page (TV2).
+  // to its neighbour in the same zone instead of losing it to the page.
   useEffect(() => {
     const onIn = (e: FocusEvent) => {
       const el = e.target as HTMLElement;
@@ -527,7 +528,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
   }, [focus, focusStart]);
 
   // Links don't prefetch for being on screen (`prefetch={false}` across the shell: Next's visibility observer over
-  // hundreds of cards was recomputed in every frame of a slide on the owner's TCL TV); the link the focus rests on is
+  // hundreds of cards was recomputed in every frame of a slide on a TCL TV); the link the focus rests on is
   // prefetched instead, so OK still opens its screen at once. The anchor's href is already the locale's.
   useEffect(() => {
     let rest: ReturnType<typeof setTimeout> | undefined;
@@ -545,8 +546,8 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
     };
   }, [nextRouter]);
 
-  // Each screen: on the way back its focus and slides come back; otherwise it starts at its start (TV2). The snapshots
-  // live in memory and, for a reload, in sessionStorage.
+  // Each screen: on the way back its focus and slides come back; otherwise it starts at its start.
+  // The snapshots live in memory and, for a reload, in sessionStorage.
   useEffect(() => {
     const prev = urlRef.current;
     if (sameScreen.current) {
@@ -579,7 +580,7 @@ export function TvNavProvider({ children }: { children: ReactNode }) {
           return zone ? findByKey(zone, state.key) : null;
         }
         // The start item still loading (`data-tv-initial-pending`): wait for it rather than start on whatever is
-        // focusable meanwhile — a title's "Trailer" kept the focus once "Resume" appeared (owner's TV, 2026-11-06).
+        // focusable meanwhile — a title's "Trailer" kept the focus once "Resume" appeared.
         return root.querySelector("[data-tv-initial-pending]") ? null : startItem(false);
       },
       state ? 2500 : 4000,

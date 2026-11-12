@@ -2,7 +2,7 @@ import { DEFAULT_LOCALE, INTERFACE_LOCALES, isInterfaceLocale } from "@/i18n/loc
 import { OG_IMAGE } from "@/lib/brand";
 
 /**
- * Addresses for search engines and link previews (SH-13): every finished language has its own canonical address,
+ * Addresses for search engines and link previews: every finished language has its own canonical address,
  * hreflang lists only the finished ones (status "reviewed" in i18n/locales.ts) plus x-default, og:locale is
  * language_TERRITORY. A draft language (/es/…) is mostly English, so its canonical is the English address and it is
  * not listed. Paths are given without

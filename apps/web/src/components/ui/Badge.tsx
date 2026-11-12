@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 
-// design-system 7.4: labels that say something about an object. None of them is a control.
+// Labels that say something about an object. None of them is a control.
 
 export type Status = "success" | "warning" | "danger" | "neutral";
 
@@ -24,7 +24,7 @@ export function Tag({ children, className }: { children: ReactNode; className?: 
 
 /**
  * The state of a server, an import or a release: a status-coloured dot and the word, on a neutral surface. Never a
- * fill or text in the status colour (3.4; audit X-23) and never colour alone — the word is required.
+ * fill or text in the status colour and never colour alone — the word is required.
  */
 export function StatusBadge({ status, children, className }: { status: Status; children: ReactNode; className?: string }) {
   return (
@@ -50,9 +50,9 @@ export function AccentBadge({ children, className }: { children: ReactNode; clas
 }
 
 /**
- * The one badge on artwork: "4K", "New episode", "On your server". Dark veil in either theme (stage, 3.5). A few words
+ * The one badge on artwork: "4K", "New episode", "On your server". Dark veil in either theme (stage). A few words
  * (about 16 characters read at a glance); a longer text takes a second line rather than being cut, within the width
- * the caller gives it (`max-w-…` with the placement). Dates and "Added …" go in the line under the card, not here (6.5).
+ * the caller gives it (`max-w-…` with the placement). Dates and "Added …" go in the line under the card, not here.
  */
 export function MediaBadge({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -85,7 +85,7 @@ export function AgeRating({ rating, className }: { rating: string; className?: s
 
 /**
  * One rating: the source's logo (16 px) and the value, 15/700. A number is written with one decimal in the
- * locale's style (2.3: 8,0 in ru/uk, 8.0 in en); a string ("92%") is shown as it is. `source` names the logo for
+ * locale's style (8,0 in ru/uk, 8.0 in en); a string ("92%") is shown as it is. `source` names the logo for
  * screen readers.
  */
 export function RatingChip({

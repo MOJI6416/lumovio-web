@@ -14,10 +14,10 @@ import { showsAnime } from "@/lib/show-anime";
 import { SectionNav } from "./SectionNav";
 
 /**
- * Movies / Series / Anime landing (design-system 9, Media; S02, S03). As the home page (owner, 2026-10-25): the billboard's
+ * Movies / Series / Anime landing. As the home page: the billboard's
  * art under the transparent header, and the section's name, its switch (phone) and its controls — the genre picker and
- * "All films" — compact over the top of the art, on its scrim (3.5), not a solid band above it that takes the first
- * screen; then the section's Top 10 (one per page) and curated and genre shelves of ordinary poster cards (CAT-10), each
+ * "All films" — compact over the top of the art, on its scrim, not a solid band above it that takes the first
+ * screen; then the section's Top 10 (one per page) and curated and genre shelves of ordinary poster cards, each
  * linking to its grid. Without featured titles there is no art: the name and controls head the page.
  */
 export async function SectionLanding({
@@ -47,20 +47,20 @@ export async function SectionLanding({
   const active = anime ? "anime" : kind;
 
   return (
-    // The C5 comparison arm the API built this page in: its shelves' counters carry it (lib/discovery-metrics).
+    // The comparison arm the API built this page in: its shelves' counters carry it (lib/discovery-metrics).
     <div className="contents" data-discovery-variant={data.variant}>
       {/* The stage under the transparent header: the section's name and controls over the top of the billboard's art,
           first in the order, so the keyboard meets them before the slide's actions. */}
       <div data-hero={featured ? "" : undefined} className={clsx(featured && "stage relative isolate -mt-16 bg-stage")}>
         <div className={clsx(featured && "absolute inset-x-0 top-0 z-10 pt-16")}>
           <div className="page-x mx-auto max-w-media pt-2 pb-4 md:pt-4">
-            {/* On a phone the catalog is one tab of the bottom bar: its sections are a switch at its top (1.3, 7.5); a
+            {/* On a phone the catalog is one tab of the bottom bar: its sections are a switch at its top; a
                 tablet and a desktop have them in the header. */}
             <LinkTabs
               tabs={[
                 { id: "movie", href: "/browse/movie", label: t("nav.movies") },
                 { id: "tv", href: "/browse/tv", label: t("nav.series") },
-                // Anime only while the profile has it on (8.14).
+                // Anime only while the profile has it on.
                 ...(showsAnime(me) ? [{ id: "anime", href: "/anime", label: t("nav.anime") }] : []),
               ]}
               activeId={active}
@@ -78,7 +78,7 @@ export async function SectionLanding({
         activeId={active}
         className={clsx(
           "relative z-10 mx-auto flex max-w-media flex-col gap-8 md:gap-12",
-          // As on the home page: up onto the dark billboard in the dark theme only, an even edge in the light one (X-27).
+          // As on the home page: up onto the dark billboard in the dark theme only, an even edge in the light one.
           featured ? "mt-2 art-over:in-data-[theme=dark]:-mt-32 art-over:in-data-[theme=light]:mt-12" : "mt-2 md:mt-4",
         )}
       >

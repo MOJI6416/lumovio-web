@@ -5,8 +5,8 @@ import { NavigationLoading } from "./NavigationLoading";
 import { ShellHeader } from "./ShellHeader";
 
 /**
- * The frame of every product page (design-system 7.19): header, main, footer and the phone's bottom bar. On a phone the
- * page ends above the bar and the home indicator's safe area (10.1). Works in server and client components, so the
+ * The frame of every product page: header, main, footer and the phone's bottom bar. On a phone the
+ * page ends above the bar and the home indicator's safe area. Works in server and client components, so the
  * 404 and the error page (outside the (main) layout) have the same frame. `overlay`: the page opens on a stage. While a
  * tapped link's page is prepared, its place shows the loader (NavigationLoading).
  */

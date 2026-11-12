@@ -5,8 +5,8 @@ import { formatDate, localDay } from "@/lib/format";
 import { episodesOf, type Group } from "./history";
 
 /**
- * What a history card says under its poster (S09): the day it was watched ("Today", "Yesterday", "4 Nov", earlier
- * years with the year, 2.3) and what of it — a film watched twice "2 times", a show's "Season 1 · episodes 1–3". The
+ * What a history card says under its poster: the day it was watched ("Today", "Yesterday", "4 Nov", earlier
+ * years with the year) and what of it — a film watched twice "2 times", a show's "Season 1 · episodes 1–3". The
  * time and where a watch came from are left out: the day finds the card, the title page has the rest.
  */
 export function useHistoryCaption() {

@@ -12,7 +12,7 @@ import { authClient } from "@/lib/auth-client";
 import { attempt, type Errors, FormError, fieldOf, MIN_PASSWORD, Screen, useWait } from "./shared";
 
 /**
- * A new password from the e-mailed link (S30, AUTH-05): without a token, with an expired one (`?error=INVALID_TOKEN`
+ * A new password from the e-mailed link: without a token, with an expired one (`?error=INVALID_TOKEN`
  * from the link) or one refused on save, the screen says the link doesn't work and offers a new one — not a form that
  * fails after the password is typed. Done — "Sign in" with the new password.
  */

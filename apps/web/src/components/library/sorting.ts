@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { cardRating } from "./url-state";
 
-/** The sort's options as the catalog names them (CAT-08), with "Recently added" for a person's own collection. */
+/** The sort's options as the catalog names them, with "Recently added" for a person's own collection. */
 export function useTitleSorts() {
   const t = useTranslations("library");
   const tb = useTranslations("browse");

@@ -10,7 +10,7 @@ import { cn } from "./cn";
 import { InlineAlert } from "./InlineAlert";
 
 /**
- * "Saving…" and then "Saved" for a moment (8.8): by a group's title, or at the start of a settings dialog's actions.
+ * "Saving…" and then "Saved" for a moment: by a group's title, or at the start of a settings dialog's actions.
  * Always in the DOM, so the change is announced.
  */
 export function SaveStatus({ save, className }: { save?: SaveState; className?: string }) {
@@ -33,7 +33,7 @@ export function SaveStatus({ save, className }: { save?: SaveState; className?: 
   );
 }
 
-/** A failed save, rolled back already (8.8): what happened and "Retry", in the group or dialog that made it. */
+/** A failed save, rolled back already: what happened and "Retry", in the group or dialog that made it. */
 export function SaveError({ save, className }: { save?: SaveState; className?: string }) {
   const t = useTranslations();
   if (save?.status !== "error") return null;
@@ -54,9 +54,9 @@ export function SaveError({ save, className }: { save?: SaveState; className?: s
 }
 
 /**
- * A group of settings (design-system 7.18, as Apple's grouped lists): a small title (an h2 under the page's h1) over a
+ * A group of settings (as Apple's grouped lists): a small title (an h2 under the page's h1) over a
  * --surface-1 panel of radius 16 without a border, rows split by --line; the description is for screen readers only. A
- * group may go without a title (a lone action: "Sign out"); in a dialog it is `raised`. Settings that apply at once (8.8) pass `save` from
+ * group may go without a title (a lone action: "Sign out"); in a dialog it is `raised`. Settings that apply at once pass `save` from
  * `useSettingsSave()` (lib/use-action): "Saved" appears by the title for a moment; a failure — rolled back already — stays
  * in the group as an InlineAlert with "Retry". `footer` goes under the panel, at its end (a group's own button).
  */
@@ -96,7 +96,7 @@ export function SettingsSection({
           <SaveStatus save={save} />
         </div>
       )}
-      {/* No visible explanations (1.2, principle 6): the title says what the group is; a screen reader still hears it. */}
+      {/* No visible explanations: the title says what the group is; a screen reader still hears it. */}
       {description && (
         <p id={descriptionId} className="sr-only">
           {description}
@@ -119,9 +119,9 @@ export interface RowA11y {
 }
 
 /**
- * One setting with its control (7.18): the label at the start, the control at the end (Switch, Select, SegmentedControl,
+ * One setting with its control: the label at the start, the control at the end (Switch, Select, SegmentedControl,
  * a value). On a phone a field or a segmented control goes under the label at the full width; a switch stays at the end
- * of the label's line (X-42). The description is visible only with `risk` (deleting, resetting); otherwise it is the
+ * of the label's line. The description is visible only with `risk` (deleting, resetting); otherwise it is the
  * control's description for a screen reader.
  */
 export function SettingsRow({
@@ -183,10 +183,10 @@ export function SettingsRow({
 }
 
 /**
- * A row that leads somewhere (7.18, as Apple's): the label, the current value at the end in --text-2 and a chevron — a
+ * A row that leads somewhere (as Apple's): the label, the current value at the end in --text-2 and a chevron — a
  * page (`href`) or a sub-screen in a dialog (`onClick` with `opens`); the whole row is the target, its highlight the
  * panel's width. Without `href` or `opens` it is an action row with no chevron ("Sign out"); `tone="danger"` paints its
- * label --danger (deleting the account), with `detail` — the consequence — visible under it (1.2, principle 6). `leading`
+ * label --danger (deleting the account), with `detail` — the consequence — visible under it. `leading`
  * puts a mark before the label (a server's logo), `detail` lines under it (an address, a state).
  */
 export function SettingsLink({
@@ -209,7 +209,7 @@ export function SettingsLink({
   /** The current value or state ("Ukrainian, English", a StatusBadge). */
   value?: ReactNode;
   detail?: ReactNode;
-  /** What it is about, for a screen reader only (1.2, principle 6). */
+  /** What it is about, for a screen reader only. */
   description?: ReactNode;
   leading?: ReactNode;
   /** Under the row's own target, inside the row: what needs a target of its own (a server's "What to do"). */

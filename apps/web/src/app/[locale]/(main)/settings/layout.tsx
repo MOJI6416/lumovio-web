@@ -6,7 +6,7 @@ import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getMeState } from "@/lib/server-api";
 
-/** "Аккаунт · Настройки · Lumovio": every settings page is named in the tab (SH-12). */
+/** "Аккаунт · Настройки · Lumovio": every settings page is named in the tab. */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
   return { title: { default: t("title"), template: `%s · ${t("title")} · Lumovio` } };
@@ -14,11 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SettingsLayout({ children }: { children: ReactNode }) {
   const me = await getMeState();
-  // No session: each page sends the visitor to sign in with its own address to come back to (AUTH-06).
+  // No session: each page sends the visitor to sign in with its own address to come back to.
   if (!me) return children;
   const t = await getTranslations("settings");
   return (
-    // The tool width, centred on the page, the h1 in it (owner, 2026-10-25).
+    // The tool width, centred on the page, the h1 in it.
     <div className="page-x">
       {me === "unavailable" ? (
         <div className="mx-auto max-w-tool pb-10">

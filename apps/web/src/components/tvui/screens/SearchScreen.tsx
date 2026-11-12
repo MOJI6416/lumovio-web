@@ -35,7 +35,7 @@ import { TvState } from "../shell/TvState";
 const nextPage = (last: CatalogSearch) => (last.titles.page < last.titles.totalPages ? last.titles.page + 1 : undefined);
 
 /**
- * Search on a TV (design-system 9 "Search", 10.3; TV document §4): the site's search for a remote. On the left the
+ * Search on a TV: the site's search for a remote. On the left the
  * field and the on-screen keyboard; on the right, under a line about the focused card, the same groups as the site —
  * without a query the recent searches, what's popular and the genres; with one the best match wide, then films, series
  * and people as shelves, each type's whole list a grid of its own ("See all", `?kind=`). The query and the type live in
@@ -104,7 +104,7 @@ export function SearchScreen({
   const hidden = Boolean(data?.hidden) || (typed.data?.pages ?? []).some((p) => p.hidden);
   const tiles = tilesFor(allTiles, kids);
 
-  // Nothing found: the same keys on the other layout, when that names a title (SRCH-08).
+  // Nothing found: the same keys on the other layout, when that names a title.
   const alt = empty ? otherLayout(debounced) : null;
   const altResults = useQuery({
     queryKey: ["search", alt, locale],

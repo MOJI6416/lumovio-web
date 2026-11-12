@@ -4,7 +4,7 @@ import { type ComponentProps, type ComponentType, lazy, type ReactNode, Suspense
 import { Skeleton } from "@/components/ui/Skeleton";
 
 /*
- * The client parts of the title page's sections as chunks of their own (bundle budget, brief Ф4 item 7): the page's
+ * The client parts of the title page's sections as chunks of their own (bundle budget): the page's
  * first load carries the hero, and each section's code comes on its own. React.lazy: rendered on the server like any
  * client component, hydrated once its chunk is there. (next/dynamic would add a preload hint whose chunk name the dev
  * server doesn't serve.)

@@ -4,8 +4,8 @@ import { episodeOf, keepThroughEmpty, matchEpisode, normalizeTorznab, pickMovieF
 const GB = 1024 ** 3;
 const files = (paths: string[], size = GB): TsFile[] => paths.map((path, i) => ({ id: i + 1, path, length: size }));
 
-describe("TorrServer search results (T2a)", () => {
-  // The shape MatriX.147 returned on 2026-10-23 for Jackett's RuTracker / Kinozal / NoNaMe / Toloka results:
+describe("TorrServer search results", () => {
+  // The shape MatriX.147 returned for Jackett's RuTracker / Kinozal / NoNaMe / Toloka results:
   // Magnet is an empty string, the .torrent comes as a Jackett /dl/ link.
   const linkOnly = {
     Title: "Interstellar [2014, UHD BDRip 2160p]",
@@ -57,7 +57,7 @@ describe("TorrServer search results (T2a)", () => {
     expect(results.map((r) => r.tracker)).toEqual(["Mazepa", "RuTracker.org", "Kinozal"]);
   });
 
-  it("lists one torrent from several indexers once, with each origin, and never sums its seeders (TS5)", () => {
+  it("lists one torrent from several indexers once, with each origin, and never sums its seeders", () => {
     const kinozal = { Title: "Interstellar (2014) 1080p", Magnet: "", Link: "https://jackett.example/dl/kinozal/?path=k", Hash: "ABCDEF0123456789ABCDEF0123456789ABCDEF01", Tracker: "Kinozal", Seed: 9, Peer: 3 };
     const { results } = normalizeTorznab([withMagnet, linkOnly, kinozal]);
     expect(results).toHaveLength(2);
@@ -75,7 +75,7 @@ describe("TorrServer search results (T2a)", () => {
     expect(trackersOf(results[1]!)).toEqual(["RuTracker.org"]);
   });
 
-  it("keeps the results shown when a refresh comes back empty, and says when (TS5)", () => {
+  it("keeps the results shown when a refresh comes back empty, and says when", () => {
     const earlier = { results: normalizeTorznab([linkOnly]).results, skipped: 0, at: 1000 };
     expect(keepThroughEmpty(earlier, { results: [], skipped: 0, at: 2000 })).toEqual({ ...earlier, emptyAt: 2000 });
     const fresh = { results: normalizeTorznab([withMagnet]).results, skipped: 0, at: 3000 };
@@ -87,7 +87,7 @@ describe("TorrServer search results (T2a)", () => {
   });
 });
 
-describe("seasons and episodes in torrent names (T1)", () => {
+describe("seasons and episodes in torrent names", () => {
   it("reads one season from a release title, and none from a range", () => {
     expect(seasonOfText("Во все тяжкие / Breaking Bad / Сезон: 2 / Серии: 1-13 из 13 [2009, WEB-DL 1080p]")).toBe(2);
     expect(seasonOfText("Breaking.Bad.S03.1080p")).toBe(3);

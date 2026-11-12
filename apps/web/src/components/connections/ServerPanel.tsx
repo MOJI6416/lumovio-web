@@ -22,7 +22,7 @@ import { type ServerActions, STATUS, useServerFact } from "./server-actions";
 const AddConnectionDialog = dynamic(() => import("./AddConnectionDialog").then((m) => m.AddConnectionDialog), { ssr: false });
 
 /**
- * A block of the panel (7.18): a small title, as a settings group's, with "Saved" by it (8.8), its rows under it; a failed
+ * A block of the panel: a small title, as a settings group's, with "Saved" by it, its rows under it; a failed
  * save stays here with "Retry".
  */
 function Block({ title, save, children }: { title: string; save?: SaveState; children: ReactNode }) {
@@ -60,7 +60,7 @@ function PanelSwitch({ label, description, checked, onCheckedChange }: { label: 
 }
 
 /**
- * The server's window (design-system 7.9 Dialog, 7.16; audit SRV-03, SRV-06), centred, a bottom sheet on a phone: its
+ * The server's window (a Dialog), centred, a bottom sheet on a phone: its
  * state and the actions that need the profile's access (check, scan or added releases), its settings and who may use
  * it — applied at once with "Saved" — the address and sign-in, changed without removing the server, and the danger
  * zone at the end.
@@ -134,7 +134,7 @@ export function ServerPanel({
                 )}
               </div>
             ) : (
-              // Checking, scanning and the releases work through the profile's access: said, not offered (SRV-03).
+              // Checking, scanning and the releases work through the profile's access: said, not offered.
               <InlineAlert tone="info" title={t("noAccess")}>
                 {t("noAccessText", { profile: me?.activeProfile?.name ?? "" })}
               </InlineAlert>
@@ -150,7 +150,7 @@ export function ServerPanel({
             ) : (
               <>
                 <PanelSwitch checked={settings.autoSearch} onCheckedChange={(v) => set({ autoSearch: v })} label={t("autoSearch")} description={t("autoSearchHint")} />
-                {/* The clean-up (18а): Lumovio's own always; the server's other torrents of titles only when turned on. */}
+                {/* The clean-up: Lumovio's own always; the server's other torrents of titles only when turned on. */}
                 <PanelSwitch checked={settings.sweepAll === true} onCheckedChange={(v) => set({ sweepAll: v })} label={t("sweepAll")} description={t("sweepAllHint")} />
               </>
             )}
@@ -198,7 +198,7 @@ export function ServerPanel({
 type AccessProfile = { id: string; name: string; isKids: boolean };
 
 /**
- * Which profiles may use a server (SRV-01). The API stores explicit grants; no grants means "every
+ * Which profiles may use a server. The API stores explicit grants; no grants means "every
  * adult profile, new ones included, and no kids profile". Choosing "Selected profiles" starts from the
  * adults that have it now, so nothing is revoked silently; a kids profile gets the server only when
  * ticked. At least one profile stays ticked — an empty list would mean "all adults" again.

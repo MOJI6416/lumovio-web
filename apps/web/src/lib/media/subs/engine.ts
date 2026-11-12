@@ -31,7 +31,7 @@ import { onSubtitleView, type SubtitleView, shiftCue, subtitleView } from "./vie
 import { parseIdx, type VobSubHeader, vobSubFrames } from "./vobsub";
 
 /*
- * Subtitles the browser doesn't show by itself (PLR-14): a Matroska file's own tracks (SRT, WebVTT, ASS/SSA, PGS,
+ * Subtitles the browser doesn't show by itself: a Matroska file's own tracks (SRT, WebVTT, ASS/SSA, PGS,
  * VobSub), an MP4 file's text tracks (tx3g) and the subtitle files its torrent carries. Each one is a text track of the
  * player's <video> — so the player's menu, the C key and the native fullscreen of an iPhone see them — and whichever
  * is shown is fetched and drawn: text as the browser's own cues; ASS with libass (JASSUB, loaded only then), as plain
@@ -431,7 +431,7 @@ function embedded(
   };
 
   // No cue names this track's blocks (older muxers): the stretches of clusters around the playhead are walked for them
-  // instead (./matroska readClusterSubtitles, PLR-18) — the one the playhead is in first, then those ahead, then the one
+  // instead (./matroska readClusterSubtitles) — the one the playhead is in first, then those ahead, then the one
   // behind; each line is shown as soon as it is found, and a seek out of a stretch's reach stops its walk for the new place.
   const doneClusters = new Set<number>();
   const seenBlocks = new Set<string>();

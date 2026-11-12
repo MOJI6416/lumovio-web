@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 export const mergedItems = (pages: ListDetails[]) => [...new Map(pages.flatMap((p) => p.items).map((i) => [i.title.id, i])).values()];
 
 /**
- * A list with all its titles, page after page (LIB-24): "Watchlist" and "Favourites" filter and sort the whole of it.
+ * A list with all its titles, page after page: "Watchlist" and "Favourites" filter and sort the whole of it.
  * The library's start and its tabs read the same query (`systemListQuery`), so they share this function.
  */
 export async function wholeList(path: string): Promise<ListDetails> {

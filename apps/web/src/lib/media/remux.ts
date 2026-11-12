@@ -30,7 +30,7 @@ const BEHIND = 30;
 /**
  * The most one append gives Media Source: an iPhone's ManagedMediaSource refuses a whole fragment of a high-bitrate film
  * (8.4 MB of a 20 GB Blu-ray rip) even into an empty buffer, QuotaExceededError, and takes the same bytes in slices
- * (iOS 27.2, docs/torrserver-2026-11.md 23в). A fragment split across appends is fine: the buffer parses a stream.
+ * (iOS 27.2). A fragment split across appends is fine: the buffer parses a stream.
  */
 const SLICE = 1 << 20;
 

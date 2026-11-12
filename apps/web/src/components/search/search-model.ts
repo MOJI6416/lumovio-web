@@ -2,7 +2,7 @@ import type { CatalogRow, CatalogSearch, Genre, PersonSummary, TitleSummary } fr
 import { capitalize } from "@/lib/format";
 
 /*
- * One search for the header, the search page and the TV (design-system 7.19, 9 "Search"): the same query rules, the
+ * One search for the header, the search page and the TV: the same query rules, the
  * same groups of an answer and the same start without a query; each platform only lays them out its own way.
  * A plain module (types only from the contracts, no React), so server pages use it too.
  */
@@ -11,7 +11,7 @@ import { capitalize } from "@/lib/format";
 export const MIN_CHARS = 2;
 export const DEBOUNCE_MS = 250;
 export const TV_DEBOUNCE_MS = 400;
-/** The API's limit for a query (SRCH-11): a field stops there instead of a 400 and "Search failed". */
+/** The API's limit for a query: a field stops there instead of a 400 and "Search failed". */
 export const QUERY_MAX = 200;
 
 export type SearchKind = "movie" | "tv";

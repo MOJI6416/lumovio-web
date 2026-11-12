@@ -6,7 +6,7 @@ import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 
 /**
- * "Show more" under a grid or a list, centred (design-system 7.11, 8.4): the next page as a `secondary` button that
+ * "Show more" under a grid or a list, centred: the next page as a `secondary` button that
  * spins while it comes, "Showing 60 of 7 088" under it when the total is known, and nothing once all is shown. The next
  * page that didn't come is one line in the button's place — "Couldn't load more" with Retry — and what is shown stays.
  */

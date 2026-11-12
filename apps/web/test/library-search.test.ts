@@ -14,7 +14,7 @@ const entry = (id: string, t: string, watchedAt: string, season: number | null =
   source: "manual",
 });
 
-describe("history rows (LIB-11)", () => {
+describe("history rows", () => {
   it("one row per title and day: a rewatch and a show's episodes are grouped", () => {
     const days = groupHistory([
       entry("a", "movie:1", "2026-10-24T20:00:00"),
@@ -38,7 +38,7 @@ describe("history rows (LIB-11)", () => {
 });
 
 describe("search helpers", () => {
-  it("finds the same keys on the other keyboard layout (SRCH-08)", () => {
+  it("finds the same keys on the other keyboard layout", () => {
     expect(otherLayout("l.yf")).toBe("дюна");
     expect(otherLayout("штеукыеуддфк")).toBe("interstellar");
     expect(otherLayout("дюна 2")).toBe("l.yf 2");
@@ -46,14 +46,14 @@ describe("search helpers", () => {
     expect(otherLayout("дюна dune")).toBeNull();
   });
 
-  it("names a person's department in words, not TMDB's English (SRCH-06)", () => {
+  it("names a person's department in words, not TMDB's English", () => {
     expect(departmentKey("Acting")).toBe("person.dept0");
     expect(departmentKey("Directing")).toBe("person.dept1");
     expect(departmentKey("Something new")).toBeNull();
     expect(departmentKey(null)).toBeNull();
   });
 
-  it("opens AI conditions in the catalog with the catalog's own filters (SRCH-01, CAT-08)", () => {
+  it("opens AI conditions in the catalog with the catalog's own filters", () => {
     const f: AiFilters = {
       kind: "tv",
       genres: [18],

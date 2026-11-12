@@ -23,7 +23,7 @@ type Tab = (typeof TABS)[number];
 const ICONS: Record<Tab, LucideIcon> = { continue: Play, watchlist: Bookmark, favorites: Heart, lists: ListVideo, history: History };
 
 /*
- * The library on a TV (S08 TV; TV document §4 "Личная библиотека"): its parts as one row of tabs — Continue watching,
+ * The library on a TV: its parts as one row of tabs — Continue watching,
  * Watchlist, Favourites, Lists, History —, each a grid that starts where the tab is; an empty part says so in one line.
  * The tab is in the address (replaced), so Back from a title comes back to the same tab and card. A card of Continue
  * watching, the Watchlist, Favourites or the History has "More" (held OK, ../media/hold) with its removal; the line
@@ -95,7 +95,7 @@ export function LibraryScreen() {
   );
 }
 
-/** A tab's states (7.11, 8.5): the skeleton of its grid, an error with Retry, empty in one line. */
+/** A tab's states: the skeleton of its grid, an error with Retry, empty in one line. */
 function TabState({ q, empty, icon, children }: { q: { isPending: boolean; isError: boolean; refetch: () => unknown }; empty: string | null; icon: LucideIcon; children: ReactNode }) {
   const tc = useTranslations("common");
   const tv = useTranslations("tvui");

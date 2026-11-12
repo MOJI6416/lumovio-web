@@ -1,7 +1,7 @@
 /**
  * Better Auth reads its environment when its module loads, as `globalThis.process?.env || globalThis.Deno?.env.toObject()
- * || …`: a browser with a `Deno` global but no `Deno.env` (a crawler's — 486 render errors on the sign-in pages,
- * 2026-11-01…03) threw there, and every page that loads the auth client showed "Something went wrong". Imported before
+ * || …`: a browser with a `Deno` global but no `Deno.env` (a crawler's — 486 render errors on the sign-in pages)
+ * threw there, and every page that loads the auth client showed "Something went wrong". Imported before
  * Better Auth (auth-client.ts); a page has no use for such a `Deno`.
  */
 const g = globalThis as { Deno?: { env?: { toObject?: unknown } } };

@@ -1,5 +1,5 @@
 /**
- * Blu-ray picture subtitles (PGS, "HDMV presentation graphics"; PLR-14): each display set — composition, windows,
+ * Blu-ray picture subtitles (PGS, "HDMV presentation graphics"): each display set — composition, windows,
  * palette, run-length coded pictures — decoded into bitmaps in the composition's own pixels, which `engine.ts` draws
  * over the video. Matroska stores one display set per block, without the "PG" headers a .sup file has.
  */

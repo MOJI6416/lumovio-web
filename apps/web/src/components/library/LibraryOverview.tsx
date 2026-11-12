@@ -37,11 +37,11 @@ interface RatingRow {
 }
 
 /**
- * The library's screen (S09, design-system 9 "Library"): what is the profile's own, as shelves — "Continue watching"
- * (one shelf, as on the home page), "On my servers" (what plays in one press, "Watch now" since 2026-11-07), new
+ * The library's screen: what is the profile's own, as shelves — "Continue watching"
+ * (one shelf, as on the home page), "On my servers" (what plays in one press), new
  * episodes of its shows, then Watchlist, Favourites, Lists, History and Ratings.
- * Each collection's heading is the link to all of it (7.13), a page of its own; an empty one isn't shown, except Lists,
- * which starts with "New list". A new profile gets the ways to start. One error for the whole screen (LIB-09).
+ * Each collection's heading is the link to all of it, a page of its own; an empty one isn't shown, except Lists,
+ * which starts with "New list". A new profile gets the ways to start. One error for the whole screen.
  */
 export function LibraryOverview() {
   const t = useTranslations("library");
@@ -69,7 +69,7 @@ export function LibraryOverview() {
     queryFn: () => api<{ events: CalendarEvent[] }>(`/api/calendar?from=${day(-7)}&to=${today}`),
   });
   // The week's new episodes are waited for a moment only: a cold calendar of a profile with many shows took 17 s, and
-  // the whole screen waited for it (stand QA, 2026-11-06). Later, its shelf comes in where it belongs.
+  // the whole screen waited for it. Later, its shelf comes in where it belongs.
   const [waited, setWaited] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setWaited(true), 2500);
@@ -147,10 +147,10 @@ export function LibraryOverview() {
   return (
     <div className="flex flex-col gap-8">
       {(failed.length > 0 || recent.isError) && (
-        // Some shelves didn't come: one line with Retry over the rest, which works (7.11).
+        // Some shelves didn't come: one line with Retry over the rest, which works.
         <ErrorState variant="inline" title={t("loadErrorPart")} onRetry={retry} retrying={retrying} />
       )}
-      {/* The shelves run to the screen's edges out of the page gutter; each shelf keeps its own edge (5.3). */}
+      {/* The shelves run to the screen's edges out of the page gutter; each shelf keeps its own edge. */}
       <div className="-mx-(--gutter) flex flex-col gap-8 md:gap-12">
         {items.length > 0 && <ContinueRow id="lib-continue" items={items} />}
         {copies.length > 0 && (

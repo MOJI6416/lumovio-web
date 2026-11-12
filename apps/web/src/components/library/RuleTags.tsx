@@ -27,7 +27,7 @@ const SORT_KEY = {
 const TV_SPECIAL_KEYWORD = "264598";
 
 /**
- * A smart list's conditions in words (package F), in the catalog's and the library's own words: the section, genres,
+ * A smart list's conditions in words, in the catalog's and the library's own words: the section, genres,
  * years, rating, length… and the sort that picks the first hundred; the personal ones last. The genres' names load
  * with the section's list of genres (`known` — the ones a page already has; a name not known yet isn't shown as a number).
  */
@@ -97,7 +97,7 @@ export function useRuleWords(rules: ListRules, known?: Genre[]): string[] {
   ].filter((w): w is string => Boolean(w));
 }
 
-/** The conditions as neutral labels (design-system 7.4 Tag: they say something about the list, none is a control). */
+/** The conditions as neutral labels (Tag: they say something about the list, none is a control). */
 export function RuleTags({ rules, label, known, className }: { rules: ListRules; label: string; known?: Genre[]; className?: string }) {
   const words = useRuleWords(rules, known);
   return (

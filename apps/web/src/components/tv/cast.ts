@@ -8,7 +8,7 @@ import { useSession } from "@/components/providers/Providers";
 import { api } from "@/lib/api";
 
 /*
- * "Watch on TV" on the phone and the computer (design-system 8.18): which TVs of the account have Lumovio open, sending
+ * "Watch on TV" on the phone and the computer: which TVs of the account have Lumovio open, sending
  * a viewing to one, and the remote of that viewing. The TV opens it in its player (tvui/shell/TvEvents) and says what it
  * plays (./cast-report); the API checks every step on the server.
  */

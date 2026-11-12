@@ -8,7 +8,7 @@ import { BrandIntro, BrandLoader } from "@/components/ui/BrandMotion";
 const subscribe = () => () => {};
 
 /**
- * What a layout's page shows while its data comes (BootBoundary; design-system 6.3.1, 8.4) — only once the wait is
+ * What a layout's page shows while its data comes (BootBoundary) — only once the wait is
  * noticeable (--loader-delay), so a quick page comes without a flash.
  *
  * The first page of a visit is rendered by the server, and its loading state is the brand intro on the stage over the
@@ -37,7 +37,7 @@ export function RouteLoading({ stage, tv }: { stage?: boolean; tv?: boolean }) {
     return (
       <>
         {/* The page's place holds the window's height under the intro: else the footer stood in the window and the
-            page coming in pushed it out — a layout shift of 1.0 on every first page (2026-11-01). */}
+            page coming in pushed it out — a layout shift of 1.0 on every first page. */}
         <div aria-hidden className="min-h-dvh" />
         {/* The page's own colour at once (the header isn't shown and then covered); the stage and the intro from the delay. */}
         <div role="status" aria-label={t("loading")} className="fixed inset-0 z-scrim bg-bg">

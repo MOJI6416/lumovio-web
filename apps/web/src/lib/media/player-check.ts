@@ -5,10 +5,10 @@ import type { RemuxHandle } from "./remux";
 import type { SubtitleTrackInfo } from "./subs/engine";
 
 /*
- * The device check (/dev/player-check, docs/player-compatibility-and-ux-2026-10-23.md P5): what this browser can play,
+ * The device check (/dev/player-check): what this browser can play,
  * and short reference clips in the formats real releases use, each started the way the player would (as it is,
  * rebuilt in the browser, or another app), muted. The clips are Lumovio's own files (public/player-check/, made by
- * scripts/player-check/make-clips.mjs), so the check needs no server of the person's.
+ * a script kept outside the repository), so the check needs no server of the person's.
  */
 
 export interface ReferenceClip {
@@ -19,7 +19,7 @@ export interface ReferenceClip {
   facts: MediaFileFacts;
   /** The clip has a second audio track: switching to it is tried too. */
   switchTo?: number;
-  /** The clip has subtitle tracks (and files next to it): each one is shown and checked (PLR-14). */
+  /** The clip has subtitle tracks (and files next to it): each one is shown and checked. */
   subtitles?: { files: { path: string; format: "srt" | "vtt" | "ass"; lang: string | null; forced: boolean; label: string | null; url: string }[] };
 }
 

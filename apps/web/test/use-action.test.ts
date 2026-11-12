@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { type ActionEnv, runAction } from "../src/lib/action";
 import { ApiRequestError } from "../src/lib/api";
 
-// design-system 8.3, audit X-15: success → toast (with Undo); failure → rollback + toast in words; never swallowed.
+// Success → toast (with Undo); failure → rollback + toast in words; never swallowed.
 
 function fakeEnv() {
   const toasts: { tone: string; message: string; action?: { label: string; onClick: () => void } }[] = [];
@@ -31,7 +31,7 @@ describe("runAction", () => {
     expect(toasts).toEqual([{ tone: "success", message: "got 42", action: undefined }]);
   });
 
-  it("the success toast carries the action's mark, with or without Undo (6.3.1); a failure never does", async () => {
+  it("the success toast carries the action's mark, with or without Undo; a failure never does", async () => {
     const icons: unknown[] = [];
     const env: ActionEnv = { ...fakeEnv().env, notify: (_tone, _message, options) => icons.push(options?.icon) };
     await runAction({ run: async () => 1, success: "Added", successIcon: "favourite", undo: async () => {} }, [], env);
@@ -163,7 +163,7 @@ describe("runAction", () => {
     expect(toasts[1]).toEqual({ tone: "error", message: "t:internal", action: undefined });
   });
 
-  it("a failure with its own words and \"Retry\" (TTL-30); \"Sign in\" still comes first after a 401", async () => {
+  it("a failure with its own words and \"Retry\"; \"Sign in\" still comes first after a 401", async () => {
     const { env, toasts } = fakeEnv();
     const retry = vi.fn();
     const signIn = vi.fn();

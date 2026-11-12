@@ -36,11 +36,11 @@ const serviceMenu = lazyControl(() => import("./ServiceMenu"));
 const LABEL: Record<IntegrationProvider, string> = { trakt: "Trakt", simkl: "Simkl" };
 const KINDS: IntegrationKind[] = ["history", "ratings", "watchlist"];
 const ERRORS = ["expired", "denied", "session", "issuer", "exchange", "failed"] as const;
-// The account's state as a dot and a word (7.4): Connected · Connecting · Sign-in needed · Error.
+// The account's state as a dot and a word: Connected · Connecting · Sign-in needed · Error.
 const STATUS: Record<IntegrationAccount["status"], Status> = { ok: "success", connecting: "neutral", reauth: "warning", error: "danger" };
 
 /**
- * What a failed sync left in `statusDetail` (diagnostics, English) in the person's words (SET-11): which step failed,
+ * What a failed sync left in `statusDetail` (diagnostics, English) in the person's words: which step failed,
  * never the text itself.
  */
 function failureKey(detail: string | null): "failFirst" | "failImport" | "failSync" {
@@ -50,9 +50,9 @@ function failureKey(detail: string | null): "failFirst" | "failImport" | "failSy
 }
 
 /**
- * Settings → Trakt & Simkl (S21): link a service to one profile, choose what flows each way, see the last sync and
+ * Settings → Trakt & Simkl: link a service to one profile, choose what flows each way, see the last sync and
  * what needs a choice. Reading starts on; writing to the service is the person's choice. Switches apply at once with
- * "Saved" (8.8); what can't be done now is said, not just greyed out (SET-09).
+ * "Saved"; what can't be done now is said, not just greyed out.
  */
 export function TrackingServices() {
   const t = useTranslations("services");
@@ -71,7 +71,7 @@ export function TrackingServices() {
     if (params.get("connected") || error) router.replace("/settings/services");
   }, [params, router, t]);
 
-  // A failed load is an error with Retry, not an endless skeleton (X-14).
+  // A failed load is an error with Retry, not an endless skeleton.
   return (
     <div className="space-y-8">
       <p className="sr-only">{t("intro")}</p>
@@ -93,11 +93,11 @@ export function TrackingServices() {
           </div>
         )}
       </QueryState>
-      {/* Files from other services: the import is a page of its own, not a section of the settings (SET-03). */}
+      {/* Files from other services: the import is a page of its own, not a section of the settings. */}
       <SettingsSection title={tn("import")}>
         <SettingsLink href="/import" label={t("importFiles")} description={t("importFilesHint")} />
       </SettingsSection>
-      {/* How the sign-in is kept is for a screen reader (1.2, principle 6); Trakt's credit stays visible, small. */}
+      {/* How the sign-in is kept is for a screen reader; Trakt's credit stays visible, small. */}
       <p className="sr-only">{t("privacy")}</p>
       <p className="px-4 text-caption font-medium text-text-3">{t("traktCredit")}</p>
     </div>
@@ -176,7 +176,7 @@ function AccountBlock({
   const refresh = () => void qc.invalidateQueries({ queryKey: ["integrations"] });
   const stuck = a.status === "connecting" || a.status === "reauth";
 
-  // A switch moves at once; the overview follows; a refusal puts it back in the section (8.8).
+  // A switch moves at once; the overview follows; a refusal puts it back in the section.
   const patch = (json: { import?: Partial<Record<IntegrationKind, boolean>>; export?: Partial<Record<IntegrationKind, boolean>>; scrobble?: boolean }) =>
     void save(
       async () => {
@@ -214,7 +214,7 @@ function AccountBlock({
     success: t("syncQueued"),
     sync: refresh,
   });
-  // Starting without the first import, importing everything again and disconnecting are asked first (X-12).
+  // Starting without the first import, importing everything again and disconnecting are asked first.
   const skipFirst = async () => {
     if (await confirm({ title: t("skipConfirm", { service }), confirmLabel: t("skipFirst"), tone: "primary", action: () => api(`/api/integrations/${a.id}/skip-initial`, { method: "POST" }) }))
       refresh();
@@ -249,7 +249,7 @@ function AccountBlock({
     <div className="flex flex-col gap-4 py-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="text-title text-text-1">
-          {/* An icon, not "→": it points the reading way in right-to-left languages too (8.11, X-26). */}
+          {/* An icon, not "→": it points the reading way in right-to-left languages too. */}
           {a.externalUser ?? service}{" "}
           <span className="inline-flex items-center gap-1 font-normal text-text-2">
             <ArrowRight aria-hidden className="size-4" />
@@ -266,7 +266,7 @@ function AccountBlock({
         <Button variant="secondary" size="sm" icon={RefreshCw} loading={sync.pending} disabled={stuck} onClick={() => void sync.run()}>
           {t("syncNow")}
         </Button>
-        {/* Why it's off, next to it (7.1). */}
+        {/* Why it's off, next to it. */}
         {stuck && <span className="text-body-s text-text-2">{a.status === "reauth" ? t("syncNeedsSignIn") : t("syncNeedsFirst")}</span>}
         <div className="ms-auto">
           <ServiceMore
@@ -363,7 +363,7 @@ function AccountBlock({
               description={t("scrobbleHint", { service })}
             />
           </div>
-          {/* What writing touches — nothing is deleted there — or why it is off (7.1). */}
+          {/* What writing touches — nothing is deleted there — or why it is off. */}
           <p className="mt-2 text-body-s text-text-2">{a.canWrite ? t("writeHint", { service }) : t("readOnlyGrant")}</p>
         </fieldset>
       </div>
@@ -445,7 +445,7 @@ function ServiceMore(props: ServiceMenuProps) {
   );
 }
 
-/** One of an account's switches: the name at the start, the switch at the end, as a settings row (7.18). */
+/** One of an account's switches: the name at the start, the switch at the end, as a settings row. */
 function SyncSwitch({ label, description, checked, disabled, onCheckedChange }: { label: string; description?: string; checked: boolean; disabled?: boolean; onCheckedChange: (v: boolean) => void }) {
   const id = useId();
   return (

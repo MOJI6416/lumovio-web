@@ -105,9 +105,6 @@ scripts/player-codecs/    how public/codecs is built from FFmpeg and JASSUB
 Things that differ from older Next.js versions: `src/proxy.ts` replaces middleware, route params are async, and the
 locale comes from `next/root-params`. The bundled docs live in `node_modules/next/dist/docs/`.
 
-Comments in the code cite Lumovio's internal design and product documents (`design-system 8.12`, `TV document §4.1`,
-audit ids such as `SET-06`). Those documents aren't published; the code around them is meant to read on its own.
-
 ## Playback in a nutshell
 
 `src/lib/media/capabilities.ts` asks the browser what it can actually decode (`MediaSource.isTypeSupported` /

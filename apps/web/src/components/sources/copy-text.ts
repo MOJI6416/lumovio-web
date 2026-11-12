@@ -10,7 +10,7 @@ import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 const KIND_LABEL: Record<Availability["kind"], string> = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" };
 
 /**
- * A copy on the profile's server in words (design-system 7.15, PLR-05): its version — "1080p · Blu-ray · Russian ·
+ * A copy on the profile's server in words: its version — "1080p · Blu-ray · Russian ·
  * dubbed" — from the server's quality data or, for a TorrServer copy, from its release's name; never the server's own
  * name or a raw file name. A file bound to a film or an episode takes the name of its torrent's release when its own
  * label doesn't tell (`all`: every copy of the title, the torrent's own entry among them). The same words the title
@@ -87,7 +87,7 @@ export function useCopyText() {
    * What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)") — of
    * a TorrServer copy, the one track the player starts for this profile (`profileNameTrack`, as `profileTrack` picks the
    * file's, else the file's default — the name's first): "Russian · multi-voice (LostFilm)" from "7 x MVO (HDrezka
-   * Studio, …, LostFilm)" for "1 — LostFilm", "Russian · dubbed" from "2x Dub + MVO + AVO" (36).
+   * Studio, …, LostFilm)" for "1 — LostFilm", "Russian · dubbed" from "2x Dub + MVO + AVO".
    */
   const sound = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
     const own = languagesOf(s);
@@ -95,7 +95,7 @@ export function useCopyText() {
     const name = releaseName(s, all);
     if (!name) return null;
     const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
-    // None of the profile's: the file's default plays — a name lists the tracks in the file's order, its first (36).
+    // None of the profile's: the file's default plays — a name lists the tracks in the file's order, its first.
     const heard = profileNameTrack(info, { languages: langs, studios }) ?? info.tracks[0] ?? null;
     return text.audio({ info, language: heard?.language ?? null }, heard) || null;
   };
@@ -105,7 +105,7 @@ export function useCopyText() {
     marks,
     sound,
     /**
-     * The copy for a line of marks and words (QualityLine, 7.15): its marks, then what they don't say — "720p" under HD, a
+     * The copy for a line of marks and words (QualityLine): its marks, then what they don't say — "720p" under HD, a
      * release's source — and what is heard; its version in words when it has no marks.
      */
     quality: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): { marks: QualityMark[]; words: (string | null)[] } => {
@@ -116,7 +116,7 @@ export function useCopyText() {
       const beside = name ? text.besideMarks(parseRelease(name, null, originalLanguage)) : resolutionBesideMarks(q?.resolution);
       return { marks: m, words: [beside, sound(s, all, originalLanguage)] };
     },
-    /** Where it is and how big: "On «Home» · Jellyfin · 9.6 GB", "Already on your TorrServer «torr» · 9.6 GB" (14). */
+    /** Where it is and how big: "On «Home» · Jellyfin · 9.6 GB", "Already on your TorrServer «torr» · 9.6 GB". */
     meta: (s: Availability, title: string) =>
       [...(s.kind === "torrserver" ? [t("onTorrServer", { server: s.connectionName })] : [t("onServer", { server: s.connectionName }), KIND_LABEL[s.kind]]), formatSize(s.quality?.sizeBytes ?? null, locale), s.kind !== "torrserver" && s.label && s.label !== title ? s.label : null]
         .filter(Boolean)
@@ -124,7 +124,7 @@ export function useCopyText() {
     /** The release's full name, for the copy's details. */
     releaseName,
     /**
-     * What a copy's audio has to do with the profile, as a release's row says it (7.4 Tag, `audioMatch`): one of its
+     * What a copy's audio has to do with the profile, as a release's row says it (a Tag, `audioMatch`): one of its
      * studios a TorrServer copy's release credits ("your dubbing"), else one of its audio languages — the server's
      * tracks for Jellyfin and Plex, the release name for TorrServer ("your language"). Null when nothing is known.
      */

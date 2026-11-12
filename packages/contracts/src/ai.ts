@@ -42,7 +42,7 @@ export const AiFilters = z.object({
   preferShort: z.boolean(),
   sort: z.enum(["popularity", "rating", "release_desc"]),
   /**
-   * Series only, the catalog's own filters (DiscoverQuery `tvType`, `tvStatus`; SRCH-01): "mini" — a miniseries,
+   * Series only, the catalog's own filters (DiscoverQuery `tvType`, `tvStatus`): "mini" — a miniseries,
    * "scripted" — scripted shows and miniseries; "ended" — the story is finished, "returning" — still going on.
    */
   tvType: z.enum(["scripted", "mini"]).nullable().default(null),
@@ -66,7 +66,7 @@ export type AiResultTitle = TitleSummary & { runtime: number | null; tvType?: st
 export interface AiSearchResponse {
   filters: AiFilters;
   /**
-   * False when the text doesn't describe something to watch ("asdfgh qwerty", SRCH-02): there are no results then,
+   * False when the text doesn't describe something to watch ("asdfgh qwerty"): there are no results then,
    * and the app says so instead of "Understood as: Film". Absent in answers of an older server (true).
    */
   understood?: boolean;

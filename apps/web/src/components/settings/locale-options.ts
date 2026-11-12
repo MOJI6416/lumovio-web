@@ -14,7 +14,7 @@ export const capital = (s: string, locale: string) => s.charAt(0).toLocaleUpperC
 
 /**
  * The interface, description and region choices shared by Settings → Profile and the profile editor in Manage
- * profiles (PRF-08, PRF-13). A light module: the editor doesn't bring the settings' release data with it.
+ * profiles. A light module: the editor doesn't bring the settings' release data with it.
  */
 export function useLocaleOptions() {
   const t = useTranslations("profiles");

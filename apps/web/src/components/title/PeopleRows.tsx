@@ -9,9 +9,9 @@ import { KEY_CREW } from "@/components/person/jobs";
 import { latinLang } from "@/lib/format";
 
 /**
- * "Cast" and "Crew" in "Details" (design-system 7.12, 7.13, 5.4; TTL-16, Ф3's finding): shelves of PersonCards of the
+ * "Cast" and "Crew" in "Details": shelves of PersonCards of the
  * shelf width, the name in up to two lines (never cut to one), the character or the job under it — jobs in the
- * interface language (TTL-07).
+ * interface language.
  */
 export function PeopleRows({ cast, crew, creators }: { cast: CastMember[]; crew: CrewMember[]; creators: { id: number; name: string; profilePath: string | null; knownFor: string | null }[] }) {
   const t = useTranslations("title");

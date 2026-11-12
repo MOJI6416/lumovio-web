@@ -27,7 +27,7 @@ export interface ChoiceCopy {
 }
 
 /**
- * The profile's copies on the sources screen (design-system 7.15 «Экран источников»), as "Where to watch" says them:
+ * The profile's copies on the sources screen, as "Where to watch" says them:
  * the first — the one playing, else the one "Watch" starts — in the card (what is heard, the marks, where; the white
  * "Watch" or "Continue watching" and "•••"), the others under "Other copies" as rows. With no copy, the card says why
  * in its heading and its one button leads on: the guest's sign-in, a profile without servers, servers out of reach;

@@ -3,7 +3,7 @@ import robots from "../src/app/robots";
 import sitemap from "../src/app/sitemap";
 import { languageAlternates, localizedPath, ogBase, seoAlternates } from "../src/lib/seo";
 
-describe("addresses for search and previews (SH-13)", () => {
+describe("addresses for search and previews", () => {
   it("prefixes every language but English", () => {
     expect(localizedPath("en", "/")).toBe("/");
     expect(localizedPath("ru", "/")).toBe("/ru");
@@ -21,7 +21,7 @@ describe("addresses for search and previews (SH-13)", () => {
     expect(seoAlternates("it", "/anime").canonical).toBe("/it/anime");
     expect(seoAlternates("es", "/anime").canonical).toBe("/es/anime");
     expect(seoAlternates("pt-BR", "/anime").canonical).toBe("/pt-BR/anime");
-    // Every language is finished since 2026-10-29; one that isn't an interface language is indexed in English.
+    // Every language is finished now; one that isn't an interface language is indexed in English.
     expect(seoAlternates("nl", "/anime").canonical).toBe("/anime");
   });
 

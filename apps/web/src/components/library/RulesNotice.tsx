@@ -9,11 +9,11 @@ import { relativeTime } from "@/lib/format";
 import { RuleTags } from "./RuleTags";
 
 /**
- * A smart list's conditions on its page (S10, package F; design-system 8.13): the conditions as labels under the
+ * A smart list's conditions on its page: the conditions as labels under the
  * heading — they are what the list is — with "All in the catalog" to the grid with the same conditions, and for a
  * catalog list the one fact that changes, when it was last brought up to date (or that it is being filled). How it
  * keeps itself up to date and what happens to titles removed or added by hand is the section's description for a
- * screen reader (1.2: no explanations on screen); a catalog that didn't answer is a warning. "Edit conditions" is the
+ * screen reader (no explanations on screen); a catalog that didn't answer is a warning. "Edit conditions" is the
  * owner's button in the page's heading.
  */
 export function RulesNotice({ list: l, isOwner, canEdit }: { list: ListDetails; isOwner: boolean; canEdit: boolean }) {
@@ -44,7 +44,7 @@ export function RulesNotice({ list: l, isOwner, canEdit }: { list: ListDetails; 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <RuleTags rules={r} label={t("rulesConditions")} />
         {catalog && (
-          // A 44 px target on a phone, 32+ on a computer (5.6): the line stays as it is.
+          // A 44 px target on a phone, 32+ on a computer: the line stays as it is.
           <Link variant="action" arrow href={catalogHref(r.query)} className="-my-1.5 max-sm:-my-3.5">
             {t("rulesViewAll")}
           </Link>

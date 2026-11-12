@@ -1,9 +1,9 @@
 /*
- * What the shelves of the home page and the catalog sections say about themselves (design-system 2.5, 7.13): `why` —
+ * What the shelves of the home page and the catalog sections say about themselves: `why` —
  * what the shelf is for, in plain words; `note` — how it was picked and from which source. Both go into the shelf's
- * "i" (the first as the text, the second under it), not under the heading (HOME-07, X-25). Every shelf with an "All"
+ * "i" (the first as the text, the second under it), not under the heading. Every shelf with an "All"
  * page names that page (`title`), so the grid keeps the shelf's name and says what it is (`about`, `why` or `note`) instead
- * of "All films" or the conditions as chips (CAT-05, CAT-11); a genre shelf's page is named by its genre.
+ * of "All films" or the conditions as chips; a genre shelf's page is named by its genre.
  */
 
 export interface ShelfCopy {
@@ -41,14 +41,14 @@ export const SHELF_COPY: Record<string, ShelfCopy> = {
   airing: { note: "rows.airingAnimeNote" },
   anime_finished: { title: "rows.finishedAnime", note: "rows.finishedAnimeNote" },
   anime_short: { title: "rows.shortAnime", why: "rows.shortAnimeWhy", note: "rows.shortAnimeNote" },
-  // Lumovio Score's shelves (API catalog/score-shelves.ts): the grid sorted by the Score, under their conditions.
+  // Lumovio Score's shelves (built by the API): the grid sorted by the Score, under their conditions.
   best_score: { title: "rows.bestScore", why: "rows.bestScoreWhy", note: "rows.bestScoreNote" },
   critics_loved: { title: "rows.criticsLoved", why: "rows.criticsLovedWhy", note: "rows.criticsLovedNote" },
   underrated: { title: "rows.underrated", why: "rows.underratedWhy", note: "rows.underratedNote" },
   mood_feel_good: { title: "rows.moodFeelGood", why: "rows.moodFeelGoodWhy", note: "rows.moodFeelGoodNote" },
   mood_mind_bending: { title: "rows.moodMindBending", why: "rows.moodMindBendingWhy", note: "rows.moodMindBendingNote" },
   mood_edge_of_seat: { title: "rows.moodEdgeOfSeat", why: "rows.moodEdgeOfSeatWhy", note: "rows.moodEdgeOfSeatNote" },
-  // The profile's own Watchlist (API library/home-shelves.ts); "All" is the Watchlist with the same filters.
+  // The profile's own Watchlist; "All" is the Watchlist with the same filters.
   watchlist_short: { why: "rows.watchlistShortWhy", note: "rows.watchlistShortNote" },
   watchlist_finished: { why: "rows.watchlistFinishedWhy", note: "rows.watchlistFinishedNote" },
   servers_unwatched: { why: "rows.serversUnwatchedWhy", note: "rows.serversUnwatchedNote" },
@@ -56,14 +56,14 @@ export const SHELF_COPY: Record<string, ShelfCopy> = {
 
 const GENRE_SHELF = /^genre_(\d+)$/;
 
-/** The "All" address of a shelf, marked with the shelf when its page keeps the shelf's name (CAT-05, CAT-11). */
+/** The "All" address of a shelf, marked with the shelf when its page keeps the shelf's name. */
 export function shelfHref(key: string, href: string | null): string | null {
   if (!href || !(SHELF_COPY[key]?.title || GENRE_SHELF.test(key))) return href;
   return `${href}${href.includes("?") ? "&" : "?"}shelf=${key}`;
 }
 
 /**
- * The grid's next address with the shelf's name kept only while the shelf's own conditions are (CAT-11): a filter or sort
+ * The grid's next address with the shelf's name kept only while the shelf's own conditions are: a filter or sort
  * of the current address changed or removed drops `shelf`; one added on top narrows the shelf and keeps it.
  */
 export function keepShelf(current: URLSearchParams, next: URLSearchParams): URLSearchParams {

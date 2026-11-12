@@ -39,8 +39,8 @@ const TorrentProbe = dynamic(() => import("./TorrentProbe").then((m) => m.Torren
 const CopyProbe = dynamic(() => import("./CopyProbe").then((m) => m.CopyProbe), { ssr: false });
 
 /**
- * The title hero's actions (design-system 7.14 items 6–7, 8.2; redesign-2026-11.md 2): one main button by the table of
- * 8.2 — "Continue", "Watch" (own copy, or the recommended TorrServer release), the trailer, or none (then "Watchlist" is
+ * The title hero's actions: one main button
+ * — "Continue", "Watch" (own copy, or the recommended TorrServer release), the trailer, or none (then "Watchlist" is
  * the main one); beside it two circles: "Watchlist" (+, ✓ when on) and "More" with the rest (Favourites, Watched,
  * Not interested, Add to list…, new-episode alerts, Share, the picture). Under them one line of where it plays from,
  * with the way down to "Where to watch". The same row on a phone, the main button taking the width the circles leave.
@@ -109,7 +109,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const named = copies && copyFace && copies.servers.some((s) => s.connectionId === copyFace.copy.connectionId && s.externalId === copyFace.copy.externalId) ? copyFace.copy : undefined;
   const first = named ?? (copies ? orderedSources(copies, undefined, languages, studios)[0]?.server : undefined);
   const offers = (d.watchProviders?.providers ?? []).filter((p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads");
-  // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads"; TTL-26).
+  // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads").
   const offerNames = [...new Set((offers.length ? offers : (d.watchProviders?.providers ?? [])).map((p) => serviceOf(p.name).name))].slice(0, 3);
   const p = state?.progress;
   const plan = heroPlan({
@@ -122,7 +122,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       first && avail.state.kind === "playable"
         ? first.kind === "torrserver"
           ? {
-              // A TorrServer copy as a found release is said: its release name's marks and what is heard (16).
+              // A TorrServer copy as a found release is said: its release name's marks and what is heard.
               server: first.connectionName,
               resolution: null,
               marks: copyFace?.marks ?? [],
@@ -162,7 +162,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   };
 
   const inWatchlist = actions.inWatchlist;
-  // No main button: "Watchlist" is the main one (8.2).
+  // No main button: "Watchlist" is the main one.
   const watchlistMain = plan.primary === null;
   const toggleWatchlist = () => void actions.setWatchlist(!inWatchlist);
   const watchlist = watchlistMain ? (
@@ -194,7 +194,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             {sub && <p className="text-body-s text-text-2 tabular-nums max-md:text-center">{sub}</p>}
           </div>
         )}
-        {/* "Watch on TV" (8.18): what "Continue" / "Watch" would start, on a TV of the account with Lumovio open. */}
+        {/* "Watch on TV": what "Continue" / "Watch" would start, on a TV of the account with Lumovio open. */}
         {(plan.primary?.kind === "resume" || plan.primary?.kind === "watch") && (
           <CastButton
             titleId={d.id}
@@ -209,7 +209,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
           <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" size="lg" label={moreLabel} aria-haspopup="menu" aria-expanded={false} {...moreIn.handlers} />
         )}
       </div>
-      {/* While availability loads, the line it brings is held (7.11), so the hero doesn't grow when it arrives. */}
+      {/* While availability loads, the line it brings is held, so the hero doesn't grow when it arrives. */}
       {plan.primary?.kind === "loading" && (
         <div aria-hidden className="mt-4 flex h-8 items-center max-sm:h-11">
           <Skeleton shape="xs" className="h-4 w-72 max-w-full" />
@@ -228,7 +228,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   );
 }
 
-/** The main button by 8.2: a link where it goes somewhere, a button where it acts. */
+/** The main button: a link where it goes somewhere, a button where it acts. */
 function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary: NonNullable<Primary>; href: string; busy: boolean; onTrailer: () => void; onRelease: () => void }) {
   const t = useTranslations("titlePage");
   const tt = useTranslations("title");

@@ -45,8 +45,8 @@ function darkShare(img: HTMLImageElement): number | null {
 }
 
 /**
- * A title's logo art over Lumovio's dark stage, with no glow or halo around it (owner, 2026-10-25): the stage's scrims
- * keep it legible (3.5). Many logos are drawn for light backgrounds, and a dark one would vanish on the stage — so each
+ * A title's logo art over Lumovio's dark stage, with no glow or halo around it: the stage's scrims
+ * keep it legible. Many logos are drawn for light backgrounds, and a dark one would vanish on the stage — so each
  * logo is checked first (a small copy fetched with CORS: TMDB's and Fanart.tv's CDNs allow it, so the displayed image
  * is never tainted or downloaded twice at full size) and shown only when it is light enough. A dark logo, or one that
  * doesn't load, gives way to the other provider's logo, then to `children` (the title as text). The logo shows while

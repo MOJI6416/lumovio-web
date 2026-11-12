@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 /**
- * One way to start watching (design-system 7.15, SRC-01, SRC-14): a copy on the profile's server, a file of a torrent,
- * a copy in the player's "Source" panel — in the look of "Other copies" (2026-11-06): `--surface-1`, `--radius-lg`, no
+ * One way to start watching: a copy on the profile's server, a file of a torrent,
+ * a copy in the player's "Source" panel — in the look of "Other copies": `--surface-1`, `--radius-lg`, no
  * border, the type's mark in a circle. Line 1 (`title`): what it is; line 2 (`meta`, body-s): where and how much; one
  * label above (`badges`: "Now", "Didn't start"); on the end the one action, always labelled "Watch" (`action`), and
  * "More" for what can be done with it (`more`: details, unlink, remove — each confirmed where it can't be undone).
- * The row itself is not a button: the action says what happens (SRC-14). The sources screen's releases and copies
+ * The row itself is not a button: the action says what happens. The sources screen's releases and copies
  * are its own lists (ReleaseFinder, CopyChoice).
  *
  * Phones: the action moves under the text, across the row, so a long name is never squeezed. TV: under the text too,
- * at the row's start, so the remote's ↓ goes from row to row (spatial navigation prefers the same column, Ф5).
+ * at the row's start, so the remote's ↓ goes from row to row (spatial navigation prefers the same column).
  */
 export function SourceRow({
   icon,

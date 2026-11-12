@@ -1,7 +1,7 @@
 interface LocaleDef {
   code: string;
   name: string;
-  /** "rtl" stays possible (design-system 8.11) though no language here needs it now. */
+  /** "rtl" stays possible though no language here needs it now. */
   dir: "ltr" | "rtl";
   status: "reviewed" | "draft";
 }
@@ -9,8 +9,8 @@ interface LocaleDef {
 /**
  * Locale registry. `status` is shown to users honestly: only "reviewed" locales are presented as
  * finished translations; "draft" locales are labelled and fall back to English per missing key.
- * A language becomes "reviewed" when `node scripts/i18n/check.mjs <code>` finds no errors and its key
- * screens were looked at (design-system 8.11); its messages live in apps/web/messages/<code>.json.
+ * A language becomes "reviewed" when the translation check finds no errors and its key
+ * screens were looked at; its messages live in apps/web/messages/<code>.json.
  */
 const DEFS = [
   { code: "en", name: "English", dir: "ltr", status: "reviewed" },
@@ -33,7 +33,7 @@ export const DEFAULT_LOCALE: Locale = "en";
 export const localeInfo = (code: string): LocaleEntry => LOCALES.find((l) => l.code === code) ?? DEFS[0];
 
 /**
- * Languages taken out of Lumovio (owner, 2026-10-29): Japanese, Korean, Chinese, Arabic, Hindi, Indonesian. Their
+ * Languages taken out of Lumovio: Japanese, Korean, Chinese, Arabic, Hindi, Indonesian. Their
  * addresses (/ja/…) move to the English address for good (proxy.ts); a saved choice of one reads as English.
  */
 export const REMOVED_LOCALES = ["ja", "ko", "zh-CN", "ar", "hi", "id"] as const;
@@ -52,7 +52,7 @@ export function removedLocaleRedirect(pathname: string, savedLocale: string | nu
 }
 
 /*
- * One source of truth for which languages are offered where (design-system 1.3 and 8.11, L10N-02).
+ * One source of truth for which languages are offered where.
  * Draft languages keep working at their address (/es/…) and as a saved choice, but the interface
  * language picker doesn't offer them and a browser's language never selects them on its own.
  */
@@ -63,7 +63,7 @@ export const INTERFACE_LOCALES: readonly LocaleEntry[] = LOCALES.filter((l) => l
 export const isInterfaceLocale = (code: string | null | undefined): boolean => INTERFACE_LOCALES.some((l) => l.code === code);
 
 // Pickers list languages as Apple and Google do: alphabetically by the language's own name, Latin scripts before
-// Cyrillic (the root collation's order) — Deutsch, English, Español… Русский, Українська (owner, 2026-10-29).
+// Cyrillic (the root collation's order) — Deutsch, English, Español… Русский, Українська.
 const NAME_ORDER = new Intl.Collator("en");
 const byName = (a: LocaleEntry, b: LocaleEntry) => NAME_ORDER.compare(a.name, b.name);
 

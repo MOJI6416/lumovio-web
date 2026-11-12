@@ -11,7 +11,7 @@ import { HeroActions } from "./HeroActions";
 import { ShelvesScreen } from "./ShelvesScreen";
 
 /*
- * Movies, Series and Anime on a TV (S02, S03 TV): the section's landing — the featured title with "More info",
+ * Movies, Series and Anime on a TV: the section's landing — the featured title with "More info",
  * "Watchlist", the whole list and the genres, then the section's Top 10 and shelves, as the site's landing — or, when
  * the address asks for it (filters, `view=all`), its grid (./GridScreen). Same data as the site's section pages.
  */
@@ -44,7 +44,7 @@ export async function SectionPage({
       serverApi<Paged<TitleSummary>>(`/api/catalog/discover?${query}&page=1`),
       null,
     );
-    // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11).
+    // A shelf's "All" page keeps its name and what it is for.
     const shelf = shelfHeading(get("shelf"), (k) => t(k as "rows.oneEvening"), genres, await getLocale());
     return (
       <GridScreen

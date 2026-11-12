@@ -30,7 +30,7 @@ const SECTIONS = [
 ] as const;
 
 /**
- * The Ф1 layers, states and behaviour in the showcase (redesign-plan Ф1, part 2). Menus, dialogs and confirmations
+ * The layers, states and behaviour in the showcase. Menus, dialogs and confirmations
  * open inside the showcase, so they take its theme; live toasts use the site's one queue (and theme), their look in
  * both themes is drawn statically.
  */

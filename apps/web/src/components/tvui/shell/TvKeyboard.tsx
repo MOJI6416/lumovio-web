@@ -21,7 +21,7 @@ const LATIN = "abcdefghijklmnopqrstuvwxyz";
 const DIGITS = "1234567890";
 
 /**
- * Typing on a TV (design-system 10.3 "Поиск"): a real field — OK on it opens the TV's own keyboard, Enter there is
+ * Typing on a TV: a real field — OK on it opens the TV's own keyboard, Enter there is
  * `onSubmit` — and the on-screen keyboard under it: the interface language's alphabet, Latin, digits, space, ⌫,
  * clear. Text typed on the phone remote (tvui/shell/TvEvents) replaces the field's. Zones "query", "keyboard", "keys".
  * The search screen's and the sources screen's query.

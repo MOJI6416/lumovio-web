@@ -5,8 +5,8 @@ const CODE = `(function(){try{var m=document.cookie.match(/(?:^|; )lumovio_theme
 
 /**
  * The first-paint theme script, in the server's HTML only. React never runs a script it renders in the browser, and
- * says so in the console whenever it renders one there — on a 404 or an error page, which the browser renders anew
- * (audit SH-14). Hydrating <head>, React skips the server's node that has no counterpart here. It carries the page's
+ * says so in the console whenever it renders one there — on a 404 or an error page, which the browser
+ * renders anew. Hydrating <head>, React skips the server's node that has no counterpart here. It carries the page's
  * nonce: the site's Content-Security-Policy runs no inline script without it (proxy.ts).
  */
 export function ThemeScript({ nonce }: { nonce?: string }) {

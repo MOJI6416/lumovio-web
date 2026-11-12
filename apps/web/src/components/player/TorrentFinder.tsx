@@ -7,7 +7,7 @@ import type { FinderProps } from "./finder";
 export type { FinderPick, FinderStart } from "./finder";
 
 /*
- * "Through TorrServer" on the sources screen (design-system 7.15 «Экран источников», S26; SRC-07…SRC-13): the
+ * "Through TorrServer" on the sources screen: the
  * profile's own indexers searched through its own TorrServer, straight from this device (Lumovio's servers never
  * search, store or relay torrents). The screen itself is sources/ReleaseFinder, a chunk of its own: playing a copy
  * never loads it, and it is fetched while the page is idle, so "Another source" finds it ready.

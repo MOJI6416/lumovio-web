@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaNetError } from "../src/lib/media/net";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
 
-// Adding a search result to a TorrServer (docs/torrserver-2026-11.md, finding 28): a torrent that is already on the server
+// Adding a search result to a TorrServer: a torrent that is already on the server
 // is linked, never renamed or marked; only a torrent the add brought gets the release's name and Lumovio's mark. The
 // server and the API are fakes; which calls are made, in which order, is the point.
 

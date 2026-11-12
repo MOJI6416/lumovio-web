@@ -16,7 +16,7 @@ const JobReview = lazy(() => import("./ImportJob").then((m) => ({ default: m.Job
 const SourceDialog = lazy(() => import("./SourceDialog").then((m) => ({ default: m.SourceDialog })));
 
 /**
- * Import history (S13, Tool template; design-system 9 «Импорт»). The sources as tiles — the service's mark and its
+ * Import history (the Tool template). The sources as tiles — the service's mark and its
  * name, nothing technical; a tile opens the source's window over the page (Dialog, a sheet on a phone): sign in to
  * Trakt or Simkl to keep in sync, or the export's page, the profile and "Choose file" — what to do is on the screen
  * where it is tapped, not under ten tiles. The source is in the address (`?source=`, replaced: Back leaves the page,
@@ -26,7 +26,7 @@ export function ImportWizard() {
   const t = useTranslations("import");
   const locale = useLocale();
   const params = useSearchParams();
-  // An import has its own address (IMP-04), so Back returns to the list; Trakt/Simkl settings link straight to one.
+  // An import has its own address, so Back returns to the list; Trakt/Simkl settings link straight to one.
   const jobId = params.get("job");
   const sources = useQuery({ queryKey: ["import-sources"], queryFn: () => api<{ sources: ImportSourceInfo[] }>("/api/imports/sources") });
   const history = useQuery({ queryKey: ["imports"], queryFn: () => api<{ jobs: ImportJob[] }>("/api/imports") });
@@ -103,7 +103,7 @@ export function ImportWizard() {
                   className="-mx-2 flex items-center gap-3 rounded-sm px-2 py-2 transition-colors duration-fast ease-fast hover:bg-surface-1 md:gap-4"
                 >
                   <SourceLogo source={j.source} />
-                  {/* Wraps on a phone rather than cutting the profile's name (IMP-07). */}
+                  {/* Wraps on a phone rather than cutting the profile's name. */}
                   <span className="min-w-0 flex-1">
                     <span className="block text-title text-text-1 wrap-anywhere">
                       <JobName job={j} />

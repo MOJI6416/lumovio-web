@@ -7,10 +7,10 @@ import { tmdbImage } from "@/lib/images";
 import { CardMeta } from "./CardMeta";
 
 /**
- * List card (design-system 7.12): a 2×2 collage of the list's first posters on --surface-2 (the list icon when it is
- * empty), the list's name and "12 titles · Only me" under it — one look for lists in the library and on a profile
- * (X-19). Where it comes from and the person's part in it are kept apart (LIB-13): a followed list carries the source's
- * name as its one badge on the art ("MDBList"), a smart list "Smart" (package F); the line says who sees it for the owner's own lists, the person's role
+ * List card: a 2×2 collage of the list's first posters on --surface-2 (the list icon when it is
+ * empty), the list's name and "12 titles · Only me" under it — one look for lists in the library and on a
+ * profile. Where it comes from and the person's part in it are kept apart: a followed list carries the source's
+ * name as its one badge on the art ("MDBList"), a smart list "Smart"; the line says who sees it for the owner's own lists, the person's role
  * in someone else's ("Editor"); a public profile's page shows the count only (`plain`). The width comes from the grid or shelf around
  * it (a poster card's, ./card-sizes). Works in server components.
  */

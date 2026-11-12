@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Link, usePathname } from "@/i18n/navigation";
 
 /*
- * One way in for a guest (design-system 8.6, audit AUTH-02): whatever needs an account — a personal action on a title,
+ * One way in for a guest: whatever needs an account — a personal action on a title,
  * playback, describing a film in words, a closed list, an invitation — says what it was for, offers "Sign in" and
  * "Create account", and brings the person back to the same page. A personal action on a title is remembered on this
  * device (GuestIntent) and done once they are back on that title signed in.
@@ -68,7 +68,7 @@ const textKey = (r: GateReason) => (PERSONAL.has(r) ? "personal" : r);
 
 /**
  * "Sign in" and "Create account", back to this page. `lead` is the main one (primary): "Sign in" where something was
- * asked for, "Create account" in the home page's welcome. In a dialog the main action is last, on the right (7.1); in
+ * asked for, "Create account" in the home page's welcome. In a dialog the main action is last, on the right; in
  * a page or a panel it comes first.
  */
 export function GuestGateLinks({
@@ -103,7 +103,7 @@ export function GuestGateLinks({
   return <>{inDialog ? [other, main] : [main, other]}</>;
 }
 
-/** Examples of a description, so a guest sees what "describe it" means before signing in (SRCH-03). */
+/** Examples of a description, so a guest sees what "describe it" means before signing in. */
 function AiExamples() {
   const t = useTranslations("shell.gate");
   return (
@@ -123,7 +123,7 @@ function AiExamples() {
 /**
  * The sign-in sheet (a dialog on a tablet and desktop): open it where a guest presses something that needs an account.
  * `intent` — a title action to finish after signing in; `next` — where to return (this page by default). The title says
- * what it is for; its explanation is the layer's description for a screen reader only (no visible explanations, 1.2).
+ * what it is for; its explanation is the layer's description for a screen reader only (no visible explanations).
  */
 export function GuestGate({
   open,
@@ -161,7 +161,7 @@ export function GuestGate({
 }
 
 /**
- * The same invitation inside a page's section (AI search; design-system 7.11 "Доступ"): the state's layout with the
+ * The same invitation inside a page's section (AI search): the state's layout with the
  * reason as the question, "Sign in" and "Create account"; what comes after is for a screen reader. A whole page that
  * needs an account is library/SignInColumn.
  */

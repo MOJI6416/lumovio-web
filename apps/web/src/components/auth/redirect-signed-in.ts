@@ -8,7 +8,7 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 
 /**
  * Someone already signed in who opens sign-in, sign-up or "forgot password" goes on into the product — to `next`, or
- * the home page (design-system 8.6, audit SH-04) — instead of signing in a second time. An API that doesn't answer
+ * the home page — instead of signing in a second time. An API that doesn't answer
  * leaves the form: whether there is a session can't be told then.
  */
 export async function redirectSignedIn(searchParams: Search) {

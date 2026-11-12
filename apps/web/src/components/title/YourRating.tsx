@@ -14,11 +14,11 @@ import { setRateOpen, useRateOpen } from "./rate-open";
 const TitleRate = dynamic(() => import("./TitleRate").then((m) => m.TitleRate), { ssr: false });
 
 /**
- * The profile's own rating, beside the title's ratings in the hero (design-system 7.14, 8.1; 2026-11-06, as IMDb and
+ * The profile's own rating, beside the title's ratings in the hero (as IMDb and
  * Letterboxd put "your rating" by the average): "★ Rate", or the filled star and the number once rated — seen without
  * opening a menu. A press opens the 1–10 dialog (./TitleRate, a sheet on a phone) with "Remove rating"; a guest gets the
  * sign-in sheet, and the dialog after signing in. The star fills and clicks when the server has saved a new rating
- * (ActionMark, 6.3.1); one given before is a still filled star.
+ * (ActionMark); one given before is a still filled star.
  */
 export function YourRating({ title: d }: { title: TitleCore }) {
   const t = useTranslations("titlePage");

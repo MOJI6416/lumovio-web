@@ -15,7 +15,7 @@ import { Ratings } from "./Ratings";
 import { TitleActions } from "./TitleActions";
 
 /*
- * A title on a TV (S06, S07 TV; TV document §4 "Страница тайтла"): its art over the whole screen, the name (logo), the
+ * A title on a TV: its art over the whole screen, the name (logo), the
  * main ratings and facts, the description and the actions at the top, where the screen starts — on the main button;
  * below, one zone at a time: the seasons and episodes of a series, more like it, the cast. The page slides so the
  * focused zone is in view (`nearest`); ↑ from the first zone below goes back to the actions.
@@ -45,7 +45,7 @@ export function TitleScreen({
           src={backdrop}
           alt=""
           fetchPriority="high"
-          // The site's rule (design-system 7.14): a whole 16:9 picture on the end side, never cut across.
+          // The site's rule: a whole 16:9 picture on the end side, never cut across.
           className="pointer-events-none absolute end-0 top-0 aspect-video w-4/5 object-cover object-top"
         />
       )}

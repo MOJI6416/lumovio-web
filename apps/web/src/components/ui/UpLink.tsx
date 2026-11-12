@@ -5,7 +5,7 @@ import { useGoUp } from "@/hooks/useGoUp";
 import { Link as IntlLink } from "@/i18n/navigation";
 
 /**
- * A link to the page above this one ("‹ Settings", 8.7): a plain click goes up without a new history entry (useGoUp);
+ * A link to the page above this one ("‹ Settings"): a plain click goes up without a new history entry (useGoUp);
  * a click that opens a new tab or window stays a link.
  */
 export function UpLink({ href, onClick, ...rest }: Omit<ComponentProps<typeof IntlLink>, "href"> & { href: string }) {

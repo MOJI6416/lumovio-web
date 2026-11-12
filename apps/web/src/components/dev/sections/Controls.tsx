@@ -25,7 +25,7 @@ const SECTIONS = [
 ] as const;
 
 /**
- * The Ф1 control primitives in the showcase (redesign-plan Ф1, part 1). Lists and popovers open in a layer that
+ * The control primitives in the showcase. Lists and popovers open in a layer that
  * carries the showcase's theme, so they follow its theme switch rather than the site's. The layer sits outside the
  * showcase's TV zoom (zoom would misplace them); real TV mode scales them with the root size.
  */

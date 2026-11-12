@@ -4,7 +4,7 @@ import { createElement, type ReactNode } from "react";
 import { latinLang } from "@/lib/format";
 
 /*
- * What personal shelves and their cards say about themselves (design-system 2.5, 7.12): a shelf's heading, a card's
+ * What personal shelves and their cards say about themselves: a shelf's heading, a card's
  * one line ("Similar to «Frieren»", "Directed by …") and the lines of "Why this?" — only facts the API's reason
  * confirms (recommendations/rank.ts reasonOf). Each takes the `rows` translator.
  */
@@ -25,7 +25,7 @@ const names = (ids: number[], byId: Map<number, string>, max = 2) =>
 
 /**
  * `text` with a person's `name` in it marked with its language when the name is in Latin letters on a page in another
- * script ("Режиссёр: <span lang="en">Michael Mann</span>", 8.11) — the API names people in the profile's language
+ * script ("Режиссёр: <span lang="en">Michael Mann</span>") — the API names people in the profile's language
  * when TMDB has such a name; the text as it is otherwise.
  */
 export function withNameLang(text: string, name: string, locale: string): ReactNode {
@@ -35,7 +35,7 @@ export function withNameLang(text: string, name: string, locale: string): ReactN
   return [text.slice(0, at), createElement("span", { key: "n", lang }, name), text.slice(at + name.length)];
 }
 
-/** A "Because you …" heading by what the profile did with the title (HOME-16): watched, watches, rated, liked, kept. */
+/** A "Because you …" heading by what the profile did with the title: watched, watches, rated, liked, kept. */
 const BECAUSE_TITLE: Partial<Record<RecommendationSeed["signal"], "becauseWatchingTitle" | "becauseRatedTitle" | "becauseLikedTitle" | "becauseFavoriteTitle">> = {
   progress: "becauseWatchingTitle",
   rating: "becauseRatedTitle",
@@ -66,7 +66,7 @@ export function shelfNote(t: T, s: RecommendationShelf, byId: Map<number, string
 
 /**
  * A "For you" card's one line: where it comes from. A genre is said one way, "Your genre: drama", whether a genre the
- * profile picked or its taste led there; a new title says it is new, "New in drama" (HOME-17).
+ * profile picked or its taste led there; a new title says it is new, "New in drama".
  */
 export function reasonLine(t: T, r: RecommendationReason, byId: Map<number, string>): string {
   // One line under the card: one genre.

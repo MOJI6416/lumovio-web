@@ -10,7 +10,7 @@ import { focusBack, isLayerBackKey, rememberLayerTrigger, useOpenState, usePhone
 import { useOnStage, usePortalContainer } from "./portal";
 
 /*
- * Menu (design-system 7.8): one look for every menu — "More" on a card or a title, the account menu, a server row.
+ * Menu: one look for every menu — "More" on a card or a title, the account menu, a server row.
  * Radix DropdownMenu on a tablet and desktop (arrows, typeahead, Escape, focus back to the trigger); on a phone the
  * same items open as a bottom sheet with 52 px rows. Destructive items go last, after a MenuSeparator,
  * with `tone="danger"`. An item that switches a state is a MenuCheckboxItem (a check on the end shows it).
@@ -19,7 +19,7 @@ import { useOnStage, usePortalContainer } from "./portal";
 type Mode = { sheet: false } | { sheet: true; close: () => void };
 const MenuMode = createContext<Mode>({ sheet: false });
 
-// 40 px rows (on TV 66), the icon in --text-2; the ring of the keyboard and remote sits inside the row (10.3).
+// 40 px rows (on TV 66), the icon in --text-2; the ring of the keyboard and remote sits inside the row.
 const ITEM =
   "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-surface-3 data-disabled:cursor-not-allowed data-disabled:opacity-40 in-data-[tv=1]:min-h-12";
 const SHEET_ITEM =
@@ -40,7 +40,7 @@ export interface MenuProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /**
-   * A panel rather than a list (the account menu, "Language and theme"; 7.19): 320 wide with the dialogs' radius and
+   * A panel rather than a list (the account menu, "Language and theme"): 320 wide with the dialogs' radius and
    * room inside, for faces (MenuFaces) and rows without icons.
    */
   panel?: boolean;
@@ -61,7 +61,7 @@ export function Menu({
   const [open, setOpen] = useOpenState(openProp, onOpenChange);
   const container = usePortalContainer();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  // Opened from a stage (the player, a hero): the menu is dark there in either theme (3.5).
+  // Opened from a stage (the player, a hero): the menu is dark there in either theme.
   const stage = useOnStage(open && !phone, triggerRef);
   if (phone) {
     return (
@@ -133,9 +133,9 @@ function ItemContent({
 }
 
 export interface MenuItemProps {
-  /** A 6.4 icon (20 px). */
+  /** An icon (20 px). */
   icon?: LucideIcon;
-  /** In the icon's place, something that is not an icon: a profile's avatar (the account menu, 7.19). */
+  /** In the icon's place, something that is not an icon: a profile's avatar (the account menu). */
   lead?: ReactNode;
   children: ReactNode;
   /** After the label, at the row's end: a tag, a lock. */
@@ -250,13 +250,13 @@ export function MenuCheckboxItem({
   );
 }
 
-/** A group heading inside a menu (sentence case, no capitals: 2.2). */
+/** A group heading inside a menu (sentence case, no capitals). */
 export function MenuLabel({ children }: { children: ReactNode }) {
   const mode = useContext(MenuMode);
   return mode.sheet ? <p className={LABEL}>{children}</p> : <DM.Label className={LABEL}>{children}</DM.Label>;
 }
 
-/** `quiet`: groups apart by space alone, no line (a panel's groups, 7.19). */
+/** `quiet`: groups apart by space alone, no line (a panel's groups). */
 export function MenuSeparator({ quiet = false }: { quiet?: boolean }) {
   const mode = useContext(MenuMode);
   if (quiet) return mode.sheet ? <hr className="my-1.5 h-0 border-0" /> : <DM.Separator className="h-2" />;
@@ -268,8 +268,8 @@ export function MenuSeparator({ quiet = false }: { quiet?: boolean }) {
 }
 
 /**
- * Profiles as faces, up to four in a row and centred as "Who's watching?" centres them (7.17): one profile or a kids
- * profile's single face stands in the middle, not alone at the start (the account menu, 7.19).
+ * Profiles as faces, up to four in a row and centred as "Who's watching?" centres them: one profile or a kids
+ * profile's single face stands in the middle, not alone at the start (the account menu).
  */
 export function MenuFaces({ label, children }: { label: string; children: ReactNode }) {
   const mode = useContext(MenuMode);

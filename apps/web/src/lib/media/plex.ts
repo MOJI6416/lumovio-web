@@ -182,7 +182,7 @@ export function plexClient(serverUrl: string, serverToken: string, opts: { syncP
       return entries;
     },
     /**
-     * What the Plex account has played on this server (Import history, C134; built from Plex's documentation, not
+     * What the Plex account has played on this server (Import history; built from Plex's documentation, not
      * checked against a real server): films and episodes with a view count, with the last time played; an episode with
      * its show's name, year and ids.
      */

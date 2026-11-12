@@ -12,11 +12,11 @@ export interface Segment<V extends string> {
 }
 
 /**
- * A mode switch inside a component, 2–4 short options (design-system 7.5): "Titles / Describe", years in the
+ * A mode switch inside a component, 2–4 short options: "Titles / Describe", years in the
  * statistics. A radio group: one tab stop, arrows move and choose at once. Not for page sections (Tabs) and not for
  * filters (FilterChip). All segments are as wide as the widest, so nothing shifts when the choice changes; where that
  * doesn't fit (a phone, a long language), each keeps the width of its own label instead — labels are never cut or
- * wrapped (8.11), the layout changes. The control is never wider than its container; a row that holds it next to
+ * wrapped, the layout changes. The control is never wider than its container; a row that holds it next to
  * other things wraps.
  *
  * Track 36 px (40 on a phone); on a phone each segment's hit area is 44 px and overlaps the track's edge.
@@ -80,7 +80,7 @@ export function SegmentedControl<V extends string>({
               className={cn(
                 "flex h-full w-full items-center justify-center whitespace-nowrap rounded-full px-3.5 text-body-s font-semibold transition-colors duration-base ease-base max-sm:h-9",
                 groupFocusRing,
-                // A pill like the header's sections and the buttons (redesign-2026-11.md 4): a light fill on dark, a white
+                // A pill like the header's sections and the buttons: a light fill on dark, a white
                 // segment with a shadow on light.
                 on
                   ? "bg-text-1/14 text-text-1 in-data-[theme=light]:bg-surface-1 in-data-[theme=light]:shadow-float"

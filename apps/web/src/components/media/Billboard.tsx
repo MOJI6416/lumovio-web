@@ -24,9 +24,9 @@ const WAIT_MS = 2500;
 const SWIPE_PX = 48;
 
 /**
- * The billboard of the home page and the catalog sections (design-system 7.14): full-bleed artwork on the stage (3.5,
- * dark in either theme), the title's logo or name, one metadata line (rating · year · type · genres), three lines of
- * overview (not on a phone), and the actions of 8.2 (./HeroActions: "Watch" where a copy plays, else "More info", HOME-02).
+ * The billboard of the home page and the catalog sections: full-bleed artwork on the stage (dark in either
+ * theme), the title's logo or name, one metadata line (rating · year · type · genres), three lines of
+ * overview (not on a phone), and the actions (./HeroActions: "Watch" where a copy plays, else "More info").
  *
  * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab or the billboard scrolled mostly
  * away hold the current one where it is (its time and its timer are kept), and reduced motion turns it off. A slide
@@ -34,31 +34,31 @@ const SWIPE_PX = 48;
  * comes back and stays: the rotation stops. A new slide
  * fades in over the old one, which stays whole under it (no dip to the stage between two pictures), and only once its
  * art has loaded (at most 2.5 s on a slow network): the neighbours' art is fetched after the page has loaded, every
- * slide's once a pointer or focus reaches the billboard (2026-11-08). The dots sit at the end of the actions' row, the
+ * slide's once a pointer or focus reaches the billboard. The dots sit at the end of the actions' row, the
  * shown slide's one a capsule filling with its time (full once the rotation stops), 44 px to tap on a phone; they are
- * one Tab stop, ←/→ move between slides. No pause button on view (owner, 2026-11-12): the toggle is there for the
+ * one Tab stop, ←/→ move between slides. No pause button on view: the toggle is there for the
  * keyboard and a screen reader, seen while it has focus (WCAG 2.2.2).
  *
  * The art and the title open the title's page (the largest thing on the screen does what "More info" does; the button
  * stays the keyboard's way there), and a finger swiped or a mouse dragged sideways over it turns the slide (a mouse on
- * the art and the text, not on the buttons; owner, 2026-11-12).
+ * the art and the text, not on the buttons).
  *
- * The art is never cut across (7.14, 2026-11-08). A phone, a portrait tablet or a squarish window: a band of art under
+ * The art is never cut across. A phone, a portrait tablet or a squarish window: a band of art under
  * the header (2:1 on a phone, 16:9 from sm), the text and buttons under it on the stage, so the next shelf starts in
  * the first screen. From md on a screen no taller than 5:4 the art is a whole 16:9 picture on the end side, 80 % of the
  * width, with the text on the stage before it, and the billboard is 88 % of the screen in the dark theme, where the
  * first shelf comes up onto it, and 72 % in the light one, where the stage ends with an even edge: the first shelf is in
- * the first screen in either (2026-11-06; it was under the fold in the light theme). `under="header"` (home) puts the stage under the
+ * the first screen in either. `under="header"` (home) puts the stage under the
  * transparent header and marks the page as opening on art (`data-hero`). `section` (a catalog section) is the same
  * billboard inside the section's stage, which lies under the header and lays the section's name and controls over the
- * top of the art (browse/SectionLanding, 2026-10-25): its top scrim is deeper for them, and on a phone or a portrait
+ * top of the art (browse/SectionLanding): its top scrim is deeper for them, and on a phone or a portrait
  * tablet its band of art starts under the header and is taller, with room for them over it.
  */
 export function Billboard({ items, genres, under = "header" }: { items: FeaturedTitle[]; genres: Genre[]; under?: "header" | "section" }) {
   const t = useTranslations();
   const locale = useLocale();
   // The slide shown and the one before it, which stays drawn under the new one while that fades in (a cross-fade,
-  // not a dip to the stage between two pictures: the outgoing art used to leave at once, 2026-11-08).
+  // not a dip to the stage between two pictures: the outgoing art used to leave at once).
   const [{ index, prev }, setSlide] = useState<{ index: number; prev: number | null }>({ index: 0, prev: null });
   // A slide asked for whose art hasn't loaded yet: shown once it has (or after WAIT_MS), never as an empty frame.
   const [pending, setPending] = useState<number | null>(null);
@@ -258,13 +258,13 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
         // Home: under the transparent header; a band of art starts below it. A section: its stage is under it.
         hero && "-mt-16 art-band:pt-16",
         // At least 88 % of the screen; taller when the text needs it (a phone held sideways, a two-line logo) — it never
-        // goes up under the header or the section's own row (owner, 2026-10-30). The home's light theme: 72 %, so the
+        // goes up under the header or the section's own row. The home's light theme: 72 %, so the
         // first shelf under the even edge is in the first screen too.
         "art-over:flex art-over:min-h-[max(88svh,37.5rem)] art-over:flex-col",
         hero && "art-over:in-data-[theme=light]:min-h-[max(72svh,34rem)]",
       )}
     >
-      {/* The art (7.14), never cut across: a band in the flow — 2:1 on a phone, 16:9 from sm — on a phone, a portrait
+      {/* The art, never cut across: a band in the flow — 2:1 on a phone, 16:9 from sm — on a phone, a portrait
           tablet or a squarish window; from md on a screen no taller than 5:4, a whole 16:9 picture on the end side, 80 %
           of the billboard's width, its start edge and foot dissolving into the stage the text stands on. It opens the
           title (the keyboard's way there is "More info"). */}
@@ -277,8 +277,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
         className={clsx(
           "relative -z-20 block aspect-2/1 art-band:sm:aspect-video",
           "art-over:absolute art-over:end-0 art-over:top-0 art-over:aspect-video art-over:w-4/5 art-over:mask-b-from-75% art-over:ltr:mask-l-from-70% art-over:rtl:mask-r-from-70%",
-          // A section's band is taller: its name and controls stand over its top (2026-10-25; the owner kept them over
-          // the art on 2026-11-08, when they stood above it for a try).
+          // A section's band is taller: its name and controls stand over its top.
           // Its height and width are set, so a ratio (16:9 from sm) can't widen the band past the screen.
           section && "art-band:aspect-auto art-band:h-[calc(4rem+62.5vw)] art-band:w-full",
         )}
@@ -319,7 +318,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
         <div aria-hidden className="absolute inset-x-0 bottom-0 z-2 h-1/3 bg-linear-to-t from-stage to-transparent art-over:hidden" />
       </Link>
       {/* Scrims: header legibility, the text column (--scrim-start: what keeps a logo or a name legible, with no glow
-          around it), and the hand-off into the page. Always dark over artwork (3.5). */}
+          around it), and the hand-off into the page. Always dark over artwork. */}
       {/* The scrims and the text column let a press through to the art; the title and the controls take their own. */}
       {hero && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-linear-to-b from-stage/70 to-transparent art-band:hidden" />}
       {/* A section's name and controls over the top of the art: a deep scrim over a band; beside a 16:9 picture they stand
@@ -332,7 +331,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
         />
       )}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-r from-stage/92 via-stage/55 via-45% to-transparent to-75% art-band:hidden rtl:bg-linear-to-l" />
-      {/* Dark theme: into the page, where the first shelf comes up onto it; light theme: an even dark edge (3.5, X-27). */}
+      {/* Dark theme: into the page, where the first shelf comes up onto it; light theme: an even dark edge. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-t from-bg via-stage/55 to-transparent art-band:hidden in-data-[theme=light]:from-stage" />
 
       <div
@@ -348,7 +347,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
             {/* The title opens its page, as the art does (no Tab stop of its own: "More info" is it). */}
             {item.logo ? (
               <h2 className="w-full">
-                {/* A wide logo can be under 44 tall on a phone: padding, then the same negative margin (5.6). */}
+                {/* A wide logo can be under 44 tall on a phone: padding, then the same negative margin. */}
                 <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto -my-1.5 block rounded-sm py-1.5">
                   <TitleLogo
                     logo={item.logo}
@@ -365,7 +364,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
               </h2>
             ) : (
               <h2 className="text-balance text-display">
-                {/* At least 44 tall without moving the line (5.6: padding, then the same negative margin). */}
+                {/* At least 44 tall without moving the line (padding, then the same negative margin). */}
                 <Link href={href} tabIndex={-1} draggable={false} className="pointer-events-auto -my-1 inline-block rounded-sm py-1">
                   {item.title}
                 </Link>
@@ -397,7 +396,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
           </div>
 
           {items.length > 1 && (
-            // Centred under the centred text and buttons on a phone, bottom right next to them from md, on their middle (7.14).
+            // Centred under the centred text and buttons on a phone, bottom right next to them from md, on their middle.
             <div className="pointer-events-auto flex items-center justify-center md:h-12 md:shrink-0 md:justify-end">
               {!reduced && (
                 <IconButton
@@ -419,9 +418,9 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                 {items.map((f, i) => {
                   const on = i === index;
                   return (
-                    // A dot of the carousel, not an action of its own: no Button look (explained exception, 7.14). The
+                    // A dot of the carousel, not an action of its own: no Button look (an explained exception). The
                     // shown slide's dot widens into a capsule and its neighbours move aside, the gaps stay even.
-                    <button /* ui-lint-ignore raw-button: a dot of the carousel, 7.14 */
+                    <button /* ui-lint-ignore raw-button: a dot of the carousel */
                       key={f.id}
                       ref={(el) => {
                         segments.current[i] = el;

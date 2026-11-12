@@ -9,8 +9,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 /**
- * What every page shows while the owner has maintenance on (Admin → Management → Settings); the admin keeps working.
- * The page state of 7.11 under the logo where the header has it (as the offline page): what is going on, "Retry" that
+ * What every page shows while an admin has maintenance on (Admin → Management → Settings); the admin keeps working.
+ * The page state under the logo where the header has it (as the offline page): what is going on, "Retry" that
  * opens the same address again, "back in a few minutes" for a screen reader.
  */
 export default async function MaintenancePage({ params }: { params: Promise<{ locale: string }> }) {

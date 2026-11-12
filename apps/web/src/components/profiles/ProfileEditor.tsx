@@ -74,9 +74,9 @@ function PinInput(props: { id: string; describedBy?: string; invalid: boolean; v
 }
 
 /**
- * A profile's page in Manage profiles (design-system 7.17, 7.18; audit PRF-07…PRF-09, PRF-13): its face and name on
+ * A profile's page in Manage profiles: its face and name on
  * top, then rows as the settings have them. The face changes there: "Choose photo" → "Move and scale" → "Done" keeps
- * it, "Remove photo" takes it off (Undo in the toast), a colour applies at once — nothing waits for a "Save" (8.8).
+ * it, "Remove photo" takes it off (Undo in the toast), a colour applies at once — nothing waits for a "Save".
  * Rows: Name › and PIN › (each a dialog-form), the catalog (age level, anime), language and region — an adult sets
  * them for any profile, a kids one included — and "Delete profile" last, red, with what goes with it.
  */
@@ -95,7 +95,7 @@ export function EditView({
   /** The session's own profile: a new interface language switches the page to it, as in the settings. */
   current: boolean;
   backHref: string;
-  /** Opened by "Set PIN" (8.10): its PIN dialog opens at once. */
+  /** Opened by "Set PIN": its PIN dialog opens at once. */
   focusPin: boolean;
   onPinShown: () => void;
   onChange: (p: Profile) => void;
@@ -129,7 +129,7 @@ export function EditView({
   const photoButton = useRef<HTMLButtonElement>(null);
   const uploading = face.state.status === "saving" && preview !== null;
 
-  /** A change applied at once (8.8): shown before the answer, put back if it fails, "Saved" by the group. */
+  /** A change applied at once: shown before the answer, put back if it fails, "Saved" by the group. */
   const patch = (save: typeof face.save, body: Partial<Profile>) =>
     save(
       () => api<Profile>(`/api/profiles/${p.id}`, { method: "PATCH", json: body }).then(onChange),
@@ -172,7 +172,8 @@ export function EditView({
 
   return (
     <div className="mx-auto w-full max-w-xl text-start">
-      {/* "‹ Manage profiles" as a page's head has it (PageHeader, 8.7), over the face rather than beside a title. */}
+      {/* "‹ Manage profiles" as a page's head has it (PageHeader), over the face rather than beside a
+          title. */}
       <UpLink
         href={backHref}
         className="-ms-1 inline-flex min-h-11 w-fit items-center gap-1 pe-2 text-body-s font-semibold text-text-2 transition-colors duration-fast ease-fast hover:text-text-1 sm:min-h-8"
@@ -230,7 +231,7 @@ export function EditView({
           </p>
         )}
         {!shownPhoto && (
-          // Without a photo, the colour of the letter: a radio group, a colour another profile has says so (X-21).
+          // Without a photo, the colour of the letter: a radio group, a colour another profile has says so.
           <fieldset className="mt-6 w-full">
             <legend className="sr-only">{t("avatarColor")}</legend>
             <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
@@ -269,7 +270,7 @@ export function EditView({
               options={maturities.map((m) => ({ value: m, label: t(`maturity_${m}`) }))}
             />
           </SettingsRow>
-          {/* An adult sets it for any profile; a kids one doesn't change it itself (8.14). */}
+          {/* An adult sets it for any profile; a kids one doesn't change it itself. */}
           <SettingsRow label={t("anime")} description={t("animeHint")} htmlFor={`${ids}-anime`}>
             <Switch id={`${ids}-anime`} hideLabel label={t("anime")} checked={p.showAnime} onCheckedChange={(showAnime) => void patch(catalog.save, { showAnime })} />
           </SettingsRow>
@@ -284,7 +285,7 @@ export function EditView({
               value={p.uiLocale ?? AUTO}
               onValueChange={async (v) => {
                 const next = v === AUTO ? null : v;
-                // The session's own profile: the site follows its language as soon as it is saved (L10N-06).
+                // The session's own profile: the site follows its language as soon as it is saved.
                 if ((await patch(langs.save, { uiLocale: next })) && current && next && next !== locale)
                   router.replace(`/profiles${window.location.search}`, { locale: next as never });
               }}
@@ -301,7 +302,7 @@ export function EditView({
               options={options.metadata}
             />
           </SettingsRow>
-          {/* An adult sets the region of any profile: a kids profile can't change it itself (PRF-13). */}
+          {/* An adult sets the region of any profile: a kids profile can't change it itself. */}
           <SettingsRow label={t("region")} description={kids ? t("regionKidsHint") : t("regionHint")} htmlFor={`${ids}-region`}>
             <Combobox
               id={`${ids}-region`}
@@ -315,7 +316,7 @@ export function EditView({
         </SettingsSection>
 
         {profiles.length > 1 && (
-          // The risky one last, red, with what goes with it (7.18); it always asks.
+          // The risky one last, red, with what goes with it; it always asks.
           <SettingsSection>
             <SettingsLink tone="danger" label={t("deleteProfile")} detail={t("deleteConfirm")} onClick={() => setDialog("delete")} />
           </SettingsSection>
@@ -364,7 +365,7 @@ export function EditView({
   );
 }
 
-/** "Name" (8.8: a text field is a dialog-form): the field, "Save" — off until the name changes — and "Cancel". */
+/** "Name" (a text field is a dialog-form): the field, "Save" — off until the name changes — and "Cancel". */
 function NameDialog({ profile, onClose, onSaved }: { profile: Profile; onClose: () => void; onSaved: (p: Profile) => void }) {
   const t = useTranslations("profiles");
   const tc = useTranslations("common");
@@ -420,7 +421,7 @@ function NameDialog({ profile, onClose, onSaved }: { profile: Profile; onClose: 
 }
 
 /**
- * "PIN" (8.8, 8.10): without one — the new PIN and "Set PIN"; with one — the current PIN, a new one and "Change PIN",
+ * "PIN": without one — the new PIN and "Set PIN"; with one — the current PIN, a new one and "Change PIN",
  * or the red row "Remove PIN" with the current PIN alone. A wrong current PIN is said at its field and the dialog stays.
  */
 function PinDialog({
@@ -500,8 +501,8 @@ function PinDialog({
           )}
         </Field>
         {has && (
-          // At most two buttons at the bottom of a dialog (7.18): taking the PIN off is the risky row, red, with what it
-          // does; it needs the current PIN above, as changing it does.
+          // At most two buttons at the bottom of a dialog: taking the PIN off is the risky row, red,
+          // with what it does; it needs the current PIN above, as changing it does.
           <SettingsSection raised>
             <SettingsLink tone="danger" label={t("removePin")} detail={t("pinRemoveDetail")} disabled={busy !== null} onClick={() => void submit(true)} />
           </SettingsSection>
@@ -521,7 +522,7 @@ function PinDialog({
 }
 
 /**
- * «Delete profile "Anya"?» (7.9, PRF-07): what goes with it, the PIN field when the profile has one, "Cancel" and a red
+ * «Delete profile "Anya"?»: what goes with it, the PIN field when the profile has one, "Cancel" and a red
  * "Delete profile". A wrong PIN is said at the field and the dialog stays.
  */
 function DeleteProfile({ profile, onCancel, onDeleted }: { profile: Profile; onCancel: () => void; onDeleted: () => void }) {

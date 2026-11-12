@@ -10,7 +10,7 @@ export async function generateMetadata() {
 
 /**
  * Any address the TV shell has no screen for — settings pages, import, the calendar, statistics, legal texts, the admin
- * panel — is continued on a phone or a computer (TV document §1: "ПК/телефон — настройка, ТВ — выбор и просмотр").
+ * panel — is continued on a phone or a computer: they are for setting up, the TV is for choosing and watching.
  */
 export default async function TvElsewherePage() {
   const t = await getTranslations("tvui");

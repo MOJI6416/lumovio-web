@@ -13,7 +13,7 @@ import { TvScroll } from "../nav/TvScroll";
 import { useTvNav } from "../nav/TvNav";
 
 /*
- * The featured title's actions on a TV screen of shelves (design-system 8.1, 8.2 on a TV): "More info" first — where
+ * The featured title's actions on a TV screen of shelves: "More info" first — where
  * the screen starts, the title page decides what plays —, the labelled "Watchlist"; a section adds its whole list and
  * its genres. One zone, ← → between them.
  */

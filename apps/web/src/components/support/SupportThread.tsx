@@ -24,7 +24,7 @@ interface Thread {
 }
 
 /**
- * One of the person's requests (admin handoff «Поддержка», «Мои обращения»): the messages — theirs and the support's —
+ * One of the person's requests: the messages — theirs and the support's —
  * and their answer; a closed one opens again when they answer.
  */
 export function SupportThread({ id, email }: { id: string; email: string }) {

@@ -15,7 +15,7 @@ const ListsTab = lazy(() => import("./ListsTab").then((m) => ({ default: m.Lists
 const ServersTab = lazy(() => import("./ServersTab").then((m) => ({ default: m.ServersTab })));
 
 /**
- * The library (S09): its screen of shelves, or one of its collections on a page of its own (`?tab=`, 8.7) — the page
+ * The library: its screen of shelves, or one of its collections on a page of its own (`?tab=`) — the page
  * (`app/…/library/page.tsx`) brings the heading, "← Library" over it on a collection's page.
  */
 export function LibraryView({ section }: { section: LibrarySection | null }) {

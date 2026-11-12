@@ -5,7 +5,7 @@ import { useState } from "react";
 import { BACKDROP_SIZES, fanartSrcSet } from "@/lib/images";
 
 /**
- * A Fanart.tv background for a title TMDB has no backdrop for, in the hero's art box as a TMDB backdrop is (7.14). If
+ * A Fanart.tv background for a title TMDB has no backdrop for, in the hero's art box as a TMDB backdrop is. If
  * it doesn't load it removes itself, and the poster layout underneath shows.
  */
 export function FanartBackdrop({ art }: { art: ArtImage }) {

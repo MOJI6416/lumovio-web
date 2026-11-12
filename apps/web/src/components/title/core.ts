@@ -39,7 +39,7 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
   };
 }
 
-/** A series that still gets new episodes: following it can say something (TTL-20). */
+/** A series that still gets new episodes: following it can say something. */
 export const isOngoing = (t: Pick<TitleDetails, "kind" | "status" | "nextEpisode">) =>
   t.kind === "tv" && (Boolean(t.nextEpisode) || (t.status !== null && OUT_STATUSES.has(t.status)));
 
@@ -58,7 +58,7 @@ export function resumable(p: TitleLibraryState["progress"] | undefined): p is No
 /**
  * The episode "Watch" starts a series with: where the profile is, the one after the last finished (the next season's
  * first after a season's last), else the first. `chosen`: a season picked in the title's "Episodes" — its first episode,
- * unless the profile is in that season (docs/torrserver-2026-11.md, 21: "changed the season, pressed Watch — the old one
+ * unless the profile is in that season (without it: "changed the season, pressed Watch — the old one
  * started").
  */
 export function startEpisode(t: Pick<TitleDetails, "seasons">, p: TitleLibraryState["progress"] | undefined, chosen: number | null = null): { season: number; episode: number } {
@@ -84,18 +84,18 @@ export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, 
   return `${base}?s=${season}&e=${episode}`;
 }
 
-/** The sources screen for the same viewing: other copies, a new search (never an empty player, 8.2). */
+/** The sources screen for the same viewing: other copies, a new search (never an empty player). */
 export const sourcesHref = (href: string, extra = "") => `${href}${href.includes("?") ? "&" : "?"}pick=1${extra}`;
 
 /**
- * The sections of a title's page that a link can open, each the id of its element (9, Title): the page was tabs until
- * 2026-11, and their links (`?tab=episodes` from the calendar, `#episodes` from a card's "Mark episodes", `?tab=watch`
+ * The sections of a title's page that a link can open, each the id of its element: older versions had tabs,
+ * and their links (`?tab=episodes` from the calendar, `#episodes` from a card's "Mark episodes", `?tab=watch`
  * from the player) land on the section of the same name.
  */
 export const TITLE_SECTIONS = ["episodes", "videos", "watch", "related", "people", "details"] as const;
 export type TitleSectionId = (typeof TITLE_SECTIONS)[number];
 
-/** TMDB names a collection "Dune Collection" / "Дюна (Коллекция)" / "Дюна (Колекція)": the name alone (TTL-16). */
+/** TMDB names a collection "Dune Collection" / "Дюна (Коллекция)" / "Дюна (Колекція)": the name alone. */
 export function collectionName(name: string): string {
   return name.replace(/\s*[(（]?\s*(collection|коллекция|колекція|kolekcja|sammlung)\s*[)）]?\s*$/iu, "").trim() || name;
 }

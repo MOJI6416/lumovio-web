@@ -30,7 +30,7 @@ export function SelectRadix<V extends string>({
   const container = usePortalContainer();
   const [open, setOpen] = useState(defaultOpen);
   const trigger = useRef<HTMLButtonElement>(null);
-  // Opened from a stage (the player's settings, the sources screen): the list is dark there too (3.5).
+  // Opened from a stage (the player's settings, the sources screen): the list is dark there too.
   const stage = useOnStage(open, trigger);
   return (
     <S.Root

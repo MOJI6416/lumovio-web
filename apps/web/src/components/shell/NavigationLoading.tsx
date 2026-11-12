@@ -25,7 +25,7 @@ const loaderDelay = () => {
 
 /**
  * Whether a tapped link's page has been prepared by the server for longer than --loader-delay — a link to another page;
- * one to this same page (filters, tabs, search parameters) keeps the page it changes (8.4). The loader and the header
+ * one to this same page (filters, tabs, search parameters) keeps the page it changes. The loader and the header
  * (which then leaves the old page's artwork for its plain look) follow it together.
  */
 export function useNavigationLoading() {
@@ -74,7 +74,7 @@ function useLate(pending: boolean) {
 }
 
 /**
- * While a tapped link's page is prepared by the server (design-system 6.3.1, 8.4): the loader in the page's place,
+ * While a tapped link's page is prepared by the server: the loader in the page's place,
  * under the header — after --loader-delay, so a quick page comes without it. The header can be used meanwhile. `tv`: the
  * TV shell's screens, beside its menu rail.
  */
@@ -87,7 +87,7 @@ export function NavigationLoading({ tv }: { tv?: boolean }) {
       aria-label={t("loading")}
       className={clsx(
         "fixed z-sticky grid animate-fade-in place-items-center bg-bg",
-        // The TV shell: the screen's place beside the menu rail (64 and more, 6.3.1); the site: under the header — on a
+        // The TV shell: the screen's place beside the menu rail (64 and more); the site: under the header — on a
         // phone from the top, as its header may have scrolled away (where it is still there, it lies over this).
         tv ? "inset-y-0 start-(--tv-rail) end-0" : "inset-x-0 top-0 bottom-0 md:top-(--header-h)",
       )}

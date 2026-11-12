@@ -1,5 +1,5 @@
 /*
- * The toast queue (design-system 7.10, audit X-31), kept apart from React so its rules are unit-tested
+ * The toast queue, kept apart from React so its rules are unit-tested
  * (apps/web/test/toast-store.test.ts): at most 3 at once (a fourth pushes the oldest out); 4 s, or 7 s with an
  * action or for an error; the timers stop while the pointer is over the toasts or the focus is in them, and go on
  * with the time that was left.
@@ -18,7 +18,7 @@ export interface ToastAction {
 export interface ToastOptions {
   /** One follow-up; the toast stays 7 s and closes when it is used. */
   action?: ToastAction;
-  /** The confirmed action's own mark instead of the tone's icon ("Added to Favourites": the heart; 6.3.1). */
+  /** The confirmed action's own mark instead of the tone's icon ("Added to Favourites": the heart). */
   icon?: ActionMarkKind;
 }
 

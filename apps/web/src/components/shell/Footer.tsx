@@ -1,8 +1,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-// 44 px on a phone (5.6) — wide too, for a short word ("Умови" in Ukrainian was 40), 32 high on a desktop; on a TV
-// (data-tv) every text is at least body (10.3).
+// 44 px on a phone — wide too, for a short word ("Умови" in Ukrainian was 40), 32 high on a desktop; on a TV
+// (data-tv) every text is at least body.
 const LINK =
   "inline-flex min-h-11 min-w-11 items-center text-body-s text-text-2 transition-colors duration-fast ease-fast hover:text-text-1 md:min-h-8 md:min-w-0 in-data-[tv=1]:text-body";
 
@@ -34,25 +34,25 @@ function Links({ label, links }: { label: string; links: { href: string; label: 
 }
 
 /**
- * The footer (design-system 7.19): on the page gutter, the links nobody needs every day — the TV and help, the legal
+ * The footer: on the page gutter, the links nobody needs every day — the TV and help, the legal
  * pages (one line from md, at its two ends) — and the year with what the service is not (it holds no video). No logo,
  * no column headings and no catalog links: the header has those. Language and theme are in the header (the account's
- * settings, or "Language and theme" without an account); the TMDB attribution is on "Credits" (owner, 2026-10-25).
+ * settings, or "Language and theme" without an account); the TMDB attribution is on "Credits".
  * Not async: the 404 and the error page (a client component) render it too.
  */
 export function Footer() {
   const t = useTranslations();
   return (
     <footer className="mt-16 border-t border-line md:mt-24">
-      {/* From md one line: the TV and help at the start, the legal pages at the end (nothing hangs at one edge, 5.3). */}
+      {/* From md one line: the TV and help at the start, the legal pages at the end (nothing hangs at one edge). */}
       <div className="page-x mx-auto flex max-w-media flex-col gap-2 pt-6 pb-8 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-10 md:gap-y-1 md:pt-8 md:pb-10">
         <Links
           label={t("shell.support")}
           links={[
             { href: "/link", label: t("nav.linkDevice") },
-            // The Android TV app's page: its APK and how a TV gets it (S58).
+            // The Android TV app's page: its APK and how a TV gets it.
             { href: "/android-tv", label: t("nav.tvApp") },
-            // The TV version for a TV whose browser isn't recognised (TV document §4.1).
+            // The TV version for a TV whose browser isn't recognised.
             { href: "/tv", label: t("nav.tvVersion"), document: true },
             { href: "/support", label: t("support.write") },
           ]}

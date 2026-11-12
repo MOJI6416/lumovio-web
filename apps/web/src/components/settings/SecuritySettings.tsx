@@ -12,7 +12,7 @@ const PasswordDialog = dynamic(() => import("./SecurityDialogs").then((m) => m.P
 const TwoFactorDialog = dynamic(() => import("./SecurityDialogs").then((m) => m.TwoFactorDialog), { ssr: false });
 
 /**
- * Settings → Security (S17, design-system 7.18; audit SET-07): who can get into the account. Two rows that say their
+ * Settings → Security: who can get into the account. Two rows that say their
  * state — "Change password", "Two-step verification · Off" — each opening its form in a dialog (no empty password form on
  * the page); then where the account is signed in, and "Remove all other devices" last. Without a password (Google,
  * Apple or Discord only) two-step verification is off with the reason under it; an administrator is told it is needed
@@ -47,7 +47,7 @@ export function SecuritySettings() {
         <SettingsLink
           label={t("twoFactor")}
           value={on ? t("twoFactorOn") : t("twoFactorOff")}
-          // Why it can't be turned on, next to it (7.1); the admin mode needs it (C68).
+          // Why it can't be turned on, next to it; the admin mode needs it.
           detail={!hasPassword ? t("twoFactorNeedsPassword") : admin && !on ? t("twoFactorAdmin") : undefined}
           opens
           disabled={!hasPassword}

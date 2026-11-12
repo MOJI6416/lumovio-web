@@ -4,8 +4,8 @@ import { cn } from "./cn";
 import { UpLink } from "./UpLink";
 
 /**
- * The head of a page (design-system 9; Collection, Tool and Settings templates): "← Parent" over the h1 on nested
- * pages (8.7), the h1, a description of up to two lines, actions on the end — under the description on a phone.
+ * The head of a page (the Collection, Tool and Settings templates): "← Parent" over the h1 on nested
+ * pages, the h1, a description of up to two lines, actions on the end — under the description on a phone.
  * It brings the distance from the site header (24 phone / 32 desktop) and to the content (24 / 32); put it first in
  * the page's container, without a top padding of the page's own. Works in server components.
  */
@@ -25,9 +25,9 @@ export function PageHeader({
    * below lg, where the parent's menu isn't beside the page (Settings).
    */
   back?: { href: string; label: string; below?: "lg" };
-  /** `display` for a page whose title is its headline ("Your 2026", 4.2); `h1` otherwise. */
+  /** `display` for a page whose title is its headline ("Your 2026"); `h1` otherwise. */
   size?: "h1" | "display";
-  /** The page's buttons: the main one first (7.1). */
+  /** The page's buttons: the main one first. */
   actions?: ReactNode;
   /** For `aria-labelledby` of the page's main region. */
   titleId?: string;

@@ -1,5 +1,5 @@
 /**
- * What a catalog filter pill opens (FilterPill: BrowseView, SectionNav; design-system 7.4): loaded when someone
+ * What a catalog filter pill opens (FilterPill: BrowseView, SectionNav): loaded when someone
  * reaches for a pill or the page is idle, not as first-load JS (ui/lazy-swap; bundle budget) — Radix menus and
  * popovers are on no first screen.
  */

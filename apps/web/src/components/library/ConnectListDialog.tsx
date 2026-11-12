@@ -89,7 +89,7 @@ export function ConnectListDialog({ open, onOpenChange }: { open: boolean; onOpe
         if (!o) reset();
       }}
       title={t("connectList")}
-      // What following does, for a screen reader: the field's example says what to paste (1.2).
+      // What following does, for a screen reader: the field's example says what to paste.
       description={<span className="sr-only">{t("connectListHint")}</span>}
     >
       <form onSubmit={look} className="space-y-4">

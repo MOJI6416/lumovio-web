@@ -397,7 +397,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     get: (hash: string) => post<TsTorrent>("/torrents", { action: "get", hash }),
     /**
      * The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits
-     * for the metadata — unless `load` is false (a look through other torrents: none is started for it; 34).
+     * for the metadata — unless `load` is false (a look through other torrents: none is started for it).
      */
     async files(hash: string, load = true) {
       let t = await post<TsTorrent>("/torrents", { action: "get", hash });
@@ -407,7 +407,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     /**
      * Adds a torrent without naming or saving it. `link`: a magnet or a .torrent URL; TorrServer fetches the file itself,
      * which a slow tracker stretches well past the usual 12 s. A torrent already in the server's database keeps its own
-     * title, poster and data — an add that brings them rewrites it (MatriX.147, checked 2026-11-12).
+     * title, poster and data — an add that brings them rewrites it (MatriX.147).
      */
     quietAdd: (link: string) => post<TsTorrent>("/torrents", { action: "add", link, title: "", poster: "", data: "", save_to_db: false }, 60_000),
     /**
@@ -443,7 +443,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * the track the profile's languages and studios find first (`profileTrack`), else the file's default.
      */
     async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal } = {}) {
-      // A cancelled or replaced preparation stops its requests to the server, not only its next step (39).
+      // A cancelled or replaced preparation stops its requests to the server, not only its next step.
       const signal = choice.signal;
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
@@ -515,7 +515,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         url: authHeader && opts.connectionId ? `/__ts/${opts.connectionId}/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}` : joinUrl(base, `/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}`),
         kind: "subtitles" as const,
       }));
-      // Subtitles the browser can't read itself (PLR-14): a Matroska file's text and picture tracks and an MP4's text
+      // Subtitles the browser can't read itself: a Matroska file's text and picture tracks and an MP4's text
       // tracks, read by ranges around the playhead, and subtitle files next to it in the torrent.
       const subtitleCodecs = (probe?.streams ?? []).filter((s) => s.codec_type === "subtitle").map((s) => s.codec_name);
       const ownSubs =
@@ -579,7 +579,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
             }
           : undefined,
         durationSec: probe?.format?.duration ? Number(probe.format.duration) : null,
-        // Dolby Vision without an HDR10 base layer (profile 5) shows wrong colours where it isn't decoded (PLR-15).
+        // Dolby Vision without an HDR10 base layer (profile 5) shows wrong colours where it isn't decoded.
         warning: vs?.side_data_list?.some((x) => /dovi|dolby vision/i.test(x.side_data_type ?? "") && x.dv_profile === 5) && !caps.dolbyVision ? "dv5" : undefined,
         externalUrl: externalUrl(hash, file),
         incompatibility: verdict.ok ? null : verdict.reason,

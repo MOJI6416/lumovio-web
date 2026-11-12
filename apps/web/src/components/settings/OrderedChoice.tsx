@@ -8,10 +8,10 @@ import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { IconButton } from "@/components/ui/IconButton";
 
 /**
- * A short ordered choice from a long list (design-system 7.18): audio and subtitle languages, voice-over studios. The
+ * A short ordered choice from a long list: audio and subtitle languages, voice-over studios. The
  * chosen ones are a numbered list of InputChips (× takes one away) with ↑/↓ to change the order; a Combobox under
  * them adds one more. Not a wall of chips: only what was chosen is on the screen. Every change is one call of
- * `onChange` with the whole new list — the settings save it at once (8.8).
+ * `onChange` with the whole new list — the settings save it at once.
  */
 export function OrderedChoice({
   value,

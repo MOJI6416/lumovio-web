@@ -13,8 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * The design-system showcase (docs/design/design-system.md, 12.1): every token now, every components/ui primitive
- * from Ф1 on. Open to anyone on a development server; a production build shows it to admins only and answers
+ * The design-system showcase: every token and every components/ui primitive.
+ * Open to anyone on a development server; a production build shows it to admins only and answers
  * everyone else with a plain 404, so its existence isn't advertised. Not linked from any navigation.
  */
 async function isAdmin() {

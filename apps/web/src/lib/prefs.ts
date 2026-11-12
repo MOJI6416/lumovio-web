@@ -9,7 +9,7 @@ const resolve = (pref: ThemePref) => (pref === "system" ? (matchMedia(LIGHT_OS).
 
 /**
  * Puts a theme on the page: `data-theme` (what the styles read), `data-theme-pref` (the choice) and the browser's
- * `theme-color`, which follows the chosen theme rather than the OS (X-28): the page's own --bg.
+ * `theme-color`, which follows the chosen theme rather than the OS: the page's own --bg.
  */
 export function applyTheme(pref: ThemePref) {
   const root = document.documentElement;
@@ -41,7 +41,7 @@ export function onThemeChange(on: (pref: ThemePref) => void) {
   return () => window.removeEventListener(THEME_EVENT, handler);
 }
 
-/** "As the system": follows the OS while the page is open, not only when it loads (X-28). */
+/** "As the system": follows the OS while the page is open, not only when it loads. */
 export function followSystemTheme() {
   const mq = matchMedia(LIGHT_OS);
   const on = () => {

@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: l.name,
     description: l.description ?? undefined,
     robots: l.visibility === "public" ? undefined : { index: false },
-    // Only a public list has an address for search and previews (SH-13).
+    // Only a public list has an address for search and previews.
     ...(l.visibility === "public" ? pageSeo(locale, `/lists/${l.id}`) : {}),
   };
 }
@@ -42,11 +42,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function ListPage({ params }: { params: Params }) {
   const { id } = await params;
   const list = await load(id);
-  // A guest with a link to a list that isn't open to everyone: sign in, then back here (LIB-18, AUTH-02).
+  // A guest with a link to a list that isn't open to everyone: sign in, then back here.
   if (!list && /^[0-9a-f-]{36}$/.test(id) && !(await getMeState())) return <SignInColumn reason="listOpen" next={`/lists/${id}`} />;
   if (!list) notFound();
   return (
-    // The Collection template on the page gutter (5.3, X-02); ListView brings the page header.
+    // The Collection template on the page gutter; ListView brings the page header.
     <div className="page-x mx-auto max-w-media">
       <ListView initial={list} />
     </div>

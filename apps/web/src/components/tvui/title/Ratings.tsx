@@ -14,7 +14,7 @@ import {
 } from "@/components/title/ratings";
 import { RatingChip } from "@/components/ui/Badge";
 
-/** The title's main ratings on a TV (1.3, 7.14 item 3): the same two or three chips as the site's hero, nothing to press. */
+/** The title's main ratings on a TV: the same two or three chips as the site's hero, nothing to press. */
 export function Ratings({
   kind,
   tmdbId,

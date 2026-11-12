@@ -2,7 +2,7 @@ import { Server } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 
 /**
- * The server type's mark (6.4, SRV-07): the official Jellyfin, Plex and TorrServer logos from /public/brands — trademarks
+ * The server type's mark: the official Jellyfin, Plex and TorrServer logos from /public/brands — trademarks
  * of their owners, credited on the Credits page. Plex's icon carries its own dark square, so it fills the tile; the others
  * sit in it at 24 px. Decorative: the type is always written next to it.
  */

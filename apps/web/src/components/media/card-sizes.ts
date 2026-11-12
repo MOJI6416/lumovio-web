@@ -1,8 +1,8 @@
 /*
- * Card widths (design-system 5.4), one table for shelves and grids: a card of one type has the same width in a shelf
+ * Card widths, one table for shelves and grids: a card of one type has the same width in a shelf
  * and in a grid at the same screen width — a grid picks how many columns fit instead of stretching the cards. On a
  * phone a grid has three columns (≈ the shelf's 112 px at 375–390 px), so the gutter and the 8 px gaps fit.
- * Sizes are rem, so the TV mode scales them with the rest of the interface (10.3).
+ * Sizes are rem, so the TV mode scales them with the rest of the interface.
  *
  * | Card               | Phone | md  | xl  | 2xl |
  * | Poster 2:3         | 112   | 144 | 168 | 184 |
@@ -10,7 +10,7 @@
  * | Top 10 (numeral + poster) | 64 + 112 | 80 + 144 | 92 + 168 | 100 + 184 |
  * | Person 1:1 (circle)| 96    | 112 | 128 | 136 |
  *
- * A Top 10 card's poster is a poster card's (2026-11-06): the shelf is the same row of posters as every other, with the
+ * A Top 10 card's poster is a poster card's: the shelf is the same row of posters as every other, with the
  * rank beside each.
  */
 
@@ -29,7 +29,7 @@ export const TOP10_COLS = "grid-cols-[4rem_7rem] md:grid-cols-[5rem_9rem] xl:gri
 /** The numeral's column is as tall as the poster beside it (its width × 1.5), so the numeral stands on the poster's foot. */
 export const TOP10_RANK_H = "h-42 md:h-54 xl:h-63 2xl:h-69";
 
-/** Gaps between cards (5.1): 8 phone · 12 tablet · 16 desktop. */
+/** Gaps between cards: 8 phone · 12 tablet · 16 desktop. */
 export const CARD_GAP_X = "gap-x-2 md:gap-x-3 xl:gap-x-4";
 
 /** The columns of a grid: as many cards of the shelf's width as fit (three on a phone). */

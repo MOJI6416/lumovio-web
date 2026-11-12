@@ -22,7 +22,7 @@ export interface QueryLike<T> {
 }
 
 /**
- * One wrapper for the states of a request (design-system 7.11, 8.4):
+ * One wrapper for the states of a request:
  * - first load → `loading` (a Skeleton of the same layout) with "Loading…" for screen readers;
  * - offline before anything came (react-query pauses the request) → "No connection" with Retry, not an endless
  *   skeleton; the request goes on by itself once the connection is back;

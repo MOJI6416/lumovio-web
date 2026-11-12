@@ -53,7 +53,7 @@ export interface TvChromeProps {
 }
 
 /**
- * The player in the TV shell (tvui, TV document §6), drawn as it was before the site's redesign of 2026-11-06: "←" and
+ * The player in the TV shell (tvui), drawn as the site's player was in older versions: "←" and
  * the title on top, a bar of play, ±10, the time (elapsed or remaining by a press) and the panels' buttons, the next
  * episode's card and the end screen; the panels' buttons open their menus over themselves (PlayerPanels). The remote's
  * model (OK, arrows, Back) is LumovioPlayer's.
@@ -97,7 +97,7 @@ export function TvChrome(v: TvChromeProps) {
   const menu = panel !== "none";
   return (
     <>
-      {/* Scrims for the title and the controls, in the stage colour (3.5). */}
+      {/* Scrims for the title and the controls, in the stage colour. */}
       <Controls.Backdrop className={clsx("pointer-events-none absolute inset-0 transition-opacity duration-slow", showChrome ? "opacity-100" : "opacity-0")}>
         <div className="absolute inset-x-0 top-0 h-1/4 bg-linear-to-b from-stage/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-linear-to-t from-stage/90 to-transparent" />
@@ -123,7 +123,7 @@ export function TvChrome(v: TvChromeProps) {
         </div>
       )}
 
-      {/* A touch screen: back, play and forward in the middle; the bar then has no second set (PLR-12). */}
+      {/* A touch screen: back, play and forward in the middle; the bar then has no second set. */}
       <div className={clsx("pointer-events-none absolute inset-0 hidden items-center justify-center gap-12 transition-opacity duration-slow pointer-coarse:flex", showChrome ? "opacity-100" : "opacity-0")}>
         <IconButton icon={RotateCcw} label={t("back10")} variant="stage" size="lg" className={hit} onClick={() => void store.seek(Math.max(0, currentTime - 10))} />
         <IconButton
@@ -169,7 +169,7 @@ export function TvChrome(v: TvChromeProps) {
                   style={{ insetInlineStart: `${(s.start / duration) * 100}%`, width: `${((s.end - s.start) / duration) * 100}%` }}
                 />
               ))}
-            {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus (PLR-09). */}
+            {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus. */}
             <TimeSlider.Thumb className="absolute start-(--media-slider-fill) size-4 -translate-x-1/2 scale-0 rounded-full bg-text-1 transition-transform duration-fast ease-fast group-hover/ts:scale-100 focus-visible:scale-125 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:shadow-(--focus-halo) rtl:translate-x-1/2" />
             {/* Placed by Vidstack itself (its inline `left`): no shift of its own, or it stands half its width beside the pointer. */}
             <TimeSlider.Preview className="pointer-events-none absolute bottom-9 flex flex-col items-center opacity-0 group-hover/ts:opacity-100">
@@ -186,7 +186,7 @@ export function TvChrome(v: TvChromeProps) {
               <Control icon={RotateCcw} label={t("back10")} onClick={() => store.seek(Math.max(0, currentTime - 10))} />
               <Control icon={RotateCw} label={t("forward10")} onClick={() => store.seek(currentTime + 10)} />
             </span>
-            {/* One time, elapsed or remaining by a press (PLR-12). */}
+            {/* One time, elapsed or remaining by a press. */}
             <Button variant="tertiary" size="sm" onClick={toggleTime} aria-label={remaining ? t("showElapsed") : t("showRemaining")} className="ms-1">
               <span className="tabular-nums">{timeText}</span>
             </Button>
@@ -194,7 +194,7 @@ export function TvChrome(v: TvChromeProps) {
             <div className="ms-auto flex items-center gap-1 md:gap-2">
               {props.next && <Control icon={SkipForward} label={t("nextEpisode")} onClick={props.next.go} />}
               {props.episodes && <Control ref={anchors.episodes} icon={ListVideo} label={t("episodes")} pressed={panel === "episodes"} onClick={() => v.onPanel("episodes")} />}
-              {/* Always there, with one track or none too: the panel says what the file has (PLR-07). */}
+              {/* Always there, with one track or none too: the panel says what the file has. */}
               <span className="relative inline-flex">
                 <Control ref={anchors.tracks} icon={Captions} label={t("audioAndSubtitles")} pressed={panel === "tracks"} onClick={() => v.onPanel("tracks")} />
                 {subtitlesShowing && <span aria-hidden className="pointer-events-none absolute end-2 top-2 size-2 rounded-full bg-accent" />}
@@ -207,7 +207,7 @@ export function TvChrome(v: TvChromeProps) {
       </Controls.Content>
 
       {v.seekHint && (
-        // The remote's seek, said where the eye is (TV document §6: clear feedback of seeking).
+        // The remote's seek, said where the eye is: clear feedback of seeking.
         <div aria-live="polite" className="pointer-events-none absolute inset-x-0 top-1/2 grid -translate-y-1/2 place-items-center">
           <span className="flex items-center gap-3 rounded-full bg-stage/80 px-6 py-3 text-h2 font-bold text-text-1 tabular-nums">
             {v.seekHint.delta < 0 ? <RotateCcw aria-hidden className="size-8" /> : <RotateCw aria-hidden className="size-8" />}
@@ -264,7 +264,7 @@ export function TvChrome(v: TvChromeProps) {
 const CORNER = "pointer-events-auto absolute bottom-36 end-4 z-10 animate-fade-up md:end-8";
 
 /**
- * A control of the bar (11.1): IconButton `stage` 48, the play icon filled (6.4). `tvPlay`: where the remote's up/down
+ * A control of the bar: IconButton `stage` 48, the play icon filled. `tvPlay`: where the remote's up/down
  * put the focus; `pressed`: its menu is open (the menu stands over it and gives the focus back to it).
  */
 function Control({ icon, label, onClick, filled, tvPlay, pressed, ref }: { icon: typeof Play; label: string; onClick: () => unknown; filled?: boolean; tvPlay?: boolean; pressed?: boolean; ref?: RefObject<HTMLButtonElement | null> }) {
@@ -272,7 +272,7 @@ function Control({ icon, label, onClick, filled, tvPlay, pressed, ref }: { icon:
 }
 
 /**
- * The end of a film in the TV shell (PLR-04), as it was before the site's redesign (TV document §6): "Watch again"
+ * The end of a film in the TV shell, as the site's was in older versions: "Watch again"
  * (the focus), "To the film", whether it went into the history, a few titles like it.
  */
 function TvEndScreen({ end, title, onReplay }: { end: EndInfo; title: string; onReplay: () => void }) {

@@ -47,10 +47,10 @@ export function backdropSrcSet(path: string | null | undefined): string | undefi
 }
 
 /**
- * The width a hero's backdrop is drawn at, for its srcSet (design-system 7.14, 2026-11-08): 80 % of the window beside
+ * The width a hero's backdrop is drawn at, for its srcSet: 80 % of the window beside
  * the text (from md on a screen no taller than 5:4 — globals.css `art-over`), the window's width as a band above it.
  * Beside the text that is no more than 1280 px below 1600 px windows, as before: TMDB's 1280 copy is as sharp to the eye
- * there as the 1920 one and a third of its weight (the billboard is the home page's largest paint, 2026-11-06). A band
+ * there as the 1920 one and a third of its weight (the billboard is the home page's largest paint). A band
  * on a portrait tablet used to be drawn 1.67 times its 768 px — sized for the window, stretched to the billboard's height.
  */
 export const BACKDROP_SIZES = "(min-width: 48rem) and (min-aspect-ratio: 5/4) 80vw, 100vw";

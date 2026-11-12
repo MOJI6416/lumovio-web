@@ -8,7 +8,7 @@ import { cn } from "./cn";
 const PILL = "pointer-events-none inline-flex h-7 items-center gap-2 rounded-full px-3 text-caption whitespace-nowrap text-text-1 transition-colors duration-fast ease-fast in-data-[tv=1]:text-body";
 
 /**
- * What could give the plot away, hidden until the person presses it (design-system 7.21, 8.12). `image`: the caller
+ * What could give the plot away, hidden until the person presses it. `image`: the caller
  * blurs only the image (`Artwork blurred`), so its badge, mark and progress stay sharp; `text`: the text is blurred
  * here, keeps its height (at least 44 on a phone, 32 on a PC) and can't be selected. Over it, one button the size of
  * the area with "Show" in a pill — the button's name says what it shows ("Show the still: episode 5"). While hidden the

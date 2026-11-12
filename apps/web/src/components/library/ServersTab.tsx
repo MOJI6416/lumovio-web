@@ -39,20 +39,20 @@ type Sort = (typeof SORTS)[number];
 const plain = (t: TitleSummary): TitleSummary => (t.onServer ? { ...t, onServer: false } : t);
 const Card = memo(PosterCard);
 
-// The TS7 removal (its confirmation and per-torrent results) loads when a removal is asked for.
+// The torrent removal (its confirmation and per-torrent results) loads when a removal is asked for.
 const RemoveTorrentsDialog = dynamic(() => import("@/components/connections/RemoveTorrentsDialog").then((m) => m.RemoveTorrentsDialog), { ssr: false });
 
 /** One server's part of a removal: its torrents of the chosen titles. */
 type Removal = { connection: TorrentConnection; torrents: ManagedTorrent[]; titles: TorrentManagerData["titles"] };
 
 /**
- * "On my servers" (S09; the owner's decision of 2026-11-07, design-system 9 "Library"): everything already on the
+ * "On my servers": everything already on the
  * profile's own servers that plays in one press — films, series, anime — as Apple TV's library and Plex's do it: the
  * collection's grid, newest copy first ("Added 22 Oct" under each), the catalog's pills (type; "Not watched yet") and
  * the sort. It reads the servers' index itself, the one `?watch=now` filters the catalog's shelves by, a page at a time
  * (a sort or "Not watched yet" first loads the rest, so they work on all of it). A server out of reach or not indexed
  * yet is said over the grid; no servers — the way to connect one (an adult's tool, not offered to a kids profile).
- * That a copy in the index doesn't prove the file plays on this device is for a screen reader (1.2).
+ * That a copy in the index doesn't prove the file plays on this device is for a screen reader.
  */
 export function ServersTab() {
   const t = useTranslations();
@@ -64,8 +64,9 @@ export function ServersTab() {
   const sort = readSort<Sort>(params, SORTS, "added");
   const sorts = useTitleSorts();
   const qc = useQueryClient();
-  // "Select" (docs/torrserver-2026-11.md, 19a): titles whose torrents are on the profile's TorrServers, removed from there
-  // through TS7's dialog. Jellyfin and Plex copies aren't removed here (deleting their files is the server's business).
+  // "Select": titles whose torrents are on the profile's TorrServers, removed from there through
+  // RemoveTorrentsDialog. Jellyfin and Plex copies aren't removed here (deleting their files is the server's
+  // business).
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [removals, setRemovals] = useState<Removal[]>([]);
@@ -135,7 +136,7 @@ export function ServersTab() {
       }
     setRemovals([...byServer.values()]);
   };
-  // "Select all" (owner, 2026-11-12: "dozens of titles — click each by hand?"): every title of the section with torrents —
+  // "Select all", so dozens of titles aren't picked one by one: every title of the section with torrents —
   // its pages not here yet loaded first; when all are marked, the same button clears the mark.
   const selectable = items.filter((i) => torrentsOf(i.id).length > 0);
   const allSelected = selectable.length > 0 && selectable.every((i) => selected.has(i.id));
@@ -271,7 +272,7 @@ export function ServersTab() {
                       ),
                     )}
                   </ListGrid>
-                  {/* The next 60: drawn from what is here, then the index's next page; one that didn't come — Retry here (8.4). */}
+                  {/* The next 60: drawn from what is here, then the index's next page; one that didn't come — Retry here. */}
                   <LoadMore
                     onMore={showMore}
                     onRetry={() => void fetchNextPage()}
@@ -308,7 +309,7 @@ export function ServersTab() {
 }
 
 /**
- * A poster in "Select" (19a): the press marks it instead of opening the title; a title without torrents on the profile's
+ * A poster in "Select": the press marks it instead of opening the title; a title without torrents on the profile's
  * TorrServers is dimmed and can't be marked. The card itself is inert meanwhile, so neither touch nor keyboard opens it.
  */
 function SelectableCard({ title, label, selected, disabled, onToggle }: { title: TitleSummary; label: string; selected: boolean; disabled: boolean; onToggle: () => void }) {
@@ -317,7 +318,7 @@ function SelectableCard({ title, label, selected, disabled, onToggle }: { title:
       <div inert>
         <Card title={title} />
       </div>
-      <button /* ui-lint-ignore raw-button: the poster's whole face is the toggle in Select (19a), a card, not a Button */
+      <button /* ui-lint-ignore raw-button: the poster's whole face is the toggle in Select, a card, not a Button */
         type="button"
         aria-pressed={selected}
         aria-label={label}

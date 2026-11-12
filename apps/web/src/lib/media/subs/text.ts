@@ -1,5 +1,5 @@
 /**
- * Text subtitles (PLR-14): SubRip, WebVTT and ASS/SSA files and Matroska's text blocks, turned into cues the player
+ * Text subtitles: SubRip, WebVTT and ASS/SSA files and Matroska's text blocks, turned into cues the player
  * shows as the browser's own text tracks — SRT's italics and bold kept, ASS's styling dropped where it can't be drawn
  * (`engine.ts` draws ASS with libass when it loads). Plus the subtitle files a torrent carries next to its video.
  */

@@ -20,11 +20,11 @@ import { TvArt } from "../media/TvCard";
 const key = (s: number, e: number) => `s${s}e${e}`;
 
 /*
- * A series' seasons and episodes on a TV (S07 TV; TV document §4 "сезоны и серии", §6): the seasons as one row of pills
+ * A series' seasons and episodes on a TV: the seasons as one row of pills
  * — the episodes follow the focused season once it rests there —, then the season's episodes as one row of stills,
- * OK plays that very episode (`?s=&e=`, never the first one in its place, T1/T2), the one in progress with its bar,
+ * OK plays that very episode (`?s=&e=`, never the first one in its place), the one in progress with its bar,
  * watched ones marked. Under the row the focused episode: number, date, length, name and description; what could spoil
- * the plot stays hidden after the last watched episode (8.12), as the profile set it.
+ * the plot stays hidden after the last watched episode, as the profile set it.
  */
 export function Episodes({ title: d, zoneDown }: { title: TitleCore; zoneDown?: string }) {
   const t = useTranslations("title");
@@ -55,7 +55,7 @@ export function Episodes({ title: d, zoneDown }: { title: TitleCore; zoneDown?: 
     queryKey: ["season", d.tmdbId, season, locale],
     queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
     staleTime: 30 * 60_000,
-    // The row keeps the season it shows until the next one arrives: it is never empty under the remote (TV2).
+    // The row keeps the season it shows until the next one arrives: it is never empty under the remote.
     placeholderData: (prev) => prev,
   });
   const episodes = q.data?.episodes ?? [];

@@ -14,7 +14,7 @@ export async function tvPath(): Promise<string> {
 
 /**
  * The TV shell's screens need a signed-in profile: a guest gets the code screen and a session without a profile
- * "Who's watching?", each keeping the address to come back to (TV document §4.1). `"unavailable"`: the API didn't answer.
+ * "Who's watching?", each keeping the address to come back to. `"unavailable"`: the API didn't answer.
  */
 export async function requireTvProfile(): Promise<Me | "unavailable"> {
   const me = await getMeState();

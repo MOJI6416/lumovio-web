@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readAvi, startChunk } from "../src/lib/media/avi";
 import { loadCodec } from "./codec-wasm";
 
-// The device check's AVI clips (scripts/player-check/make-clips.mjs): 4 s, 24 fps, 426×240, a key frame every second.
+// The device check's AVI clips: 4 s, 24 fps, 426×240, a key frame every second.
 const file = (name: string) => readFileSync(new URL(`../public/player-check/${name}`, import.meta.url));
 const reader = (b: Buffer) => async (s: number, e: number) => new Uint8Array(b.subarray(s, e));
 

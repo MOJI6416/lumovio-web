@@ -28,8 +28,8 @@ import {
 } from "./shared";
 
 /**
- * Sign-in (S29): the providers, then the address and the password, "Sign in"; under it "Forgot password?" and, at the
- * end, "Create account" for someone new. One model of checking (AUTH-04): the button is always on, Enter sends, the
+ * Sign-in: the providers, then the address and the password, "Sign in"; under it "Forgot password?" and, at
+ * the end, "Create account" for someone new. One model of checking: the button is always on, Enter sends, the
  * check runs on submit, an error is said at its field and focuses it; a wrong pair selects the password so it is
  * typed again at once. An address that isn't confirmed yet opens "Check your email" — the API has just sent a new
  * link (sendOnSignIn) — instead of an error under the form.
@@ -51,7 +51,7 @@ export function SignInForm({ providers }: { providers?: SocialProvider[] | null 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   useCarriedEmail(setEmail, emailRef, passwordRef);
-  // Who's watching first, then back where the person came from (AUTH-06).
+  // Who's watching first, then back where the person came from.
   const after = localized(locale, withNext("/profiles", next));
 
   const submit = async (e: FormEvent) => {

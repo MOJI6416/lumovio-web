@@ -40,7 +40,7 @@ function PageHeaderDemo() {
           }
         />
       </div>
-      {/* `back.below: "lg"` (Settings: the menu is beside the page from lg) and `size="display"` (4.2). */}
+      {/* `back.below: "lg"` (Settings: the menu is beside the page from lg) and `size="display"`. */}
       <div className="mt-4 rounded-md border border-line px-4 md:px-6">
         <PageHeader size="display" back={{ href: "/settings", label: t("phBack"), below: "lg" }} title={t("phTitle")} />
       </div>
@@ -152,17 +152,17 @@ export function LayersPage() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="page-header" title={t("pageHeader")} source="ui/PageHeader.tsx · 9">
+      <ShowcaseSection id="page-header" title={t("pageHeader")} source="ui/PageHeader.tsx">
         <PageHeaderDemo />
       </ShowcaseSection>
       <ShowcaseSection
         id="settings"
         title={t("settingsParts")}
-        source="ui/Settings.tsx, lib/use-action.ts · 7.18, 8.8"
+        source="ui/Settings.tsx, lib/use-action.ts"
       >
         <SettingsDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="use-action" title={t("useAction")} source="lib/use-action.ts, lib/action.ts · 8.3">
+      <ShowcaseSection id="use-action" title={t("useAction")} source="lib/use-action.ts, lib/action.ts">
         <ActionDemo />
       </ShowcaseSection>
     </>

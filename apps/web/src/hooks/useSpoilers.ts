@@ -9,7 +9,7 @@ import { useSession } from "@/components/providers/Providers";
  */
 const DEFAULTS: SpoilerPrefs = { stills: true, overviews: true, names: false };
 
-/** What the active profile hides of unwatched episodes (design-system 8.12); a guest gets the defaults. */
+/** What the active profile hides of unwatched episodes; a guest gets the defaults. */
 export function useSpoilerPrefs(): SpoilerPrefs {
   const { me } = useSession();
   return me?.activeProfile?.spoilers ?? DEFAULTS;

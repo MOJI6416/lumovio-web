@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
-/** What a copy's picture, sound and subtitles are, as marks (design-system 7.15): Apple TV's set, in its order. */
+/** What a copy's picture, sound and subtitles are, as marks: Apple TV's set, in its order. */
 export type QualityMark = "4k" | "hd" | "dv" | "hdr10plus" | "hdr" | "atmos" | "cc";
 
 /**
@@ -59,7 +59,7 @@ export const copyMarks = (q: NonNullable<LibraryIndexEntry["quality"]>) =>
 export const resolutionBesideMarks = (resolution: string | null | undefined) => (resolution && !/^2160|4k/i.test(resolution) ? resolution : null);
 
 /**
- * The marks as Apple TV's row of them (owner, 2026-11-06): its own files, one colour — the text's, through a mask —
+ * The marks as Apple TV's row of them: its own files, one colour — the text's, through a mask —
  * and one height, the text's (1em), so they sit in a line of text and grow with it on TV. Read out by name.
  */
 export function QualityBadges({ marks, className }: { marks: readonly QualityMark[]; className?: string }) {

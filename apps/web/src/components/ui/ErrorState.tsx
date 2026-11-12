@@ -16,7 +16,7 @@ export function isOffline(e: unknown) {
 const code = (e: unknown) => (typeof e === "object" && e !== null ? (e as { code?: unknown }).code : undefined);
 
 /**
- * A failed load (design-system 7.11, 8.4–8.5): never shown as "empty" or as an endless skeleton. EmptyState's layout:
+ * A failed load: never shown as "empty" or as an endless skeleton. EmptyState's layout:
  * the glyph and the few words picked from the error (lib/api-errors `loadErrorKeys`: no connection, Lumovio
  * unavailable, gone, kids profile…), "Retry" when retrying can help, the why for a screen reader. `page` — the whole
  * page (Retry is the main button, the status, code and request id folded under "Technical details"); `section` — the

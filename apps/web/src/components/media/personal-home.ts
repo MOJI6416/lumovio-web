@@ -8,7 +8,7 @@ const MIN_LEFT = 10;
 const KEEP = new Set(["now_playing", "upcoming", "top_movies", "on_air", "new_seasons", "airing", "digital"]);
 
 /**
- * The profile's personal shelves for the home page (HOME-04): `lead` — the next parts of its film series and "For
+ * The profile's personal shelves for the home page: `lead` — the next parts of its film series and "For
  * you", shown where "For you" always was; `later` — "Because you watched", a person's titles and new titles in its
  * genres, placed between the catalog shelves. Shelves under three cards are dropped (Row).
  */

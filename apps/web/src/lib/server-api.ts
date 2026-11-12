@@ -45,7 +45,7 @@ export const getMe = cache(async () => {
 
 /**
  * For pages that send a signed-out visitor to sign in: `"unavailable"` when the API can't answer
- * (network, timeout, 5xx), so a signed-in person sees "temporarily unavailable" instead (SH-03).
+ * (network, timeout, 5xx), so a signed-in person sees "temporarily unavailable" instead.
  */
 export const getMeState = cache(async (): Promise<import("@lumovio/contracts").Me | null | "unavailable"> => {
   try {

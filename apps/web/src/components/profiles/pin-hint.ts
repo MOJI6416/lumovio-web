@@ -3,7 +3,7 @@ import type { PinHintState, Profile } from "@lumovio/contracts";
 type Lockable = Pick<Profile, "isKids" | "hasPin">;
 
 /**
- * The adult profile "Set PIN" opens (design-system 8.10): the first adult profile without a PIN, while the account
+ * The adult profile "Set PIN" opens: the first adult profile without a PIN, while the account
  * has a kids profile. null when there is no kids profile or every adult profile has a PIN.
  */
 export function adultWithoutPin<P extends Lockable>(profiles: readonly P[]): P | null {

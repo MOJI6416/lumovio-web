@@ -15,7 +15,7 @@ import { IconButton } from "./IconButton";
 import { FIELD_HEIGHT as HEIGHT, type FieldSize, fieldBox, fieldFocus, inputClass } from "./styles";
 
 /*
- * Text fields (design-system 7.6): 44 px (`size="lg"` — 48, forms on a phone), --surface-2 with a --line-2 border,
+ * Text fields: 44 px (`size="lg"` — 48, forms on a phone), --surface-2 with a --line-2 border,
  * 15 px text; focus — a --focus border and a soft halo; an error — a --danger border (`invalid`), with the message
  * from Field. Give every field a label: Field, or `aria-label` when an icon says what it is (search).
  * `className` is for placement; on PasswordInput and SearchInput it goes to the wrapper.

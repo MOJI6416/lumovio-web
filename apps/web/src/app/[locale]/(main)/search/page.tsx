@@ -9,7 +9,7 @@ import { serverApi } from "@/lib/server-api";
 
 /**
  * Search results are endless thin pages and an empty search is today's popular titles: neither is indexed, the links
- * on them are followed (Search Console, 2026-10-29).
+ * on them are followed.
  */
 export async function generateMetadata() {
   const t = await getTranslations("nav");
@@ -40,7 +40,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const genres = Object.fromEntries([...tvGenres.genres, ...movieGenres.genres].map((g) => [g.id, capitalize(g.name, locale)]));
   return (
     <div className="page-x mx-auto max-w-media pt-6 md:pt-10">
-      {/* The page's one h1 (4.2, SH-12); the search field below is the visible heading of the page. */}
+      {/* The page's one h1; the search field below is the visible heading of the page. */}
       <h1 className="sr-only">{t("search")}</h1>
       <Suspense>
         <SearchView

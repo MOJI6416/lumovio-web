@@ -34,7 +34,7 @@ import { TvKeyboard } from "../shell/TvKeyboard";
 import { TvState } from "../shell/TvState";
 
 /*
- * "Through TorrServer" on the TV's sources screen (design-system 10.3 «Экран источников», 7.15 TV, TS1–TS6): the same
+ * "Through TorrServer" on the TV's sources screen: the same
  * search as the site's (components/player/finder) in the TV's composition — a line of the server, the query and
  * Refresh / Cancel; the filters as buttons that say their value, each opening a card; the releases as rows, one
  * stop each (OK is "Watch"), "i" beside for the details. The next part of the list appears as the focus nears its end;
@@ -103,7 +103,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
         <h2 id="finder-h" className="text-h2 text-text-1">
           {tp("viaTorrServer", { name: f.server })}
         </h2>
-        {/* What "Watch" does here, before the first one is pressed (TS4). */}
+        {/* What "Watch" does here, before the first one is pressed. */}
         <p className="max-w-measure text-body-l text-text-2">
           {t("finderNote", { server: f.server })} {f.where}
         </p>
@@ -226,7 +226,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
                 </TvButton>
               )}
             </fieldset>
-            {/* The title's releases, as the title page counts them; other results of the query apart (TS5). */}
+            {/* The title's releases, as the title page counts them; other results of the query apart. */}
             <p className="text-body-l text-text-2 tabular-nums">
               {t("shownCount", { shown: titleRows, total: f.view.ranked.length })}
               {f.view.rest.length > 0 && f.voice === null && f.picture === null ? ` · ${t("otherResults", { count: f.visible.length - titleRows })}` : ""}
@@ -340,7 +340,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
   );
 }
 
-/** One release (7.15 TV): its labels, what it is in words, where and how much — one stop, OK is "Watch"; "i" beside. */
+/** One release: its labels, what it is in words, where and how much — one stop, OK is "Watch"; "i" beside. */
 function TvReleaseRow({
   r,
   x,
@@ -380,7 +380,7 @@ function TvReleaseRow({
     trackersOf(r).filter(Boolean).join(", ") || null,
     formatDate(r.published, locale),
   ];
-  // As the web's rows (7.15): what is heard is the title; its quality marks, then where and how much.
+  // As the web's rows: what is heard is the title; its quality marks, then where and how much.
   const meta = x ? <ReleaseLine info={x.info} rest={where} /> : where.filter(Boolean).join(" · ");
   const other = x ? text.otherLanguages(x) : null;
   return (
@@ -421,7 +421,7 @@ function TvReleaseRow({
 }
 
 /**
- * A release's details on a TV (7.9, 7.15): the same as the site's dialog — the marks and the audio under the heading,
+ * A release's details on a TV: the same as the site's dialog — the marks and the audio under the heading,
  * every fact the name and the indexer give, "Watch" — in a wide card in the middle: "Watch" beside the heading, the
  * short facts two to a row and the long ones (the audio, this device, the name) across, so all of it is read without a
  * stop of its own. What "Watch" does is said to a screen reader, as on the site.

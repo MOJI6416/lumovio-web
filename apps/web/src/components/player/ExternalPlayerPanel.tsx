@@ -10,12 +10,12 @@ import type { PreparedPlayback } from "@/lib/media/types";
 import { useAction } from "@/lib/use-action";
 
 /**
- * A file this browser can't play (design-system 11.1, PLR-08): why, in words; the main button opens it in an app on
+ * A file this browser can't play: why, in words; the main button opens it in an app on
  * this device (VLC or MX Player on Android, VLC, Infuse or nPlayer on an iPhone; on a computer a playlist VLC opens); a copy of the title that plays here is
  * offered when there is one. A web page can't read the other app's position, so progress is honest: once the app was
  * opened, "I've finished it" marks the title watched — a secondary button, never the first thing on the screen.
  * On the site it stands on the player's stage (WatchView's StartStage) and names the apps on its buttons only; the TV's
- * sources screen keeps the line that lists them (TV document).
+ * sources screen keeps the line that lists them.
  */
 export function ExternalPlayerPanel({
   prepared,
@@ -45,7 +45,7 @@ export function ExternalPlayerPanel({
   const [launched, setLaunched] = useState(false);
   const [marked, setMarked] = useState(false);
   const url = prepared.externalUrl;
-  // A failure says so and leaves the button pressable again (audit X-15: it used to count as watched anyway).
+  // A failure says so and leaves the button pressable again (it used to count as watched anyway).
   const finish = useAction({
     run: () => api("/api/history/mark", { method: "POST", json: { titleId, season, episode, watched: true } }),
     optimistic: () => {
@@ -83,7 +83,7 @@ export function ExternalPlayerPanel({
     setLaunched(true);
   };
 
-  // The app on this device: the first is the main button (one per area, 7.1), the rest secondary.
+  // The app on this device: the first is the main button (one per area), the rest secondary.
   const apps: { href: string; label: string }[] = android
     ? [
         { href: `intent:${url}#Intent;package=org.videolan.vlc;type=video/*;S.title=${encodeURIComponent(title)};end`, label: t("openVlc") },
@@ -109,7 +109,7 @@ export function ExternalPlayerPanel({
             {reason}
           </p>
         )}
-        {/* The apps of this device's platform (PLR-16: no MX Player on an iPhone); on the site their buttons name them. */}
+        {/* The apps of this device's platform (no MX Player on an iPhone); on the site their buttons name them. */}
         {tvNav && (
           <p className="text-body-s text-text-2">
             {t("externalText", { apps: new Intl.ListFormat(locale, { type: "disjunction" }).format(ios ? ["VLC", "Infuse", "nPlayer"] : android ? ["VLC", "MX Player"] : ["VLC", "mpv"]) })}

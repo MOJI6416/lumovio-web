@@ -21,10 +21,10 @@ import { adultWithoutPin, showPinHint } from "./pin-hint";
 import { profileErrorText } from "./profile-errors";
 
 /**
- * Manage profiles (design-system 7.17): the account's profiles as rows — as the account menu lists them (the face, the
+ * Manage profiles: the account's profiles as rows — as the account menu lists them (the face, the
  * name, "Kids", a lock where a PIN is asked) — each leading to its page, and "Add profile" last (off at the limit, with
  * the limit said). While the account has a kids profile and an adult one without a PIN, "Set a PIN on adult profiles"
- * stands over the rows (8.10): "Set PIN" opens the first such profile's page at its PIN, "Not now" holds it 30 days.
+ * stands over the rows: "Set PIN" opens the first such profile's page at its PIN, "Not now" holds it 30 days.
  */
 export function ManageView({
   profiles,
@@ -72,7 +72,7 @@ export function ManageView({
     <div className="mx-auto w-full max-w-xl text-start">
       <PageHeader className="pt-0 sm:pt-0" title={t("manage")} back={{ href: backHref, label: tc("back") }} />
       {hintShown && noPin && (
-        // Calm, not a dialog (8.10): what to do and why, here where an adult manages the profiles.
+        // Calm, not a dialog: what to do and why, here where an adult manages the profiles.
         <InlineAlert
           className="mb-6"
           title={t("pinHintTitle")}
@@ -136,7 +136,8 @@ export function ManageView({
 }
 
 /**
- * "Add profile" (7.17): only what makes a profile — its name and whether it is a kids one — with the face it will have
+ * "Add profile": only what makes a profile — its name and whether it is a kids one —
+ * with the face it will have
  * (a colour no other profile has, the name's letter). "Create profile" opens the new profile's page, where its photo,
  * age level and PIN are, as Max and Disney+ ask the rest after the name.
  */
@@ -147,7 +148,7 @@ export function CreateProfile({
 }: {
   profiles: Profile[];
   onClose: () => void;
-  /** The new profile, the list with it, and whether to offer PINs to the adult profiles (a new kids one, 8.10). */
+  /** The new profile, the list with it, and whether to offer PINs to the adult profiles (a new kids one). */
   onCreated: (p: Profile, list: Profile[], askPin: boolean) => void;
 }) {
   const t = useTranslations("profiles");
@@ -164,7 +165,7 @@ export function CreateProfile({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    // Checked on submit, said at the field (one model for every form, AUTH-04).
+    // Checked on submit, said at the field (one model for every form).
     if (!name.trim()) return setErrors({ name: t("nameMissing") });
     setBusy(true);
     setErrors({});
@@ -204,7 +205,7 @@ export function CreateProfile({
             />
           )}
         </Field>
-        {/* A kids profile's limits stay said (1.2, principle 6): what it shows and what leaving it takes. */}
+        {/* A kids profile's limits stay said: what it shows and what leaving it takes. */}
         <Switch checked={isKids} onCheckedChange={setIsKids} label={t("kids")} description={t("kidsHint")} />
         {errors.form && <InlineAlert tone="danger">{errors.form}</InlineAlert>}
         <DialogActions className="mt-0">
@@ -221,8 +222,8 @@ export function CreateProfile({
 }
 
 /**
- * A kids profile was just created and an adult profile has no PIN (8.10): «Set a PIN on adult profiles?» with "Later"
- * and "Set PIN" (the first such profile's page, at its PIN), shown whatever "Not now" says.
+ * A kids profile was just created and an adult profile has no PIN: «Set a PIN on adult profiles?»
+ * with "Later" and "Set PIN" (the first such profile's page, at its PIN), shown whatever "Not now" says.
  */
 export function PinOffer({
   name,

@@ -26,16 +26,16 @@ import {
 
 /*
  * The modal layers themselves, loaded the first time one opens (./Dialog draws nothing until then, or only the
- * trigger; bundle budget). Modal layers (design-system 7.9): Dialog — centred on a tablet and desktop, a bottom sheet
+ * trigger; bundle budget). Modal layers: Dialog — centred on a tablet and desktop, a bottom sheet
  * on a phone; Sheet — a bottom sheet everywhere (menus and popovers on a phone, ./Menu, ./Popover). No layer comes in
- * from a side of the screen (owner, 2026-11-06). Both: focus trapped inside and given back to the control that opened
- * the layer (SRC-17), Escape and a TV remote's Back close it, a close button that stays when the title is hidden
- * (X-18), the 6.3 entrance (--dur-slow; none with reduced motion, globals.css).
+ * from a side of the screen. Both: focus trapped inside and given back to the control that opened
+ * the layer, Escape and a TV remote's Back close it, a close button that stays when the title is hidden,
+ * the entrance (--dur-slow; none with reduced motion, globals.css).
  *
  * Floating layers opened inside one (a Select list, a menu, a tooltip) are portalled into it, so they sit above it:
- * z-popover is under z-dialog in the page (5.5).
+ * z-popover is under z-dialog in the page.
  *
- * Opened from a stage (the sign-in wall, "Who's watching?", the player, the sources screen — 3.5), a layer takes the
+ * Opened from a stage (the sign-in wall, "Who's watching?", the player, the sources screen), a layer takes the
  * stage's dark values in either theme instead of a light dialog over the dark screen (./portal).
  *
  * The focus goes to `initialFocus`, else to the first control of the body — the first field of a form, or "Cancel"

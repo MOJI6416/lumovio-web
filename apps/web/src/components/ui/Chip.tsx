@@ -17,8 +17,8 @@ export interface FilterChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 }
 
 /**
- * A filter chip (design-system 7.4): turns one condition on or off. Not a tab and not a navigation link (7.5).
- * The button is the hit area (at least 44 × 44 on a phone, 5.6 — a short label such as «Усі» is narrower than that);
+ * A filter chip: turns one condition on or off. Not a tab and not a navigation link.
+ * The button is the hit area (at least 44 × 44 on a phone — a short label such as «Усі» is narrower than that);
  * the pill inside is 32 px (36 on a phone).
  */
 export const FilterChip = forwardRef<HTMLButtonElement, FilterChipProps>(function FilterChip(
@@ -55,7 +55,7 @@ export const FilterChip = forwardRef<HTMLButtonElement, FilterChipProps>(functio
 });
 
 /**
- * A link of the pill family (design-system 7.4 "LinkChip"): where a row of pills also leads to a page — a catalog
+ * A link of the pill family: where a row of pills also leads to a page — a catalog
  * section's "All films ›" beside its genres pill. FilterChip's look at rest and a chevron that says it goes somewhere;
  * a link, never `aria-pressed`. 44 tall on a phone, as FilterChip.
  */
@@ -86,7 +86,7 @@ export interface InputChipProps {
   className?: string;
 }
 
-/** A condition or a choice that can be taken away with its × (design-system 7.4): AI search terms, studios. */
+/** A condition or a choice that can be taken away with its ×: AI search terms, studios. */
 export function InputChip({ label, onRemove, disabled, className }: InputChipProps) {
   const t = useTranslations("ui");
   return (

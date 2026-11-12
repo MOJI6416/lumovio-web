@@ -276,7 +276,7 @@ export interface TitleExternal {
 }
 
 /**
- * Lumovio Score: Lumovio's own derived 0–100 metric (docs/lumovio-score-handoff-2026-10-24.md). It is
+ * Lumovio Score: Lumovio's own derived 0–100 metric. It is
  * a percentile — 87 means "higher than 87% of films" (or series) — never any service's own score;
  * the source scores stay on their own chips.
  */
@@ -387,7 +387,7 @@ export type IndexSort = "imdb" | "imdb_votes" | "lumovio" | "rt" | "metacritic";
  */
 export type CatalogSorts = Record<IndexSort, { rated: number; of: number } | null>;
 
-/** `GET /api/catalog/search?q=&page=&kind=` (SRCH-13, PRF-05). */
+/** `GET /api/catalog/search?q=&page=&kind=`. */
 export const SearchQuery = z.object({
   q: z.string().trim().min(1).max(200),
   page: z.coerce.number().int().min(1).max(50).default(1),
@@ -402,7 +402,7 @@ export interface CatalogSearch {
   people: PersonSummary[];
   /** Page 1 of an adult's search without `kind`: how many films and how many series TMDB finds (the type chips). */
   counts?: { movie: number; tv: number };
-  /** A profile with an age limit: results of the pages read were left out for it (PRF-05). */
+  /** A profile with an age limit: results of the pages read were left out for it. */
   hidden?: boolean;
   /** The query as read on the other keyboard layout, when that is what was found ("bynthcntkkfh" → "интерстеллар"). */
   interpreted?: string;
@@ -410,16 +410,16 @@ export interface CatalogSearch {
   peopleFirst?: boolean;
   /**
    * Search on the catalog index: a title is named like the query (exact, typing, a typo per word), not only resembling
-   * it or TMDB's own answer for the text. The page offers the query on the other keyboard layout only then (SRCH-16).
+   * it or TMDB's own answer for the text. The page offers the query on the other keyboard layout only then.
    */
   clear?: boolean;
 }
 
 /**
- * Mood shelves of the Movies landing and their grid (`mood=`; docs/curation.md "Moods"): TMDB's tone keywords (any of
+ * Mood shelves of the Movies landing and their grid (`mood=`): TMDB's tone keywords (any of
  * them), held to genres that fit the mood (any of them) and away from ones that don't, with TMDB's score and votes.
- * Keywords alone are too loose (Shawshank is "amused" on TMDB) and genres alone say nothing about tone (5.3 of the
- * discovery study). A filter the grid sets itself replaces the mood's own of the same kind.
+ * Keywords alone are too loose (Shawshank is "amused" on TMDB) and genres alone say nothing about tone.
+ * A filter the grid sets itself replaces the mood's own of the same kind.
  */
 export const MOODS = {
   /** hopeful, joyful, feelgood, lighthearted, comforting; comedy, family or romance; no horror, thriller, war, crime, documentary. */
@@ -495,7 +495,7 @@ export interface CatalogPage {
   featured: FeaturedTitle[];
   rows: CatalogRow[];
   /**
-   * The C5 comparison arm this page was built in ("lift_a", "lift_b": API catalog/variants.ts), for profiles with a
+   * The comparison arm this page was built in ("lift_a", "lift_b"), for profiles with a
    * server; the page's discovery counters carry it in their page key.
    */
   variant?: string;

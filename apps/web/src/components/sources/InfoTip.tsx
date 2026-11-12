@@ -6,7 +6,7 @@ import { InfoTip as UiInfoTip, type InfoTipContent } from "@/components/ui/InfoT
 export type { InfoTipContent };
 
 /**
- * The "i" next to a section's heading on the title page and the sources screen (design-system 2.5): ui/InfoTip named
+ * The "i" next to a section's heading on the title page and the sources screen: ui/InfoTip named
  * "About “…”".
  */
 export function InfoTip({ title, ...content }: InfoTipContent & { title: string }) {

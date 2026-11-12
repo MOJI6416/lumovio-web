@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState } from "react";
 
 /*
- * A card's "More" on a TV (design-system 8.3, 10.3): a card is one stop of the remote, so what the site's card menu
+ * A card's "More" on a TV: a card is one stop of the remote, so what the site's card menu
  * holds — removing it from Continue watching, from the history, from a list — comes from holding OK on the card (the
  * TV's long press: OK let go early still opens the card), the remote's Menu key or a right click. The screen says so
  * by the focused card ("Hold OK for More"); the panel itself (./CardMore) loads only when it is first opened.

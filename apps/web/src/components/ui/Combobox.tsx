@@ -22,7 +22,7 @@ export type ComboboxProps<V extends string> = (One<V> | Many<V>) & {
   /** A hint while nothing is chosen, drawn as a placeholder (--text-3). */
   placeholder?: string;
   /**
-   * What an empty choice means, drawn as a value: a filter's "Any" (X-39) — the same look as Select's "Any" option.
+   * What an empty choice means, drawn as a value: a filter's "Any" — the same look as Select's "Any" option.
    * Takes the placeholder's place.
    */
   emptyLabel?: string;
@@ -40,7 +40,7 @@ export type ComboboxProps<V extends string> = (One<V> | Many<V>) & {
 const full = lazyControl(() => import("./ComboboxPopover"));
 
 /**
- * A choice from a long list with search (design-system 7.6): languages, regions, studios. Looks like Select; opens a
+ * A choice from a long list with search: languages, regions, studios. Looks like Select; opens a
  * panel with a search field and the list. Typing filters, ↑/↓ move, Enter chooses, Escape closes and returns to the
  * field. `multiple` keeps the panel open and toggles each option (the chosen ones are listed in the field).
  *
@@ -61,7 +61,7 @@ export function Combobox<V extends string>(props: ComboboxProps<V>) {
     .join(", ");
   return (
     // A combobox whose list opens in a panel with a search field (WAI-ARIA combobox with a dialog popup): the same role as
-    // Select's field, so a form of both reads alike (SET-15); ↓/↑ open it as they open a Select.
+    // Select's field, so a form of both reads alike; ↓/↑ open it as they open a Select.
     <button
       ref={light}
       type="button"

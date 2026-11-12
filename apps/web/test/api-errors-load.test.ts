@@ -6,7 +6,7 @@ import uk from "../messages/uk.json";
 import { ApiRequestError } from "../src/lib/api";
 import { apiErrorKey, errorDetails, isRetryable, loadErrorKeys } from "../src/lib/api-errors";
 
-// design-system 8.5, audit L10N-04: every API code has words in one place; e.message never reaches the user.
+// Every API code has words in one place; e.message never reaches the user.
 
 const has = (messages: unknown, key: string) =>
   key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], messages) !==
@@ -14,7 +14,7 @@ const has = (messages: unknown, key: string) =>
 const err = (status: number, code: ConstructorParameters<typeof ApiRequestError>[1]) =>
   new ApiRequestError(status, code, "Some English text from the server");
 
-describe("API error words (Ф1)", () => {
+describe("API error words", () => {
   it("gives every code the API sends a key that exists in ru, uk and en", () => {
     for (const code of [...API_ERROR_CODES, "network" as const]) {
       const e = err(code === "network" ? 0 : 400, code);

@@ -6,14 +6,14 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Link } from "@/i18n/navigation";
 
 /**
- * The branded 404 for any unknown address (SH-01, 8.5), in the visitor's language, inside the shell (SH-02): the
- * header and footer stay, the page state of 7.11 — "Page not found" and "Home"; search is in the header.
+ * The branded 404 for any unknown address, in the visitor's language, inside the shell: the
+ * header and footer stay, the page state — "Page not found" and "Home"; search is in the header.
  */
 export default async function NotFound() {
   const t = await getTranslations();
   return (
     <Shell>
-      {/* A nested not-found takes no metadata: the tab is named here (SH-12); Next adds noindex to a 404 itself. */}
+      {/* A nested not-found takes no metadata: the tab is named here; Next adds noindex to a 404 itself. */}
       <title>{`${t("errors.notFoundTitle")} · ${t("common.appName")}`}</title>
       <EmptyState
         variant="page"

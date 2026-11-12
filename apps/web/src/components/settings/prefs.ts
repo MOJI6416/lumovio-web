@@ -19,8 +19,8 @@ export type Prefs = {
 };
 
 /**
- * The preferences and a setter that applies at once (8.8): the switch moves, "Saved" shows by the section's title,
- * a refusal puts it back and stays in the section with "Retry" (SET-02).
+ * The preferences and a setter that applies at once: the switch moves, "Saved" shows by the section's title,
+ * a refusal puts it back and stays in the section with "Retry".
  */
 export function usePrefs() {
   const qc = useQueryClient();

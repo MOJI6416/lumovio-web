@@ -35,8 +35,8 @@ function LikedMark({ className }: { className?: string }) {
 }
 
 /**
- * A starter card: the poster with a "Like" toggle on it (X-29: a thumb, only a signal for "For you" — the heart is
- * Favourites). It shows its state where it was pressed; a failure says why (8.3).
+ * A starter card: the poster with a "Like" toggle on it (a thumb, only a signal for "For you" — the heart is
+ * Favourites). It shows its state where it was pressed; a failure says why.
  */
 export function StarterCard({ title, onChange }: { title: TitleSummary; onChange?: (liked: boolean) => void }) {
   const t = useTranslations("rows");
@@ -44,7 +44,7 @@ export function StarterCard({ title, onChange }: { title: TitleSummary; onChange
   const feedback = useRecommendationFeedback();
   const liked = state?.feedback === "like";
   const toggle = useAction({ run: (on: boolean) => feedback(title.id, "like", on) });
-  // A like the server has just taken fills the thumb once (6.3.1); one given before shows the plain icon.
+  // A like the server has just taken fills the thumb once; one given before shows the plain icon.
   const [justLiked, setJustLiked] = useState(false);
   return (
     <PosterCard title={title} showState={false}>
@@ -69,9 +69,9 @@ export function StarterCard({ title, onChange }: { title: TitleSummary; onChange
 /**
  * "What do you like?" for a profile with nothing (or little) to start from: well-known films, series and anime to like
  * with one tap, and "Pick genres" (the cold start can begin from genres alone). Optional: "Not now" hides it until
- * next week (HOME-03), with "Undo"; likes can be given in the recommendation settings too. After a like, "Done" brings
- * "For you" in its place (the two are never shown together, HOME-04). A kids profile isn't offered the import (PRF-11).
- * While its titles load it holds its place with posters' skeletons (7.11), so the shelves under it don't jump down;
+ * next week, with "Undo"; likes can be given in the recommendation settings too. After a like, "Done" brings
+ * "For you" in its place (the two are never shown together). A kids profile isn't offered the import.
+ * While its titles load it holds its place with posters' skeletons, so the shelves under it don't jump down;
  * titles that don't come leave no shelf (an empty shelf is hidden).
  */
 export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
@@ -108,7 +108,7 @@ export function StarterRow({ likedGenres = [] }: { likedGenres?: number[] }) {
         </Link>
       }
       actions={
-        // Three controls wrap onto two lines on a phone rather than breaking a label (8.11).
+        // Three controls wrap onto two lines on a phone rather than breaking a label.
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:justify-end">
           {genresUsed && (
             <Suspense fallback={null}>

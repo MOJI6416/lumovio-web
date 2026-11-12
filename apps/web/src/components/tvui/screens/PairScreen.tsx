@@ -20,13 +20,15 @@ interface CodeResponse {
 type State = "loading" | "waiting" | "offline" | "expired" | "denied" | "error";
 
 /**
- * Signing in on a TV (S27, C04; TV document §7.1): a big one-time code, the QR that opens the confirmation on a phone
+ * Signing in on a TV: a big one-time code, the QR that opens the confirmation on a phone
  * with the code filled in, the short address for typing it on a computer, how long the code lives. The TV asks every
  * 5 s whether it was approved; a lost connection is said and retried, never an endless spinner; an expired or refused
  * code gets "Get a new code" with the focus on it. Approved → "Who's watching?", keeping the address the TV was opened
  * with (`next`).
  */
-/** `appAddress`: an Android TV's browser is told about the app (S58) — the short address to type into Downloader. */
+/**
+ * `appAddress`: an Android TV's browser is told about the app — the short address to type into Downloader.
+ */
 export function PairScreen({ next, appAddress }: { next: string; appAddress?: string | null }) {
   const t = useTranslations("tv");
   const tv = useTranslations("tvui");
@@ -75,7 +77,7 @@ export function PairScreen({ next, appAddress }: { next: string; appAddress?: st
           if (body.status === "expired") return setState("expired");
           setState("waiting");
         } catch {
-          // No connection: said on the screen; the code stays and the next poll tries again (TV document §7.1).
+          // No connection: said on the screen; the code stays and the next poll tries again.
           setState("offline");
         }
         timer.current = window.setTimeout(poll, every);
@@ -136,7 +138,7 @@ export function PairScreen({ next, appAddress }: { next: string; appAddress?: st
             <li>{tv("pairStep1")}</li>
             <li>{tv("pairStep2", { url: address || "lumovio.app/link" })}</li>
           </ol>
-          {/* The code in the interface font with even figures and spacing (4.1: no monospace). */}
+          {/* The code in the interface font with even figures and spacing (no monospace). */}
           <p className="text-display font-extrabold tracking-widest text-text-1 tabular-nums" aria-live="polite">
             <span aria-hidden>{state === "loading" ? "····-····" : display}</span>
             {code && <span className="sr-only">{tv("pairCodeLabel", { code: code.user_code.split("").join(" ") })}</span>}
@@ -164,7 +166,7 @@ export function PairScreen({ next, appAddress }: { next: string; appAddress?: st
           </div>
           {appAddress && <p className="text-body-l text-text-2">{tv("appHint", { address: appAddress })}</p>}
         </div>
-        {/* The QR code keeps its white plate in both themes (3.6). */}
+        {/* The QR code keeps its white plate in both themes. */}
         <div className="shrink-0 rounded-md bg-white p-5">
           {qr && state !== "expired" && state !== "denied" ? (
             <img src={qr} alt={tv("pairQr")} className="size-80" />

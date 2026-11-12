@@ -1,5 +1,5 @@
 /**
- * Sharing a page (design-system 8.15): a phone or tablet gets the system's share sheet; a computer — where that sheet
+ * Sharing a page: a phone or tablet gets the system's share sheet; a computer — where that sheet
  * is missing (Firefox) or poor (Windows) — gets Lumovio's own window with the link to copy, the services and a QR code
  * for a phone (./ShareDialog, mounted by <Toaster /> only while a request is open, bundle budget).
  */

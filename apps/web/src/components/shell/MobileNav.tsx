@@ -28,11 +28,11 @@ function useCatalogSection(pathname: string, anime: boolean) {
 }
 
 /**
- * The bottom tab bar of a phone (< md, design-system 7.19): Home · Catalog · Search · Library — the same four for
+ * The bottom tab bar of a phone (< md): Home · Catalog · Search · Library — the same four for
  * everyone (a guest's Library is behind sign-in, which brings them back to it; "Sign in" itself is in the header). The
  * catalog's sections (Movies / Series / Anime) are a switch at the top of the catalog. A floating pill: 16 px in from
  * the sides, above the iOS home indicator; a near-opaque surface with blur, so the labels read over the stage of a hero
- * in either theme (≥ 4.5:1, audit M1). The shell leaves room for it (Shell).
+ * in either theme (≥ 4.5:1). The shell leaves room for it (Shell).
  */
 export function MobileNav() {
   const t = useTranslations("nav");
@@ -50,7 +50,7 @@ export function MobileNav() {
       on: pathname.startsWith("/browse") || pathname.startsWith("/anime"),
     },
     { href: "/search", icon: Search, label: t("search"), on: pathname.startsWith("/search") },
-    // While the API is down the visitor may well be signed in (SH-03): their library, not sign-in.
+    // While the API is down the visitor may well be signed in: their library, not sign-in.
     {
       href: me || apiDown ? "/library" : library,
       icon: Library,
@@ -74,7 +74,7 @@ export function MobileNav() {
                 i.on ? "bg-text-1/10 font-semibold text-text-1" : "text-text-3",
               )}
             >
-              {/* Active: the lime icon in the dark theme, a filled one in the text colour in the light theme (7.19). */}
+              {/* Active: the lime icon in the dark theme, a filled one in the text colour in the light theme. */}
               <i.icon
                 aria-hidden
                 strokeWidth={i.on ? 2.25 : 1.75}

@@ -30,9 +30,9 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * each one's link in turn (one indexer's link can be out of date); the last failure is the one thrown.
  *
  * A torrent already on the server — the person's own, added in Lampa or by hand, or added before — is only linked to the
- * title: Lumovio never renames it or puts its mark on it (docs/torrserver-2026-11.md §1). Search results carry no hash
+ * title: Lumovio never renames it or puts its mark on it. Search results carry no hash
  * (Jackett's links don't), so the add is quiet first (nothing named, nothing saved), and the server's list from before it
- * tells whether the torrent is new. Only a new one is saved under the release's own name (SRC-06: two versions of one
+ * tells whether the torrent is new. Only a new one is saved under the release's own name (two versions of one
  * film stay apart on the server, in "Added torrents" and in the copies), with the poster and Lumovio's mark — the film it
  * was added for, with its id. `existed`: it was on the server before.
  *
@@ -59,8 +59,8 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
   }
   if (!hash) return null;
   const existed = before.has(hash);
-  // `added`: the mark of a torrent this add brought — only such a one is surely Lumovio's (before 061c2e7 an add also
-  // marked the person's torrent it rewrote), so only it is cleared by itself (torrent-sweep).
+  // `added`: the mark of a torrent this add brought — only such a one is surely Lumovio's (in older versions
+  // an add also marked the person's torrent it rewrote), so only it is cleared by itself (torrent-sweep).
   if (!existed) await ts.claim(hash, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, added: Date.now() }, tmdbImage(d.posterPath, "w342"));
   const label = r.title.slice(0, 190);
   for (let attempt = 1; ; attempt++) {
@@ -83,8 +83,8 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
 }
 
 /**
- * Takes back a torrent an add brought (`existed: false`) when the person left before it played — "←" during the add
- * (docs/torrserver-2026-11.md, 18): off the server and out of the index. Never one that was there before. Best effort:
+ * Takes back a torrent an add brought (`existed: false`) when the person left before it played —
+ * "←" during the add: off the server and out of the index. Never one that was there before. Best effort:
  * a failure leaves Lumovio's own marked torrent, which the server's list offers to clear.
  */
 export async function takeBack(connectionId: string, hash: string) {

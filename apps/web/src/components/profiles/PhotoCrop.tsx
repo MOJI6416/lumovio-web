@@ -43,7 +43,7 @@ export function loadPicture(file: File): Promise<Picture> {
 }
 
 /**
- * "Move and scale" (design-system 7.17): the chosen photo under a circle, as the avatar will show it. Drag (a finger or
+ * "Move and scale": the chosen photo under a circle, as the avatar will show it. Drag (a finger or
  * the mouse) moves it, a pinch, the wheel or the slider zooms it (up to 4×), arrows and +/− do the same from the keyboard;
  * the circle never leaves the picture. "Done" gives the circle's square as a 512 px image (WebP, PNG where the browser
  * can't write WebP); the server makes it its own WebP.

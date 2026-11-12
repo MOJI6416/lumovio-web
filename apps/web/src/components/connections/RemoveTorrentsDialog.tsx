@@ -81,7 +81,7 @@ export function RemoveTorrentsDialog({
   onClose: (results: RemovalResult[] | null) => void;
   /**
    * Run once the removal is confirmed, before the server is asked: a player that streams one of these torrents lets it
-   * go first, or its next request by hash would add it back, nameless (docs/torrserver-2026-11.md 43).
+   * go first, or its next request by hash would add it back, nameless.
    */
   beforeRemove?: (hashes: string[]) => Promise<void>;
 }) {
@@ -98,12 +98,12 @@ export function RemoveTorrentsDialog({
   const [results, setResults] = useState<RemovalResult[]>([]);
   const [retrying, setRetrying] = useState(false);
 
-  // Never the error's own text (X-15): Lumovio's API errors by their code, the server's by netErrorText.
+  // Never the error's own text: Lumovio's API errors by their code, the server's by netErrorText.
   const errorText = (e: unknown) => sentence(e instanceof ApiRequestError ? tr(apiErrorKey(e)) : netErrorText(tc, e));
   const size = torrents.reduce((s, x) => s + (x.sizeBytes ?? 0), 0);
   const packs = torrents.some((x) => removalScope(x).episodes > 1);
   const active = torrents.filter((x) => x.active).length;
-  // The person's own releases (no mark of Lumovio's): removing them is their call, said as a risk (finding 29).
+  // The person's own releases (no mark of Lumovio's): removing them is their call, said as a risk.
   const outside = torrents.filter((x) => !x.fromLumovio).length;
   const users = (me?.profiles ?? []).filter((p) => (connection.profileIds.length === 0 ? !p.isKids : connection.profileIds.includes(p.id)));
   const others = users.filter((p) => p.id !== me?.activeProfile?.id);
@@ -169,7 +169,7 @@ export function RemoveTorrentsDialog({
                   </p>
                 )}
                 {r && (
-                  // The icon at the start carries the status colour; the words stay in the text colour (X-23).
+                  // The icon at the start carries the status colour; the words stay in the text colour.
                   <p className="mt-1 text-body-s text-text-1">
                     {r.status === "removed"
                       ? t("status_removed", { links: r.links })
@@ -190,7 +190,7 @@ export function RemoveTorrentsDialog({
 
       {phase === "confirm" && (
         <div className="mt-4 space-y-2 text-body-s text-text-2">
-          {/* On screen (37, 7.x confirm dialog): the risks with their sign and what stays; the rest is for a screen reader. */}
+          {/* On screen (the confirm dialog): the risks with their sign and what stays; the rest is for a screen reader. */}
           {packs && <p className="sr-only">{t("confirmPack")}</p>}
           {active > 0 && (
             <p className="flex gap-2 text-text-1">

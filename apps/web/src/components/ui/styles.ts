@@ -3,11 +3,11 @@ import { cn } from "./cn";
 /*
  * Shared class strings of the primitives. A plain module (no "use client"), so server components can use them too.
  *
- * Focus (design-system 6.6, 7.6). Most controls use the global `:focus-visible` ring from globals.css. These cover:
- * - a control whose hit area is larger than what you see (44 px on phones, 5.6): the control hides its own ring and
+ * Focus. Most controls use the global `:focus-visible` ring from globals.css. These cover:
+ * - a control whose hit area is larger than what you see (44 px on phones): the control hides its own ring and
  *   the visible part, a `group`/`peer` child, draws it;
  * - fields (inputs, select and combobox triggers): a --focus border plus a soft 3 px halo instead of the ring.
- * On a stage (over art) the ring also has the dark --focus-halo (6.6): globals.css for the global ring, here for the
+ * On a stage (over art) the ring also has the dark --focus-halo: globals.css for the global ring, here for the
  * child-drawn one — so a control that hides its own ring hides the halo too (`focus-visible:shadow-none`), or the hit
  * area stood as a dark box round the ring.
  */
@@ -23,13 +23,13 @@ export const fieldFocus = "focus-visible:outline-none focus:border-focus focus:r
 export const fieldFocusVisible =
   "focus-visible:border-focus focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent-soft";
 
-/** Fields: 44 px, 48 for forms on a phone (`lg`); on a TV always 48 (66 at its scale, 10.3). */
+/** Fields: 44 px, 48 for forms on a phone (`lg`); on a TV always 48 (66 at its scale). */
 export type FieldSize = "md" | "lg";
 export const FIELD_HEIGHT: Record<FieldSize, string> = { md: "h-11 in-data-[tv=1]:h-12", lg: "h-12" };
 
 /**
  * The box of every field: --surface-2, a --line-2 border (--danger with aria-invalid), 15 px text — 16 on a touch
- * screen: iOS Safari zooms the page into a field of smaller text a finger taps (seen on the owner's iPhone, 2026-11-07)
+ * screen: iOS Safari zooms the page into a field of smaller text a finger taps (seen on an iPhone)
  * and leaves it zoomed. Only `text-body` grows; a field with its own size (a PIN's `text-h3`) keeps it.
  */
 export const fieldBox =

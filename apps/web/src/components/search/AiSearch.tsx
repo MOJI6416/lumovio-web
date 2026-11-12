@@ -44,7 +44,7 @@ async function readSaved(): Promise<Saved | null> {
 }
 
 /**
- * Searching by description (S05; SRCH-01…SRCH-03, SRCH-09, SRCH-10): the state of the search page's second way to
+ * Searching by description: the state of the search page's second way to
  * search, which shares its field. `run` asks the model once for a text; `apply` re-queries the catalog with edited
  * conditions, no model call. `ran` is the text the shown results are for — the page offers "Find" again once the
  * field says something else. `available` is false where the server has no model (the way isn't offered then).
@@ -122,11 +122,11 @@ export function useAiSearch({ enabled, signedIn, arrival }: { enabled: boolean; 
 export type AiSearchState = ReturnType<typeof useAiSearch>;
 
 /**
- * What searching by description shows under the field: a guest — the sign-in panel (SRCH-03, AUTH-02); before the
+ * What searching by description shows under the field: a guest — the sign-in panel; before the
  * first search — examples that search at once; while it works — the grid's placeholders; a failure in words by its code,
- * never over the previous results (SRCH-02); a text that describes nothing — said so, with the examples; then the
+ * never over the previous results; a text that describes nothing — said so, with the examples; then the
  * conditions the model read (Selects and InputChips: a change re-queries the catalog only) and the titles, each with
- * why it is there when that says more than the description. The page keeps its height meanwhile (SRCH-10).
+ * why it is there when that says more than the description. The page keeps its height meanwhile.
  */
 export function AiPanel({
   ai,
@@ -148,7 +148,7 @@ export function AiPanel({
 
   if (!signedIn) {
     return (
-      // In the middle of the page, as every state (7.11): no frame of its own.
+      // In the middle of the page, as every state: no frame of its own.
       <div className="mx-auto mt-8 max-w-3xl">
         <GuestGatePanel reason="ai" next="/search?mode=ai" />
       </div>
@@ -205,7 +205,7 @@ export function AiPanel({
           </ResultGrid>
         </div>
       ) : error != null ? (
-        // In words by the error's code (a limit, an outage), never over the previous results (SRCH-02).
+        // In words by the error's code (a limit, an outage), never over the previous results.
         <ErrorState className="mt-8" error={error} title={t("aiFailed")} onRetry={ai.retry} retrying={busy} />
       ) : data && data.understood === false ? (
         <>
@@ -254,10 +254,10 @@ export function AiPanel({
 }
 
 /**
- * The conditions the search applies (SRCH-09): the hard ones — Selects for the kind, a series' type and status, the
+ * The conditions the search applies: the hard ones — Selects for the kind, a series' type and status, the
  * length and the sort, InputChips for genres, years, rating and language — and, apart, the wishes that only order or
  * widen the result ("Like …", keywords, "shorter first"). One look, always shown; each change re-queries the catalog.
- * On a phone each row is one line that scrolls sideways, so the first results are on the first screen (R3).
+ * On a phone each row is one line that scrolls sideways, so the first results are on the first screen.
  */
 const ROW =
   "scroll-row flex items-center gap-2 *:shrink-0 max-sm:-mx-(--gutter) max-sm:-my-1 max-sm:overflow-x-auto max-sm:px-(--gutter) max-sm:py-1 sm:flex-wrap";
@@ -374,7 +374,7 @@ function Conditions({
           className="w-auto"
           value={f.sort}
           onValueChange={(sort) => edit({ sort })}
-          // The catalog's names for the same orders (CAT-08).
+          // The catalog's names for the same orders.
           options={[
             { value: "popularity", label: tb("sortPopularity") },
             { value: "rating", label: tb("sortRating") },

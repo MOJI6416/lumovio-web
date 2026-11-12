@@ -56,13 +56,13 @@ function replaceUrl(q: string, mode: Mode, scope: Scope) {
 }
 
 /**
- * The search page (S04, S05; design-system 9 "Search"): one field on top — results come as it is typed; under it the
+ * The search page: one field on top — results come as it is typed; under it the
  * types with their counts and, for whoever may use it, "Describe it", the second way to search with the same text.
  * Without a query: recent searches, what's popular, genre tiles. With one: the best match larger, then films, series and
- * people as shelves; a type opens its whole list in place (films and series page by page, SRCH-13). A text that reads as
+ * people as shelves; a type opens its whole list in place (films and series page by page). A text that reads as
  * a description, with no title named like it, is offered "Search by description" first; nothing found offers the same
- * keys on the other keyboard layout, "Describe it" and what's popular (SRCH-08). A kids profile has neither people nor
- * "Describe it", and is told in one line when results are hidden for it (PRF-05).
+ * keys on the other keyboard layout, "Describe it" and what's popular. A kids profile has neither people nor
+ * "Describe it", and is told in one line when results are hidden for it.
  */
 export function SearchView({
   initial,
@@ -93,7 +93,7 @@ export function SearchView({
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // A kids profile has no "Describe it" (the API closes AI search to kids, design-system 8.10); nor a server without a
+  // A kids profile has no "Describe it" (the API closes AI search to kids); nor a server without a
   // model. ?mode=ai opens the ordinary search then.
   const ai = useAiSearch({ enabled: !kids, signedIn, arrival: chosenMode === "ai" ? q : "" });
   const aiOffered = !kids && ai.available;
@@ -130,7 +130,7 @@ export function SearchView({
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
-  // A type: the server's search of only films or only series, page by page (SRCH-13).
+  // A type: the server's search of only films or only series, page by page.
   const typedKind: SearchKind | undefined = scope === "movie" || scope === "tv" ? scope : undefined;
   const typed = useInfiniteQuery({
     queryKey: ["search-pages", debounced, locale, typedKind],
@@ -147,10 +147,10 @@ export function SearchView({
   const counts = data?.counts;
   const typedPages = typed.data?.pages ?? [];
   const typedTitles = titlesOf(typedPages);
-  // Some results of the pages read are hidden for a kids profile (PRF-05): said in a line, without a number.
+  // Some results of the pages read are hidden for a kids profile: said in a line, without a number.
   const hidden = Boolean(data?.hidden) || typedPages.some((p) => p.hidden);
 
-  // A query that found something and stayed for a moment goes to "Recent" (SRCH-07); a failed one doesn't.
+  // A query that found something and stayed for a moment goes to "Recent"; a failed one doesn't.
   const found = titles && active && lead.isSuccess && !lead.isPlaceholderData && !empty;
   // Keys typed on the other layout are remembered as what they found ("bynthcntkkfh" → "интерстеллар").
   const remembered = data?.interpreted ?? debounced;
@@ -160,7 +160,7 @@ export function SearchView({
     return () => clearTimeout(id);
   }, [found, remembered]);
 
-  // Nothing found: the same keys on the other layout, if that names a title (SRCH-08, SRCH-16).
+  // Nothing found: the same keys on the other layout, if that names a title.
   const alt = empty ? otherLayout(debounced) : null;
   const altResults = useQuery({
     queryKey: ["search", alt, locale],
@@ -271,7 +271,7 @@ export function SearchView({
               <FilterChip selected={scope === "all"} onClick={() => openScope("all")}>
                 {tl("filterAll")}
               </FilterChip>
-              {/* A type with "· 0" is off: it would only open an empty grid (SRCH-14); its count says why. */}
+              {/* A type with "· 0" is off: it would only open an empty grid; its count says why. */}
               <FilterChip selected={scope === "movie"} count={counts?.movie} disabled={counts?.movie === 0 && scope !== "movie"} onClick={() => openScope("movie")}>
                 {tl("filterMovies")}
               </FilterChip>
@@ -320,14 +320,14 @@ export function SearchView({
           <ResultsSkeleton />
         </div>
       ) : lead.isError && !data ? (
-        // A failed search is not "nothing found" (X-14).
+        // A failed search is not "nothing found".
         <ErrorState className="mt-8" error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />
       ) : empty ? (
         <div className="mt-8" onClickCapture={rememberOnOpen}>
           <EmptyState
             icon={Search}
             title={t("noResults", { q: debounced })}
-            // A kids profile whose search found only what it can't open is told so (PRF-05): a limit, in sight.
+            // A kids profile whose search found only what it can't open is told so: a limit, in sight.
             note={data?.hidden ? t("hiddenAllForKids") : undefined}
             about={fix ? t("didYouMean") : undefined}
             action={
@@ -375,7 +375,7 @@ export function SearchView({
               {hidden && <p className="text-body-s text-text-2">{t("hiddenForKids")}</p>}
             </div>
           )}
-          {/* A failed refresh keeps what was shown, with Retry above it (8.4). */}
+          {/* A failed refresh keeps what was shown, with Retry above it. */}
           {lead.isError && <ErrorState variant="inline" error={lead.error} title={t("loadError")} onRetry={() => void lead.refetch()} retrying={lead.isFetching} />}
           {scope === "all" && groups && (
             <>
@@ -406,7 +406,7 @@ export function SearchView({
               ) : (
                 <EmptyState icon={Search} title={t("noneOfKind")} />
               )}
-              {/* The next page that didn't come: what is shown stays, Retry at the same place (8.4). */}
+              {/* The next page that didn't come: what is shown stays, Retry at the same place. */}
               <LoadMore
                 onMore={() => void typed.fetchNextPage()}
                 loading={typed.isFetchingNextPage}

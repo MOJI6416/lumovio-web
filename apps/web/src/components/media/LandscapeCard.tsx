@@ -20,7 +20,7 @@ import { useCardMark, useRatingText } from "./PosterCard";
 import { useDismissed, useShelf } from "./shelf-context";
 
 /**
- * Landscape card (design-system 7.12, sizes 5.4): a 16:9 frame with the same badge, mark and progress as a poster, the
+ * Landscape card: a 16:9 frame with the same badge, mark and progress as a poster, the
  * name and one line of metadata — on the frame's foot in a shelf (ArtCaption), under it elsewhere. "Continue watching"
  * and "Next episode" give it the episode and the time left ("Season 3 · episode 16 · 22 min left") and a link straight
  * to the player, with ▶ before the line (`plays`: a press starts playing, not the title page); series shelves give it
@@ -67,7 +67,7 @@ export function LandscapeCard({
   if (useDismissed(title.id)) return null;
   const kindLabel = title.isAnime ? t("anime") : title.kind === "movie" ? t("movie") : t("series");
   const rating = title.lumovioScore || title.imdbRating || title.tmdbRating ? <CardRating title={title} /> : null;
-  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating (HOME-06, X-38).
+  // A shelf's fact is why the card is here: it takes the line alone, never cut for a rating.
   const meta = metaProp ?? (fact ? [fact] : [rating, title.year, kindLabel]);
   const img = title.backdropPath ?? title.posterPath;
   const bare = inShelf && Boolean(img);

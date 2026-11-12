@@ -10,7 +10,7 @@ import { serverApi } from "@/lib/server-api";
 
 type Params = Promise<{ locale: string; kind: string; id: string }>;
 
-/** The player tab is named after what plays (SH-12). */
+/** The player tab is named after what plays. */
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { kind, id } = await params;
   const valid = (kind === "movie" || kind === "tv") && /^\d+$/.test(id);
@@ -28,9 +28,9 @@ export default async function WatchPage({ params }: { params: Params }) {
     details = await serverApi<TitleDetails>(`/api/catalog/title/${kind}/${id}`);
   } catch (e) {
     // Closed to this profile by its age limit, or hidden at a rights holder's request: the title page says so in the site's frame with the way out — "Switch
-    // profile", "Home" — instead of a dead end without a header (8.10, PRF-04). The player's code stays as it was.
+    // profile", "Home" — instead of a dead end without a header. The player's code stays as it was.
     if (e instanceof ApiRequestError && (e.code === "maturity_blocked" || e.code === "title_unavailable")) redirect({ href: `/title/${kind}/${id}`, locale });
-    // An id TMDB never had (404) or one out of range (400) is an unknown address (SH-02).
+    // An id TMDB never had (404) or one out of range (400) is an unknown address.
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) notFound();
     throw e;
   }

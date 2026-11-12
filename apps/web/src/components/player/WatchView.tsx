@@ -64,7 +64,7 @@ import { TorrentFinder } from "./TorrentFinder";
 
 // The TV's composition of the sources screen (tvui/sources), loaded only in the TV shell.
 const TvSources = dynamic<TvSourcesProps>(() => import("@/components/tvui/sources/TvSources").then((m) => m.TvSources), { ssr: false });
-// "Watch on TV" in the player's corner (design-system 8.18): only on the site, after the picture is there.
+// "Watch on TV" in the player's corner: only on the site, after the picture is there.
 const CastButton = dynamic(() => import("@/components/tv/CastButton").then((m) => m.CastButton), { ssr: false });
 import { useWhy } from "./use-why";
 
@@ -88,9 +88,9 @@ interface TorrentFiles {
 
 /**
  * Starting a source goes through its real stages (`prepare-stages.ts`); a failure keeps the stage it happened at.
- * `label`: what is started — its version and server (PLR-05). `fromScreen`: started from the sources screen, whose
+ * `label`: what is started — its version and server. `fromScreen`: started from the sources screen, whose
  * search, filters and scroll stay as they were. An error's `retry` is null when repeating can't help (a torrent gone
- * from its server, a refused sign-in, SRC-03); `gone`: the torrent the server no longer has.
+ * from its server, a refused sign-in); `gone`: the torrent the server no longer has.
  */
 type Phase =
   | { kind: "loading" }
@@ -111,7 +111,7 @@ type Phase =
       auth?: boolean;
       /** Started from the sources screen: the failure is shown there; otherwise on the player's stage. */
       fromScreen?: boolean;
-      /** What it was, for a phone that sent this viewing to the TV ("Watch on TV", design-system 8.18). */
+      /** What it was, for a phone that sent this viewing to the TV ("Watch on TV"). */
       cause?: CastFailure;
     };
 
@@ -149,10 +149,10 @@ export function WatchView({ details }: { details: TitleDetails }) {
 }
 
 /**
- * The player and the sources screen of one viewing (design-system 9 Immersive, 11.1; S25, S26; C15–C20). The screen:
- * "←" and the title (SRC-13), the profile's copies as SourceRows, the TorrServer search (SRC-07…SRC-12), the stages of
- * preparing with "Cancel" (SRC-18), a failure with "Retry" and "Another source" back at the same row (SRC-19). The
- * player opens it over itself without stopping (PLR-03): kept paused out of sight, it goes on from where it was.
+ * The player and the sources screen of one viewing (the Immersive template). The screen:
+ * "←" and the title, the profile's copies as SourceRows, the TorrServer search, the stages of
+ * preparing with "Cancel", a failure with "Retry" and "Another source" back at the same row. The
+ * player opens it over itself without stopping: kept paused out of sight, it goes on from where it was.
  */
 function WatchSession({ details: d }: { details: TitleDetails }) {
   const t = useTranslations("player");
@@ -167,7 +167,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const locale = useLocale();
   const qc = useQueryClient();
   const tvNav = useTvNavOptional();
-  // On a TV every control is the remote's 64 px target (5.6): ui's primitives take the large size there themselves.
+  // On a TV every control is the remote's 64 px target: ui's primitives take the large size there themselves.
   const { me } = useSession();
   const signedIn = Boolean(me?.activeProfile);
   const isKids = Boolean(me?.activeProfile?.isKids);
@@ -179,7 +179,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const wanted = params.get("source");
   // "?pick=1": open the sources screen instead of starting playback (from the title page or the player).
   const picking = params.get("pick") === "1";
-  // Sent from a phone ("Watch on TV", design-system 8.18): which sending it is, where the phone was ("?t="), its audio
+  // Sent from a phone ("Watch on TV"): which sending it is, where the phone was ("?t="), its audio
   // track ("?audio="); the copy it sent ("?source=") starts or nothing does — never another one in its place.
   const castId = params.get("cast");
   const castStart = useRef(Number(params.get("t")) > 5 ? Number(params.get("t")) : null);
@@ -292,9 +292,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       },
     [conns.data],
   );
-  // A copy in words (PLR-05): its version, never its server's name alone.
+  // A copy in words: its version, never its server's name alone.
   const versionOf = useCallback((c: Candidate) => copyText.version(c.server, avail.data?.servers ?? [], d.originalLanguage), [copyText, avail.data, d.originalLanguage]);
-  // A copy's row title (7.15): its quality marks, then what they don't say and what is heard (QualityLine).
+  // A copy's row title: its quality marks, then what they don't say and what is heard (QualityLine).
   const titleOf = useCallback(
     (c: Candidate) => {
       const q = copyText.quality(c.server, avail.data?.servers ?? [], d.originalLanguage);
@@ -349,7 +349,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       const { title, files } = await ts.files(s.externalId, load);
       // Not started on the server and not to be (`load` false): its files aren't known — the caller passes it by.
       if (files.length === 0 && !load) throw new Error("torrent not loaded");
-      // The release's name (the index keeps it): a torrent added before SRC-06 has only the film's name on the server.
+      // The release's name (the index keeps it): a torrent added by older versions has only the film's
+      // name on the server.
       const name = s.label || title || "";
       // How this release numbers the seasons, for numbering the series as releases do (kids profiles send nothing).
       if (d.kind === "tv" && !isKids) reportNumbering(d.id, "files", filesNumbering(files, name));
@@ -369,7 +370,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     [connOf, d.kind, d.id, d.year, isKids, season, episode, bind],
   );
 
-  // In words, never an engine's or a server's own (English) message (8.5, L10N-04).
+  // In words, never an engine's or a server's own (English) message.
   const errorText = useCallback(
     (e: unknown) =>
       e instanceof ShownError
@@ -387,7 +388,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               : t("errorUnknown"),
     [t, mediaError],
   );
-  /** Why a file needs another player, in words (PLR-06, PLR-08). */
+  /** Why a file needs another player, in words. */
   const reasonText = useCallback(
     (note: string | null) => {
       const words = why(note);
@@ -532,7 +533,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         startClock.current = launchSince() ?? performance.now();
         setActive({ candidate: c, prepared });
         setPhase({ kind: "playing" });
-        // Dolby Vision 5 here plays with wrong colours (PLR-15): said at once, with the way to another app.
+        // Dolby Vision 5 here plays with wrong colours: said at once, with the way to another app.
         if (prepared.warning === "dv5")
           toast.info(t("dv5Warning"), { action: { label: t("openExternal"), onClick: () => setPhase({ kind: "external", candidate: c, prepared, reason: t("why_dv5") }) } });
       } catch (e) {
@@ -540,7 +541,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         failed.current.add(c.key);
         const failedAt = c;
         const base = { kind: "error" as const, candidate: c, label: labelOf(c), prep: { ...prep, facts: { ...prep.facts } }, fromScreen: Boolean(opts.fromScreen) };
-        // A torrent the server answers 404 for may be gone from it: its full list decides (SRC-03, TS7).
+        // A torrent the server answers 404 for may be gone from it: its full list decides.
         if (c.provider === "torrserver" && e instanceof MediaNetError && e.code === "http" && e.status === 404) {
           const hash = hashOf(c.server.externalId).toLowerCase();
           const presence = await torrentPresence(c.server.connectionId, hash);
@@ -580,7 +581,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
   );
 
-  /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
+  /** "Cancel" while preparing: the preparation stops at its next step and the screen comes back as it was. */
   const cancel = () => {
     attempt.current++;
     prepAbort.current?.abort();
@@ -687,7 +688,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     [bind, d.kind, season, episode, prepare, setUrl],
   );
 
-  // "Remove the copy" of a torrent its server no longer has (SRC-03): Lumovio's links to it go; nothing is sent to the server.
+  // "Remove the copy" of a torrent its server no longer has: Lumovio's links to it go; nothing is sent to the server.
   const forget = useAction({
     run: async (g: { connectionId: string; hash: string }) => {
       const [r] = await forgetTorrents(g.connectionId, [g.hash]);
@@ -709,7 +710,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (picking) return setPhase({ kind: "choose" });
     const sameTorrent = (c: Candidate) => Boolean(wanted?.startsWith(`${c.server.connectionId}:${hashOf(c.server.externalId)}`));
     const exact = wanted ? candidates.find((c) => c.key === wanted) : undefined;
-    // A copy sent from a phone that this TV doesn't have: the sources screen here, and the phone is told (8.18).
+    // A copy sent from a phone that this TV doesn't have: the sources screen here, and the phone is told.
     const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
@@ -762,7 +763,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     };
   }, [report]);
 
-  // The end of the film: the watch goes into the history, and the end screen says whether it did (PLR-04).
+  // The end of the film: the watch goes into the history, and the end screen says whether it did.
   const complete = (pos: number, dur: number | null) => {
     const sent = report("complete", pos, dur);
     if (!sent) return;
@@ -787,14 +788,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const ns = d.seasons.find((x) => x.seasonNumber === season + 1);
     return ns ? { season: season + 1, episode: 1 } : null;
   }, [d, season, episode]);
-  // The next episode's name for its card (PLR-11): the same query as the title page's season browser and the episodes panel.
+  // The next episode's name for its card: the same query as the title page's season browser and the episodes panel.
   const nextSeason = useQuery({
     queryKey: ["season", d.tmdbId, nextEp?.season ?? 0, locale],
     queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${nextEp!.season}`),
     enabled: nextEp !== null,
     staleTime: 30 * 60_000,
   });
-  // A profile that hides the names (or stills) of unwatched episodes (8.12) gets the number only (the still blurred).
+  // A profile that hides the names (or stills) of unwatched episodes gets the number only (the still blurred).
   const spoilers = useSpoilerPrefs();
   const watched = useLibraryState(d.id).data?.watchedEpisodes;
   const nextOpen = nextEp ? episodesOpen(watched)(nextEp.season, nextEp.episode) : false;
@@ -850,7 +851,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               : ws.kind === "error"
                 ? tt("statusError")
                 : t("noSourcesText");
-  // Only the TorrServers this profile may use (SRC-11): availability lists the profile's own connections.
+  // Only the TorrServers this profile may use: availability lists the profile's own connections.
   const mine = useMemo(() => new Set((avail.data?.sources ?? []).filter((s) => s.kind === "torrserver").map((s) => s.id)), [avail.data]);
   const torrServers = (conns.data?.connections ?? []).filter((c) => c.kind === "torrserver" && mine.has(c.id));
   const linked = useMemo(
@@ -910,7 +911,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (tvNav) tvNav.focus(first);
     else first?.focus({ preventScroll: true });
   }, [phase, tvNav]);
-  // Back to the control that was picked, where it stood on the screen, with the focus on it (remotes, keyboards; SRC-19).
+  // Back to the control that was picked, where it stood on the screen, with the focus on it (remotes, keyboards).
   const toList = () => {
     const p = savedPlace.current;
     savedPlace.current = null;
@@ -930,7 +931,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     requestAnimationFrame(toList);
   };
   const backToPlayer = () => setPhase({ kind: "playing" });
-  // On a TV the sources over a viewing are a step of the history (TV3): Back of a TV browser that keeps Back to itself
+  // On a TV the sources over a viewing are a step of the history: Back of a TV browser that keeps Back to itself
   // goes back to watching — a preparation under way is dropped — instead of leaving the player.
   const overPlayer = Boolean(tvNav && active && phase.kind !== "playing");
   const toWatching = useRef(() => {});
@@ -975,7 +976,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       : undefined,
   };
 
-  // "Watch on TV" (design-system 8.18). On the TV: what plays is said to the phone that sent it, its "Stop on TV" leaves
+  // "Watch on TV". On the TV: what plays is said to the phone that sent it, its "Stop on TV" leaves
   // the player, and where the phone was ("?t=") counts for the first start only (a reload goes on from the progress).
   useCastReport({
     on: Boolean(tvNav) && signedIn,
@@ -1074,7 +1075,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         nextEp
           ? {
               label: [t("episodeLabel", nextEp), nextName].filter(Boolean).join(" · "),
-              // The launch's scene from the press (or the countdown's end), as any "Watch" (11.1 «Запуск»).
+              // The launch's scene from the press (or the countdown's end), as any "Watch".
               go: () => {
                 if (!tvNav) startLaunch();
                 router.replace(epHref(nextEp.season, nextEp.episode));
@@ -1110,7 +1111,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       onPlay={(pos) => {
         // It played: a torrent this launch brought stays.
         brought.current = null;
-        // A play counts for the shelf the title was opened from (anonymous, C5; once per open).
+        // A play counts for the shelf the title was opened from (anonymous; once per open).
         if (seq.current === 0) trackOutcome(d.id, "play");
         send(seq.current === 0 ? "start" : "progress", pos, last.current.dur);
         if (seq.current <= 1) active.prepared.reportStart?.(pos);
@@ -1178,7 +1179,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         failed.current.add(c.key);
         background(
           // Without the element's code the failure is the rebuild engine's: its own words, addresses cut, say which
-          // step broke (13 "media:?" from iPhones in a week said nothing, admin 2026-10-29).
+          // step broke (13 "media:?" from iPhones in a week said nothing).
           reportPlayback({ provider: c.provider, method: prepared.method, outcome: "failed", errorCode: code !== null ? `media:${code}` : `engine:${message.replace(/\w+:\/\/\S+/g, "…").slice(0, 52)}`, container: null, videoCodec: null, audioCodec: null, platform: detectCapabilities().platform }),
         );
         // "Try again" goes on from where it stopped, not from where the page opened.
@@ -1207,7 +1208,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     />
   );
 
-  // The launch (11.1 «Запуск»): from "Watch" to the first frame one scene — the black stage, the loader and what is done
+  // The launch: from "Watch" to the first frame one scene — the black stage, the loader and what is done
   // now — whichever way the viewing was started: a link from the title or home (the scene came with the press), the
   // sources screen, the next episode, another source or audio from the player. The TV shell keeps its own.
   const launching =
@@ -1283,7 +1284,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     ) : null;
   const finderOn = finderShown && (phase.kind === "choose" || phase.kind === "error" || phase.kind === "external" || phase.kind === "pickFile" || (phase.kind === "preparing" && phase.fromScreen));
 
-  // The TV shell: the same viewing in the TV's composition (design-system 10.3 «Экран источников», S57).
+  // The TV shell: the same viewing in the TV's composition.
   if (tvNav) {
     const errorActions = (p: Extract<Phase, { kind: "error" }>): TvAction[] => [
       ...(p.retry ? [{ label: tc("retry"), icon: RefreshCw, run: p.retry }] : []),
@@ -1393,7 +1394,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     );
   }
 
-  // A launch that failed or needs another app stays on the player's stage (11.1), wherever it was started; the sources
+  // A launch that failed or needs another app stays on the player's stage, wherever it was started; the sources
   // screen lies under it with its search, filters and place, for "Another source".
   const onStage = phase.kind === "error" || phase.kind === "external";
   const errorActions = (p: Extract<Phase, { kind: "error" }>, primaryRetry: boolean) => (
@@ -1469,13 +1470,13 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     <>
       {player}
       {stage}
-      {/* The sources screen is a stage (3.5, SRC-02): dark roles in either theme; its lists and dialogs open inside it.
+      {/* The sources screen is a stage: dark roles in either theme; its lists and dialogs open inside it.
           Kept under the player's stage (its search, filters and place stay for "Another source"). */}
       <main ref={setStageEl} hidden={onStage || launching} className="stage min-h-dvh bg-stage text-text-1">
         <PortalContainerContext.Provider value={stageEl}>
-          {/* Immersive (9): "←" and the title, no poster circle (SRC-13). Opened from the player, the way back is to it. */}
+          {/* Immersive: "←" and the title, no poster circle. Opened from the player, the way back is to it. */}
           <header className="sticky top-0 z-sticky border-b border-line bg-stage pt-[env(safe-area-inset-top)]">
-            {/* The tool width, centred, as the list under it (owner, 2026-10-25: nothing left against the start edge). */}
+            {/* The tool width, centred, as the list under it (nothing left against the start edge). */}
             <div className="page-x mx-auto flex w-full max-w-tool items-center gap-3 py-3">
               <IconButton
                 icon={ArrowLeft}
@@ -1619,7 +1620,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
 }
 
 /**
- * A launch that failed or needs another app (design-system 11.1): the launch's own black stage, "←" to the title, the
+ * A launch that failed or needs another app: the launch's own black stage, "←" to the title, the
  * title and episode where the player shows them. So "Watch" leads to the picture or to why not, never to a screen of
  * sources nobody asked for.
  */

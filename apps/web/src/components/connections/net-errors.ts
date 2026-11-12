@@ -2,7 +2,7 @@ import type { useTranslations } from "next-intl";
 import { isPrivateHost, MediaNetError, type NetErrorCode } from "@/lib/media/net";
 
 /**
- * A failure talking to the person's own server, in their words; never the error's own (English) text (X-15, SRV-02).
+ * A failure talking to the person's own server, in their words; never the error's own (English) text.
  * `url`: the server's address, when known — an http:// address of the home network that this browser still refused
  * is said apart from a public one (Chrome and Edge reach it after the local network permission; others don't).
  */

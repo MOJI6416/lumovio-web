@@ -55,7 +55,7 @@ function summary() {
 }
 
 /**
- * Support (admin handoff «Поддержка»): the form — a topic, the message, for a guest the e-mail for the answer and the
+ * Support: the form — a topic, the message, for a guest the e-mail for the answer and the
  * bot check, and by the person's tick the technical summary, shown before it goes — and, signed in, «Мои обращения».
  */
 export function SupportView({ email }: { email: string | null }) {

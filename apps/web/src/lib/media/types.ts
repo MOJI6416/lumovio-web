@@ -75,7 +75,7 @@ export interface PreparedPlayback {
    */
   remuxSource?: { url: string; headers: Record<string, string>; targetAddressSpace?: "loopback" | "local" };
   /**
-   * Subtitles the browser can't read itself (PLR-14; `lib/media/subs/engine.ts`): `file` — the video file read by ranges
+   * Subtitles the browser can't read itself (`lib/media/subs/engine.ts`): `file` — the video file read by ranges
    * for its own tracks (a Matroska file whose probe lists text or PGS subtitles), with the server's sign-in like
    * `remuxSource`; `files` — subtitle files next to it in the torrent. Never shown or logged.
    */
@@ -99,7 +99,7 @@ export interface PreparedPlayback {
   /** Server-side audio switching (Jellyfin/Plex transcodes) — returns a new playback. */
   selectAudio?: (index: number) => Promise<PreparedPlayback>;
   durationSec: number | null;
-  /** It plays, but not as it should here: "dv5" — Dolby Vision profile 5 on a browser that doesn't decode it (wrong colours; PLR-15). */
+  /** It plays, but not as it should here: "dv5" — Dolby Vision profile 5 on a browser that doesn't decode it (wrong colours). */
   warning?: "dv5";
   /** Link for VLC/mpv/Infuse (may embed server credentials — never shown in full). */
   externalUrl: string | null;

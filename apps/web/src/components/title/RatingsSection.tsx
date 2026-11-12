@@ -36,7 +36,7 @@ const GROUPS: Group[] = ["critics", "audience"];
 
 /**
  * A row of a source: its name, its meter, its value, its votes — the same columns in every group, so the meters of
- * critics and audience start and end on one line (7.22). From a tablet one line: the name keeps its width and the
+ * critics and audience start and end on one line. From a tablet one line: the name keeps its width and the
  * meter takes what is left, up to 24 rem, so on a wide page the name stands at the start and the meter, value and
  * votes at the end, as a table's row. On a phone the name, value and votes are the line and the meter runs under it
  * across the row (METER_UNDER), as long as it can be.
@@ -256,7 +256,7 @@ function Sources({ items, apart, className }: { items: RatingItem[]; apart: bool
 }
 
 /**
- * "Ratings" in "Details" (7.22; TTL-10, TTL-21, C13; owner 2026-11-06: "I expected more"): the Lumovio Score as the lead
+ * "Ratings" in "Details": the Lumovio Score as the lead
  * — the number, what it means, its meter, critics and audience — beside the sources split the same way, each source's
  * number drawn on a meter of its own scale so "8.4/10", "92%" and "4.4/5" read alike. "How it's calculated" opens the
  * shares; the hero's ratings line opens this section (#ratings), a link to #lumovio-score opens the shares too.

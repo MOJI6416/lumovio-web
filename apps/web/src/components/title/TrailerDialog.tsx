@@ -19,7 +19,7 @@ export function TrailerDialog({ video, title, onClose }: { video: Video | null; 
   return (
     <Dialog open={video !== null} onOpenChange={(o) => !o && onClose()} title={video?.name ?? title} size="xl">
       {video && (
-        // The frame's own black around the video (3.6).
+        // The frame's own black around the video.
         <div className="aspect-video overflow-hidden rounded-sm bg-black">
           <iframe
             src={embed(video)}

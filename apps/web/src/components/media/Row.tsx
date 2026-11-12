@@ -15,7 +15,7 @@ import { drawInTurn, restoredScrollY } from "./shelf-turns";
 export type RowKind = CardShape;
 
 /**
- * One focus stop per card in a shelf (HOME-15): Tab enters the shelf on its current card (its link, then its "More"),
+ * One focus stop per card in a shelf: Tab enters the shelf on its current card (its link, then its "More"),
  * ←/→ (and Home/End) move between cards, Tab leaves the shelf. The TV mode keeps its own arrow navigation.
  */
 function useRovingCards(ref: RefObject<HTMLElement | null>, shown: boolean) {
@@ -55,7 +55,7 @@ function useRovingCards(ref: RefObject<HTMLElement | null>, shown: boolean) {
       active = all[j]!;
       apply();
       all[j]!.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
-      // Reduced motion jumps instead of gliding (6.3).
+      // Reduced motion jumps instead of gliding.
       const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       all[j]!.scrollIntoView({ block: "nearest", inline: "nearest", behavior: smooth ? "smooth" : "auto" });
     };
@@ -70,14 +70,14 @@ function useRovingCards(ref: RefObject<HTMLElement | null>, shown: boolean) {
 }
 
 /**
- * A shelf (design-system 7.13): the h2 — itself the link to the whole of the shelf ("Popular series ›", 2026-11-06,
+ * A shelf: the h2 — itself the link to the whole of the shelf ("Popular series ›",
  * as Apple TV's and Netflix's: the link stands at its name, not 1,300 px away in lime at the row's other end) whenever
- * there is a page of it. What the shelf is and how it was picked is the section's description for a screen reader
- * (HOME-07). Cards of one width (5.4) in a row that scrolls with a swipe and snaps; on a phone the next card peeks in;
+ * there is a page of it. What the shelf is and how it was picked is the section's description for a screen
+ * reader. Cards of one width in a row that scrolls with a swipe and snaps; on a phone the next card peeks in;
  * on a tablet and desktop arrows appear at the edges on hover, centred on the art, and the edges fade where there is
- * more. A shelf with fewer than `min` cards is not shown: the home page and the catalog pass 3 (7.13, HOME-05),
- * "Continue watching" 1; a profile's own collections keep any count until their screens decide (Ф6). No filter chips
- * inside a shelf: a filter is the "All" page (7.13). A card that leaves the shelf ("Not interested") does so at once;
+ * more. A shelf with fewer than `min` cards is not shown: the home page and the catalog pass 3,
+ * "Continue watching" 1; a profile's own collections keep any count. No filter chips
+ * inside a shelf: a filter is the "All" page. A card that leaves the shelf ("Not interested") does so at once;
  * "Undo" puts it back (./shelf-context).
  */
 export function Row({
@@ -93,13 +93,13 @@ export function Row({
   min = 1,
 }: {
   title: string;
-  /** What the h2 shows when it's more than `title`'s text: a name in another language marked with `lang` (8.11). */
+  /** What the h2 shows when it's more than `title`'s text: a name in another language marked with `lang`. */
   heading?: ReactNode;
   /** What the shelf is, in plain words (the section's description for a screen reader). */
   note?: string;
   /** How it was picked, its source (also for a screen reader). */
   rules?: string;
-  /** A link to adjust the shelf, once in the "i"; not shown since the "i" left the headings (2026-11-06). */
+  /** A link to adjust the shelf, once in the "i"; not shown since the "i" left the headings. */
   info?: ReactNode;
   /** Controls at the end of the heading row (the starter's "Not now"); never filters. */
   actions?: ReactNode;
@@ -176,11 +176,11 @@ export function Row({
     };
   }, [update, shown, drawn]);
 
-  // Anonymous discovery counters (C5): which cards of this shelf were seen and opened.
+  // Anonymous discovery counters: which cards of this shelf were seen and opened.
   useEffect(() => {
     const el = ref.current;
     if (!shown || !el || !id) return;
-    // The page's C5 comparison arm, when the API built it in one (`data-discovery-variant` on the page's shelves).
+    // The page's comparison arm, when the API built it in one (`data-discovery-variant` on the page's shelves).
     const variant = el.closest<HTMLElement>("[data-discovery-variant]")?.dataset.discoveryVariant;
     return observeShelf(el, discoveryPage(window.location.pathname, variant), id);
   }, [id, shown]);
@@ -192,14 +192,14 @@ export function Row({
     const el = ref.current;
     if (!el) return;
     const rtl = getComputedStyle(el).direction === "rtl";
-    // Reduced motion jumps instead of gliding (6.3, audit X-26).
+    // Reduced motion jumps instead of gliding.
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.scrollBy({ left: dir * (rtl ? -1 : 1) * el.clientWidth * 0.85, behavior: smooth ? "smooth" : "auto" });
   };
 
   const headingId = id ? `${id}-heading` : undefined;
   const about = [note, rules].filter(Boolean).join(" ");
-  // The edge with more cards fades over the page's gutter (7.13); the other edge stays sharp.
+  // The edge with more cards fades over the page's gutter; the other edge stays sharp.
   const side = (more: boolean) => (more ? "transparent" : "black");
   const mask = `linear-gradient(to right, ${side(!edges.start)} 0, black var(--gutter), black calc(100% - var(--gutter)), ${side(!edges.end)} 100%)`;
   // Arrows over the artwork, with a mouse, on hover: a frame has its name on it (the card's centre is the art's); a
@@ -219,7 +219,7 @@ export function Row({
       <div className="page-x mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 md:mb-4">
         <h2 id={headingId} className="text-h2 text-text-1">
           {href ? (
-            // The whole heading is the link, 44 tall on a phone without moving the line (5.6: padding, then the same
+            // The whole heading is the link, 44 tall on a phone without moving the line (padding, then the same
             // negative margin); the chevron says where it goes and moves on hover. Its name starts with what it shows
             // ("Popular series: All", label in name).
             <Link href={href} className="group/all -my-2.5 inline-flex items-center gap-1 rounded-xs py-2.5 md:-my-1 md:py-1">
@@ -231,7 +231,7 @@ export function Row({
             (heading ?? title)
           )}
         </h2>
-        {/* No "i" by the heading (owner, 2026-11-06: the heading says what the shelf is); what it is and how it was
+        {/* No "i" by the heading (the heading says what the shelf is); what it is and how it was
             picked stays for a screen reader. */}
         {about && (
           <p id={aboutId} className="sr-only">
@@ -271,7 +271,7 @@ export function Row({
   );
 }
 
-/** A grid of poster cards (Collection pages: catalog, search, library, lists): the shelf's card width, as many as fit (5.4). */
+/** A grid of poster cards (Collection pages: catalog, search, library, lists): the shelf's card width, as many as fit. */
 export function TitleGrid({ children }: { children: ReactNode }) {
   return <div className={clsx("grid gap-y-6", GRID_COLS.poster, CARD_GAP_X)}>{children}</div>;
 }

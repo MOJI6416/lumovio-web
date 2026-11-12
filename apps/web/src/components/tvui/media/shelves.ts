@@ -5,7 +5,7 @@ import { formatRuntime } from "@/lib/format";
 import { trimOverview, type TvShelfData } from "./types";
 
 /*
- * The site's shelves as TV shelves (server side): the same data and headings as the site (design-system 7.13), the
+ * The site's shelves as TV shelves (server side): the same data and headings as the site, the
  * overviews kept for the spotlight (trimmed), the notes the cards can't show in the spotlight's line.
  */
 

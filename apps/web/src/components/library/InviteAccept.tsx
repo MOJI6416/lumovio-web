@@ -7,8 +7,8 @@ import { ApiRequestError, api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 
 /**
- * "Join" and "Not now" of an invitation (S32), stacked at the column's width, the main one on top. Joining opens the
- * list with a toast; a link that stopped working meanwhile, or a refusal, is said in words (LIB-19).
+ * "Join" and "Not now" of an invitation, stacked at the column's width, the main one on top. Joining opens the
+ * list with a toast; a link that stopped working meanwhile, or a refusal, is said in words.
  */
 export function InviteAccept({ token }: { token: string }) {
   const t = useTranslations("library");

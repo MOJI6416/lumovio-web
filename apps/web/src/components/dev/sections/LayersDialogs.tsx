@@ -240,7 +240,7 @@ function ConfirmDemo() {
 }
 
 /**
- * Layers opened from a stage take its dark values in either theme (3.5): a confirmation, a menu and a select list
+ * Layers opened from a stage take its dark values in either theme: a confirmation, a menu and a select list
  * opened from the artwork. In the light theme they stay dark, like the sign-in wall's and the player's.
  */
 function StageLayersDemo() {
@@ -294,13 +294,13 @@ export function LayersDialogs() {
   const t = useTranslations("devUi");
   return (
     <>
-      <ShowcaseSection id="dialog" title={t("dialogs")} source="ui/Dialog.tsx · 7.9">
+      <ShowcaseSection id="dialog" title={t("dialogs")} source="ui/Dialog.tsx">
         <LayerKindsDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="confirm" title={t("confirm")} source="ui/ConfirmDialog.tsx · 7.9, 8.3">
+      <ShowcaseSection id="confirm" title={t("confirm")} source="ui/ConfirmDialog.tsx">
         <ConfirmDemo />
       </ShowcaseSection>
-      <ShowcaseSection id="stage-layers" title={t("stageLayers")} source="ui/portal.ts · 3.5">
+      <ShowcaseSection id="stage-layers" title={t("stageLayers")} source="ui/portal.ts">
         <StageLayersDemo />
       </ShowcaseSection>
     </>

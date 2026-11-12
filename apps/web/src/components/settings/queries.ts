@@ -5,8 +5,9 @@ import type { Prefs } from "./prefs";
 import type { PublicPage } from "./ProfileDialogs";
 
 /*
- * The settings sections' own data, one definition for the section and for the frame that reads it ahead (2026-11-07:
- * a section came up as a skeleton for its first 0.1–0.4 s). A light module: types only from the rest.
+ * The settings sections' own data, one definition for the section and for the frame that reads it ahead
+ * (without it a section came up as a skeleton for its first 0.1–0.4 s).
+ * A light module: types only from the rest.
  */
 
 export const sessionsQuery = { queryKey: ["sessions"], queryFn: () => api<{ sessions: DeviceSession[] }>("/api/sessions") };

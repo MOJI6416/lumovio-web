@@ -50,7 +50,7 @@ function overSections(el: HTMLElement | null): boolean {
 }
 
 /**
- * The header's open search (design-system 7.19, 9 "Search"; as Apple TV's; ./HeaderSearch opens it): the field in the
+ * The header's open search (as Apple TV's; ./HeaderSearch opens it): the field in the
  * header itself and a list under it. An empty field lists the recent searches (a press puts one back in the field);
  * from two letters the answer comes as it is typed: the best match larger, then titles and people, and "All results"
  * (the search page); a text that reads as a description gets "Search by description" first, otherwise it is the last
@@ -77,7 +77,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
     const id = setTimeout(() => setDq(q.trim()), DEBOUNCE_MS);
     return () => clearTimeout(id);
   }, [q]);
-  // The field grows out of the round button and back into it (--dur-base, ease-base: 6.3, 7.19); its width is the
+  // The field grows out of the round button and back into it (--dur-base, ease-base); its width is the
   // header's room — over the sections when they are in the way, so nothing beside it moves.
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -325,7 +325,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
         )}
       />
       {showList && (
-        // The page's theme, not the stage's: over a hero the header is a stage (3.5), its list is the site's own layer.
+        // The page's theme, not the stage's: over a hero the header is a stage, its list is the site's own layer.
         // It comes in as the field opens (fades in, 4 px down) and goes out as it closes.
         <div
           data-theme={document.documentElement.dataset.theme}
@@ -345,7 +345,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
           )}
           {q.trim() && data?.interpreted && <p className="px-3 pt-1 pb-2 text-body-s text-text-2">{t("searchedAs", { q: data.interpreted })}</p>}
           {q.trim() && results.isError && !data ? (
-            // A line in the list's place (7.11 inline); Retry would take the focus from the field — typing again asks again.
+            // A line in the list's place; Retry would take the focus from the field — typing again asks again.
             <EmptyState variant="inline" role="status" className="px-3 py-2" title={t("loadError")} />
           ) : q.trim() && !data ? (
             <div className="flex flex-col gap-2 p-1" aria-hidden>

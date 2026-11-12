@@ -102,7 +102,7 @@ export function ComboboxPopover<V extends string>({
         <button
           ref={trigger}
           type="button"
-          // As the light field (./Combobox, SET-15): a combobox; ↓/↑ open it, as Enter and Space do.
+          // As the light field (./Combobox): a combobox; ↓/↑ open it, as Enter and Space do.
           // biome-ignore lint/a11y/useAriaPropsForRole: Popover.Trigger gives it aria-expanded and aria-controls
           role="combobox"
           onKeyDown={(e) => {

@@ -7,7 +7,7 @@ import { TvCard } from "./TvCard";
 import type { TvShelfData } from "./types";
 
 /*
- * A shelf of the TV shell (design-system 7.13 TV variant): a heading, then one row that is one zone of the remote —
+ * A shelf of the TV shell: a heading, then one row that is one zone of the remote —
  * ←/→ go card by card, the row slides to keep the focused card and part of the next in view, ↑/↓ go to the shelves
  * around it at the same column or the card last chosen there (tvui/nav/engine). No wrap-around at the ends; a shelf
  * with a whole list ends with "See all".

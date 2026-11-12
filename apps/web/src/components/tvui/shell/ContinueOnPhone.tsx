@@ -7,7 +7,7 @@ import { localizedPath } from "@/lib/seo";
 import { qrImage } from "@/lib/qr";
 
 /**
- * "Continue on your phone" (design-system 10.3, TV document §4, §7.1 item 6): what is set up on a phone or a computer
+ * "Continue on your phone": what is set up on a phone or a computer
  * — servers, sign-in methods, import, the account — is offered from the TV as a QR code and a short address that open
  * that very page there. Scanning gives no access by itself: the phone signs in to its own account.
  */
@@ -17,7 +17,7 @@ export function ContinueOnPhone({ path, url: absolute, title, text }: { path?: s
   const [url, setUrl] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   useEffect(() => {
-    // The site's own address, as this TV opened it (lumovio.app, or the stand it is tested on).
+    // The site's own address, as this TV opened it (lumovio.app, or a local dev server it is tested on).
     const full = absolute ?? `${window.location.origin}${localizedPath(locale, path ?? "/")}`;
     setUrl(full);
     void qrImage(full, 360).then(setQr, () => setQr(null));

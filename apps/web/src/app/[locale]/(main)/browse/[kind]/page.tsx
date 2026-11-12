@@ -18,7 +18,7 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 export async function generateMetadata({ params }: { params: Params }) {
   const { locale, kind } = await params;
   const t = await getTranslations("browse");
-  // Filters in the address (?genre=…) are views of the section: the canonical is the section itself (SH-13).
+  // Filters in the address (?genre=…) are views of the section: the canonical is the section itself.
   return { title: kind === "tv" ? t("titleSeries") : t("titleMovies"), ...(kind === "movie" || kind === "tv" ? pageSeo(locale, `/browse/${kind}`) : {}) };
 }
 
@@ -31,7 +31,7 @@ export default async function BrowsePage({ params, searchParams }: { params: Par
   const sp = await searchParams;
   const get = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : null);
   // Anime has a section of its own: "?anime=1" (an old link, a typed address) opens its grid with the same filters,
-  // as the home's "All" does since CAT-11, not this section's landing or a grid named "All series".
+  // as the home's "All" does, not this section's landing or a grid named "All series".
   if (get("anime") === "1") {
     const next = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" && k !== "anime" ? [[k, v]] : [])));
     if (kind === "movie") next.set("kind", "movie");
@@ -57,8 +57,8 @@ export default async function BrowsePage({ params, searchParams }: { params: Par
   const query = discoverQuery(kind, browseState(get, false));
   // The first page rendered on the server; without it the browser loads it (with its own error and Retry).
   const first = await optional(serverApi<Paged<TitleSummary>>(`/api/catalog/discover?${query}&page=1`), null);
-  // A shelf's "All" page keeps its name and what it is for (CAT-05, CAT-11) — the latter for a screen reader only:
-  // no explanatory line on the screen (redesign 2026-11).
+  // A shelf's "All" page keeps its name and what it is for — the latter for a screen reader only:
+  // no explanatory line on the screen.
   const shelf = shelfHeading(get("shelf"), (k) => tr(k as "rows.oneEvening"), genres, locale);
   return (
     <div className="page-x mx-auto max-w-media">

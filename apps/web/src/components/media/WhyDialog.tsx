@@ -6,7 +6,7 @@ import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Link } from "@/components/ui/Link";
 
 /**
- * "Why this?" from a personal card's "More" (design-system 8.1): every fact the pick's reason holds — the profile's
+ * "Why this?" from a personal card's "More": every fact the pick's reason holds — the profile's
  * title it comes from and how the profile showed it likes it, people, genres, ratings, a copy on its servers — and the
  * way to adjust recommendations. Only facts the API confirms (components/media/recommendation-copy.ts whyLines).
  */

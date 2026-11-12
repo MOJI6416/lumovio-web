@@ -29,7 +29,7 @@ import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./Wat
 const ID = "torrserver-h";
 
 /**
- * "Where to watch" without a copy on the profile's servers (design-system 7.15, SRC-01, SRC-09): this device searches
+ * "Where to watch" without a copy on the profile's servers: this device searches
  * the profile's own TorrServer and shows one release in the card — what is heard, the picture as marks, where from —
  * with the white "Watch" that adds it and starts the player. Under it, three pills lead to another release, each
  * narrowing the one before: the audio (the profile's languages first), the cut of the film (theatrical, extended, the
@@ -75,7 +75,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const voice = option && (option.studio || option.language) ? option.key : null;
   // A cut and a picture go along only when chosen by hand: with nothing chosen the screen starts with the same release anyway.
   const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${edition && choice.edition ? `&edition=${edition}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
-  // What the search does, for a screen reader (no explanation on screen, 2026-11-06).
+  // What the search does, for a screen reader (no explanation on screen).
   const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
   if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} />;
@@ -119,7 +119,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const play = async (x: RankedRelease, voice: string | null) => {
     setAdding(true);
     setError(null);
-    // The launch's scene from the press (11.1 «Запуск»): the add is its first step, the player's page goes on with it;
+    // The launch's scene from the press: the add is its first step, the player's page goes on with it;
     // "←" drops it before the player is asked for.
     let dropped = false;
     startLaunch(
@@ -138,7 +138,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       if (!added) throw new Error(tpl("addFailed"));
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
       if (dropped) {
-        // Left before it played ("←" during the add): a torrent this add brought is taken back (18), never one that was there.
+        // Left before it played ("←" during the add): a torrent this add brought is taken back, never one that was there.
         if (!added.existed) background(takeBack(source.id, added.hash).then(() => qc.invalidateQueries({ queryKey: ["availability", d.id] })));
         return;
       }
@@ -159,7 +159,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   // The mode's reasons explain its own pick; a version the person picked needs none.
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
   // The heading says the chosen audio's own language ("Russian · dub" for a Russian dub, whatever else the release has).
-  // One track: the studio's, else the one the player starts of a language alone or its dub (36).
+  // One track: the studio's, else the one the player starts of a language alone or its dub.
   const heard =
     text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios)) ||
     text.option({ studio: null, voice: null, language: null });
@@ -173,7 +173,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   return (
     <>
       {about}
-      {/* Results kept through an empty search: said to a screen reader, not on screen (37). */}
+      {/* Results kept through an empty search: said to a screen reader, not on screen. */}
       {kept && <p className="sr-only">{kept}</p>}
       <WatchCard
         id={ID}
@@ -191,7 +191,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
           </>
         }
         where={[via, chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null, chosen.result.tracker].filter(Boolean).join(" · ")}
-        // A known risk only (37): "unknown" — a name without its codec, most of them — is said in the release's details.
+        // A known risk only: "unknown" — a name without its codec, most of them — is said in the release's details.
         note={
           chosen.fit === "poor" && (
             <p className="flex items-start gap-1.5">
@@ -276,7 +276,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
             )}
           </div>
           <ActionLink variant="action" arrow href={pickHref} className="self-start sm:ms-auto sm:self-auto">
-            {/* What the screen lists: its card and "Other releases" — not dead ones, cinema recordings, other seasons (38). */}
+            {/* What the screen lists: its card and "Other releases" — not dead ones, cinema recordings, other seasons. */}
             {tp("allReleases", { count: (lookup.data?.ranked ?? []).filter((x) => x.holds !== false && !x.info.cam && !x.dead).length })}
           </ActionLink>
         </div>

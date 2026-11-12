@@ -25,7 +25,7 @@ export interface CardMenuExtra {
 }
 
 /**
- * A card's "More" menu (design-system 8.1, 7.12): the personal actions with the same requests, toasts and Undo as the
+ * A card's "More" menu: the personal actions with the same requests, toasts and Undo as the
  * title page (./usePersonalActions) — Watchlist, Favourites, Watched (a series: its episodes on the title page),
  * Not interested (asks why, optionally; the card leaves a shelf at once; Undo brings it back), Why this? (personal
  * shelves), Add to list…, Share. On a phone it opens as a
@@ -110,7 +110,7 @@ export function CardMenu({
             {t("watched")}
           </MenuCheckboxItem>
         ) : (
-          // A series is marked episode by episode, or a season at once, on its page (C12).
+          // A series is marked episode by episode, or a season at once, on its page.
           <MenuItem icon={CircleCheck} href={`${href}#episodes`}>
             {t("markEpisodes")}
           </MenuItem>

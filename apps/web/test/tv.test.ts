@@ -3,7 +3,7 @@ import { entryIndex, nearest } from "../src/components/tvui/nav/engine";
 import { isTvMode, isTvUserAgent, TV_APP_MIN_VERSION, tvAppToUpdate, tvAppVersion, tvShellPath, versionBelow } from "../src/lib/tv";
 
 /*
- * The TV shell (TV document §4.1, §5, §12): which device gets it, where an address is answered, and the remote's
+ * The TV shell: which device gets it, where an address is answered, and the remote's
  * choice of the next item.
  */
 

@@ -18,7 +18,7 @@ export type HdrFormat = "hdr" | "hdr10" | "hdr10+" | "dv" | "hlg";
 export type PictureSource = "remux" | "bluray" | "webdl" | "webrip" | "hdtv" | "dvd";
 const SOURCES: PictureSource[] = ["remux", "bluray", "webdl", "webrip", "hdtv", "dvd"];
 
-/** A resolution as a release names it, one table for every screen that lists releases (L10N-09). */
+/** A resolution as a release names it, one table for every screen that lists releases. */
 export const RESOLUTION_LABEL: Record<number, string> = { 2160: "4K", 1080: "1080p", 720: "720p", 480: "SD" };
 
 export interface ReleaseInfo {
@@ -51,7 +51,7 @@ export interface ReleaseInfo {
   /**
    * The audio tracks the name lists, in its order, each with its own language, kind and studio as far as the name
    * links them ("Dub + MVO (Jaskier) + Dub (Ukr) + Original Eng" is a Russian dub, Jaskier's Russian voice-over, a
-   * Ukrainian dub and the original) — never one language for every studio (SRC-05). Empty when the name lists none.
+   * Ukrainian dub and the original) — never one language for every studio. Empty when the name lists none.
    */
   tracks: ReleaseTrack[];
   /** The seasons and episodes the name states, for a series' releases. */
@@ -151,7 +151,7 @@ export function creditsStudio(release: string, studio: string): boolean {
 }
 
 /**
- * "Dubbing" in the profile's studios (docs/torrserver-2026-11.md, 5): any studio's dub, as one entry of the order
+ * "Dubbing" in the profile's studios: any studio's dub, as one entry of the order
  * ("1 — Dubbing, 2 — LostFilm"). Stored as `DUBBING`; the word typed by hand in a language counts as it too.
  */
 export const DUBBING = "dub";
@@ -313,7 +313,7 @@ function tracksOf(name: string, tracker: string | null, originalLanguage: string
  */
 export function parseRelease(title: string, tracker: string | null = null, originalLanguage: string | null = null): ReleaseInfo {
   const t = title.replace(/[._]/g, " ");
-  // The lines stated win over "4K" and "UHD": "UHD-BDRip 1080p" is 1080p taken from a UHD disc (docs/torrserver-2026-11.md 8).
+  // The lines stated win over "4K" and "UHD": "UHD-BDRip 1080p" is 1080p taken from a UHD disc.
   const res = /(?<![\d])2160p/i.test(t)
     ? 2160
     : /(?<![\d])1080[pi]/i.test(t)
@@ -372,7 +372,7 @@ export function parseRelease(title: string, tracker: string | null = null, origi
   else if (voice && (RU_TRACKERS.test(tr) || (!tr && RU_KINDS.test(audio)))) {
     // "Dub (Ukr)" or "Ukr Dub" alone is a Ukrainian dub; any other translation on such a tracker is Russian. A torrent
     // with no tracker (one already on a TorrServer) is judged by its name: MVO / DVO / AVO are those trackers' own words
-    // ("12 angry men … Dub + 2x MVO + AVO + Original (Eng)" has a Russian dub, owner's TorrServer, 2026-11-06).
+    // ("12 angry men … Dub + 2x MVO + AVO + Original (Eng)" has a Russian dub).
     const ukOnly = languages.has("uk") && !languages.has("ru") && /(?:dub|mvo|dvo|avo|vo|дубляж)[\s(]*(?:ukr|укр)|(?:ukr|укр)\p{L}*[\s)]*(?:dub|mvo|dvo|avo|vo|дубляж)/iu.test(audio);
     if (!ukOnly) languages.add("ru");
   }
@@ -453,7 +453,7 @@ const yearsIn = (release: string) => [...release.matchAll(/(?<!\d)(19\d{2}|20\d{
  * starts with the original or localized title, and a film's year, when the name has one, is within a
  * year of it. A different film that merely contains the words ("The Science of Interstellar") does not count.
  *
- * A series' searches bring other titles that start alike (owner's torr, 2026-11-12, docs/torrserver-2026-11.md, 25): a
+ * A series' searches bring other titles that start alike: a
  * name where the title goes on with another word is another title's — "The Penguin Lessons" (a 2024 film) for "The
  * Penguin", "House of the Dragon / S3" for "House", "Lost in Space (S1)" for "Lost" — while a subtitle after a colon or a
  * dash still may be this one ("Arcane: League of Legends"); a name dated before the series began is a film or an older
@@ -468,7 +468,7 @@ export function isSameTitle(release: string, names: string[], year: number | nul
     const pack = packOf(release);
     if (pack.seasons && !pack.cours) return false;
     // Nor a broadcast: a season named by its year or a date — "S2025 / 19 / F1 TV [17-19.10.2025, WEB-DL 1080p]" is a
-    // race, not "F1" (2025) (docs/torrserver-2026-11.md 8).
+    // race, not "F1" (2025).
     if (/(?<![\p{L}\d])s(?:19|20)\d\d(?![\p{L}\d])/iu.test(release) || /(?<!\d)\d{1,2}\.\d{2}\.(?:19|20)\d\d(?!\d)/u.test(release)) return false;
   }
   const parts = norm(release).split(/\s*[/|]\s*/);
@@ -603,7 +603,7 @@ export interface RankedRelease {
    * How well its picture suits this device and the quality mode, higher better: it surely plays here (`fit`), then the
    * mode's resolution order (`resolutionOrder`: 1080p before 4K where 4K doesn't fit) and the dynamic range the screen
    * shows. A film's default cut is chosen among the cuts whose best release suits as well as the best of all
-   * (`defaultCut`): a cut found only in 4K HDR isn't a 1080p screen's default (docs/torrserver-2026-11.md 8).
+   * (`defaultCut`): a cut found only in 4K HDR isn't a 1080p screen's default.
    */
   suits: number;
   fit: Fit;
@@ -633,7 +633,7 @@ function floorOf(info: Pick<ReleaseInfo, "resolution">, fit: Fit, prefs: Pick<Re
 
 /**
  * How alive a release's swarm is, by the seeders its indexer counts (an unknown count is not weak): 0 — almost dead (one
- * or two), 1 — thin (under ten), 2 — alive. The owner, 2026-11 (docs/torrserver-2026-11.md, 6): "4K with 2 peers is worse
+ * or two), 1 — thin (under ten), 2 — alive. "4K with 2 peers is worse
  * than Full HD with 20" — an almost dead release never wins over a live one, whatever its picture or studio (`rankReleases`),
  * and among releases of one picture a thin swarm comes after a live one before the source decides (`pictureRank`).
  */
@@ -727,7 +727,7 @@ export function rankReleases(
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
       // Tracks listed in that language speak for it alone: a Russian dub doesn't make a Ukrainian track without a kind a
-      // dub ("Dub (Red Head Sound) + Цікава Ідея" for "uk, ru"; docs/torrserver-2026-11.md 8).
+      // dub ("Dub (Red Head Sound) + Цікава Ідея" for "uk, ru").
       const listed = i >= 0 && info.tracks.some((t) => t.language === prefs.languages[i]);
       const kind = j >= 0 ? null : listed ? bestVoiceIn(info, prefs.languages[i]!) : ((i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice);
       const fit = fitOf(info, prefs.device);
@@ -758,7 +758,7 @@ export function rankReleases(
 /**
  * The kind of translation each studio does, as the names of one search pair them ("Dub (Red Head Sound)"): the kind
  * most names give it. For a name that credits the studio without a kind ("WEB-DL [H.264/1080p] RHS"), which would
- * otherwise rank below the same studio's track named "Dub" whatever its picture (docs/torrserver-2026-11.md 8).
+ * otherwise rank below the same studio's track named "Dub" whatever its picture.
  */
 function studioKinds(infos: readonly ReleaseInfo[]): Map<string, Voice> {
   const counts = new Map<string, Map<Voice, number>>();
@@ -810,8 +810,8 @@ export function audioMatch(x: RankedRelease): { kind: "studio"; studio: string }
 
 /**
  * The keys of the audio options a release belongs to, "<language>|<studio or kind>": one per track the name lists,
- * each in its own language (a Russian studio's track is a Russian option, whatever the profile's language — SRC-04,
- * SRC-05); a name that lists none is an option of the profile's language it has, with its kind, or of none.
+ * each in its own language (a Russian studio's track is a Russian option, whatever the profile's language);
+ * a name that lists none is an option of the profile's language it has, with its kind, or of none.
  */
 export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[] {
   const tracks = namedTracks(x.info);
@@ -821,7 +821,7 @@ export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[]
 
 /**
  * A kind of translation as an audio option of its own: a dub only. "Multi-voice", "two-voice", "author's" (MVO, DVO, AVO,
- * VO) say that studios or authors are inside, not which (docs/torrserver-2026-11.md, 4): such a track is an option of its
+ * VO) say that studios or authors are inside, not which: such a track is an option of its
  * language alone ("Russian"), and its studios come from the file once it is read.
  */
 const kindKey = (voice: Voice | null) => (voice === "dub" ? "dub" : "");
@@ -1078,7 +1078,7 @@ export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<
 /**
  * The track of a release's name an audio choice starts, when the choice names no studio — a language alone, or its dub —
  * as the player picks the file's (`voiceTrack` → `profileTrack` in that language, a dub first for a dub): what a heading
- * says is heard, one track, not every one of the language (docs/torrserver-2026-11.md 36). Null for a studio's choice
+ * says is heard, one track, not every one of the language. Null for a studio's choice
  * (its studio names the track) or none.
  */
 export function wishNameTrack(info: Pick<ReleaseInfo, "tracks">, wish: VoiceWish | null, studios: readonly string[]): ReleaseTrack | null {
@@ -1088,7 +1088,7 @@ export function wishNameTrack(info: Pick<ReleaseInfo, "tracks">, wish: VoiceWish
 
 /**
  * A found release's name in the page (`data-link`, the TV's `data-key`): a short hash of its link, never the link —
- * an indexer's link carries its key (Jackett's `jackett_apikey`), which stays out of the DOM (docs/torrserver-2026-11.md 41).
+ * an indexer's link carries its key (Jackett's `jackett_apikey`), which stays out of the DOM.
  */
 export function releaseDomId(link: string): string {
   let h = 0x811c9dc5;
@@ -1099,8 +1099,8 @@ export function releaseDomId(link: string): string {
 /**
  * The audio tracks the player read in a title's copies on the profile's TorrServers, for `rankReleases`' `fileOf`: a
  * search result that is the same release — by its hash, or the name the copy was saved under — takes its studios from
- * the file ("6x MVO"). The title page reads them as the sources screen does, so both recommend the same
- * (docs/torrserver-2026-11.md 2, 7). Null when no copy's tracks were read.
+ * the file ("6x MVO"). The title page reads them as the sources screen does, so both recommend the same.
+ * Null when no copy's tracks were read.
  */
 export function copyFileTracks(servers: readonly Pick<Availability, "kind" | "externalId" | "label" | "quality">[]): ((r: Pick<TsSearchResult, "hash" | "title">) => readonly string[] | null) | null {
   const m = new Map<string, readonly string[]>();

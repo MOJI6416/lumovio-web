@@ -18,7 +18,7 @@ import { personHref, titleHref } from "@/lib/slug";
 import { departmentKey } from "./search-helpers";
 import type { BestMatch, GroupKey, SearchGroups } from "./search-model";
 
-/** A person's department in words (the person page's), not TMDB's "Acting"; nothing for one TMDB adds later (SRCH-06). */
+/** A person's department in words (the person page's), not TMDB's "Acting"; nothing for one TMDB adds later. */
 function useDepartment() {
   const t = useTranslations();
   return (p: PersonSummary) => {
@@ -38,7 +38,7 @@ function TitleFacts({ title, genres }: { title: TitleSummary; genres: Record<num
     .join(", ");
   const rated = Boolean(title.lumovioScore || title.imdbRating || title.tmdbRating);
   const parts = [kind, title.year, names].filter(Boolean);
-  // " · " between the facts, never at a line's start (2.2): the dot holds on to the fact before it.
+  // " · " between the facts, never at a line's start: the dot holds on to the fact before it.
   return (
     <p className="mt-2 flex flex-wrap items-baseline text-body text-text-2">
       {parts.map((part, i) => (
@@ -53,7 +53,7 @@ function TitleFacts({ title, genres }: { title: TitleSummary; genres: Record<num
 }
 
 /**
- * The best match (design-system 9 "Search"): bigger than the rest, above the groups. A title — its backdrop 16:9 (the
+ * The best match: bigger than the rest, above the groups. A title — its backdrop 16:9 (the
  * poster where there is none) with the personal mark and progress, the name, type, year, genres and rating; a person —
  * the round photo, the name and the department. The whole block is one link.
  */
@@ -145,7 +145,7 @@ function BestTitle({ title, genres, heading }: { title: TitleSummary; genres: Re
 
 /**
  * The groups under the best match: films, series and people, each a shelf in the answer's order. A title group with
- * more than its shelf shows has its heading as the link to all of them ("Films ›", as the home's shelves, 7.13): a
+ * more than its shelf shows has its heading as the link to all of them ("Films ›", as the home's shelves): a
  * press opens the type's whole list in place (`onScope`); the address is real, for a new tab.
  */
 export function ResultGroups({
@@ -197,7 +197,7 @@ export function ResultGroups({
 }
 
 /**
- * The search's grids run edge to edge, as the catalog's (design-system 5.4, 8ff9576): as many columns as fit cards of
+ * The search's grids run edge to edge, as the catalog's: as many columns as fit cards of
  * at least the shelf's width (posters 144 from md, 168 from xl; people 112 and 128), sharing what is left; three on a
  * phone. `auto-fill` keeps a short result's cards at a column's size.
  */

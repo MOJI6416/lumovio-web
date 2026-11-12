@@ -8,7 +8,7 @@ import { background } from "@/lib/optional";
 const EVERY_MS = 30_000;
 
 /**
- * Where a TV's viewing is, for the phones driving it (design-system 8.18): `preparing` — a copy is being started or
+ * Where a TV's viewing is, for the phones driving it: `preparing` — a copy is being started or
  * chosen; `video` — the player is there, its own element says playing, paused or ended; a failure — why it didn't start.
  */
 export type CastStatus = "preparing" | "video" | { failure: CastFailure };

@@ -28,9 +28,9 @@ export interface ProbeResult {
 }
 
 /**
- * The profile's TorrServer search for the title, run by this device for the hero's main button and line (8.2: "Watch ·
+ * The profile's TorrServer search for the title, run by this device for the hero's main button and line ("Watch ·
  * Through TorrServer · [HD] dub Le Doyen"). The same query as "Where to watch" (hooks/useTorrentLookup), so both
- * say the same thing (TTL-06) and the search runs once; the recommendation is the one "Where to watch" shows first.
+ * say the same thing and the search runs once; the recommendation is the one "Where to watch" shows first.
  * Loaded only where such a search runs. Draws nothing.
  */
 export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore; source: SourceState; onChange: (r: ProbeResult) => void }) {
@@ -90,7 +90,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
     onChange({
       state: { state: "found", name: source.name, summary, marks },
       play: async () => {
-        // The launch's scene from the press, the add its first step (11.1 «Запуск»), as "Where to watch" starts it.
+        // The launch's scene from the press, the add its first step, as "Where to watch" starts it.
         let dropped = false;
         startLaunch(
           {
@@ -107,7 +107,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
           if (!added) throw new Error(tp("addFailed"));
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
           if (dropped) {
-            // Left before it played ("←" during the add): a torrent this add brought is taken back (18), never one that was there.
+            // Left before it played ("←" during the add): a torrent this add brought is taken back, never one that was there.
             if (!added.existed) background(takeBack(source.id, added.hash).then(() => qc.invalidateQueries({ queryKey: ["availability", d.id] })));
             return false;
           }

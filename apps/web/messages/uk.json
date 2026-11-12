@@ -2687,7 +2687,15 @@
     "markEarlier": "Позначити й попередні",
     "episodeNumber": "{n} серія",
     "specialNumber": "Спецвипуск {n}",
-    "playEpisode": "Дивитися: {episode}"
+    "playEpisode": "Дивитися: {episode}",
+    "upcomingRelease": "Вийде {date}",
+    "upcomingPremiere": "Прем'єра {date}",
+    "upcomingUnannounced": "Дату виходу не оголошено",
+    "upcomingSeason": "{season} сезон вийде {date}",
+    "upcomingEpisode": "Нова серія {date}",
+    "addToCalendar": "Додати в календар",
+    "calendarGoogle": "Google Календар",
+    "calendarOther": "Apple, Outlook та інші"
   },
   "personPage": {
     "noCreditsKids": "Робіт, доступних у дитячому профілі, немає",
