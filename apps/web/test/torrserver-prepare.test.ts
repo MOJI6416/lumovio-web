@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlaybackCapabilities } from "../src/lib/media/capabilities";
 
@@ -54,23 +55,80 @@ vi.mock("../src/lib/media/net", async (original) => ({
   },
 }));
 
+/** The file's own bytes, read by ranges (the engine's own fetch): a real Matroska file, or a server that won't say. */
+let fileBytes: Uint8Array | null = null;
+const ranges: string[] = [];
+vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+  const range = new Headers(init?.headers).get("Range");
+  ranges.push(`${new URL(url).pathname} ${range}`);
+  const m = /bytes=(\d+)-(\d+)/.exec(range ?? "");
+  if (!fileBytes || !m) return new Response(null, { status: 404 });
+  return new Response(fileBytes.slice(Number(m[1]), Number(m[2]) + 1), { status: 206 });
+});
+const multi = readFileSync(new URL("../public/player-check/mkv-multi.mkv", import.meta.url));
+
 const { torrServerClient } = await import("../src/lib/media/torrserver");
 const client = torrServerClient("http://ts.test", { username: null, password: null });
 const tick = () => new Promise((r) => setTimeout(r, 0));
+const opened = () => vi.waitFor(() => expect(gates.size).toBeGreaterThan(0));
 
 beforeEach(() => {
   asked.length = 0;
+  ranges.length = 0;
   gates.clear();
   gated = null;
+  fileBytes = null;
   caps = chrome;
   preopen.mockClear();
+});
+
+describe("a Matroska file new to this device", () => {
+  it("is decided from its own first kilobytes: ffprobe is not waited for, nor asked", async () => {
+    fileBytes = multi;
+    gated = /^\/ffp\//;
+    const p = await client.prepare(`${"f".repeat(40)}:1`, { profile: { languages: ["uk"], studios: [] } });
+    expect(asked).toEqual(["/stream?link=#&stat", "/subs/#/1"]);
+    expect(ranges).toEqual(["/stream/Film.2024.1080p.mkv bytes=0-65535"]);
+    expect(p.audio.map((a) => [a.index, a.label, a.lang, a.codec])).toEqual([
+      [1, "Дубляж", "rus", "ac3"],
+      [2, "ukr", "ukr", "aac"],
+      [3, "eng", "eng", "eac3"],
+    ]);
+    // The profile's Ukrainian is not the file's default: rebuilt with that track, as with ffprobe's answer.
+    expect(p.type).toBe("remux");
+    expect(p.remuxAudio).toBe(2);
+    expect(p.durationSec).toBe(4.021);
+    // What it read is kept: the next start of the file reads nothing.
+    ranges.length = 0;
+    asked.length = 0;
+    await client.prepare(`${"f".repeat(40)}:1`, { audioIndex: 3 });
+    expect(ranges).toEqual([]);
+    expect(asked).toEqual(["/stream?link=#&stat", "/subs/#/1"]);
+  });
+
+  it("asks ffprobe in the background for what the head leaves unknown, for the next start", async () => {
+    // The clip's Duration element zeroed: the file doesn't say how long it is.
+    const b = new Uint8Array(multi);
+    const at = b.findIndex((x, i) => x === 0x44 && b[i + 1] === 0x89);
+    b.fill(0, at + 3, at + 3 + (b[at + 2]! & 0x7f));
+    fileBytes = b;
+    gated = /^\/ffp\//;
+    const id = `${"9".repeat(40)}:1`;
+    const p = await client.prepare(id);
+    expect(p.durationSec).toBeNull();
+    expect(asked).toContain("/ffp/#/1");
+    gates.get("/ffp/#/1")!.open(PROBE);
+    await tick();
+    gated = null;
+    expect((await client.prepare(id)).durationSec).toBe(6000);
+  });
 });
 
 describe("preparing a TorrServer file", () => {
   it("asks for the subtitle list alongside the probe, not after it", async () => {
     gated = /^\/ffp\//;
     const ready = client.prepare(`${"a".repeat(40)}:1`);
-    for (let i = 0; i < 20 && !gates.size; i++) await tick();
+    await opened();
     expect(asked).toEqual(["/stream?link=#&stat", "/subs/#/1", "/ffp/#/1"]);
     gates.get("/ffp/#/1")!.open(PROBE);
     const p = await ready;
@@ -94,7 +152,7 @@ describe("preparing a TorrServer file", () => {
     const id = `${"c".repeat(40)}:1`;
     gated = /^\/ffp\//;
     const first = client.prepare(id);
-    for (let i = 0; i < 20 && !gates.size; i++) await tick();
+    await opened();
     gates.get("/ffp/#/1")!.fail();
     expect((await first).info).toBeUndefined();
     gated = null;
@@ -107,7 +165,7 @@ describe("preparing a TorrServer file", () => {
     caps = iphone;
     gated = /^\/ffp\//;
     const ready = client.prepare(`${"d".repeat(40)}:1`);
-    for (let i = 0; i < 20 && !gates.size; i++) await tick();
+    await opened();
     await tick();
     expect(preopen).toHaveBeenCalledTimes(1);
     expect(preopen.mock.calls[0]![0].url).toMatch(/\/stream\/Film\.2024\.1080p\.mkv\?link=d{40}&index=1&play$/);

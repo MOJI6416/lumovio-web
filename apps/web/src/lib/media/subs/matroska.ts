@@ -123,7 +123,7 @@ interface Head {
 }
 
 /** An element header at `p`, or null when the buffer ends before it does. */
-function readHead(b: Uint8Array, p: number): Head | null {
+export function readHead(b: Uint8Array, p: number): Head | null {
   if (p >= b.length) return null;
   const first = b[p]!;
   const idLen = first >= 0x80 ? 1 : first >= 0x40 ? 2 : first >= 0x20 ? 3 : first >= 0x10 ? 4 : 0;
@@ -146,16 +146,16 @@ function readHead(b: Uint8Array, p: number): Head | null {
   return { id, headSize: idLen + len, size: allOnes ? null : size };
 }
 
-const uint = (b: Uint8Array, p: number, n: number) => {
+export const uint = (b: Uint8Array, p: number, n: number) => {
   let v = 0;
   for (let i = 0; i < n; i++) v = v * 256 + b[p + i]!;
   return v;
 };
-const text = (b: Uint8Array, p: number, n: number) =>
+export const text = (b: Uint8Array, p: number, n: number) =>
   new TextDecoder().decode(b.subarray(p, p + n)).replace(/\0+$/, "");
 
 /** The children of the element whose data is `b[start, end)`. */
-function* children(
+export function* children(
   b: Uint8Array,
   start: number,
   end: number,

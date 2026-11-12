@@ -462,15 +462,25 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const { rememberedProbe, rememberProbe } = await memory;
       let probe: FileProbe | null = rememberedProbe(probeKey);
       if (!probe) {
+        const matroska = /\.(mkv|mk3d|webm)$/i.test(file.path);
         // A Matroska file where this browser has no Matroska (an iPhone) is rebuilt whatever the probe says: the rebuild
         // reads the file's head and index meanwhile, instead of after it (~2 s on a phone).
-        if (/\.(mkv|mk3d|webm)$/i.test(file.path) && caps.containers.mkv === "no" && caps.mediaSource !== "none") void import("./remux").then((m) => m.preopen(raw), () => undefined);
-        try {
-          probe = await get<FileProbe>(`/ffp/${hash}/${file.id}`, 60_000, signal);
-          if (probe?.streams?.length) rememberProbe(probeKey, probe);
-        } catch {
-          probe = null;
-        }
+        if (matroska && caps.containers.mkv === "no" && caps.mediaSource !== "none") void import("./remux").then((m) => m.preopen(raw), () => undefined);
+        const ask = () =>
+          optional(get<FileProbe>(`/ffp/${hash}/${file.id}`, 60_000, signal), null).then((p) => {
+            if (p?.streams?.length) rememberProbe(probeKey, p);
+            return p;
+          });
+        // A Matroska file says what a playback takes from TorrServer's ffprobe in its first kilobytes — a read or two, where
+        // ffprobe reads megabytes from the start and the end: ffprobe is asked only for what they leave unknown (in the
+        // background, for the next start), and waited for when they can't tell (another container, a codec they don't name).
+        const own = matroska ? await optional(import("./matroska-probe").then((m) => m.serverFileProbe(raw, file.length, signal ?? new AbortController().signal)), null) : null;
+        signal?.throwIfAborted();
+        if (own) {
+          rememberProbe(probeKey, own);
+          if (!own.format?.duration || !own.chapters) void ask();
+          probe = own;
+        } else probe = await ask();
         signal?.throwIfAborted();
       }
       const vs = probe?.streams?.find((s) => s.codec_type === "video");

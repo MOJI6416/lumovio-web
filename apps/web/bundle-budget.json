@@ -132,7 +132,7 @@
       "jsChunks": 15
     },
     "/[locale]/settings/connections/[id]/torrents": {
-      "jsGzip": 237879,
+      "jsGzip": 238717,
       "cssGzip": 22539,
       "jsChunks": 16
     },
@@ -262,7 +262,7 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 507678,
+      "jsGzip": 508575,
       "cssGzip": 20624,
       "jsChunks": 20
     }
