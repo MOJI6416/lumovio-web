@@ -274,7 +274,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
             )}
           </div>
           <ActionLink variant="action" arrow href={pickHref} className="self-start sm:ms-auto sm:self-auto">
-            {tp("allReleases", { count: lookup.data?.ranked.length ?? 0 })}
+            {/* What the screen lists: its card and "Other releases" — not dead ones, cinema recordings, other seasons (38). */}
+            {tp("allReleases", { count: (lookup.data?.ranked ?? []).filter((x) => x.holds !== false && !x.info.cam && !x.dead).length })}
           </ActionLink>
         </div>
         <ReleaseDetails
