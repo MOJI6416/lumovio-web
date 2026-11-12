@@ -1,5 +1,7 @@
 import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
 import { clsx } from "clsx";
+import { headers } from "next/headers";
+import { userAgent } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Billboard } from "@/components/media/Billboard";
 import { cardRow, cardShelf, forCard } from "@/components/media/card-data";
@@ -55,10 +57,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   }
   const profile = me?.activeProfile ?? null;
   const empty = { items: [] as TitleSummary[], wanted: [] as TitleSummary[] };
+  // A search engine gets the error page's 5xx instead (whole pages for robots, BootBoundary): a 200 saying "unavailable"
+  // at the home's address reads as a soft 404 there (Search Console, 2026-11-12), a 5xx as "come back later".
+  const bot = userAgent({ headers: await headers() }).isBot;
   const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
     // A guest has no session to tell an outage by (getMeState): the home's own data not coming is the same screen.
     serverApi<CatalogPage>("/api/catalog/home").catch((e) => {
-      if (meFailure(e) === "unavailable") return null;
+      if (!bot && meFailure(e) === "unavailable") return null;
       throw e;
     }),
     serverApi<{ genres: Genre[] }>("/api/catalog/genres/movie").catch(() => ({ genres: [] })),

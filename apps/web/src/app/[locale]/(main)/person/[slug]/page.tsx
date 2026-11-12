@@ -54,7 +54,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { locale, slug } = await params;
   // Metadata only: a page that fails to load says so itself.
   const p = await optional(load(slug), null);
-  if (!p || p === "blocked") return {};
+  if (!p) return {};
+  // Closed to this profile (an adult performer for a guest): the same screen at every such address, not to be indexed — as a title's.
+  if (p === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
   // A link preview is landscape (11.3, SH-13): a frame from what they are known for, else the brand image — not the
   // portrait photo, which a preview crops to a strip of face.
   const frame = tmdbImage(known(p).find((c) => c.backdropPath)?.backdropPath, "w1280");

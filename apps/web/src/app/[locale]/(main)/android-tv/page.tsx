@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { buttonClass } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { formatSize } from "@/lib/format";
-import { SITE_URL } from "@/lib/seo";
+import { pageSeo, SITE_URL } from "@/lib/seo";
 
 /** The newest Android TV release, read at build time (next.config.ts, .github/workflows/tv-app.yml). */
 interface TvAppRelease {
@@ -15,9 +15,10 @@ interface TvAppRelease {
 }
 const release: TvAppRelease | null = process.env.LUMOVIO_TV_APP ? JSON.parse(process.env.LUMOVIO_TV_APP) : null;
 
-export async function generateMetadata() {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const t = await getTranslations("tvApp");
-  return { title: t("title"), description: t("description") };
+  // Canonical and hreflang as the site's other pages (SH-13): without them its ten languages read as duplicates.
+  return { title: t("title"), description: t("description"), ...pageSeo((await params).locale, "/android-tv") };
 }
 
 /**
