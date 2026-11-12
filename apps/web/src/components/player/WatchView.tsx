@@ -48,6 +48,7 @@ import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
+import { noteLine } from "@/lib/media/line-speed";
 import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
@@ -1133,6 +1134,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         complete(pos, last.current.dur ?? pos);
         active.prepared.reportStop?.(pos);
       }}
+      // What this TorrServer's line gave the playback: "Auto" ranks its next releases by it (lib/media/line-speed).
+      onLine={active.candidate.provider === "torrserver" ? (bps) => noteLine(active.candidate.server.connectionId, bps) : undefined}
       onFatal={(message, code) => {
         const c = active.candidate;
         const prepared = active.prepared;

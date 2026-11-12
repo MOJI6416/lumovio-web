@@ -8,6 +8,7 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
+import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { failingTrackers as failingTrackers_, noFailingTrackers, subscribeTrackers } from "@/lib/media/tracker-adds";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
@@ -77,7 +78,9 @@ export type LookupResult = SearchAnswer;
 export function useTorrentLookup(d: TitleSummary, source: SourceState | null, enabled = true, quality?: ReleaseQuality, season: number | null = null, episode: number | null = null) {
   const { me } = useSession();
   const base = useReleasePrefs();
-  const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
+  // What this server's line gave the device's playbacks: "Auto" ranks by it (lib/media/line-speed).
+  const lineBps = useSyncExternalStore(subscribeLine, () => lineSpeed(source?.id), () => null);
+  const prefs = useMemo(() => ({ ...base, ...(quality ? { quality } : {}), lineBps }), [base, quality, lineBps]);
   // The tracks read in the title's copies (the page's own availability query, not another request): a result that is
   // a copy takes its studios from the file, as on the sources screen.
   const avail = useTitleAvailability(d.id);

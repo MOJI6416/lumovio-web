@@ -99,6 +99,8 @@ export interface PreparedPlayback {
   /** Server-side audio switching (Jellyfin/Plex transcodes) — returns a new playback. */
   selectAudio?: (index: number) => Promise<PreparedPlayback>;
   durationSec: number | null;
+  /** The file's size, when the server says it (TorrServer): with `durationSec`, its bytes per second for `watchLine`. */
+  sizeBytes?: number | null;
   /** It plays, but not as it should here: "dv5" — Dolby Vision profile 5 on a browser that doesn't decode it (wrong colours). */
   warning?: "dv5";
   /** Link for VLC/mpv/Infuse (may embed server credentials — never shown in full). */

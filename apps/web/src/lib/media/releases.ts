@@ -550,7 +550,28 @@ export interface ReleasePrefs {
   device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null; av1?: boolean };
   /** Trackers whose torrents this device's TorrServer couldn't add lately (`tracker-adds`): their releases come after. */
   failingTrackers?: ReadonlySet<string>;
+  /**
+   * The most this device got from the TorrServer per second (`line-speed`), null when no playback told it: in "Auto", a
+   * release whose bitrate it doesn't carry comes after one it does, as 4K does on a screen without it.
+   */
+  lineBps?: number | null;
 }
+
+/**
+ * A release's bytes per second: its size over the film's runtime, or over its episodes' for a series (the runtime is an
+ * episode's then, and the name has to say how many it holds); null when either isn't known.
+ */
+export function releaseBps(pack: PackInfo, size: number | null, kind: "movie" | "tv", runtimeMin: number | null | undefined): number | null {
+  if (!size || !runtimeMin || runtimeMin <= 0) return null;
+  if (kind === "movie") return size / (runtimeMin * 60);
+  const e = pack.episodes;
+  if (!e || e.open) return null;
+  const n = e.to - e.from + 1;
+  return n > 0 ? size / (n * runtimeMin * 60) : null;
+}
+
+/** A release the line can't carry: its bitrate past 85 % of what this device got from the server (only in "Auto"). */
+const tooHeavy = (bps: number | null, prefs: Pick<ReleasePrefs, "quality" | "lineBps">) => prefs.quality === "auto" && Boolean(prefs.lineBps) && bps !== null && bps > prefs.lineBps! * 0.85;
 
 /** Dynamic range as the name states it: HDR (HDR10/HLG-style, Dolby Vision with such a base too), Dolby Vision alone, or SDR. */
 export type Range = "hdr" | "dv" | "sdr";
@@ -667,7 +688,7 @@ function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
  * also takes a film's bigger file (an episode's bitrate can't be told from a season pack's size).
  * "small": how alive the swarm is, then the smallest known size, unknown sizes last.
  */
-function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | null, prefs: ReleasePrefs, movie: boolean): number[] {
+function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | null, prefs: ReleasePrefs, movie: boolean, heavy = false): number[] {
   const order = resolutionOrder(prefs);
   const res = order.length - order.indexOf(info.resolution);
   const range = rangeOf(info);
@@ -678,16 +699,17 @@ function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | n
   // "Smaller file" asks for the smallest file of the live ones: almost dead ones aside, size decides.
   if (prefs.quality === "small") return [healthy > 0 ? 1 : 0, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
   if (prefs.quality === "best") return [res, dynamic, healthy, source, movie && size ? size : 0];
-  return [res, dynamic, healthy, source];
+  // "Auto": what the line carries before what it doesn't (`ReleasePrefs.lineBps`), then the picture as above.
+  return [heavy ? 0 : 1, res, dynamic, healthy, source];
 }
 
 /** `RankedRelease.suits`: the fit, then — but for "Smaller file", which asks for no picture — resolution and range. */
-function suitsOf(info: ReleaseInfo, fit: Fit, prefs: ReleasePrefs): number {
+function suitsOf(info: ReleaseInfo, fit: Fit, prefs: ReleasePrefs, heavy: boolean): number {
   if (prefs.quality === "small") return FIT_SCORE[fit];
   const order = resolutionOrder(prefs);
   const range = rangeOf(info);
   const dynamic = range === "hdr" || range === "dv" ? (prefs.device.hdr ? 2 : 0) : 1;
-  return FIT_SCORE[fit] * 100 + (order.length - order.indexOf(info.resolution)) * 10 + dynamic;
+  return FIT_SCORE[fit] * 1000 + (heavy ? 0 : 100) + (order.length - order.indexOf(info.resolution)) * 10 + dynamic;
 }
 
 function compareRank(a: number[], b: number[]): number {
@@ -710,7 +732,7 @@ function compareRank(a: number[], b: number[]): number {
  */
 export function rankReleases(
   results: TsSearchResult[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "status" | "seasons">>,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "status" | "seasons" | "runtime">>,
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
@@ -737,6 +759,7 @@ export function rankReleases(
       const fit = fitOf(info, prefs.device);
       const floor = floorOf(info, fit, prefs);
       const dead = result.seeders === 0;
+      const heavy = tooHeavy(releaseBps(info.pack, result.size, d.kind, d.runtime), prefs);
       // Every tracker it is on gave TorrServer no torrent lately: after the others, as an almost dead one is.
       const failing = prefs.failingTrackers;
       const unreachable = Boolean(failing?.size) && (result.origins?.map((o) => o.tracker) ?? [result.tracker]).every((t) => t !== null && failing!.has(t));
@@ -754,11 +777,11 @@ export function rankReleases(
         j >= 0 ? prefs.studios.length - j : 0,
         kind ? VOICE_SCORE[kind] : 0,
         FIT_SCORE[fit],
-        ...pictureRank(info, result.size, result.seeders, prefs, d.kind === "movie"),
+        ...pictureRank(info, result.size, result.seeders, prefs, d.kind === "movie", heavy),
         held,
         result.seeders ?? -1,
       ];
-      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, unreachable, suits: suitsOf(info, fit, prefs), fit, dead, holds, rank };
+      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, unreachable, suits: suitsOf(info, fit, prefs, heavy), fit, dead, holds, rank };
     })
     .sort((a, b) => compareRank(a.rank, b.rank));
 }

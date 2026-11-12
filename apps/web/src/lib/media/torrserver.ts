@@ -579,6 +579,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
             }
           : undefined,
         durationSec: probe?.format?.duration ? Number(probe.format.duration) : null,
+        sizeBytes: file.length || null,
         // Dolby Vision without an HDR10 base layer (profile 5) shows wrong colours where it isn't decoded.
         warning: vs?.side_data_list?.some((x) => /dovi|dolby vision/i.test(x.side_data_type ?? "") && x.dv_profile === 5) && !caps.dolbyVision ? "dv5" : undefined,
         externalUrl: externalUrl(hash, file),

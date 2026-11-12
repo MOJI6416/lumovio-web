@@ -31,6 +31,8 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
     genreIds: d.genreIds,
     originalLanguage: d.originalLanguage,
     isAnime: d.isAnime,
+    // A release's bitrate is its size over this: "Auto" ranks by the line to the server with it.
+    runtime: d.runtime,
     seasons: d.seasons,
     status: d.status,
     watchProviders: d.watchProviders,

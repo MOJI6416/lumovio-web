@@ -3,13 +3,14 @@
 import type { ConnectionSummary, ReleaseQuality, TitleDetails } from "@lumovio/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, forProfile, pickRelease } from "@/lib/media/release-pick";
 import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish, wishNameTrack } from "@/lib/media/releases";
+import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -145,7 +146,9 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   // The site's quality mode for this viewing (its "Quality" pill); the profile's until one is chosen.
   const [ownMode, setMode] = useState<ReleaseQuality | null>(modeInSort ? null : (start?.quality ?? null));
   const mode = (modeInSort ? MODE_OF[sort] : undefined) ?? ownMode ?? base.quality;
-  const prefs = useMemo(() => ({ ...base, quality: mode }), [base, mode]);
+  // What the chosen server's line gave this device's playbacks: "Auto" ranks by it (lib/media/line-speed).
+  const lineBps = useSyncExternalStore(subscribeLine, () => lineSpeed(connId), () => null);
+  const prefs = useMemo(() => ({ ...base, quality: mode, lineBps }), [base, mode, lineBps]);
   const text = useReleaseText();
   const [tracker, setTracker] = useState<string | null>(null);
   const [voice, setVoice] = useState<string | null>(start?.voice ?? null);

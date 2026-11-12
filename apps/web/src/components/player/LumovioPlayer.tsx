@@ -42,6 +42,7 @@ import { Slider } from "@/components/ui/Slider";
 import { api } from "@/lib/api";
 import { formatClock, formatRuntime, formatSize } from "@/lib/format";
 import { detectCapabilities } from "@/lib/media/capabilities";
+import { watchLine } from "@/lib/media/line-speed";
 import { loadOffset, saveOffset } from "@/lib/media/subs/choice";
 import type { SubtitleFormat } from "@/lib/media/subs/engine";
 import { OFFSET_STEP, SUBTITLE_DEFAULTS, setSubtitleView, shiftTrack, stepOffset, subtitleView } from "@/lib/media/subs/view";
@@ -61,6 +62,8 @@ export interface PlayerEvents {
   onPause: (positionSec: number) => void;
   onEnded: (positionSec: number) => void;
   onFatal: (message: string, code: number | null) => void;
+  /** What the line gave this playback (bytes per second, `watchLine`), told once: a file whose size and duration are known. */
+  onLine?: (bytesPerSec: number) => void;
 }
 
 export interface PlayerProps extends PlayerEvents {
@@ -727,6 +730,16 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const id = window.setTimeout(() => setNoteHint(null), 1200);
     return () => window.clearTimeout(id);
   }, [noteHint]);
+
+  // The line to the server, as this playback shows it (lib/media/line-speed): told once, for "Auto" to rank releases by.
+  const onLine = useRef(props.onLine);
+  onLine.current = props.onLine;
+  const fileBps = props.prepared.sizeBytes && props.prepared.durationSec ? props.prepared.sizeBytes / props.prepared.durationSec : null;
+  useEffect(() => {
+    const v = container?.querySelector("video");
+    if (!v || !fileBps || !onLine.current) return;
+    return watchLine(v, fileBps, (bps) => onLine.current?.(bps));
+  }, [container, fileBps]);
 
   // The site's seeks said in the middle: ±10 by a key, a double tap or the bar's buttons, a few presses summed (the
   // TV's remote sets its own hint below). The timeline's own drag says nothing (its preview shows the time).
