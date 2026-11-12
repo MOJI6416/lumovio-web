@@ -132,7 +132,7 @@
       "jsChunks": 15
     },
     "/[locale]/settings/connections/[id]/torrents": {
-      "jsGzip": 235972,
+      "jsGzip": 236279,
       "cssGzip": 22539,
       "jsChunks": 16
     },
