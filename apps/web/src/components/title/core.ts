@@ -7,7 +7,7 @@ import type { TitleDetails, TitleLibraryState, TitleSummary, Video } from "@lumo
  */
 
 export type TitleCore = TitleSummary &
-  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode"> & {
+  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode" | "upcoming"> & {
     /** The trailer the hero's "Trailer" plays. */
     trailer: Video | null;
   };
@@ -35,6 +35,7 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
     status: d.status,
     watchProviders: d.watchProviders,
     nextEpisode: d.nextEpisode,
+    upcoming: d.upcoming ?? null,
     trailer: pickTrailer(d.videos, lang),
   };
 }
@@ -42,6 +43,30 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
 /** A series that still gets new episodes: following it can say something. */
 export const isOngoing = (t: Pick<TitleDetails, "kind" | "status" | "nextEpisode">) =>
   t.kind === "tv" && (Boolean(t.nextEpisode) || (t.status !== null && OUT_STATUSES.has(t.status)));
+
+/** Today in UTC (YYYY-MM-DD): the day TMDB's dates are compared with, on the server as well. */
+export const utcToday = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * A film or series not out yet: undated, or dated after `today` (YYYY-MM-DD, UTC) — the date checked here too, as a
+ * page may be a while older than its answer. Nothing is searched for it; its page says when it comes out instead.
+ */
+export function notOutYet(t: Pick<TitleDetails, "upcoming">, today: string): boolean {
+  const u = t.upcoming;
+  return (u?.kind === "release" || u?.kind === "premiere") && (!u.date || u.date > today);
+}
+
+/**
+ * How far off a day (YYYY-MM-DD) is from `today`: "today", "tomorrow", "in 34 days" up to two months, then months, then
+ * years — Intl's own words in the page's language.
+ */
+export function untilDay(day: string, today: string, locale: string): string {
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const n = Math.round((Date.parse(day) - Date.parse(today)) / 864e5);
+  if (n < 60) return rtf.format(n, "day");
+  if (n < 548) return rtf.format(Math.round(n / 30.44), "month");
+  return rtf.format(Math.round(n / 365.25), "year");
+}
 
 /** The trailer for the main action: an official one in the UI language, else any trailer, else a teaser. */
 export function pickTrailer(videos: Video[], lang: string): Video | null {

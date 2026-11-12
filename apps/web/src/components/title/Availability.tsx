@@ -1,7 +1,7 @@
 "use client";
 
 import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
-import { ExternalLink, Play, Search, Server, Tv, X } from "lucide-react";
+import { CalendarClock, ExternalLink, Play, Search, Server, Tv, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
@@ -28,12 +28,14 @@ import { copyAudio } from "@/lib/media/copy-audio";
 import { orderedSources } from "@/lib/media/source-order";
 import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
+import { AddToCalendar } from "./AddToCalendar";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
 import { useChosenSeason } from "./chosen-season";
-import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { notOutYet, sourcesHref, startEpisode, type TitleCore, utcToday, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
+import { useUpcomingCopy } from "./upcoming-copy";
 import { CardMark, ServerMarks, WatchCard, WatchCardLoading } from "./WatchCard";
 
 const OFFER_LABEL = { flatrate: "offerFlatrate", free: "offerFree", ads: "offerAds", rent: "offerRent", buy: "offerBuy" } as const;
@@ -131,8 +133,23 @@ export function Availability({ title: d }: { title: TitleCore }) {
     <CopyActions copy={s} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
   );
 
+  // Not out yet (and no copy somehow there already): when it comes out is the card, for a guest and a kids profile too.
+  const today = utcToday();
+  const upcomingCopy = useUpcomingCopy();
+  const coming = notOutYet(d, today) && d.upcoming && copies.length === 0 ? { ...upcomingCopy(d.upcoming, today), dated: Boolean(d.upcoming.date) } : null;
+
   let main: ReactNode = null;
-  if (!signedIn) {
+  if (coming) {
+    main = (
+      <WatchCard
+        id="upcoming-h"
+        mark={<CardMark>{<CalendarClock />}</CardMark>}
+        heading={coming.text}
+        where={coming.until ?? undefined}
+        actions={coming.dated ? <AddToCalendar title={d} variant="secondary" size="lg" /> : undefined}
+      />
+    );
+  } else if (!signedIn) {
     main = (
       <WatchCard
         id="servers-h"
@@ -290,7 +307,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
     );
   }
   // A server out of reach, said under the way that is shown (and only once: not when it is the card itself).
-  const quiet = main && down && (copies.length > 0 || search || manual) ? <p className="text-body-s text-text-3">{down}</p> : null;
+  const quiet = main && !coming && down && (copies.length > 0 || search || manual) ? <p className="text-body-s text-text-3">{down}</p> : null;
 
   return (
     <div data-where className={main ? "grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : "max-w-3xl"}>

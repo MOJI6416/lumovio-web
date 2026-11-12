@@ -33,6 +33,8 @@ export interface PlanInput {
   trailer: boolean;
   /** Legal streaming services for the region, subscriptions and free ones first. */
   offers: string[];
+  /** Not out yet: its release date (or that none is announced) is the line, and nothing is searched. */
+  notOut?: boolean;
 }
 
 export type Primary =
@@ -50,6 +52,8 @@ export type Primary =
   | null;
 
 export type Summary =
+  /** Not out yet: when it comes out. */
+  | { kind: "upcoming" }
   | { kind: "copy"; server: string; resolution: string | null; marks?: QualityMark[]; heard?: string | null; torrServer?: boolean; others: number }
   | { kind: "release"; name: string; summary: string; marks?: QualityMark[] }
   | { kind: "searching"; name: string }
@@ -73,6 +77,9 @@ export interface Plan {
 
 export function heroPlan(i: PlanInput): Plan {
   const w = i.watch;
+  // Not out yet: the trailer, else "Watchlist", and the date, known without waiting for the servers — unless a copy is
+  // somehow there already.
+  if (i.notOut && w.kind !== "playable") return { primary: i.trailer ? { kind: "trailer" } : null, summary: { kind: "upcoming" } };
   if (w.kind === "loading") return { primary: { kind: "loading" }, summary: null };
   const t = i.torrent;
   const releaseAhead = t.state === "found" || t.state === "searching" || t.state === "manual";

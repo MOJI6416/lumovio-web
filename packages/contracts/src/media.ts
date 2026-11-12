@@ -97,6 +97,17 @@ export type SeriesFact =
   | { kind: "airing"; next: string | null; last: string | null; episode?: { season: number; episode: number } }
   | { kind: "length"; seasons: number; episodes: number; episodeRuntime: number | null };
 
+/**
+ * What of a title is still to come, as its page says it. release / premiere: a film or a series not out yet — `date`
+ * null while none is announced (TMDB lists it as planned or in production). season: an out series' next season, from
+ * its first episode's date. episode: the next episode of a series on air. Numbers are the releases' (`nextEpisode`).
+ */
+export type TitleUpcoming =
+  | { kind: "release"; date: string | null }
+  | { kind: "premiere"; date: string | null }
+  | { kind: "season"; season: number; date: string }
+  | { kind: "episode"; season: number; episode: number; date: string };
+
 export interface PersonSummary {
   id: number;
   name: string;
@@ -181,6 +192,8 @@ export interface TitleDetails extends TitleSummary {
   seasons: SeasonSummary[];
   nextEpisode: EpisodeSummary | null;
   lastEpisode: EpisodeSummary | null;
+  /** What is still to come: a release date, a premiere, the next season or episode (`TitleUpcoming`). */
+  upcoming?: TitleUpcoming | null;
   numberOfSeasons: number | null;
   numberOfEpisodes: number | null;
   /**

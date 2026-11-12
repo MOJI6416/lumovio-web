@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { titleCore, watchHref } from "../src/components/title/core";
+import { notOutYet, titleCore, untilDay, watchHref } from "../src/components/title/core";
 import { heroPlan, type PlanInput } from "../src/components/title/hero-plan";
 
 const base: PlanInput = {
@@ -56,9 +56,35 @@ describe("the title's main button", () => {
     expect(plan({ watch: { kind: "noServers" } }).summary).toEqual({ kind: "noServers" });
   });
 
+  it("for a title not out yet: the trailer (else Watchlist) and its date at once, nothing searched — unless a copy is there", () => {
+    expect(plan({ notOut: true, watch: { kind: "loading" } })).toEqual({ primary: { kind: "trailer" }, summary: { kind: "upcoming" } });
+    expect(plan({ notOut: true, trailer: false, torrent: { state: "manual", name: "torr" } })).toEqual({ primary: null, summary: { kind: "upcoming" } });
+    expect(plan({ notOut: true, signedIn: false, watch: { kind: "guest" } }).summary).toEqual({ kind: "upcoming" });
+    expect(plan({ notOut: true, watch: { kind: "playable", copies: 1 }, copy: { server: "Home", resolution: null, others: 0 } }).primary).toEqual({ kind: "watch" });
+  });
+
   it("says a TorrServer search that didn't answer as that, not as nothing found", () => {
     expect(plan({ torrent: { state: "failed", name: "torr" } }).summary).toEqual({ kind: "searchFailed", name: "torr", offers: [] });
     expect(plan({ torrent: { state: "nothing", name: "torr" } }).summary).toEqual({ kind: "nothingFound", offers: [] });
+  });
+});
+
+describe("a title not out yet", () => {
+  it("is one dated after today or undated, not a series' next episode; a date that has come is out", () => {
+    expect(notOutYet({ upcoming: { kind: "release", date: "2026-12-16" } }, "2026-11-12")).toBe(true);
+    expect(notOutYet({ upcoming: { kind: "premiere", date: null } }, "2026-11-12")).toBe(true);
+    expect(notOutYet({ upcoming: { kind: "release", date: "2026-11-12" } }, "2026-11-12")).toBe(false);
+    expect(notOutYet({ upcoming: { kind: "episode", season: 3, episode: 5, date: "2026-11-18" } }, "2026-11-12")).toBe(false);
+    expect(notOutYet({ upcoming: null }, "2026-11-12")).toBe(false);
+    expect(notOutYet({}, "2026-11-12")).toBe(false);
+  });
+
+  it("says how far off its day is: days for two months, then months, then years", () => {
+    expect(untilDay("2026-11-12", "2026-11-12", "en")).toBe("today");
+    expect(untilDay("2026-11-13", "2026-11-12", "en")).toBe("tomorrow");
+    expect(untilDay("2026-12-16", "2026-11-12", "ru")).toBe("через 34 дня");
+    expect(untilDay("2027-03-12", "2026-11-12", "en")).toBe("in 4 months");
+    expect(untilDay("2028-12-01", "2026-11-12", "en")).toBe("in 2 years");
   });
 });
 

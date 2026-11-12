@@ -44,8 +44,8 @@ export function relativeTime(iso: string, locale: string, justNow?: string): str
 }
 
 /**
- * A size in the person's units and decimal sign (2.3: "9,6 ГБ", "700 МБ"; "9.6 GB" in English) — the one formatter for
- * file sizes, loaded amounts and speeds (L10N-09). Binary steps, as TorrServer and the players count; null for nothing.
+ * A size in the person's units and decimal sign ("9,6 ГБ", "700 МБ"; "9.6 GB" in English) — the one formatter for
+ * file sizes, loaded amounts and speeds. Binary steps, as TorrServer and the players count; null for nothing.
  */
 export function formatSize(bytes: number | null | undefined, locale: string): string | null {
   if (!bytes || bytes <= 0) return null;

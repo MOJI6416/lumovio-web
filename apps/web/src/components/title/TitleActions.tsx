@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, Check, ChevronDown, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, Plus, RefreshCw, Search, Server, Tv } from "lucide-react";
+import { Bookmark, BookmarkCheck, CalendarClock, Check, ChevronDown, CircleAlert, Clapperboard, Ellipsis, Info, Magnet, Play, Plus, RefreshCw, Search, Server, Tv } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
@@ -23,7 +23,8 @@ import { orderedSources } from "@/lib/media/source-order";
 import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
 import { useChosenSeason } from "./chosen-season";
-import { isOngoing, resumable, sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { AddToCalendar } from "./AddToCalendar";
+import { isOngoing, notOutYet, resumable, sourcesHref, startEpisode, type TitleCore, utcToday, watchHref } from "./core";
 import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-plan";
 import { setRateOpen } from "./rate-open";
 import { scrollToSection } from "./section-link";
@@ -31,6 +32,7 @@ import { serviceOf } from "./services";
 import type { CopyFace } from "./CopyProbe";
 import type { ProbeResult } from "./TorrentProbe";
 import { TrailerDialog } from "./TrailerDialog";
+import { useUpcomingCopy } from "./upcoming-copy";
 
 // The rarely opened parts load when they are approached (ui/lazy-swap) or opened; the search for a release only where
 // it runs.
@@ -92,7 +94,10 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const sources = avail.data?.sources ?? [];
   const auto = !kids && signedIn ? sources.find((s) => s.kind === "torrserver" && s.autoSearch && s.status !== "unreachable" && s.status !== "unauthorized") : undefined;
   const manual = !kids && signedIn ? sources.find((s) => s.kind === "torrserver" && s.status !== "unreachable" && s.status !== "unauthorized") : undefined;
-  const out = !d.releaseDate || d.releaseDate <= new Date().toISOString().slice(0, 10);
+  const today = utcToday();
+  // Not out yet: nothing to search; its date is the line under the actions.
+  const notOut = notOutYet(d, today);
+  const out = !notOut && (!d.releaseDate || d.releaseDate <= today);
   const probing = Boolean(auto && out && avail.state.kind !== "playable" && avail.state.kind !== "loading");
   const torrent: TorrentState = probing
     ? (probe?.state ?? { state: "searching", name: auto!.name })
@@ -141,6 +146,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     torrent,
     trailer: Boolean(d.trailer),
     offers: offerNames,
+    notOut,
   });
 
   const playHref = watchHref(d, p, chosen);
@@ -215,9 +221,16 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
           <Skeleton shape="xs" className="h-4 w-72 max-w-full" />
         </div>
       )}
-      {plan.summary && (
-        <AvailabilityLine summary={plan.summary} kids={kids} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
+      {plan.summary?.kind === "upcoming" && d.upcoming ? (
+        <UpcomingLine title={d} upcoming={d.upcoming} today={today} />
+      ) : (
+        plan.summary &&
+        plan.summary.kind !== "upcoming" && (
+          <AvailabilityLine summary={plan.summary} kids={kids} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
+        )
       )}
+      {/* A series on air: its next season or episode, under where it plays from. */}
+      {(d.upcoming?.kind === "season" || d.upcoming?.kind === "episode") && <UpcomingLine title={d} upcoming={d.upcoming} today={today} className={plan.summary ? "mt-2" : undefined} />}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
       {copies?.servers.some((s) => s.kind === "torrserver") && avail.state.kind === "playable" && (
         <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} onChange={onCopyFace} />
@@ -269,7 +282,28 @@ function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary:
 }
 
 /**
- * One line of availability under the actions (7.14 item 7, TTL-06, TTL-13, TTL-14): a fact and the next step — most
+ * What is still to come, as a line under the actions: the date in white, how far off it is, and "Add to calendar" once
+ * it is dated — in place of the availability line for a title not out yet, under it for a series' next season or
+ * episode.
+ */
+function UpcomingLine({ title: d, upcoming, today, className }: { title: TitleCore; upcoming: NonNullable<TitleCore["upcoming"]>; today: string; className?: string }) {
+  const { text, until } = useUpcomingCopy()(upcoming, today);
+  return (
+    <div className={cn("mt-4 flex max-w-160 flex-wrap items-center gap-x-3 gap-y-1 text-body-s text-text-2", className)}>
+      <p className="flex items-start gap-2">
+        <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <span>
+          <span className="font-semibold text-text-1">{text}</span>
+          {until && ` · ${until}`}
+        </span>
+      </p>
+      {upcoming.date && <AddToCalendar title={d} variant="tertiary" size="sm" />}
+    </div>
+  );
+}
+
+/**
+ * One line of availability under the actions: a fact and the next step — most
  * often "Where to watch ⌄", which brings that section of this page up (a jump, not a step in the history).
  */
 function AvailabilityLine({
@@ -279,7 +313,7 @@ function AvailabilityLine({
   retrying,
   onSignIn,
 }: {
-  summary: NonNullable<Summary>;
+  summary: Exclude<NonNullable<Summary>, { kind: "upcoming" }>;
   kids: boolean;
   onRetry: () => void;
   retrying: boolean;
