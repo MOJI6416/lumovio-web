@@ -175,7 +175,7 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
   const href = new URL(opts.url, location.href).href;
   const early = opened.get(href);
   opened.delete(href);
-  const { input, videoTrack, audioTracks } = (early ? await early.catch(() => null) : null) ?? (await openFile(mb, opts));
+  const { input, videoTrack, audioTracks } = (early ? await optional(early, null) : null) ?? (await openFile(mb, opts));
   let duration: number | null;
   try {
     duration = opts.durationSec ?? (await input.getDurationFromMetadata());

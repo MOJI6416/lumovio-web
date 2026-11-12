@@ -452,7 +452,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const caps = detectCapabilities();
       const raw: { url: string; headers: Record<string, string>; targetAddressSpace?: "loopback" | "local" } = { url: streamUrl(hash, file, false), headers: authHeader ? { Authorization: authHeader } : {}, targetAddressSpace: targetAddressSpace(base) };
       // The server's subtitle list is asked alongside the probe, not after it.
-      const subsAsked = get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000).catch(() => null);
+      const subsAsked = optional(get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000), null);
       const probeKey = `${hash.toLowerCase()}:${file.id}`;
       const { rememberedProbe, rememberProbe } = await memory;
       let probe: FileProbe | null = rememberedProbe(probeKey);
