@@ -1,4 +1,4 @@
-import type { TitleAvailability } from "@lumovio/contracts";
+import type { Availability, TitleAvailability } from "@lumovio/contracts";
 
 /**
  * What the main action of a title can honestly promise. Derived from the profile's library index;
@@ -21,13 +21,20 @@ export type WatchState =
  * Copies of the title itself. A torrent file bound to one episode is how the player finds that
  * episode, not another copy of the series, so it is left out of counts and source names.
  */
-export function titleCopies(a: TitleAvailability): TitleAvailability {
-  return { ...a, servers: a.servers.filter((s) => s.season === null) };
+export function titleCopies(a: TitleAvailability, holds: CopyFilter | null = null): TitleAvailability {
+  return { ...a, servers: a.servers.filter((s) => s.season === null && (!holds || holds(s))) };
 }
 
-export function watchState(avail: TitleAvailability | undefined, opts: { signedIn: boolean; failed?: boolean }): WatchState {
+/**
+ * Which copies count for what the page is for: a series' season (`holdsByName` in lib/media/packs — a season-1 pack is no
+ * copy of season 2, docs/torrserver-2026-11.md 20). Passed in, so this module stays small for every card that asks.
+ */
+export type CopyFilter = (s: Pick<Availability, "kind" | "label">) => boolean;
+
+/** `holds`: which copies count (`titleCopies`). */
+export function watchState(avail: TitleAvailability | undefined, opts: { signedIn: boolean; failed?: boolean; holds?: CopyFilter | null }): WatchState {
   if (!avail) return opts.failed ? { kind: "error" } : { kind: "loading" };
-  const a = titleCopies(avail);
+  const a = titleCopies(avail, opts.holds ?? null);
   if (a.servers.length > 0) return { kind: "playable", copies: a.servers.length };
   if (!opts.signedIn) return { kind: "guest" };
   if (a.connections === 0) return { kind: "noServers" };

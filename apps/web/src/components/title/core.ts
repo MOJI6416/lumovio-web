@@ -55,19 +55,32 @@ export function resumable(p: TitleLibraryState["progress"] | undefined): p is No
   return Boolean(p && !p.completed && p.positionSec > 30);
 }
 
-/** The episode "Watch" starts a series with: where the profile is, the one after the last finished, else the first. */
-export function startEpisode(t: Pick<TitleDetails, "seasons">, p: TitleLibraryState["progress"] | undefined): { season: number; episode: number } {
-  if (p && resumable(p) && p.season !== null) return { season: p.season, episode: p.episode ?? 1 };
-  const first = t.seasons.find((s) => s.seasonNumber > 0) ?? t.seasons[0];
-  if (p?.completed && p.season !== null && p.episode !== null) return { season: p.season, episode: p.episode + 1 };
-  return { season: first?.seasonNumber ?? 1, episode: 1 };
+/**
+ * The episode "Watch" starts a series with: where the profile is, the one after the last finished (the next season's
+ * first after a season's last), else the first. `chosen`: a season picked in the title's "Episodes" — its first episode,
+ * unless the profile is in that season (docs/torrserver-2026-11.md, 21: "changed the season, pressed Watch — the old one
+ * started").
+ */
+export function startEpisode(t: Pick<TitleDetails, "seasons">, p: TitleLibraryState["progress"] | undefined, chosen: number | null = null): { season: number; episode: number } {
+  const own = ((): { season: number; episode: number } => {
+    if (p && resumable(p) && p.season !== null) return { season: p.season, episode: p.episode ?? 1 };
+    const first = t.seasons.find((s) => s.seasonNumber > 0) ?? t.seasons[0];
+    if (p?.completed && p.season !== null && p.episode !== null) {
+      const count = t.seasons.find((s) => s.seasonNumber === p.season)?.episodeCount ?? 0;
+      const next = t.seasons.find((s) => s.seasonNumber === p.season! + 1);
+      if (count > 0 && p.episode >= count && next) return { season: next.seasonNumber, episode: 1 };
+      return { season: p.season, episode: p.episode + 1 };
+    }
+    return { season: first?.seasonNumber ?? 1, episode: 1 };
+  })();
+  return chosen === null || chosen === own.season || !t.seasons.some((s) => s.seasonNumber === chosen) ? own : { season: chosen, episode: 1 };
 }
 
-/** Where "Watch" and "Continue" go: resume, else the next episode, else the start. */
-export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, p: TitleLibraryState["progress"] | undefined): string {
+/** Where "Watch" and "Continue" go: resume, else the next episode, else the start (`chosen`: see `startEpisode`). */
+export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, p: TitleLibraryState["progress"] | undefined, chosen: number | null = null): string {
   const base = `/watch/${t.kind}/${t.tmdbId}`;
   if (t.kind === "movie") return base;
-  const { season, episode } = startEpisode(t, p);
+  const { season, episode } = startEpisode(t, p, chosen);
   return `${base}?s=${season}&e=${episode}`;
 }
 

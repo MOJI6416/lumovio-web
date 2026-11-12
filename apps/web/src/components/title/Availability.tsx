@@ -24,8 +24,10 @@ import { Link } from "@/i18n/navigation";
 import { regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { orderedSources } from "@/lib/media/source-order";
+import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
+import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
@@ -54,13 +56,18 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const tp = useTranslations("titlePage");
   const locale = useLocale();
   const { me } = useSession();
-  const avail = useTitleAvailability(d.id);
+  const { data: lib } = useLibraryState(d.id);
+  // The season picked in "Episodes", else the one the profile is in: a whole torrent of other seasons only is no copy of
+  // it, and the search below looks for it (./chosen-season, docs/torrserver-2026-11.md 20–21).
+  const chosen = useChosenSeason(d.id);
+  const ep = d.kind === "tv" ? startEpisode(d, lib?.progress, chosen) : null;
+  const holds = seasonCopies(ep?.season);
+  const avail = useTitleAvailability(d.id, holds);
   // What the hero already fetched waits for the end of hydration, so the first render is the server's (./hydrated).
   const hydrated = useHydrated();
   const { state } = avail;
   const raw = hydrated ? avail.data : undefined;
-  const data = raw ? titleCopies(raw) : undefined;
-  const { data: lib } = useLibraryState(d.id);
+  const data = raw ? titleCopies(raw, holds) : undefined;
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
   const signedIn = Boolean(me?.activeProfile);
@@ -76,7 +83,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const hashOf = (s: { externalId: string }) => s.externalId.split(":")[0]!.toLowerCase();
   const episodeFilesOf = (copy: Copy) =>
     (raw?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.episode !== null && x.connectionId === copy.connectionId && hashOf(x) === hashOf(copy));
-  const resume = watchHref(d, lib?.progress);
+  const resume = watchHref(d, lib?.progress, chosen);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details (SRC-16); the same words as the sources screen (sources/copy-text).
@@ -102,7 +109,6 @@ export function Availability({ title: d }: { title: TitleCore }) {
   };
   // "Watch on TV" (8.18) beside a copy's "Watch": that copy, from where the profile is.
   const tcard = useTranslations("card");
-  const ep = d.kind === "tv" ? startEpisode(d, lib?.progress) : null;
   const cast = (s: Copy, size: "md" | "lg") => (
     <CastButton
       titleId={d.id}

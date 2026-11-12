@@ -17,6 +17,7 @@ import { bestOf } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
+import { useChosenSeason } from "./chosen-season";
 import { startEpisode, type TitleCore, watchHref } from "./core";
 import type { TorrentState } from "./hero-plan";
 
@@ -42,7 +43,8 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const text = useReleaseText();
   const { data: lib } = useLibraryState(d.id);
   // The episode "Watch" opens (resume, else the next), as "Where to watch" ranks for it: the release has to hold it.
-  const start = d.kind === "tv" ? startEpisode(d, lib?.progress) : null;
+  const season = useChosenSeason(d.id);
+  const start = d.kind === "tv" ? startEpisode(d, lib?.progress, season) : null;
   const lookup = useTorrentLookup(d, source, true, undefined, start?.season ?? null, start?.episode ?? null);
   const prefs = useReleasePrefs();
   const ranked = lookup.data?.ranked;
@@ -84,7 +86,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
       onChange({ state: { state: status, name: source.name } as TorrentState });
       return;
     }
-    const href = watchHref(d, lib?.progress);
+    const href = watchHref(d, lib?.progress, season);
     onChange({
       state: { state: "found", name: source.name, summary, marks },
       play: async () => {
@@ -101,7 +103,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
           true,
         );
         try {
-          const added = await addTorrentSource(source.id, d, null, chosen.result);
+          const added = await addTorrentSource(source.id, d, start?.season ?? null, chosen.result);
           if (!added) throw new Error(tp("addFailed"));
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
           if (dropped) return false;
@@ -116,7 +118,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
         }
       },
     });
-  }, [status, summary, chosen?.result.link, lib?.progress?.updatedAt]);
+  }, [status, summary, chosen?.result.link, lib?.progress?.updatedAt, season]);
 
   return null;
 }

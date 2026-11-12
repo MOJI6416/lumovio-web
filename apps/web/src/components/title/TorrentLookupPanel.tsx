@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -21,6 +21,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { pictureReasons, type RankedRelease } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
+import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
 
@@ -48,7 +49,9 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const [mode, setMode] = useState<ReleaseQuality>(prefs.quality);
   const { data: state } = useLibraryState(d.id);
   // "Watch" opens the episode the title's Play would (resume, else the next): the release has to hold its season.
-  const start = d.kind === "tv" ? startEpisode(d, state?.progress) : null;
+  // The season picked in "Episodes", else the one the profile is in (./chosen-season): the release has to hold it.
+  const season = useChosenSeason(d.id);
+  const start = d.kind === "tv" ? startEpisode(d, state?.progress, season) : null;
   const lookup = useTorrentLookup(d, source, true, mode, start?.season ?? null, start?.episode ?? null);
   const text = useReleaseText();
   const [adding, setAdding] = useState(false);
@@ -62,7 +65,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   // Nothing is searched for a title that is not out yet, so nothing is said either.
   if (!isOut(d)) return null;
 
-  const playHref = watchHref(d, state?.progress);
+  const playHref = watchHref(d, state?.progress, season);
   const join = playHref.includes("?") ? "&" : "?";
   const via = tp("viaTorrServer", { name: source.name });
   const { option, edition, version, chosen } = pick;
@@ -128,7 +131,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
       true,
     );
     try {
-      const added = await addTorrentSource(source.id, d, null, x.result);
+      const added = await addTorrentSource(source.id, d, start?.season ?? null, x.result);
       if (!added) throw new Error(tpl("addFailed"));
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
       if (dropped) return;
@@ -172,7 +175,10 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
         quality={
           <>
             {/* The picture and sound as marks (4K, Dolby Vision, Dolby Atmos), then the source, the cut when no pill says it, the size. */}
-            <ReleaseLine info={chosen.info} rest={[pick.editions.length === 0 && edition ? editionName(edition) : null, formatSize(chosen.result.size, locale)]} />
+            <ReleaseLine
+              info={chosen.info}
+              rest={[pick.editions.length === 0 && edition ? editionName(edition) : null, d.kind === "tv" ? packWords(tpl, chosen.info.pack) || null : null, formatSize(chosen.result.size, locale)]}
+            />
             {reasons.length > 0 && <span className="sr-only"> {reasons.map((r) => t(`tsWhy_${r}`)).join(" ")}</span>}
           </>
         }

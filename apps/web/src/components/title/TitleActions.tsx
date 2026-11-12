@@ -20,7 +20,9 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { orderedSources } from "@/lib/media/source-order";
+import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
+import { useChosenSeason } from "./chosen-season";
 import { isOngoing, resumable, sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-plan";
 import { setRateOpen } from "./rate-open";
@@ -51,7 +53,11 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const kids = Boolean(me?.activeProfile?.isKids);
   const actions = usePersonalActions(d);
   const { state, signedIn } = actions;
-  const avail = useTitleAvailability(d.id);
+  // The season picked in "Episodes", else the one the profile is in: its copies count and "Watch" starts it (./chosen-season).
+  const chosen = useChosenSeason(d.id);
+  const ep = d.kind === "tv" ? startEpisode(d, state?.progress, chosen) : null;
+  const holds = seasonCopies(ep?.season);
+  const avail = useTitleAvailability(d.id, holds);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -90,7 +96,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       : { state: "none" };
   const onProbe = useCallback((r: ProbeResult) => setProbe(r), []);
 
-  const first = avail.data ? orderedSources(titleCopies(avail.data), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
+  const first = avail.data ? orderedSources(titleCopies(avail.data, holds), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
   const offers = (d.watchProviders?.providers ?? []).filter((p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads");
   // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads"; TTL-26).
   const offerNames = [...new Set((offers.length ? offers : (d.watchProviders?.providers ?? [])).map((p) => serviceOf(p.name).name))].slice(0, 3);
@@ -99,7 +105,8 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     signedIn,
     kids,
     watch: avail.state,
-    resume: resumable(p),
+    // "Continue" only for the season the profile is in: another one picked starts from its first episode.
+    resume: resumable(p) && (!ep || p?.season === ep.season),
     copy:
       first && avail.state.kind === "playable"
         ? {
@@ -115,11 +122,10 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     offers: offerNames,
   });
 
-  const playHref = watchHref(d, p);
+  const playHref = watchHref(d, p, chosen);
   // Under "Continue": the episode and the time left; under a series' "Watch": the episode it starts.
   const left = p?.durationSec ? Math.max(0, p.durationSec - p.positionSec) : null;
   const leftText = left === null ? null : left < 60 ? tc("leftUnderMinute") : tr("timeLeft", { time: tm("minutes", { count: Math.round(left / 60) }) });
-  const ep = d.kind === "tv" ? startEpisode(d, p) : null;
   const sub =
     plan.primary?.kind === "resume"
       ? [ep ? tc("episode", ep) : null, leftText].filter(Boolean).join(" · ")

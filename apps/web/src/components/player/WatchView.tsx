@@ -44,6 +44,7 @@ import { MediaNetError } from "@/lib/media/net";
 import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
 import { voiceWish } from "@/lib/media/releases";
+import { holdsByName } from "@/lib/media/packs";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
 import { addTorrentSource } from "@/lib/media/torrent-source";
@@ -234,8 +235,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (!avail.data) return [];
     // Files this browser can play untouched come first; transcodes and incompatible files last.
     const list = orderedSources(avail.data, undefined, audioLangs).flatMap(({ server: s }): Candidate[] => {
-      // A torrent file bound to another episode is not a source for this one.
+      // A torrent file bound to another episode is not a source for this one; nor a whole torrent whose release name holds
+      // other seasons only (a season-1 pack for season 2): with nothing left, the sources screen searches this season.
       if (s.kind === "torrserver" && s.season !== null && (s.season !== season || s.episode !== episode)) return [];
+      if (d.kind === "tv" && season !== null && s.season === null && !holdsByName(s, season)) return [];
       return [toCandidate(s)];
     });
     // Within TorrServer: files bound to exactly this film/episode first (the server lists the latest choice first),
@@ -245,7 +248,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const ordered = [...torrents.filter(isBound), ...torrents.filter((c) => !isBound(c))];
     let i = 0;
     return list.flatMap((c) => (c.provider !== "torrserver" ? [c] : isBound(c) || !bound.has(c.key) ? [ordered[i++]!] : []));
-  }, [avail.data, season, episode, audioLangs]);
+  }, [avail.data, season, episode, audioLangs, d.kind]);
 
   const saved = progress.data?.progress.find((x) => x.season === season && x.episode === episode);
   const resumeAt = resumeOverride.current ?? castStart.current ?? (saved && !saved.completed && saved.positionSec > 30 ? saved.positionSec : 0);
