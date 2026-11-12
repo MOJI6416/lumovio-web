@@ -2,12 +2,12 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 242044,
+      "jsGzip": 243235,
       "cssGzip": 22620,
       "jsChunks": 17
     },
     "/[locale]/android-tv": {
-      "jsGzip": 184839,
+      "jsGzip": 185313,
       "cssGzip": 20670,
       "jsChunks": 12
     },
@@ -42,12 +42,12 @@
       "jsChunks": 13
     },
     "/[locale]/browse/[kind]": {
-      "jsGzip": 227871,
+      "jsGzip": 228755,
       "cssGzip": 20624,
       "jsChunks": 17
     },
     "/[locale]/calendar": {
-      "jsGzip": 196821,
+      "jsGzip": 197397,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -72,7 +72,7 @@
       "jsChunks": 13
     },
     "/[locale]/legal/[doc]": {
-      "jsGzip": 189199,
+      "jsGzip": 189775,
       "cssGzip": 20624,
       "jsChunks": 13
     },
@@ -97,7 +97,7 @@
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 202639,
+      "jsGzip": 203215,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -127,12 +127,12 @@
       "jsChunks": 15
     },
     "/[locale]/settings/connections": {
-      "jsGzip": 202584,
+      "jsGzip": 203263,
       "cssGzip": 20624,
       "jsChunks": 15
     },
     "/[locale]/settings/connections/[id]/torrents": {
-      "jsGzip": 236279,
+      "jsGzip": 237060,
       "cssGzip": 22539,
       "jsChunks": 16
     },
@@ -262,7 +262,7 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 504644,
+      "jsGzip": 505425,
       "cssGzip": 20624,
       "jsChunks": 20
     }
