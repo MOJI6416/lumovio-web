@@ -1,5 +1,8 @@
-import type { ReleaseFileFacts, ReleaseFileProbe, ReleaseFileRead, ReleaseFilesFound } from "@lumovio/contracts";
+import type { ReleaseFileProbe, ReleaseFileRead, ReleaseFilesFound } from "@lumovio/contracts";
 import { api } from "@/lib/api";
+import { sharedFileOf, tell } from "./shared-files";
+
+export { filesVersion, sharedFileOf, subscribeFiles, withSharedFiles } from "./shared-files";
 import type { FileProbe, TsSearchResult } from "./torrserver";
 
 /*
@@ -7,7 +10,8 @@ import type { FileProbe, TsSearchResult } from "./torrserver";
  * like "6x MVO" doesn't name, the subtitles, the picture. The files are read by the account's own TorrServer — the player
  * when it prepares a file, or a read ahead (`read-ahead`) — never by Lumovio's servers. A release reaches them only as
  * SHA-256 digests of its info hash and of its name, with the size it was found with: never the hash, the name, a
- * link or a tracker. A search result has no hash; it is looked up by its name and size.
+ * link or a tracker. A search result has no hash; it is looked up by its name and size. What the cache told this tab is
+ * kept in `shared-files`.
  */
 
 /** Raised when the way a file is read changes what a read says: a newer reader's read replaces an older one's. */
@@ -25,45 +29,18 @@ async function digest(text: string): Promise<string | null> {
 const torrentDigest = (hash: string) => digest(`btih:${hash.toLowerCase()}`);
 const nameDigest = (title: string) => digest(`name:${nameKey(title)}`);
 
-/** What this tab was told, by a result's link: the file's facts, or null when no device has read it. */
-const told = new Map<string, ReleaseFileFacts | null>();
-let version = 0;
-const listeners = new Set<() => void>();
-
-/** For `useSyncExternalStore`: rankings that use the cache rank again when it tells more. */
-export function subscribeFiles(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => {
-    listeners.delete(cb);
-  };
-}
-export const filesVersion = () => version;
-
-/** What the cache said about a result's file: its facts, null when no device has read it, undefined when not asked. */
-export const sharedFileOf = (r: Pick<TsSearchResult, "link">): ReleaseFileFacts | null | undefined => told.get(r.link);
-
 /**
  * Asks the cache about the results this tab hasn't asked about yet (100 at most). `again`: these results are asked
  * again whatever was told (a read ahead just read one).
  */
 export async function lookupFiles(results: readonly TsSearchResult[], signal?: AbortSignal, again = false): Promise<void> {
-  const ask = results.filter((r) => again || !told.has(r.link)).slice(0, 100);
+  const ask = results.filter((r) => again || sharedFileOf(r) === undefined).slice(0, 100);
   if (ask.length === 0) return;
   const releases = await Promise.all(ask.map(async (r) => ({ name: await nameDigest(r.title), size: r.size === null ? null : Math.max(0, Math.round(r.size)), torrent: r.hash ? await torrentDigest(r.hash) : null })));
   // No SubtleCrypto (a page not served securely): the cache can't be asked without sending the names themselves.
   if (releases.some((x) => x.name === null)) return;
   const { files } = await api<ReleaseFilesFound>("/api/releases/files/lookup", { method: "POST", json: { releases }, signal });
-  for (const [i, r] of ask.entries()) told.set(r.link, files[i] ?? null);
-  version++;
-  for (const l of listeners) l();
-}
-
-/**
- * The audio tracks a ranking takes from files (`rankReleases`' `fileOf`): the profile's own copies' (`copy`, the
- * player read them in the account's index), else the shared cache's for the result.
- */
-export function withSharedFiles(copy: ((r: TsSearchResult) => readonly string[] | null) | null): (r: TsSearchResult) => readonly string[] | null {
-  return (r) => copy?.(r) ?? told.get(r.link)?.audio ?? null;
+  tell(ask.map((r, i) => [r.link, files[i] ?? null]));
 }
 
 const cut = (s: string | undefined, n: number) => (s === undefined ? undefined : s.slice(0, n));

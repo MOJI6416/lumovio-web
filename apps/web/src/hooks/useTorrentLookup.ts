@@ -9,7 +9,7 @@ import { detectCapabilities, onUhdSmooth, uhdDecodesNow, uhdSmoothNow } from "@/
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, sameTitleResults, torrentQuery } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
-import { filesVersion, lookupFiles, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
+import { filesVersion, subscribeFiles, withSharedFiles } from "@/lib/media/shared-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { failingTrackers as failingTrackers_, noFailingTrackers, subscribeTrackers } from "@/lib/media/tracker-adds";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
@@ -74,7 +74,8 @@ export type LookupResult = SearchAnswer;
  */
 export function sharedFilesOf(results: SearchAnswer["results"], d: Parameters<typeof sameTitleResults>[1], signal?: AbortSignal): Promise<void> {
   const within = typeof AbortSignal.any === "function" ? AbortSignal.any([AbortSignal.timeout(3000), ...(signal ? [signal] : [])]) : signal;
-  return lookupFiles(sameTitleResults(results, d), within).catch(() => undefined); // ui-lint-ignore swallowed-error: the cache is a help; a pick goes by the names without it
+  // Loaded with the first search: pages that only rank (the home's shelf) don't carry it.
+  return import("@/lib/media/release-files").then((m) => m.lookupFiles(sameTitleResults(results, d), within)).catch(() => undefined); // ui-lint-ignore swallowed-error: the cache is a help; a pick goes by the names without it
 }
 
 /**

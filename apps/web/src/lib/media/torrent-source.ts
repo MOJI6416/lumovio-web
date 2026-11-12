@@ -3,7 +3,6 @@ import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
 import { getCredentials } from "./clients";
 import { MediaNetError } from "./net";
-import { whileAdding } from "./read-lock";
 import { type TsSearchResult, torrServerClient } from "./torrserver";
 import { noteAdd } from "./tracker-adds";
 
@@ -45,7 +44,9 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Read aheads on the server stop first (`read-lock`); a torrent one of them added for a moment is new to the add, and the
  * one the add takes stays on the server.
  */
-export function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
+export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
+  // Loaded with the first add: the torrent manager and pages that never add don't carry it.
+  const { whileAdding } = await import("./read-lock");
   return whileAdding(connectionId, (quiet, adopt) => addNow(connectionId, d, season, r, quiet, adopt));
 }
 
