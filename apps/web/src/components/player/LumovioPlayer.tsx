@@ -41,7 +41,7 @@ import { PortalContainerContext } from "@/components/ui/portal";
 import { Slider } from "@/components/ui/Slider";
 import { api } from "@/lib/api";
 import { formatClock, formatRuntime, formatSize } from "@/lib/format";
-import { detectCapabilities } from "@/lib/media/capabilities";
+import { detectCapabilities, REMUXABLE_AUDIO } from "@/lib/media/capabilities";
 import { watchLine } from "@/lib/media/line-speed";
 import { loadOffset, saveOffset } from "@/lib/media/subs/choice";
 import type { SubtitleFormat } from "@/lib/media/subs/engine";
@@ -61,7 +61,8 @@ export interface PlayerEvents {
   onPlay: (positionSec: number) => void;
   onPause: (positionSec: number) => void;
   onEnded: (positionSec: number) => void;
-  onFatal: (message: string, code: number | null) => void;
+  /** `at`: where the playhead was when it failed (a seek may have moved it since the last `onTime`). */
+  onFatal: (message: string, code: number | null, at?: number) => void;
   /** What the line gave this playback (bytes per second, `watchLine`), told once: a file whose size and duration are known. */
   onLine?: (bytesPerSec: number) => void;
 }
@@ -120,7 +121,7 @@ export function LumovioPlayer(props: PlayerProps) {
   const t = useTranslations("player");
   const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal);
+  const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal, props.onAudioChange);
   const subtitleMeta = useSubtitles(videoRef, prepared, props.titleId ?? null);
   const look = useSubtitleLook(videoRef, props.titleId ?? null);
   const caps = detectCapabilities();
@@ -175,7 +176,7 @@ export function LumovioPlayer(props: PlayerProps) {
  * A file rebuilt in the browser (`lib/media/remux.ts`, loaded only then): the engine owns the
  * element's source, and audio tracks switch in place, at the same position.
  */
-function useRemux(ref: RefObject<HTMLVideoElement | null>, prepared: PreparedPlayback, startAt: number, onFatal: PlayerEvents["onFatal"]) {
+function useRemux(ref: RefObject<HTMLVideoElement | null>, prepared: PreparedPlayback, startAt: number, onFatal: PlayerEvents["onFatal"], onOtherTrack: PlayerProps["onAudioChange"]) {
   const [audio, setAudio] = useState(prepared.remuxAudio);
   const handle = useRef<RemuxHandle | null>(null);
   const fatal = useRef(onFatal);
@@ -199,7 +200,7 @@ function useRemux(ref: RefObject<HTMLVideoElement | null>, prepared: PreparedPla
           audioPosition: position,
           startAt: start.current,
           durationSec: prepared.durationSec,
-          onError: (msg) => fatal.current(msg, null),
+          onError: (msg) => fatal.current(msg, null, video.currentTime),
           signal: abort.signal,
         }),
       )
@@ -219,9 +220,16 @@ function useRemux(ref: RefObject<HTMLVideoElement | null>, prepared: PreparedPla
   if (prepared.type !== "remux") return null;
   return {
     prepared: { ...prepared, audio: prepared.audio.map((a) => ({ ...a, isDefault: a.index === audio })) },
-    onAudioChange: (index: number) => {
+    onAudioChange: (index: number, positionSec: number) => {
       const position = prepared.audio.findIndex((a) => a.index === index);
       if (position < 0 || index === audio) return;
+      // A track the rebuild can't make (PCM, MP2) is prepared anew, as on a plain stream, which says where it plays —
+      // rather than failing the playback, or playing it without sound. The old AVIs' engine decodes those itself.
+      const codec = (prepared.audio[position]!.codec ?? "").toLowerCase();
+      if (prepared.remuxEngine !== "legacy" && codec && !REMUXABLE_AUDIO.test(codec)) {
+        onOtherTrack?.(index, positionSec);
+        return;
+      }
       setAudio(index);
       handle.current?.selectAudio(position);
     },
@@ -616,8 +624,8 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     if (ended) props.onEnded(currentTime);
   }, [ended, currentTime, props]);
   useEffect(() => {
-    if (error) props.onFatal(error.message, error.code);
-  }, [error, props]);
+    if (error) props.onFatal(error.message, error.code, currentTime);
+  }, [error, currentTime, props]);
 
   // The next episode's card from the credits marker, or near the end; auto-advance after a countdown. The TV keeps its
   // timing (from the last 25 s, 15 s); on the site from the credits or the last 15 s, 10 s — 5 s once the file ended.

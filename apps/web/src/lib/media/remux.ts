@@ -1,4 +1,5 @@
 import type {
+  AudioSample,
   Conversion,
   Input,
   InputAudioTrack,
@@ -8,7 +9,7 @@ import type {
 } from "mediabunny";
 import { background, optional } from "../optional";
 import { detectCapabilities, mediaSourceClass } from "./capabilities";
-import { nameTrueHdTracks, enableWasmDecoders } from "./codecs/audio";
+import { KNOWN_LAYOUTS, nameTrueHdTracks, enableWasmDecoders, remixed } from "./codecs/audio";
 import { cutWithinGroups, startsAtKeyFrame } from "./codecs/fragments";
 import { keyAtRecoveryPoints } from "./codecs/h264";
 import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
@@ -248,6 +249,9 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
         channels = 2;
       if (track) await loadCoders(track, codec, route, channels);
       if (!isCurrent()) return null;
+      // 5.0, 6.1 and 7.1 taken down to 5.1 or stereo are remixed here: Mediabunny's remix knows only the usual layouts.
+      const own = track && route !== "copy" && channels < track.numberOfChannels && !KNOWN_LAYOUTS.includes(track.numberOfChannels);
+      const remix = own ? { process: (s: AudioSample) => remixed(s, channels <= 2 ? 2 : 6), processedNumberOfChannels: channels <= 2 ? 2 : 6 } : { numberOfChannels: channels };
       const output = newOutput(route, codec);
       const c: Conversion = await mb.Conversion.init({
         input,
@@ -260,7 +264,7 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
             ? { discard: true }
             : route === "copy"
               ? {}
-              : { codec: route, numberOfChannels: channels, quality: mb.QUALITY_HIGH, ...(route === "opus" ? { sampleRate: 48000 } : {}) },
+              : { codec: route, ...remix, quality: mb.QUALITY_HIGH, ...(route === "opus" ? { sampleRate: 48000 } : {}) },
         trim: start ? { start: (await start) + from } : undefined,
       });
       if (!isCurrent()) {

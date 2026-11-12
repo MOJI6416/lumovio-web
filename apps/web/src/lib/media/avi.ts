@@ -256,6 +256,25 @@ function finish(
 }
 
 /** The video chunk to start from for `t`: the last key frame at or before it. */
+/**
+ * The chunks a run from `t` reads, in file order: the video from the key frame at or before `t` on, and the audio from
+ * 50 ms before that key frame — wherever the file keeps it. Muxers store sound up to a second ahead of its picture, so
+ * the sound of the key frame's first moments may lie before the key frame's own chunk; read from there, it isn't lost.
+ */
+export function runChunks(file: AviFile, video: number, audio: number | null, t: number): AviChunk[] {
+  const i0 = startChunk(file, video, t);
+  const keyTime = file.chunks[i0]?.time ?? 0;
+  let from = i0;
+  if (audio !== null)
+    for (let i = i0 - 1; i >= 0 && i0 - i < 4096; i--) {
+      const c = file.chunks[i]!;
+      if (c.stream !== audio) continue;
+      if (c.time < keyTime - 0.05) break;
+      from = i;
+    }
+  return file.chunks.slice(from).filter((c, k) => c.size > 0 && ((c.stream === video && from + k >= i0) || (c.stream === audio && c.time >= keyTime - 0.05)));
+}
+
 export function startChunk(file: AviFile, video: number, t: number): number {
   let at = -1;
   for (let i = 0; i < file.chunks.length; i++) {

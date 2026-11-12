@@ -106,6 +106,63 @@ export function enableWasmDecoders(codecs: string[], channels: number) {
   }
 }
 
+/**
+ * Channel counts Mediabunny remixes by their layouts (mono, stereo, quad, 5.1). Any other — 5.0, 6.1, 7.1 — it maps
+ * channel by channel, so going to stereo it kept only the front left and right: the centre, the dialogue, was lost.
+ */
+export const KNOWN_LAYOUTS: readonly number[] = [1, 2, 4, 6];
+
+/**
+ * A decoded block of 5.0, 6.1 or 7.1 (the decoders' order: L R C, then LFE where there is one, then the surrounds)
+ * remixed to 5.1 or stereo: back and side surrounds folded into the 5.1's, then — for stereo — the centre and each
+ * surround into its side, as Mediabunny remixes 5.1 (the LFE left out). A block already of `target` channels, or of
+ * fewer, is left as it is.
+ */
+export function remixed(sample: AudioSample, target: 2 | 6): AudioSample {
+  const n = sample.numberOfChannels;
+  if (n <= target) return sample;
+  const frames = sample.numberOfFrames;
+  const from = new Float32Array(frames * n);
+  sample.copyTo(from, { planeIndex: 0, format: "f32" });
+  const to = new Float32Array(frames * target);
+  const h = Math.SQRT1_2;
+  for (let i = 0; i < frames; i++) {
+    const s = i * n;
+    const l = from[s]!;
+    const r = from[s + 1]!;
+    const c = from[s + 2]!;
+    let lfe = 0;
+    let ls = 0;
+    let rs = 0;
+    if (n === 5) {
+      ls = from[s + 3]!;
+      rs = from[s + 4]!;
+    } else if (n === 7) {
+      // 6.1: L R C LFE, back centre, side left and right.
+      lfe = from[s + 3]!;
+      ls = from[s + 5]! + h * from[s + 4]!;
+      rs = from[s + 6]! + h * from[s + 4]!;
+    } else if (n >= 8) {
+      // 7.1: L R C LFE, back left and right, side left and right.
+      lfe = from[s + 3]!;
+      ls = h * (from[s + 4]! + from[s + 6]!);
+      rs = h * (from[s + 5]! + from[s + 7]!);
+    } else {
+      lfe = from[s + 3]!;
+      ls = from[s + 4]!;
+      rs = from[s + 5]!;
+    }
+    const d = i * target;
+    if (target === 2) {
+      to[d] = l + h * (c + ls);
+      to[d + 1] = r + h * (c + rs);
+    } else {
+      to.set([l, r, c, lfe, ls, rs], d);
+    }
+  }
+  return new AudioSample({ data: to, format: "f32", numberOfChannels: target, sampleRate: sample.sampleRate, timestamp: sample.timestamp });
+}
+
 type Backing = {
   internalTrack?: { codecId?: string };
   getCodec(): unknown;

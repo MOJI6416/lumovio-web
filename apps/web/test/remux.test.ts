@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canRemuxInBrowser, containerName, type PlaybackCapabilities } from "../src/lib/media/capabilities";
+import { canRemuxInBrowser, containerName, type PlaybackCapabilities, REMUXABLE_AUDIO } from "../src/lib/media/capabilities";
 import { type AudioCoders, choosePlayback, remuxAudioRoute } from "../src/lib/media/playback-choice";
 import { compatibleMime } from "../src/lib/media/remux";
 
@@ -149,6 +149,20 @@ describe("choosePlayback (the corpus' formats, per browser)", () => {
     expect(await choosePlayback(iphone, unread("mkv"), {}, none)).toEqual({ path: "remux", audio: "copy" });
     expect(await choosePlayback(chrome, unread("avi"), {}, chromeCoders)).toEqual({ path: "external", reason: "container avi" });
     expect(await choosePlayback(iphone, unread("mp4"), {}, none)).toEqual({ path: "direct" });
+  });
+});
+
+describe("another audio track chosen in a rebuilt playback", () => {
+  // The player switches tracks inside the rebuild only for those REMUXABLE_AUDIO names; the rest are prepared anew,
+  // which sends the file with that track to another app instead of failing the playback (PCM) or playing it silent (MP2).
+  it("prepares a PCM or MP2 track anew: another app, with the reason", async () => {
+    for (const a of ["pcm_s16le", "pcm_bluray", "mp2"]) {
+      expect(REMUXABLE_AUDIO.test(a)).toBe(false);
+      expect(await choosePlayback(chrome, mkv("h264", a), { otherTrack: true }, chromeCoders)).toEqual({ path: "external", reason: `audio ${a}` });
+    }
+  });
+  it("switches the others in place", () => {
+    for (const a of ["aac", "ac3", "eac3", "dts", "truehd", "flac", "opus", "mp3"]) expect(REMUXABLE_AUDIO.test(a)).toBe(true);
   });
 });
 

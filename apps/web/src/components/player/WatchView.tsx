@@ -1174,7 +1174,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       }}
       // What this TorrServer's line gave the playback: "Auto" ranks its next releases by it (lib/media/line-speed).
       onLine={active.candidate.provider === "torrserver" ? (bps) => noteLine(active.candidate.server.connectionId, bps) : undefined}
-      onFatal={(message, code) => {
+      onFatal={(message, code, at) => {
         if (failedPlayer.current === active) return;
         failedPlayer.current = active;
         const c = active.candidate;
@@ -1216,7 +1216,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const failure = prepared.type === "remux" ? remuxFailure(message) : null;
         if (failure && retriesQuietly(failure, quietRetries.current.get(c.key), now)) {
           quietRetries.current.set(c.key, now);
-          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
+          // From where the playhead was: a seek just before the failure isn't in the last progress mark.
+          resumeOverride.current = at !== undefined && at > 5 ? at : last.current.pos > 5 ? last.current.pos : resumeOverride.current;
           setActive(null);
           void prepare(c, { auto: false, audioIndex: chosenAudio.current ?? (prepared.type === "remux" ? prepared.remuxAudio : undefined), rebuild: true });
           return;

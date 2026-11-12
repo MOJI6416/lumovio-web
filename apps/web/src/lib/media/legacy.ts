@@ -1,6 +1,6 @@
 import type { AudioSample, VideoSample } from "mediabunny";
 import { optional } from "../optional";
-import { type AviFile, type AviStream, readAvi, startChunk } from "./avi";
+import { type AviFile, type AviStream, readAvi, runChunks } from "./avi";
 import { detectCapabilities } from "./capabilities";
 import { AUDIO_DECODER } from "./codecs/audio";
 import { codecWorker } from "./codecs/worker";
@@ -263,15 +263,7 @@ export function startLegacy(video: HTMLVideoElement, opts: RemuxOptions): Promis
             }
           };
           try {
-            const i0 = startChunk(file, v.index, from);
-            const keyTime = file.chunks[i0]?.time ?? 0;
-            const wanted = file.chunks
-              .slice(i0)
-              .filter(
-                (c) =>
-                  c.size > 0 &&
-                  (c.stream === v.index || (a && c.stream === a.index && c.time >= keyTime - 0.05)),
-              );
+            const wanted = runChunks(file, v.index, a?.index ?? null, from);
             for (let k = 0; k < wanted.length && !cancelled && isCurrent(); ) {
               // Contiguous chunks in reads of about 1 MB: the file in order, as a download would read it.
               let end = k;
