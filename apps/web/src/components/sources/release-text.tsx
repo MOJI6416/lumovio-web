@@ -8,6 +8,7 @@ import { QualityLine, qualityMarks } from "./QualityBadges";
 import {
   audioMatch,
   type HdrFormat,
+  isDubbing,
   kindOf,
   namedTracks,
   type PackInfo,
@@ -153,13 +154,20 @@ export function ReleaseLine({ info, rest = [] }: { info: ReleaseInfo; rest?: rea
   return <QualityLine marks={releaseMarks(info)} words={[text.besideMarks(info), ...rest]} />;
 }
 
+/** A studio of the profile as it is shown: the profile's "Dubbing" (`DUBBING`) in the interface language. `t`: "title". */
+export const studioShown = (t: ReturnType<typeof useTranslations>, studio: string) => {
+  if (!isDubbing(studio)) return studio;
+  const word = t("voice_dub");
+  return word.charAt(0).toUpperCase() + word.slice(1);
+};
+
 /** The label that says what a release's audio has to do with the profile: its studio, or only its language (7.4 Tag). */
 export function AudioMatchBadge({ x }: { x: RankedRelease }) {
   const t = useTranslations("title");
   const text = useReleaseText();
   const m = audioMatch(x);
   if (!m) return null;
-  return <Tag>{m.kind === "studio" ? t("tsYourVoice", { studio: m.studio }) : t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
+  return <Tag>{m.kind === "studio" ? t("tsYourVoice", { studio: studioShown(t, m.studio) }) : t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
 }
 
 const CODEC: Record<NonNullable<ReleaseInfo["codec"]>, string> = { hevc: "HEVC", avc: "AVC", av1: "AV1" };

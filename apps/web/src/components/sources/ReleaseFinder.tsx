@@ -18,11 +18,11 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
-import type { RankedRelease } from "@/lib/media/releases";
+import { isDubbing, type RankedRelease } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
-import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "./release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, studioShown, useReleaseText } from "./release-text";
 
 const CARD = "finder-card-h";
 
@@ -250,7 +250,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   // The cut in words, unless its pill names it.
   const cutWords = c.edition && !(c.editions.length > 1 && f.edition) ? editionName(c.edition) : null;
   const linked = f.isLinked(chosen.result);
-  const studioMatch = chosen.studio && (!option || option.studio === chosen.studio);
+  const studioMatch = chosen.studio && (!option || option.studio === chosen.studio || (isDubbing(chosen.studio) && option.voice === "dub"));
   const kept = found.emptyAt ? tt("tsKept", { minutes: f.minutes }) : null;
   const failed = f.status.kind === "error" ? `${t("searchFailed")}. ${t("searchKept", { minutes: f.minutes })}` : null;
   const versionName = c.version ? text.version(c.version.resolution, c.version.range) : "";
@@ -263,7 +263,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
     <WatchCard
       id={CARD}
       mark={<CardMark kind="torrserver" />}
-      tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: chosen.studio! })}</Tag> : undefined}
+      tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: studioShown(tt, chosen.studio!) })}</Tag> : undefined}
       heading={heard}
       quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
       where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
@@ -500,7 +500,7 @@ function ReleaseItem({
   ) : linked ? (
     <Tag>{t("alreadyAdded")}</Tag>
   ) : x?.studio ? (
-    <Tag>{tt("tsYourVoice", { studio: x.studio })}</Tag>
+    <Tag>{tt("tsYourVoice", { studio: studioShown(tt, x.studio) })}</Tag>
   ) : null;
   return (
     <li className="flex items-center gap-3 p-4">

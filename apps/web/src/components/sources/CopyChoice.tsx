@@ -14,7 +14,7 @@ import { Link } from "@/i18n/navigation";
 import type { WatchState } from "@/lib/watch-state";
 import { useCopyText } from "./copy-text";
 import { QualityLine } from "./QualityBadges";
-import { formatSize } from "./release-text";
+import { formatSize, studioShown } from "./release-text";
 
 /** A copy of the viewing on one of the profile's servers, as the sources screen lists it. */
 export interface ChoiceCopy {
@@ -152,7 +152,7 @@ export function CopyChoice({
       <WatchCard
         id="copies-h"
         mark={<CardMark kind={first.server.kind} />}
-        tag={label(first) ?? (f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: f.match.studio })}</Tag> : undefined)}
+        tag={label(first) ?? (f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: studioShown(t, f.match.studio) })}</Tag> : undefined)}
         heading={f.heard}
         quality={f.quality}
         where={f.where}

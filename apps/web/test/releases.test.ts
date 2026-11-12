@@ -487,7 +487,7 @@ describe("the chosen dubbing's track (TS5)", () => {
   ];
   it("reads an option key into a studio and language; a kind of translation has no studio", () => {
     expect(voiceWish("ru|HDrezka Studio")).toEqual({ studio: "HDrezka Studio", language: "ru" });
-    expect(voiceWish("ru|dub")).toEqual({ studio: null, language: "ru" });
+    expect(voiceWish("ru|dub")).toEqual({ studio: null, language: "ru", dub: true });
     expect(voiceWish("|")).toEqual({ studio: null, language: null });
     expect(voiceWish(null)).toBeNull();
   });
@@ -680,7 +680,8 @@ describe("audio tracks, each in its own language (SRC-04, SRC-05)", () => {
   it("offers a studio in its own language, so the same name in two languages is two options of their languages", () => {
     const ranked = rankReleases([r(DUNE, 255), r("Дюна / Dune (2021) WEB-DL 2160p | MVO (HDrezka Studio) + Dub (Ukr)", 40)], film, prefsOf({ languages: ["uk"] }));
     const options = voiceOptions(ranked);
-    expect(options.map((o) => o.key)).toEqual(["ru|dub", "ru|Jaskier", "ru|HDrezka Studio", "ru|dvo", "ru|Гаврилов", "uk|dub"]);
+    // A two-voice track with no studio is no option of its own (docs/torrserver-2026-11.md, 4): it is Russian, "ru|".
+    expect(options.map((o) => o.key)).toEqual(["ru|dub", "ru|Jaskier", "ru|HDrezka Studio", "ru|", "ru|Гаврилов", "uk|dub"]);
     // HDrezka is Russian in both releases: one option, never a Ukrainian one.
     expect(options.filter((o) => o.studio === "HDrezka Studio").map((o) => [o.language, o.versions.length])).toEqual([["ru", 2]]);
     expect(options.find((o) => o.key === "uk|dub")!.versions.map((v) => v.key)).toEqual(["1080", "2160"]);
@@ -703,7 +704,7 @@ describe("a dubbing chosen by its language alone", () => {
     expect(voiceTrack(tracks, { studio: null, language: "uk" })).toBe(2);
     expect(voiceTrack(tracks, { studio: null, language: "ja" })).toBeNull();
     expect(voiceTrack(tracks, { studio: null, language: null })).toBeNull();
-    expect(voiceWish("uk|dub")).toEqual({ studio: null, language: "uk" });
+    expect(voiceWish("uk|dub")).toEqual({ studio: null, language: "uk", dub: true });
   });
   it("of several in that language: the profile's first studio's, else the default, else the first", () => {
     const more = [...tracks, { index: 4, title: "MVO [Sunnysiders]", language: "ukr" }, { index: 5, title: "MVO [DniproFilm]", language: "ukr", default: false }];

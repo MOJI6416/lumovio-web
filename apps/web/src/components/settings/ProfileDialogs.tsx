@@ -17,7 +17,7 @@ import { toast } from "@/components/ui/Toast";
 import { ApiRequestError, api } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-errors";
 import { languageName } from "@/lib/format";
-import { VOICE_STUDIOS } from "@/lib/media/releases";
+import { DUBBING, isDubbing, VOICE_STUDIOS } from "@/lib/media/releases";
 import { useSettingsSave } from "@/lib/use-action";
 import { capital } from "./locale-options";
 import { OrderedChoice } from "./OrderedChoice";
@@ -79,6 +79,7 @@ function useLanguageOptions() {
  */
 export function AudioDialog({ value, change, onClose, kids }: Common & { kids: boolean }) {
   const t = useTranslations("profiles");
+  const tt = useTranslations("title");
   const ts = useTranslations("settings");
   const locale = useLocale();
   const save = useSettingsSave();
@@ -90,16 +91,21 @@ export function AudioDialog({ value, change, onClose, kids }: Common & { kids: b
     void save.save(c.request, c.optimistic);
   };
   const audio = value.audioLanguages;
-  const studios = VOICE_STUDIOS.filter((s) => audio.length === 0 || audio.includes(s.lang)).map((s) => ({
-    value: s.name,
-    label: s.name,
-    keywords: [languageName(s.lang, locale) ?? s.lang, ...(s.anime ? [t("studiosAnime")] : [])],
-  }));
+  // "Dubbing" first: any studio's dub as one entry of the order ("1 — Dubbing, 2 — LostFilm", docs/torrserver-2026-11.md 5).
+  const studios = [
+    { value: DUBBING, label: tt("voice_dub").charAt(0).toUpperCase() + tt("voice_dub").slice(1), keywords: ["dub", "dubbing"] },
+    ...VOICE_STUDIOS.filter((s) => audio.length === 0 || audio.includes(s.lang)).map((s) => ({
+      value: s.name,
+      label: s.name,
+      keywords: [languageName(s.lang, locale) ?? s.lang, ...(s.anime ? [t("studiosAnime")] : [])],
+    })),
+  ];
   const addCustom = (e: FormEvent) => {
     e.preventDefault();
-    const n = custom.trim();
+    // "Дубляж" typed by hand is the "Dubbing" entry.
+    const n = isDubbing(custom) ? DUBBING : custom.trim();
     if (n.length < 2) return setError(t("studioShort"));
-    if (value.voiceStudios.some((v) => v.toLowerCase() === n.toLowerCase())) return setError(t("studioTwice"));
+    if (value.voiceStudios.some((v) => v.toLowerCase() === n.toLowerCase() || (isDubbing(v) && isDubbing(n)))) return setError(t("studioTwice"));
     setError(null);
     setCustom("");
     apply({ voiceStudios: [...value.voiceStudios, n] });

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, studioShown, useReleaseText } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -19,7 +19,7 @@ import { useLibraryState } from "@/hooks/useLibraryState";
 import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
-import { pictureReasons, type RankedRelease } from "@/lib/media/releases";
+import { isDubbing, pictureReasons, type RankedRelease } from "@/lib/media/releases";
 import { addTorrentSource } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
@@ -158,7 +158,8 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
   // The heading says the chosen audio's own language ("Russian · dub" for a Russian dub, whatever else the release has).
   const heard = text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio) || text.option({ studio: null, voice: null, language: null });
-  const studioMatch = chosen.studio && option?.studio === chosen.studio;
+  // "Your voice-over": the option is the profile's studio — or a dub, for the profile's "Dubbing".
+  const studioMatch = chosen.studio && (option?.studio === chosen.studio || (isDubbing(chosen.studio) && option?.voice === "dub"));
   const kept = lookup.data?.emptyAt ? t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) }) : null;
   const versionName = version ? text.version(version.resolution, version.range) : "";
   const qualityValue = choice.picture ? versionName : [t(`tsQuality_${mode}`), versionName].filter(Boolean).join(" · ");
@@ -170,7 +171,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
-        tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: chosen.studio! })}</Tag> : undefined}
+        tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: studioShown(t, chosen.studio!) })}</Tag> : undefined}
         heading={heard}
         quality={
           <>

@@ -10,7 +10,7 @@ import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
-import { formatSize } from "@/components/sources/release-text";
+import { formatSize, studioShown } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
 import { CastButton } from "@/components/tv/CastButton";
 import { Tag } from "@/components/ui/Badge";
@@ -156,7 +156,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
         <WatchCard
           id="servers-h"
           mark={<CardMark kind={first.kind} />}
-          tag={f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: f.match.studio })}</Tag> : undefined}
+          tag={f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: studioShown(t, f.match.studio) })}</Tag> : undefined}
           heading={f.heard}
           quality={f.quality}
           where={f.where}

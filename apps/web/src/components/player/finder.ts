@@ -9,7 +9,7 @@ import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
-import { creditsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
+import { optionIsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -237,7 +237,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     };
     // In a language, the profile's studios first, in their order ("1 — LostFilm, 2 — HDRezka"), as "Where to watch" offers them.
     const studio = (o: VoiceOption) => {
-      const i = o.studio ? base.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+      const i = base.studios.findIndex((s) => optionIsStudio(o, s));
       return i >= 0 ? i : base.studios.length;
     };
     return all

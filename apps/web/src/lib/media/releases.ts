@@ -145,9 +145,20 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Whether a release name credits a studio: a known one by its spellings, any other as written. */
 export function creditsStudio(release: string, studio: string): boolean {
+  if (isDubbing(studio)) return VOICE_WORDS.dub.test(release.replace(/[._]/g, " "));
   const known = VOICE_STUDIOS.find((s) => s.name.toLowerCase() === studio.toLowerCase());
   return (known?.match ?? W(escapeRe(studio.trim()))).test(release.replace(/[._]/g, " "));
 }
+
+/**
+ * "Dubbing" in the profile's studios (docs/torrserver-2026-11.md, 5): any studio's dub, as one entry of the order
+ * ("1 — Dubbing, 2 — LostFilm"). Stored as `DUBBING`; the word typed by hand in a language counts as it too.
+ */
+export const DUBBING = "dub";
+export const isDubbing = (studio: string) => /^(?:dub|dubbing|дубляж|дубльований|дубльоване|дублированный|doblaje|doublage|dublagem|doppiaggio|dublaj|synchronfassung|synchronisation)$/iu.test(studio.trim());
+
+/** Whether an audio option is a studio of the profile's: "Dubbing" is any option whose translation is a dub. */
+export const optionIsStudio = (o: Pick<VoiceOption, "studio" | "voice">, studio: string) => (isDubbing(studio) ? o.voice === "dub" : o.studio !== null && creditsStudio(o.studio, studio));
 
 const VOICE_WORDS: Record<Voice, RegExp> = {
   dub: W("dub|dubbed|дубляж|дублированн\\p{L}*|дубльован\\p{L}*|дб|лицензия|license|licence|itunes"),
@@ -683,7 +694,11 @@ export function rankReleases(
     .map((result) => {
       const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
-      const j = prefs.studios.findIndex((s) => creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))));
+      // "Dubbing": a dub in the language the release is the profile's by (a Ukrainian dub doesn't make a Russian release dubbed).
+      const dubbed = info.tracks.length ? info.tracks.some((t) => t.voice === "dub" && (i < 0 || t.language === null || t.language === prefs.languages[i])) : info.voice === "dub";
+      const j = prefs.studios.findIndex((s) =>
+        isDubbing(s) ? dubbed : creditsStudio(result.title, s) || info.tracks.some((t) => (t.studio !== null && creditsStudio(t.studio, s)) || (t.credit !== null && creditsStudio(t.credit, s))),
+      );
       // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
@@ -746,9 +761,16 @@ export function audioMatch(x: RankedRelease): { kind: "studio"; studio: string }
  */
 export function voiceKeys(x: Pick<RankedRelease, "info" | "language">): string[] {
   const tracks = namedTracks(x.info);
-  if (tracks.length === 0) return [`${x.language ?? ""}|${x.info.voice ?? ""}`];
-  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? t.voice ?? ""}`))];
+  if (tracks.length === 0) return [`${x.language ?? ""}|${kindKey(x.info.voice)}`];
+  return [...new Set(tracks.map((t) => `${t.language ?? ""}|${t.studio ?? kindKey(t.voice)}`))];
 }
+
+/**
+ * A kind of translation as an audio option of its own: a dub only. "Multi-voice", "two-voice", "author's" (MVO, DVO, AVO,
+ * VO) say that studios or authors are inside, not which (docs/torrserver-2026-11.md, 4): such a track is an option of its
+ * language alone ("Russian"), and its studios come from the file once it is read.
+ */
+const kindKey = (voice: Voice | null) => (voice === "dub" ? "dub" : "");
 
 export interface PictureVersion {
   /** `pictureKey`. */
@@ -843,17 +865,18 @@ export function pictureReasons(x: RankedRelease, among: RankedRelease[], prefs: 
   return out;
 }
 
-/** The dubbing or voice-over chosen before the file was read: its studio and language. */
+/** The dubbing or voice-over chosen before the file was read: its studio and language, and a dub chosen without a studio. */
 export interface VoiceWish {
   studio: string | null;
   language: string | null;
+  dub?: boolean;
 }
 
 /** The studio and language of an audio option's key (`voiceKeys`); a key naming only a kind of translation has no studio. */
 export function voiceWish(key: string | null): VoiceWish | null {
   if (!key) return null;
   const [language = "", rest = ""] = key.split("|");
-  return { studio: rest && !(VOICES as string[]).includes(rest) ? rest : null, language: language || null };
+  return { studio: rest && !(VOICES as string[]).includes(rest) ? rest : null, language: language || null, ...(rest === "dub" ? { dub: true } : {}) };
 }
 
 /** ISO 639-2 codes (bibliographic and terminology) files tag their tracks with, by ISO 639-1. */
@@ -910,7 +933,8 @@ const credits = (t: FileTrack, studio: string) => t.title !== null && creditsStu
 export function voiceTrack(tracks: FileTrack[], wish: VoiceWish, studios: string[] = []): number | null {
   const studio = wish.studio;
   if (tracks.length === 0) return null;
-  if (!studio) return wish.language && tracks.some((t) => speaks(t, wish.language!)) ? profileTrack(tracks, { languages: [wish.language], studios }) : null;
+  // A language alone, or its dub ("Russian · dub"): a dub track there first when the dub was chosen.
+  if (!studio) return wish.language && tracks.some((t) => speaks(t, wish.language!)) ? profileTrack(tracks, { languages: [wish.language], studios: wish.dub ? [DUBBING, ...studios] : studios }) : null;
   if (tracks.length === 1) return tracks[0]!.index;
   let hits = tracks.filter((t) => credits(t, studio));
   if (hits.length > 1 && wish.language) {

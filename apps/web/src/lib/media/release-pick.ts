@@ -1,5 +1,5 @@
 import { type Edition, editionOf } from "./editions";
-import { creditsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, swarmOf, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
+import { optionIsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, swarmOf, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
 
 export { type Edition, editionOf };
 
@@ -66,7 +66,7 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
   const dying = (o: VoiceOption) => (swarmOf(o.best.result.seeders) === 0 ? 1 : 0);
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
   const studio = (o: VoiceOption) => {
-    const i = o.studio ? prefs.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
+    const i = prefs.studios.findIndex((s) => optionIsStudio(o, s));
     return i < 0 ? prefs.studios.length : i;
   };
   return options

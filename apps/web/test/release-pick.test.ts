@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ANY, editionOf, forProfile, NO_CHOICE, pickRelease } from "../src/lib/media/release-pick";
-import { type ReleasePrefs, rankReleases, voiceOptions } from "../src/lib/media/releases";
+import { DUBBING, type ReleasePrefs, rankReleases, voiceOptions, voiceTrack, voiceWish } from "../src/lib/media/releases";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
 
 const device = { hevc: true, hdr: false, uhd: false, dolbyVision: false };
@@ -326,5 +326,50 @@ describe("pickRelease for the sources screen (ANY)", () => {
   it("leaves Where to watch as it was (no ANY, 12 options at most)", () => {
     expect(pickRelease(ranked, p, NO_CHOICE)).toEqual(pickRelease(ranked, p, NO_CHOICE, 12));
     expect(pickRelease(ranked, p, NO_CHOICE).option?.key).toBe("uk|dub");
+  });
+});
+
+// docs/torrserver-2026-11.md, 4 and 5: "Dubbing" in the profile's studios, and kinds of translation that are no option.
+describe("the profile's Dubbing, and multi-voice as no option of its own", () => {
+  const dune2 = { title: "Dune: Part Two", originalTitle: null, kind: "movie" as const, year: 2024, originalLanguage: "en" };
+  const dub = result("Dune: Part Two [2024, WEB-DL 1080p] Dub (Movie Dubbing) + Original (Eng)", 60);
+  const lost = result("Dune: Part Two [2024, WEB-DL 1080p] MVO (LostFilm) + Original (Eng)", 60);
+  const mvo = result("Dune: Part Two [2024, WEB-DL 1080p] MVO + Original (Eng)", 60);
+
+  it("starts a dub, any studio's, when Dubbing comes first — picked from the list or typed in a language", () => {
+    for (const first of [DUBBING, "Дубляж", "Dubbing"]) {
+      const p = prefs({ languages: ["ru"], studios: [first, "LostFilm"] });
+      const x = pickRelease(rankReleases([lost, dub], dune2, p), p);
+      expect(x.chosen?.result).toBe(dub);
+      expect(x.option?.voice).toBe("dub");
+    }
+    // LostFilm first: LostFilm, as before.
+    const p = prefs({ languages: ["ru"], studios: ["LostFilm", DUBBING] });
+    expect(pickRelease(rankReleases([dub, lost], dune2, p), p).chosen?.result).toBe(lost);
+  });
+
+  it("doesn't call a release dubbed for a Russian profile by its Ukrainian dub", () => {
+    const ukDub = result("Dune: Part Two [2024, WEB-DL 1080p] MVO (LostFilm) + Dub (Ukr) + Original (Eng)", 60);
+    const p = prefs({ languages: ["ru"], studios: [DUBBING] });
+    expect(rankReleases([ukDub, dub], dune2, p)[0]!.result).toBe(dub);
+  });
+
+  it("offers a multi-voice track without a studio as its language, never as 'multi-voice'", () => {
+    const plainDub = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 60);
+    const keys = voiceOptions(rankReleases([mvo, lost, dub, plainDub], dune2, prefs({ languages: ["ru"] }))).map((o) => o.key);
+    expect(keys).toContain("ru|");
+    // A dub stays an option of its own, with its studio or without one.
+    expect(keys).toEqual(expect.arrayContaining(["ru|dub", "ru|Movie Dubbing", "ru|LostFilm"]));
+    expect(keys).not.toContain("ru|mvo");
+  });
+
+  it("plays a dub track when a language's dub was chosen, whatever studio comes first in the profile", () => {
+    const tracks = [
+      { index: 0, title: "MVO [LostFilm]", language: "rus", default: true },
+      { index: 1, title: "Дубляж [Movie Dubbing]", language: "rus" },
+      { index: 2, title: "Original", language: "eng" },
+    ];
+    expect(voiceTrack(tracks, voiceWish("ru|dub")!, ["LostFilm"])).toBe(1);
+    expect(voiceTrack(tracks, voiceWish("ru|")!, ["LostFilm"])).toBe(0);
   });
 });
