@@ -1,9 +1,9 @@
 "use client";
 
 import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/contracts";
-import { ExternalLink, Play, Server, Tv } from "lucide-react";
+import { ExternalLink, Play, Search, Server, Tv, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
@@ -16,6 +16,7 @@ import { CastButton } from "@/components/tv/CastButton";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { IconButton } from "@/components/ui/IconButton";
 import { Link as ActionLink } from "@/components/ui/Link";
 import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useLibraryState } from "@/hooks/useLibraryState";
@@ -54,6 +55,7 @@ const reachable = (s: SourceState) => s.status !== "unreachable" && s.status !==
 export function Availability({ title: d }: { title: TitleCore }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const { me } = useSession();
   const { data: lib } = useLibraryState(d.id);
@@ -70,6 +72,17 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const data = raw ? titleCopies(raw, holds) : undefined;
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
+  // "Another release" under a copy (docs/torrserver-2026-11.md, 15 and 19): the search's card, closed by × and Escape.
+  const [other, setOther] = useState(false);
+  const otherButton = useRef<HTMLButtonElement>(null);
+  const otherClose = useRef<HTMLButtonElement>(null);
+  const closeOther = () => {
+    setOther(false);
+    requestAnimationFrame(() => otherButton.current?.focus());
+  };
+  useEffect(() => {
+    if (other) otherClose.current?.focus();
+  }, [other]);
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
@@ -99,7 +112,8 @@ export function Availability({ title: d }: { title: TitleCore }) {
       heard: heard ?? q.words[0] ?? s.connectionName,
       // The marks and what they don't say; without marks, the version in words unless the heading already says it.
       quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      // A TorrServer copy says it is already there (14), not "On «torr» · TorrServer" beside a found release's "Through".
+      where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, d.originalLanguage),
     };
   };
@@ -203,10 +217,39 @@ export function Availability({ title: d }: { title: TitleCore }) {
             </ul>
           </section>
         )}
-        {torrServers.length > 0 && (
-          <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
-            {tp("allSources")}
-          </ActionLink>
+        {other && search ? (
+          <section
+            aria-labelledby="other-release-h"
+            className="flex flex-col gap-3"
+            onKeyDown={(e) => {
+              // Escape closes the card, unless a menu or a dialog inside it takes the key first.
+              if (e.key === "Escape" && !e.defaultPrevented && !(e.target as Element).closest("[role=menu],[role=dialog],[role=listbox]")) {
+                e.preventDefault();
+                closeOther();
+              }
+            }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h4 id="other-release-h" className="text-body-s font-semibold text-text-2">
+                {tp("otherRelease")}
+              </h4>
+              <IconButton ref={otherClose} icon={X} label={tc("close")} variant="ghost" size="md" onClick={closeOther} />
+            </div>
+            <TorrentLookupPanel title={d} source={search} lead={false} />
+          </section>
+        ) : (
+          torrServers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {search && (
+                <Button ref={otherButton} variant="secondary" icon={Search} onClick={() => setOther(true)}>
+                  {tp("otherRelease")}
+                </Button>
+              )}
+              <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
+                {tp("allSources")}
+              </ActionLink>
+            </div>
+          )
         )}
       </>
     );

@@ -7,6 +7,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate, takeGuestIntent } from "@/components/shell/GuestGate";
+import { useCopyText } from "@/components/sources/copy-text";
 import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
@@ -58,6 +59,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const ep = d.kind === "tv" ? startEpisode(d, state?.progress, chosen) : null;
   const holds = seasonCopies(ep?.season);
   const avail = useTitleAvailability(d.id, holds);
+  const copyText = useCopyText();
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -109,13 +111,23 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     resume: resumable(p) && (!ep || p?.season === ep.season),
     copy:
       first && avail.state.kind === "playable"
-        ? {
-            server: first.connectionName,
-            resolution: first.quality?.resolution ?? null,
-            // Its marks by its server's data (a TorrServer copy's release name is read only in "Where to watch").
-            marks: first.quality ? copyMarks(first.quality) : [],
-            others: avail.state.copies - 1,
-          }
+        ? first.kind === "torrserver"
+          ? {
+              // A TorrServer copy as a found release is said: its release name's marks and what is heard (16).
+              server: first.connectionName,
+              resolution: null,
+              marks: copyText.quality(first, avail.data?.servers ?? [], d.originalLanguage).marks,
+              heard: copyText.sound(first, avail.data?.servers ?? [], d.originalLanguage),
+              torrServer: true,
+              others: avail.state.copies - 1,
+            }
+          : {
+              server: first.connectionName,
+              resolution: first.quality?.resolution ?? null,
+              // Its marks by its server's data.
+              marks: first.quality ? copyMarks(first.quality) : [],
+              others: avail.state.copies - 1,
+            }
         : null,
     torrent,
     trailer: Boolean(d.trailer),
@@ -285,6 +297,18 @@ function AvailabilityLine({
     case "copy": {
       icon = <Server aria-hidden className="size-4 shrink-0" />;
       const others = s.others > 0 ? tt("moreCopies", { count: s.others }) : null;
+      // A TorrServer copy: "Already on your TorrServer «torr» · [HD] Russian · multi-voice (LostFilm)" — as a found release.
+      if (s.torrServer) {
+        text = (
+          <>
+            {t("onTorrServer", { server: s.server })}
+            {(s.marks?.length || s.heard) && " · "}
+            <QualityLine marks={s.marks ?? []} words={[s.heard]} />
+            {others && ` · ${others}`}
+          </>
+        );
+        break;
+      }
       // "On «Home» [4K] [Dolby Vision] · 2 more copies": the marks say the resolution, never the words too.
       text = s.marks?.length ? (
         <>

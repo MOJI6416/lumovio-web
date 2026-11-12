@@ -36,7 +36,8 @@ const ID = "torrserver-h";
  * when there is something to choose. Choosing changes the card and nothing else: nothing is added before "Watch".
  * The hero starts the same release (lib/media/release-pick, TorrentProbe).
  */
-export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; source: SourceState }) {
+/** `lead`: the screen's first way to watch — its "Watch" is white; under a copy ("Another release") it is secondary. */
+export function TorrentLookupPanel({ title: d, source, lead = true }: { title: TitleCore; source: SourceState; lead?: boolean }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tpl = useTranslations("player");
@@ -199,7 +200,7 @@ export function TorrentLookupPanel({ title: d, source }: { title: TitleCore; sou
         }
         actions={
           <>
-            <Button size="lg" loading={adding} onClick={() => void play(chosen, voice)}>
+            <Button size="lg" variant={lead ? "primary" : "secondary"} loading={adding} onClick={() => void play(chosen, voice)}>
               <Play aria-hidden className="fill-current" />
               {t("tsWatch")}
             </Button>

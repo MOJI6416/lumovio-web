@@ -114,9 +114,9 @@ export function useCopyText() {
       const beside = name ? text.besideMarks(parseRelease(name, null, originalLanguage)) : resolutionBesideMarks(q?.resolution);
       return { marks: m, words: [beside, sound(s, all, originalLanguage)] };
     },
-    /** Where it is and how big: "On «torr» · TorrServer · 9.6 GB". */
+    /** Where it is and how big: "On «Home» · Jellyfin · 9.6 GB", "Already on your TorrServer «torr» · 9.6 GB" (14). */
     meta: (s: Availability, title: string) =>
-      [t("onServer", { server: s.connectionName }), KIND_LABEL[s.kind], formatSize(s.quality?.sizeBytes ?? null, locale), s.kind !== "torrserver" && s.label && s.label !== title ? s.label : null]
+      [...(s.kind === "torrserver" ? [t("onTorrServer", { server: s.connectionName })] : [t("onServer", { server: s.connectionName }), KIND_LABEL[s.kind]]), formatSize(s.quality?.sizeBytes ?? null, locale), s.kind !== "torrserver" && s.label && s.label !== title ? s.label : null]
         .filter(Boolean)
         .join(" · "),
     /** The release's full name, for the copy's details. */
