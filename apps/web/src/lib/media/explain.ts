@@ -1,5 +1,5 @@
 import { languageCode } from "./languages";
-import { parseRelease, type ReleaseTrack } from "./releases";
+import { fileTracks, parseRelease, type ReleaseTrack } from "./releases";
 
 /*
  * What the playback engines say in their own (English, technical) words, as facts the interface puts in the person's
@@ -87,7 +87,13 @@ export function audioTrackFacts(title: string | null | undefined, languageTag: s
   const own = languageCode(languageTag);
   const name = (title ?? "").trim();
   const parsed = name ? parseRelease(name, null, originalLanguage) : null;
-  const track = parsed?.tracks.find((t) => t.original || t.voice || t.studio || t.credit) ?? null;
+  let track = parsed?.tracks.find((t) => t.original || t.voice || t.studio || t.credit) ?? null;
+  // A name in square brackets, as files title their tracks ("MVO [Novamedia]"): read as a copy's file tracks are, so
+  // tracks of studios not on the known list don't all read alike ("Russian · multi-voice").
+  if (track && !track.studio && !track.credit) {
+    const credit = fileTracks([`${languageTag ?? ""}|${name}`], originalLanguage)[0]?.credit ?? null;
+    if (credit) track = { ...track, credit };
+  }
   const language = own ?? track?.language ?? parsed?.languages[0] ?? null;
   // The title is shown only when the facts don't cover it: not a translation, and more than its language or format.
   const leftover = name.replace(LANGUAGE_WORDS, " ");

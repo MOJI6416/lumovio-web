@@ -70,7 +70,9 @@ export function useTrackWords(originalLanguage: string | null) {
     const lang = f.language ? text.cap(text.language(f.language)) : null;
     const tr = f.track;
     const kind = tr?.original ? t("trackOriginal") : tr?.voice ? (tr.studio ?? tr.credit ? `${tt(`voice_${tr.voice}`)} (${tr.studio ?? tr.credit})` : tt(`voice_${tr.voice}`)) : (tr?.studio ?? tr?.credit ?? null);
-    const words = [lang, kind ?? f.title].filter(Boolean).join(" · ");
+    // A studio's own cut of its track ("MVO [HDrezka Studio] 18+") says so: two tracks of one studio don't read alike.
+    const adult = kind && title && /(?<![\d])18\+/.test(title) ? "18+" : null;
+    const words = [lang, kind ?? f.title, adult].filter(Boolean).join(" · ");
     return words || (n ? t("trackNumber", { n }) : t("trackUnnamed"));
   };
 }

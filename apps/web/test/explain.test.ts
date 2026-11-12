@@ -39,6 +39,9 @@ describe("audio track facts", () => {
   it("takes the tag's language over the title's guess, and keeps a title the facts don't cover", () => {
     expect(audioTrackFacts("Original", "eng", "en")).toMatchObject({ language: "en", track: { original: true }, title: null });
     expect(audioTrackFacts("Commentary", "eng")).toMatchObject({ language: "en", track: null, title: "Commentary" });
+    // A studio not on the known list, in square brackets as files title tracks: its name is kept.
+    expect(audioTrackFacts("MVO [Novamedia]", "rus")).toMatchObject({ language: "ru", track: { voice: "mvo", studio: null, credit: "Novamedia" } });
+    expect(audioTrackFacts("MVO [LostFilm]", "rus")).toMatchObject({ track: { voice: "mvo", studio: "LostFilm" } });
     expect(audioTrackFacts("English AC3 5.1", "eng")).toMatchObject({ language: "en", track: null, title: null });
     expect(audioTrackFacts(null, "ukr")).toMatchObject({ language: "uk", track: null, title: null });
   });
