@@ -1034,6 +1034,7 @@
     "errorNetwork": "The server stopped responding.",
     "errorAuth": "Your server rejected the credentials. Reconnect it in settings.",
     "errorUnknown": "Something went wrong while playing.",
+    "errorDamaged": "Part of the file came through damaged.",
     "direct": "Direct play",
     "remux": "Remux",
     "transcode": "Transcoding",

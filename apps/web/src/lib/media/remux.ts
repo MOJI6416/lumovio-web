@@ -513,8 +513,10 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   const run = (from: number) => {
     const mine = gen + 1;
     return restart(from).catch((e) => {
-      // A run already replaced fails for itself: its read was cut off, or it never got to start.
-      if (closed || mine !== gen || e instanceof mb.ConversionCanceledError) return;
+      // A run already replaced fails for itself: its read was cut off, or it never got to start. Once the element itself
+      // failed (Media Source refused what was appended), the next append fails only because of that: the player reports
+      // the element's failure, with its code and words.
+      if (closed || mine !== gen || e instanceof mb.ConversionCanceledError || video.error) return;
       opts.onError((e as Error).message || String(e));
     });
   };

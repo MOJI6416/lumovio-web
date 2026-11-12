@@ -1034,6 +1034,7 @@
     "errorNetwork": "El servidor dejó de responder.",
     "errorAuth": "Tu servidor rechazó las credenciales. Vuelve a conectarlo en los ajustes.",
     "errorUnknown": "Algo salió mal durante la reproducción.",
+    "errorDamaged": "Una parte del archivo llegó dañada.",
     "direct": "Reproducción directa",
     "remux": "Remux",
     "transcode": "Transcodificación",

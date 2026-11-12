@@ -1034,6 +1034,7 @@
     "errorNetwork": "Serwer przestał odpowiadać.",
     "errorAuth": "Twój serwer odrzucił dane logowania. Połącz go ponownie w ustawieniach.",
     "errorUnknown": "Coś poszło nie tak podczas odtwarzania.",
+    "errorDamaged": "Część pliku dotarła uszkodzona.",
     "direct": "Odtwarzanie bezpośrednie",
     "remux": "Remux",
     "transcode": "Transkodowanie",

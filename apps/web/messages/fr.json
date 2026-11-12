@@ -1034,6 +1034,7 @@
     "errorNetwork": "Le serveur ne répond plus.",
     "errorAuth": "Votre serveur a refusé les identifiants. Reconnectez-le dans les paramètres.",
     "errorUnknown": "Un problème est survenu pendant la lecture.",
+    "errorDamaged": "Une partie du fichier est arrivée endommagée.",
     "direct": "Lecture directe",
     "remux": "Remux",
     "transcode": "Transcodage",

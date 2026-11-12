@@ -1034,6 +1034,7 @@
     "errorNetwork": "Sunucu yanıt vermeyi bıraktı.",
     "errorAuth": "Sunucunuz kimlik bilgilerini reddetti. Ayarlardan yeniden bağlayın.",
     "errorUnknown": "Oynatırken bir sorun oluştu.",
+    "errorDamaged": "Dosyanın bir kısmı bozuk geldi.",
     "direct": "Doğrudan oynatma",
     "remux": "Remux",
     "transcode": "Kod dönüştürme",

@@ -1034,6 +1034,7 @@
     "errorNetwork": "Der Server antwortet nicht mehr.",
     "errorAuth": "Dein Server hat die Zugangsdaten abgelehnt. Verbinde ihn in den Einstellungen neu.",
     "errorUnknown": "Bei der Wiedergabe ist etwas schiefgelaufen.",
+    "errorDamaged": "Ein Teil der Datei ist beschädigt angekommen.",
     "direct": "Direkte Wiedergabe",
     "remux": "Remux",
     "transcode": "Transkodierung",

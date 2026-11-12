@@ -47,6 +47,7 @@ import { voiceWish } from "@/lib/media/releases";
 import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
 import { otherAppDefault } from "@/lib/media/other-app";
+import { remuxFailure, retriesQuietly } from "@/lib/media/remux-failure";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
 import { noteLine } from "@/lib/media/line-speed";
@@ -205,6 +206,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const rebuilt = useRef(new Set<string>());
   // When each source was opened again after its stream broke off (`onFatal`).
   const reopened = useRef(new Map<string, number[]>());
+  // When each rebuilt source was last started again quietly after a failure (`onFatal`).
+  const quietRetries = useRef(new Map<string, number>());
+  // The player whose failure was taken: one player fails once (the engine and the element may both say so).
+  const failedPlayer = useRef<object | null>(null);
   // A try to open it again that waits (`onFatal`): cancelled by leaving the page or by another start.
   const pendingReopen = useRef<(() => void) | null>(null);
   useEffect(() => () => pendingReopen.current?.(), []);
@@ -1170,6 +1175,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       // What this TorrServer's line gave the playback: "Auto" ranks its next releases by it (lib/media/line-speed).
       onLine={active.candidate.provider === "torrserver" ? (bps) => noteLine(active.candidate.server.connectionId, bps) : undefined}
       onFatal={(message, code) => {
+        if (failedPlayer.current === active) return;
+        failedPlayer.current = active;
         const c = active.candidate;
         const prepared = active.prepared;
         // The stream broke off — a window minimised, a tab in the background, a locked phone, TorrServer letting the torrent
@@ -1204,6 +1211,16 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           pendingReopen.current = cancel;
           return;
         }
+        // A rebuild that failed on what it read (a torrent's piece can come damaged, and is whole when read again) starts
+        // again at once from the same place, reading the file anew, with the same audio — without an error screen, once.
+        const failure = prepared.type === "remux" ? remuxFailure(message) : null;
+        if (failure && retriesQuietly(failure, quietRetries.current.get(c.key), now)) {
+          quietRetries.current.set(c.key, now);
+          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
+          setActive(null);
+          void prepare(c, { auto: false, audioIndex: chosenAudio.current ?? (prepared.type === "remux" ? prepared.remuxAudio : undefined), rebuild: true });
+          return;
+        }
         // A TorrServer file whose plain stream this browser couldn't take (a decoder or the password's service worker
         // failed): once, it is rebuilt in the browser from the same position, where it can be — no loop.
         if (c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
@@ -1229,16 +1246,19 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           candidate: c,
           ...stages,
           // The media element's and the rebuild engine's messages are English and technical: not shown.
-          // 4: the format; 3: a decoder that said yes and then couldn't (Firefox and HEVC on some PCs).
+          // A rebuild's data that didn't parse is the file's, not the browser's. 4: the format; 3: a decoder that said yes
+          // and then couldn't (Firefox and HEVC on some PCs).
           message:
-            code === 4
-              ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
-              : code === 3
-                ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
-                : t("errorUnknown"),
+            failure === "data"
+              ? t("errorDamaged")
+              : code === 4
+                ? t("errorUnsupportedFile", { reason: reasonText(prepared.methodNote) ?? t("why_otherAny") })
+                : code === 3
+                  ? t("errorUnsupportedFile", { reason: prepared.info?.videoCodec ? t("why_video", { value: prepared.info.videoCodec.toUpperCase() }) : t("why_videoAny") })
+                  : t("errorUnknown"),
           prepared,
           retry: () => void prepare(c, { auto: false }),
-          cause: code === 3 || code === 4 ? "unsupported" : "other",
+          cause: failure !== "data" && (code === 3 || code === 4) ? "unsupported" : "other",
         });
       }}
       castButton={castButton}
