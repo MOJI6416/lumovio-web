@@ -97,6 +97,11 @@ if (typeof window !== "undefined") {
   window.addEventListener("keydown", () => (pointerLast = false), true);
 }
 
+/** Whether the last input was a pointer (a press, a click) rather than a key. */
+export function lastInputPointer() {
+  return pointerLast;
+}
+
 /** Gives a layer's focus back to `el`: with the keyboard's ring after a key, without it after a pointer. */
 export function focusBack(el: HTMLElement) {
   el.focus({ preventScroll: true, ...(pointerLast && { focusVisible: false }) });

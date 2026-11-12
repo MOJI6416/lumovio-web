@@ -381,8 +381,9 @@
     outline-offset: var(--focus-offset);
   }
   /* Over art (a stage) the ring also gets a dark halo, so it reads on a light frame. A control that draws its
-   * ring on a child adds the halo there (components/ui/styles.ts). */
-  .stage :focus-visible {
+   * ring on a child adds the halo there (components/ui/styles.ts). Not in a dialog or sheet opened from a stage: it is
+   * a solid panel, and the halo alone drew a thick black frame round a profile's face where the ring was off. */
+  .stage :focus-visible:not([role="dialog"], [role="dialog"] *) {
     box-shadow: var(--focus-halo);
   }
   /* A menu's items show where the pointer or the arrows are with their highlight (a veil of the text's colour), with
@@ -436,6 +437,35 @@
 }
 
 @layer components {
+  /* A menu as a phone's sheet (components/ui/Menu): each run of rows is one raised card, as a settings group inside a
+   * dialog — --surface-2 on the sheet's --surface-1, the card's corners --radius-md, rows divided by a hairline from
+   * where the words start (after an icon, if the rows have one) to the row's end padding. A separator (a gap) or a
+   * heading starts the next card; anything that isn't a row (the account's faces, theme and language) stands on the
+   * sheet itself. */
+  [data-menu-sheet] > [data-sheet-row] {
+    position: relative;
+    background-color: var(--surface-2);
+  }
+  [data-menu-sheet] > [data-sheet-row]:first-child,
+  [data-menu-sheet] > :not([data-sheet-row]) + [data-sheet-row] {
+    border-start-start-radius: var(--radius-md);
+    border-start-end-radius: var(--radius-md);
+  }
+  [data-menu-sheet] > [data-sheet-row]:not(:has(+ [data-sheet-row])) {
+    border-end-start-radius: var(--radius-md);
+    border-end-end-radius: var(--radius-md);
+  }
+  [data-menu-sheet] > [data-sheet-row] + [data-sheet-row]::before {
+    content: "";
+    position: absolute;
+    inset-inline: 1rem;
+    top: 0;
+    height: 1px;
+    background-color: var(--line);
+  }
+  [data-menu-sheet] > [data-sheet-row]:has(> svg:first-child) + [data-sheet-row]:has(> svg:first-child)::before {
+    inset-inline-start: 3.25rem;
+  }
   /* Light motion (components/ui/BrandMotion) in the site's roles: the mark lime on dark and on a stage, ink on
    * light; the word the text colour; the tick --success. */
   .lm-art {

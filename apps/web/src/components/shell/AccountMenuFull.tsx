@@ -10,7 +10,7 @@ import { AvatarButton, ProfileAvatar } from "@/components/ui/Avatar";
 import { Tag } from "@/components/ui/Badge";
 import { BrandLoader } from "@/components/ui/BrandMotion";
 import { IconButton } from "@/components/ui/IconButton";
-import { usePhoneLayout } from "@/components/ui/layers";
+import { lastInputPointer, usePhoneLayout } from "@/components/ui/layers";
 import { Menu, MenuCheckboxItem, MenuFace, MenuFaces, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Menu";
 import { usePortalContainer } from "@/components/ui/portal";
 import { toast } from "@/components/ui/Toast";
@@ -220,10 +220,10 @@ export function AccountMenu({ initialOpen = false, focusTrigger = false }: { ini
     return () => cancelAnimationFrame(id);
   }, [focusTrigger, initialOpen]);
 
-  // The sheet of a phone opens with the focus on its first item, not on the close button. A desktop menu
-  // opened from the keyboard does this itself; opened with the mouse it keeps the focus on the panel (no ring).
+  // The sheet of a phone opened from the keyboard puts the focus on its first item, not on the close button, as a
+  // desktop menu opened from the keyboard does; opened by a press, both keep it on the panel (no ring).
   useEffect(() => {
-    if (!open || !phone) return;
+    if (!open || !phone || lastInputPointer()) return;
     const id = requestAnimationFrame(() => {
       head.current?.parentElement?.querySelector<HTMLElement>('[role^="menuitem"], a[href], button')?.focus();
     });

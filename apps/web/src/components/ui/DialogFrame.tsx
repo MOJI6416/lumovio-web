@@ -12,6 +12,7 @@ import {
   type FocusOrigin,
   isLayerBackKey,
   isToastPress,
+  lastInputPointer,
   rememberLayerTrigger,
   restoreFocus,
   useOpenState,
@@ -44,6 +45,9 @@ import {
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// Where a press still puts the focus on open: typing starts at once.
+const TEXT_FIELD = 'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]), textarea';
 
 /** The first control in `root` that can take the focus (shown, not inert). */
 function firstFocusable(root: HTMLElement | null) {
@@ -114,6 +118,7 @@ export function LayerFrame({
   // Where the focus was (the trigger, or what opened it from code), read before the layer and a closing menu change it.
   const origin = useRef<FocusOrigin | null>(null);
   const body = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const forcedStage = useContext(LayerStageContext);
   const [stage, setStage] = useState(false);
   useLayoutEffect(() => {
@@ -149,16 +154,23 @@ export function LayerFrame({
         >
           <PortalContainerContext.Provider value={layer}>
             <D.Content
-              ref={(node) => rememberLayerTrigger(node, anchor?.current ?? null)}
+              ref={(node) => {
+                content.current = node;
+                rememberLayerTrigger(node, anchor?.current ?? null);
+              }}
               data-nav-trap
               // No description: no aria-describedby (Radix would point it at nothing and warn).
               {...(description ? {} : { "aria-describedby": undefined })}
               onOpenAutoFocus={(e) => {
                 const target = initialFocus?.current ?? firstFocusable(body.current);
-                if (target) {
-                  e.preventDefault();
-                  target.focus({ preventScroll: true });
-                }
+                // Opened by a press, the layer itself takes the focus, unringed: a phone ringed its first button as if
+                // a key had moved there (on a stage, a thick dark halo round a profile's face). Tab from it reaches
+                // that button; a field still takes the focus, to type in at once.
+                const press = lastInputPointer() && !initialFocus?.current && !target?.matches(TEXT_FIELD);
+                // Nothing to focus in the body after a key: Radix's own choice, the close button.
+                if (!target && !press) return;
+                e.preventDefault();
+                (press ? content.current : target)?.focus({ preventScroll: true });
               }}
               onCloseAutoFocus={(e) => {
                 e.preventDefault();
@@ -168,6 +180,13 @@ export function LayerFrame({
               // menu then gives the focus back to its own button, and the layer takes it back — that button is the
               // one to return to.
               onBlur={(e) => {
+                // A layer that opened on the press itself (a light trigger swaps on pointerdown) loses the focus to the
+                // page when that press's mousedown lands where the trigger was: the layer takes it back, unringed.
+                const self = e.currentTarget;
+                if (e.target === self && e.relatedTarget === null)
+                  requestAnimationFrame(() => {
+                    if (document.activeElement === document.body && self.isConnected) self.focus({ preventScroll: true });
+                  });
                 const to = e.relatedTarget;
                 if (origin.current?.el || origin.current?.trigger || !(to instanceof HTMLElement)) return;
                 // A list or menu opened from inside sits in the overlay, not in the content: not where the layer came from.

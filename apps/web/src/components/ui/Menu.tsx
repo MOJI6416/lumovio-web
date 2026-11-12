@@ -12,7 +12,7 @@ import { useOnStage, usePortalContainer } from "./portal";
 /*
  * Menu: one look for every menu — "More" on a card or a title, the account menu, a server row.
  * Radix DropdownMenu on a tablet and desktop (arrows, typeahead, Escape, focus back to the trigger); on a phone the
- * same items open as a bottom sheet with 52 px rows. Destructive items go last, after a MenuSeparator,
+ * same items open as a bottom sheet with 52 px rows in cards, one per group. Destructive items go last, after a MenuSeparator,
  * with `tone="danger"`. An item that switches a state is a MenuCheckboxItem (a check on the end shows it).
  */
 
@@ -23,10 +23,13 @@ const MenuMode = createContext<Mode>({ sheet: false });
 // the ring of the keyboard and remote sits inside the row. The row's radius 12 sits 8 inside the menu's 20.
 const ITEM =
   "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-text-1/8 data-disabled:cursor-not-allowed data-disabled:opacity-40 in-data-[tv=1]:min-h-12";
+// A phone's sheet: 52 px rows in raised cards (globals.css, [data-menu-sheet]), pressed a step lighter.
 const SHEET_ITEM =
-  "flex min-h-13 w-full items-center gap-4 rounded-sm px-3 py-3 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:bg-text-1/8 focus-visible:-outline-offset-3 active:bg-text-1/8 disabled:cursor-not-allowed disabled:opacity-40";
+  "flex min-h-13 w-full items-center gap-4 px-4 py-3 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:bg-surface-3 focus-visible:-outline-offset-3 active:bg-surface-3 disabled:cursor-not-allowed disabled:opacity-40";
 const DANGER = "text-danger data-highlighted:bg-danger-soft";
 const LABEL = "px-3 pt-2 pb-1 text-body-s font-semibold text-text-2";
+// Over a card of a phone's sheet, as a settings group's heading.
+const SHEET_LABEL = "px-4 pt-1 pb-2 text-body-s font-semibold text-text-2";
 
 export interface MenuProps {
   /** The control that opens the menu: an IconButton "More" or a Button. */
@@ -68,7 +71,9 @@ export function Menu({
     return (
       <Sheet open={open} onOpenChange={setOpen} trigger={trigger} title={title ?? label}>
         <MenuMode.Provider value={{ sheet: true, close: () => setOpen(false) }}>
-          <div className="-mx-1 flex flex-col pb-2">{children}</div>
+          <div data-menu-sheet className="flex flex-col pb-2">
+            {children}
+          </div>
         </MenuMode.Provider>
       </Sheet>
     );
@@ -162,13 +167,14 @@ export function MenuItem({ icon, lead, children, end, onSelect, href, tone, disa
     const cls = cn(SHEET_ITEM, danger && "text-danger");
     if (href)
       return (
-        <IntlLink href={href} className={cls} onClick={mode.close}>
+        <IntlLink href={href} data-sheet-row className={cls} onClick={mode.close}>
           {content}
         </IntlLink>
       );
     return (
       <button
         type="button"
+        data-sheet-row
         disabled={disabled}
         className={cls}
         onClick={() => {
@@ -222,6 +228,7 @@ export function MenuCheckboxItem({
       <button
         type="button"
         aria-pressed={checked}
+        data-sheet-row
         disabled={disabled}
         className={SHEET_ITEM}
         onClick={() => {
@@ -254,18 +261,14 @@ export function MenuCheckboxItem({
 /** A group heading inside a menu (sentence case, no capitals). */
 export function MenuLabel({ children }: { children: ReactNode }) {
   const mode = useContext(MenuMode);
-  return mode.sheet ? <p className={LABEL}>{children}</p> : <DM.Label className={LABEL}>{children}</DM.Label>;
+  return mode.sheet ? <p className={SHEET_LABEL}>{children}</p> : <DM.Label className={LABEL}>{children}</DM.Label>;
 }
 
-/** `quiet`: groups apart by space alone, no line (a panel's groups). */
+/** `quiet`: groups apart by space alone, no line (a panel's groups). In a phone's sheet every group is its own card. */
 export function MenuSeparator({ quiet = false }: { quiet?: boolean }) {
   const mode = useContext(MenuMode);
-  if (quiet) return mode.sheet ? <hr className="my-1.5 h-0 border-0" /> : <DM.Separator className="h-2" />;
-  return mode.sheet ? (
-    <hr className="mx-3 my-2 h-px border-0 bg-line" />
-  ) : (
-    <DM.Separator className="mx-3 my-1 h-px bg-line" />
-  );
+  if (mode.sheet) return <hr className="my-1.5 h-0 border-0" />;
+  return quiet ? <DM.Separator className="h-2" /> : <DM.Separator className="mx-3 my-1 h-px bg-line" />;
 }
 
 /**
@@ -329,7 +332,7 @@ export function MenuFace({ face, label, tag, current, note, onSelect, href }: Me
       </div>
     );
   if (mode.sheet) {
-    const cls = cn(FACE, "w-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus active:bg-text-1/8");
+    const cls = cn(FACE, "w-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus focus-visible:outline-solid active:bg-text-1/8");
     if (href)
       return (
         <IntlLink href={href} className={cls} onClick={mode.close}>
