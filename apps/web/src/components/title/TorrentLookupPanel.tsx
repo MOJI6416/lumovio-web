@@ -144,7 +144,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       }
       // The chosen dubbing goes along, so the player starts that studio's track once the file is read;
       // "added" lets the watch page show this add as the first of its stages.
-      router.push(`${playHref}${join}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
+      router.push(`${playHref}${join}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${added.existed ? "" : "&brought=1"}${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
     } catch (e) {
       if (dropped) return;
       endLaunch();

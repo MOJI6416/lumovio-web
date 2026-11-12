@@ -112,7 +112,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
             return false;
           }
           // The chosen dubbing goes along, so the player starts that studio's track (as "Where to watch" does).
-          router.push(`${href}${href.includes("?") ? "&" : "?"}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
+          router.push(`${href}${href.includes("?") ? "&" : "?"}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${added.existed ? "" : "&brought=1"}${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
           return true;
         } catch (e) {
           if (dropped) return false;

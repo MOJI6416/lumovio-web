@@ -30,12 +30,13 @@ const focusFind = () => requestAnimationFrame(() => document.getElementById(FIND
  * the removal updates availability, and the results (with a retry when only Lumovio's links are left) must stay until
  * the person closes them. Its "Remove" is the dialog's danger button — the only red one (SRC-15).
  */
-export function CopyRemovalDialog({ target, onClose }: { target: RemovalTarget; onClose: () => void }) {
+export function CopyRemovalDialog({ target, onClose, beforeRemove }: { target: RemovalTarget; onClose: () => void; beforeRemove?: (hashes: string[]) => Promise<void> }) {
   return (
     <RemoveTorrentsDialog
       connection={target.connection}
       torrents={[target.torrent]}
       titles={target.titles}
+      beforeRemove={beforeRemove}
       onClose={(results) => {
         onClose();
         if (results?.some((r) => r.status === "removed" || r.status === "index_pending")) focusFind();

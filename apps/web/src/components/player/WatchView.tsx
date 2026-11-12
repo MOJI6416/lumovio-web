@@ -47,7 +47,7 @@ import { voiceWish } from "@/lib/media/releases";
 import { holdsByName } from "@/lib/media/packs";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
-import { addTorrentSource } from "@/lib/media/torrent-source";
+import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
@@ -203,6 +203,18 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // A try to open it again that waits (`onFatal`): cancelled by leaving the page or by another start.
   const pendingReopen = useRef<(() => void) | null>(null);
   useEffect(() => () => pendingReopen.current?.(), []);
+  // A torrent this launch brought to the server — the title page's add (`?brought=1`) or the sources screen's — until its
+  // first frame: one that never got there is taken back when the person leaves, cancels or goes to another source
+  // (docs/torrserver-2026-11.md 18). Never one that was on the server before.
+  const brought = useRef<{ connectionId: string; hash: string } | null>(null);
+  const takeBackBrought = useCallback((keep?: string) => {
+    const b = brought.current;
+    if (!b || keep === `${b.connectionId}:${b.hash}`) return;
+    brought.current = null;
+    // Once the player has let it go: a request for it by hash after the removal would add it back, nameless (43).
+    window.setTimeout(() => background(takeBack(b.connectionId, b.hash).then(() => invalidateAvailability(qc))), 1500);
+  }, [qc]);
+  useEffect(() => () => takeBackBrought(), [takeBackBrought]);
   const sessionId = useRef(randomId());
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
@@ -547,8 +559,26 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const cancel = () => {
     attempt.current++;
     preparing.current = false;
+    takeBackBrought();
     setPhase({ kind: "choose" });
     requestAnimationFrame(toList);
+  };
+
+  /**
+   * Before a torrent is removed from the server (the screen's "Remove from TorrServer…" over the player): the player
+   * that streams it, or the preparation that reads it, lets it go — stopped, unmounted, no reopen waiting — so no request
+   * by its hash comes after the removal and adds it back, nameless (docs/torrserver-2026-11.md 43).
+   */
+  const releaseTorrents = async (hashes: string[]) => {
+    const reads = (c: Candidate | null | undefined) => c?.provider === "torrserver" && hashes.includes(hashOf(c.server.externalId).toLowerCase());
+    if (brought.current && hashes.includes(brought.current.hash)) brought.current = null;
+    if (!reads(active?.candidate) && !(preparing.current && reads(current))) return;
+    pendingReopen.current?.();
+    attempt.current++;
+    preparing.current = false;
+    setActive(null);
+    setPhase({ kind: "choose" });
+    await new Promise((done) => window.setTimeout(done, 800));
   };
 
   /**
@@ -558,11 +588,13 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    */
   const choose = useCallback(
     (c: Candidate, voice: string | null = null, added: string | null = null) => {
+      // Another source: a torrent this launch brought and that never played goes back (18).
+      takeBackBrought(c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId).toLowerCase()}` : undefined);
       wishedVoice.current = voiceWish(voice);
       setUrl({ source: c.key, pick: null, voice });
       void prepare(c, { auto: false, added, touch: true, fromScreen: true });
     },
-    [prepare, setUrl],
+    [prepare, setUrl, takeBackBrought],
   );
 
   /**
@@ -586,6 +618,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           if (attempt.current !== my) return;
           if (!added) throw new ShownError(t("addFailed"));
           ({ hash, label } = added);
+          if (!added.existed) {
+            takeBackBrought(`${pick.connectionId}:${added.hash}`);
+            brought.current = { connectionId: pick.connectionId, hash: added.hash };
+          }
         } catch (e) {
           if (attempt.current !== my) return;
           const message = e instanceof ShownError ? e.message : e instanceof MediaNetError && e.code === "http" && e.status ? t("addFailedStatus", { status: e.status }) : mediaError(e);
@@ -599,7 +635,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       const s: Availability = { connectionId: pick.connectionId, kind: "torrserver", connectionName: server, externalId: hash, label, season: null, episode: null, quality: null };
       choose(toCandidate(s), pick.voice, t(pick.linked ? "stageAlreadyAdded" : "stageAddedFact", { server }));
     },
-    [conns.data, d, season, avail, choose, keepPlace, t, mediaError],
+    [conns.data, d, season, avail, choose, keepPlace, t, mediaError, takeBackBrought],
   );
 
   const pickFile = useCallback(
@@ -646,7 +682,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
-    if (params.has("added")) setUrl({ added: null });
+    // "?brought=1": that add brought the torrent to the server (it wasn't there): taken back if it never plays (18).
+    if (pick?.provider === "torrserver" && params.get("brought") === "1") brought.current = { connectionId: pick.server.connectionId, hash: hashOf(pick.server.externalId).toLowerCase() };
+    if (params.has("added") || params.has("brought")) setUrl({ added: null, brought: null });
     if (pick) void prepare(pick, { auto: !exact, added, audioIndex: castAudio.current });
     else {
       if (castId) setCastMiss(wanted ? "missing" : "none");
@@ -1039,6 +1077,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         active.prepared.reportProgress?.(pos, paused);
       }}
       onPlay={(pos) => {
+        // It played: a torrent this launch brought stays (18).
+        brought.current = null;
         // A play counts for the shelf the title was opened from (anonymous, C5; once per open).
         if (seq.current === 0) trackOutcome(d.id, "play");
         send(seq.current === 0 ? "start" : "progress", pos, last.current.dur);
@@ -1539,7 +1579,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
               </div>
             )}
           </div>
-          {removal && <CopyRemovalDialog target={removal} onClose={() => setRemoval(null)} />}
+          {removal && <CopyRemovalDialog target={removal} onClose={() => setRemoval(null)} beforeRemove={releaseTorrents} />}
           <CopyDetails copy={details} all={avail.data?.servers ?? []} originalLanguage={d.originalLanguage} onClose={() => setDetails(null)} />
         </PortalContainerContext.Provider>
       </main>

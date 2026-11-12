@@ -72,12 +72,18 @@ export function RemoveTorrentsDialog({
   torrents,
   titles,
   onClose,
+  beforeRemove,
 }: {
   connection: TorrentConnection;
   torrents: ManagedTorrent[];
   titles: Titles;
   /** Results when something was attempted, null when cancelled. */
   onClose: (results: RemovalResult[] | null) => void;
+  /**
+   * Run once the removal is confirmed, before the server is asked: a player that streams one of these torrents lets it
+   * go first, or its next request by hash would add it back, nameless (docs/torrserver-2026-11.md 43).
+   */
+  beforeRemove?: (hashes: string[]) => Promise<void>;
 }) {
   const t = useTranslations("torrentManager");
   const tc = useTranslations("connections");
@@ -106,6 +112,7 @@ export function RemoveTorrentsDialog({
     setPhase("running");
     let out: RemovalResult[];
     try {
+      await beforeRemove?.(torrents.map((x) => x.hash));
       out = await removeTorrents(connection.id, torrents.map((x) => x.hash), (done, total) => setProgress({ done, total }));
     } catch (e) {
       // Credentials couldn't be had: nothing was sent.
