@@ -262,7 +262,7 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 503000,
+      "jsGzip": 503307,
       "cssGzip": 20624,
       "jsChunks": 20
     }
