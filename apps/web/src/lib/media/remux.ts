@@ -9,6 +9,7 @@ import type {
 import { background, optional } from "../optional";
 import { detectCapabilities, mediaSourceClass } from "./capabilities";
 import { nameTrueHdTracks, enableWasmDecoders } from "./codecs/audio";
+import { cutWithinGroups, startsAtKeyFrame } from "./codecs/fragments";
 import { keyAtRecoveryPoints } from "./codecs/h264";
 import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
 
@@ -35,8 +36,9 @@ const BEHIND = 30;
  */
 const SLICE = 1 << 20;
 /**
- * The MP4 a rebuild writes: fragments, each ending at the first key frame a second or more after its start. The first
- * fragment is what the first frame waits for — 6 MB of a 44 Mbit/s film at one second, 10 MB at two.
+ * The MP4 a rebuild writes: fragments of a second or more, each ending at a key frame or, inside a long group of pictures,
+ * where every frame shown before is written (`cutWithinGroups`). The first fragment is what the first frame waits for —
+ * 6 MB of a 44 Mbit/s film at one second, 10 MB at two; a whole group of a file with key frames 10 s apart was up to 20 MB.
  */
 export const FRAGMENTED = { fastStart: "fragmented", minimumFragmentDuration: 1 } as const;
 /** A playhead stopped this long with media buffered past it is stuck: Media Source doesn't cross a hole on its own. */
@@ -393,9 +395,10 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     }
   };
   const append = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
-    // A chunk that starts with "moof" is a fragment: where the buffer ends before it is where the fragment begins.
+    // A chunk that starts with "moof" is a fragment: where the buffer ends before it is where the fragment begins — a
+    // place to remove played media up to only when the fragment begins with a key frame.
     const before = sb?.buffered;
-    if (before?.length && data[4] === 0x6d && data[5] === 0x6f && data[6] === 0x6f && data[7] === 0x66) cuts.push(before.end(before.length - 1));
+    if (before?.length && startsAtKeyFrame(data)) cuts.push(before.end(before.length - 1));
     for (let at = 0; at < data.byteLength; at += SLICE) {
       await appendSlice(data.subarray(at, at + SLICE), mine);
       if (mine !== gen || !sb) return;
@@ -495,6 +498,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
           format: new mb.Mp4OutputFormat(FRAGMENTED),
           target: new mb.StreamTarget(writer(mine, from, { getMimeType: (): Promise<string> => output.getMimeType() }, route, codec)),
         });
+        cutWithinGroups(output, FRAGMENTED.minimumFragmentDuration);
         return output;
       },
     });
