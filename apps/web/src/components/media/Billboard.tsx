@@ -28,13 +28,15 @@ const SWIPE_PX = 48;
  * dark in either theme), the title's logo or name, one metadata line (rating · year · type · genres), three lines of
  * overview (not on a phone), and the actions of 8.2 (./HeroActions: "Watch" where a copy plays, else "More info", HOME-02).
  *
- * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab, the billboard scrolled mostly
- * away or the pause button hold the current one where it is (its time and its progress segment are kept), and reduced
- * motion turns it off. A new slide fades in over the old one, which stays whole under it (no dip to the stage between
- * two pictures), and only once its art has loaded (at most 2.5 s on a slow network): the neighbours' art is fetched
- * after the page has loaded, every slide's once a pointer or focus reaches the billboard (2026-11-08). The pause
- * button (a toggle with the pause icon, never a ▶ that reads as "Watch", HOME-12) and the progress segments sit at the
- * end of the actions' row, 44 px to tap on a phone; the segments are one Tab stop, ←/→ move between slides.
+ * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab or the billboard scrolled mostly
+ * away hold the current one where it is (its time and its timer are kept), and reduced motion turns it off. A slide
+ * chosen by hand (a dot, ←/→, a swipe) stays, and after one round so does the first: the rotation stops. A new slide
+ * fades in over the old one, which stays whole under it (no dip to the stage between two pictures), and only once its
+ * art has loaded (at most 2.5 s on a slow network): the neighbours' art is fetched after the page has loaded, every
+ * slide's once a pointer or focus reaches the billboard (2026-11-08). The dots sit at the end of the actions' row, the
+ * shown slide's one a capsule filling with its time (full once the rotation stops), 44 px to tap on a phone; they are
+ * one Tab stop, ←/→ move between slides. No pause button on view (owner, 2026-11-12): the toggle is there for the
+ * keyboard and a screen reader, seen while it has focus (WCAG 2.2.2).
  *
  * The art and the title open the title's page (the largest thing on the screen does what "More info" does; the button
  * stays the keyboard's way there), and a finger swiped sideways over the billboard turns the slide.
@@ -104,6 +106,8 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   }, []);
 
   const n = items.length;
+  // The capsule of the shown slide fills with its time while the rotation may go on; stopped, it is full.
+  const timer = !reduced && !paused;
   const show = useCallback((to: number) => {
     setSlide((s) => (s.index === to ? s : { index: to, prev: s.index }));
     setPending(null);
@@ -121,6 +125,11 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   );
   const goRef = useRef(go);
   goRef.current = go;
+  // A slide chosen by hand stays: someone is reading it (the slide shown already, too).
+  const choose = (i: number) => {
+    setPaused(true);
+    go(i);
+  };
   useEffect(() => {
     if (pending === null) return;
     const id = items[pending]?.id;
@@ -148,8 +157,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
       return () => progress?.cancel();
     }
     clock.resume(performance.now());
-    // One round on its own (as Apple TV's and Prime Video's): after the last slide the first comes back and holds — the
-    // pause button then says so, and it goes on with a press.
+    // One round on its own (as Apple TV's and Prime Video's): after the last slide the first comes back and holds.
     const timer = window.setTimeout(() => {
       if (index + 1 >= n) setPaused(true);
       goRef.current(index + 1);
@@ -161,7 +169,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     };
   }, [running, index, n, clock]);
 
-  // The segments are one stop: ←/→ (Home/End) choose the slide and keep the focus on its segment.
+  // The dots are one stop: ←/→ (Home/End) choose the slide and keep the focus on its dot.
   const onSegmentKey = (e: KeyboardEvent) => {
     const rtl = root.current ? getComputedStyle(root.current).direction === "rtl" : false;
     const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -169,7 +177,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     if (to === null) return;
     e.preventDefault();
     const next = ((to % items.length) + items.length) % items.length;
-    go(next);
+    choose(next);
     segments.current[next]?.focus();
   };
   const onPointerDown = (e: PointerEvent) => {
@@ -185,7 +193,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     const rtl = root.current ? getComputedStyle(root.current).direction === "rtl" : false;
     swiped.current = true;
     // The next slide comes from the side the finger moves away from.
-    go(index + (dx < 0 !== rtl ? 1 : -1));
+    choose(index + (dx < 0 !== rtl ? 1 : -1));
   };
   // The tap that ends a swipe opens nothing.
   const onClickCapture = (e: MouseEvent) => {
@@ -377,34 +385,55 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
           </div>
 
           {items.length > 1 && (
-            // Centred under the centred text and buttons on a phone, bottom right next to them from md (7.14).
-            <div className="pointer-events-auto flex items-center justify-center gap-1 md:shrink-0 md:justify-end">
-              {!reduced && <IconButton icon={Pause} variant="stage" size="sm" pressed={paused} label={t("home.pauseRotation")} onClick={() => setPaused((p) => !p)} />}
+            // Centred under the centred text and buttons on a phone, bottom right next to them from md, on their middle (7.14).
+            <div className="pointer-events-auto flex items-center justify-center md:h-12 md:shrink-0 md:justify-end">
+              {!reduced && (
+                <IconButton
+                  icon={Pause}
+                  variant="stage"
+                  size="sm"
+                  pressed={paused}
+                  label={t("home.pauseRotation")}
+                  onClick={() => setPaused((p) => !p)}
+                  // Out of the flow and unseen until it has focus (`absolute` over the button's own `relative`).
+                  className="absolute sr-only focus-visible:not-sr-only"
+                />
+              )}
               {/* biome-ignore lint/a11y/useSemanticElements: a group of carousel controls, not a form's fieldset */}
               <div role="group" aria-label={t("home.slides")} className="flex items-center">
-                {items.map((f, i) => (
-                  // A segment of the rotation's progress, not an action of its own: no Button look (explained exception, 7.14).
-                  <button /* ui-lint-ignore raw-button: a progress segment of the rotation, 7.14 */
-                    key={f.id}
-                    ref={(el) => {
-                      segments.current[i] = el;
-                    }}
-                    type="button"
-                    tabIndex={i === index ? 0 : -1}
-                    onClick={() => i !== index && go(i)}
-                    onKeyDown={onSegmentKey}
-                    aria-label={t("home.slide", { n: i + 1, total: items.length, title: f.title })}
-                    aria-current={i === index}
-                    className="group/seg relative h-11 w-11 rounded-xs md:h-8 md:w-10"
-                  >
-                    <span className="absolute inset-x-1 top-1/2 h-1 -translate-y-1/2 overflow-hidden rounded-full bg-text-1/30 transition-colors duration-fast ease-fast group-hover/seg:bg-text-1/50">
-                      {/* The shown slide's progress, from the slide clock; it stays put while held. With reduced motion it marks the current slide. */}
-                      {i === index && (
-                        <span ref={reduced ? undefined : bar} className="absolute inset-0 rounded-full bg-text-1 ltr:origin-left rtl:origin-right" style={{ transform: reduced ? "none" : "scaleX(0)" }} />
+                {items.map((f, i) => {
+                  const on = i === index;
+                  return (
+                    // A dot of the carousel, not an action of its own: no Button look (explained exception, 7.14). The
+                    // shown slide's dot widens into a capsule and its neighbours move aside, the gaps stay even.
+                    <button /* ui-lint-ignore raw-button: a dot of the carousel, 7.14 */
+                      key={f.id}
+                      ref={(el) => {
+                        segments.current[i] = el;
+                      }}
+                      type="button"
+                      tabIndex={on ? 0 : -1}
+                      onClick={() => choose(i)}
+                      onKeyDown={onSegmentKey}
+                      aria-label={t("home.slide", { n: i + 1, total: items.length, title: f.title })}
+                      aria-current={on}
+                      className={clsx(
+                        "group/dot flex h-11 items-center justify-center rounded-full transition-[width] duration-base ease-base motion-reduce:transition-none md:h-8",
+                        on ? "w-16 md:w-13" : "w-11 md:w-8",
                       )}
-                    </span>
-                  </button>
-                ))}
+                    >
+                      <span
+                        className={clsx(
+                          "relative h-2 overflow-hidden rounded-full transition-[width,background-color] duration-base ease-base motion-reduce:transition-none",
+                          on ? "w-7 bg-text-1/30" : "w-2 bg-text-1/40 group-hover/dot:bg-text-1/75",
+                        )}
+                      >
+                        {/* The shown slide's time, from the slide clock; it stays put while held. */}
+                        {on && <span ref={timer ? bar : undefined} className="absolute inset-0 rounded-full bg-text-1 ltr:origin-left rtl:origin-right" style={{ transform: timer ? "scaleX(0)" : "none" }} />}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
