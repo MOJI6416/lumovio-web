@@ -995,6 +995,7 @@
     "joinFailed": "Не вдалося приєднатися. Повторіть спробу",
     "notNow": "Не зараз",
     "select": "Вибрати",
+    "selectAll": "Вибрати все",
     "selectedTitles": "Вибрано: {count}",
     "removeFromServer": "Видалити із сервера",
     "selectTitle": "Вибрати «{title}»"

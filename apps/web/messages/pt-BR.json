@@ -995,6 +995,7 @@
     "joinFailed": "Não foi possível entrar. Tente novamente",
     "notNow": "Agora não",
     "select": "Selecionar",
+    "selectAll": "Selecionar tudo",
     "selectedTitles": "Selecionados: {count}",
     "removeFromServer": "Remover do servidor",
     "selectTitle": "Selecionar “{title}”"

@@ -995,6 +995,7 @@
     "joinFailed": "Couldn't join. Please try again",
     "notNow": "Not now",
     "select": "Select",
+    "selectAll": "Select all",
     "selectedTitles": "Selected: {count}",
     "removeFromServer": "Remove from server",
     "selectTitle": "Select “{title}”"

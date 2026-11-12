@@ -995,6 +995,7 @@
     "joinFailed": "Impossibile unirsi. Riprova",
     "notNow": "Non ora",
     "select": "Seleziona",
+    "selectAll": "Seleziona tutto",
     "selectedTitles": "Selezionati: {count}",
     "removeFromServer": "Rimuovi dal server",
     "selectTitle": "Seleziona «{title}»"

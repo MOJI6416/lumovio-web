@@ -135,6 +135,29 @@ export function ServersTab() {
       }
     setRemovals([...byServer.values()]);
   };
+  // "Select all" (owner, 2026-11-12: "dozens of titles — click each by hand?"): every title of the section with torrents —
+  // its pages not here yet loaded first; when all are marked, the same button clears the mark.
+  const selectable = items.filter((i) => torrentsOf(i.id).length > 0);
+  const allSelected = selectable.length > 0 && selectable.every((i) => selected.has(i.id));
+  const [selectingAll, setSelectingAll] = useState(false);
+  const selectAll = async () => {
+    if (allSelected) return setSelected(new Set());
+    setSelectingAll(true);
+    try {
+      let more = q.hasNextPage;
+      while (more) more = Boolean((await fetchNextPage()).hasNextPage);
+    } finally {
+      setSelectingAll(false);
+    }
+    setPendingAll(true);
+  };
+  // Marked once the pages it loaded are in `items` (the next render after the last page).
+  const [pendingAll, setPendingAll] = useState(false);
+  useEffect(() => {
+    if (!pendingAll || q.hasNextPage) return;
+    setPendingAll(false);
+    setSelected(new Set(selectable.map((i) => i.id)));
+  }, [pendingAll, q.hasNextPage, selectable]);
   const finishRemoval = () => {
     setRemovals((rest) => rest.slice(1));
     setSelected(new Set());
@@ -198,16 +221,23 @@ export function ServersTab() {
                 total={total}
                 action={
                   torrServers.length > 0 && (
-                    <Button
-                      variant="tertiary"
-                      size="sm"
-                      onClick={() => {
-                        setSelecting((v) => !v);
-                        setSelected(new Set());
-                      }}
-                    >
-                      {selecting ? t("common.done") : tl("select")}
-                    </Button>
+                    <span className="flex items-center gap-1">
+                      {selecting && (
+                        <Button variant="tertiary" size="sm" loading={selectingAll || (managers.isLoading && !managers.data)} disabled={managers.isSuccess && selectable.length === 0} onClick={() => void selectAll()}>
+                          {allSelected ? t("torrentManager.clearSelection") : tl("selectAll")}
+                        </Button>
+                      )}
+                      <Button
+                        variant="tertiary"
+                        size="sm"
+                        onClick={() => {
+                          setSelecting((v) => !v);
+                          setSelected(new Set());
+                        }}
+                      >
+                        {selecting ? t("common.done") : tl("select")}
+                      </Button>
+                    </span>
                   )
                 }
               />

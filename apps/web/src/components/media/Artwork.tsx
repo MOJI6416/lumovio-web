@@ -29,7 +29,7 @@ const PLACEHOLDER: Record<"movie" | "tv" | "person", LucideIcon> = { movie: Film
 /**
  * A card's artwork (design-system 7.12, 6.5): the image in its shape, or a --surface-2 placeholder with the type's icon
  * (never a broken image or "no image" text); at most one MediaBadge top-start ("4K", "New episode", "On your server"),
- * one personal mark top-end (6.4: "Watched" a filled circle with a check, "Watchlist" BookmarkCheck), the watch
+ * one personal mark top-end (7.12: one dark disk with a white sign — a check "Watched", BookmarkCheck "Watchlist"), the watch
  * progress as a bar along the bottom. Dates and other facts of a shelf go in the line under the card (CardMeta).
  *
  * Inside a card (`group/card` on the card, `group/link` on its link): with a mouse the artwork rises (scale 1.04,
@@ -104,15 +104,10 @@ export function Artwork({
         </div>
       )}
       {badge && <MediaBadge className="absolute start-1.5 top-1.5 max-w-[calc(100%-0.75rem)]">{badge}</MediaBadge>}
-      {mark === "watched" && (
-        // A dark ring keeps the white disk visible on a light frame.
-        <span aria-hidden className="stage absolute end-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-text-1 text-stage! ring-2 ring-stage/60">
-          <Check className="size-4" strokeWidth={3} />
-        </span>
-      )}
-      {mark === "watchlist" && (
+      {/* One mark, one look (owner, 2026-11-12): the same dark disk with a white sign — a check for watched, a bookmark for the watchlist. */}
+      {mark && (
         <span aria-hidden className="stage absolute end-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-stage/70 text-text-1 backdrop-blur-md in-data-[tv=1]:backdrop-blur-none">
-          <BookmarkCheck className="size-4" />
+          {mark === "watched" ? <Check className="size-4" strokeWidth={3} /> : <BookmarkCheck className="size-4" />}
         </span>
       )}
       {progress != null && progress > 0.01 && progress < 0.98 && (

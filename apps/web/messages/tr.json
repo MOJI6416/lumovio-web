@@ -995,6 +995,7 @@
     "joinFailed": "Katılınamadı. Lütfen tekrar deneyin",
     "notNow": "Şimdi değil",
     "select": "Seç",
+    "selectAll": "Tümünü seç",
     "selectedTitles": "Seçilen: {count}",
     "removeFromServer": "Sunucudan kaldır",
     "selectTitle": "“{title}” seç"

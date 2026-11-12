@@ -995,6 +995,7 @@
     "joinFailed": "Nie udało się dołączyć. Spróbuj ponownie",
     "notNow": "Nie teraz",
     "select": "Zaznacz",
+    "selectAll": "Zaznacz wszystko",
     "selectedTitles": "Zaznaczono: {count}",
     "removeFromServer": "Usuń z serwera",
     "selectTitle": "Zaznacz „{title}”"

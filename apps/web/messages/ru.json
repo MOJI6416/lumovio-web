@@ -995,6 +995,7 @@
     "joinFailed": "Не удалось присоединиться. Повторите попытку",
     "notNow": "Не сейчас",
     "select": "Выбрать",
+    "selectAll": "Выбрать все",
     "selectedTitles": "Выбрано: {count}",
     "removeFromServer": "Удалить с сервера",
     "selectTitle": "Выбрать «{title}»"
