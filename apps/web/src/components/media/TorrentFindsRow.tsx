@@ -3,7 +3,7 @@
 import type { ListDetails, SourceState, TorrentFindBest } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { QualityLine } from "@/components/sources/QualityBadges";
 import { usePlayable } from "@/hooks/useAvailability";
@@ -20,6 +20,27 @@ import { Row } from "./Row";
 
 /** Watchlist titles searched per visit to the home page, one after another. */
 const PER_VISIT = 4;
+
+// Titles this device searched lately (35): a search that failed or came back empty after results stores nothing, and
+// without this the same first titles were searched again on every visit, the rest never. Marked as each search starts,
+// so a loop started again (new settings) doesn't repeat one either. Without storage, only the stored answers count.
+const TRIED_KEY = "lumovio.finds.tried";
+function triedOf(profileId: string): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(`${TRIED_KEY}:${profileId}`) ?? "{}") as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+function markTried(profileId: string, titleId: string) {
+  try {
+    const now = Date.now();
+    const kept = Object.fromEntries(Object.entries(triedOf(profileId)).filter(([, at]) => now - at < RECHECK_MS));
+    localStorage.setItem(`${TRIED_KEY}:${profileId}`, JSON.stringify({ ...kept, [titleId]: now }));
+  } catch {
+    // Without storage the stored answers alone decide.
+  }
+}
 
 /**
  * "From your lists — on your TorrServer": watchlist titles without a copy on the profile's servers
@@ -56,6 +77,9 @@ export function TorrentFindsRow() {
   useEffect(() => {
     if (profile) dropLocalFinds(profile.id);
   }, [profile]);
+  // The profile's preferences as the search loop finds them when it ranks: a change of settings doesn't start it again.
+  const prefsNow = useRef(prefs);
+  prefsNow.current = prefs;
 
   // A few searches per visit, only for titles without a copy that no device searched lately. It runs
   // again when the stored finds first arrive, not on every report it makes itself.
@@ -63,7 +87,10 @@ export function TorrentFindsRow() {
   useEffect(() => {
     const known = stored.data?.finds;
     if (!profile || !source || !known || !playable.data || document.visibilityState === "hidden") return;
-    const due = titles.filter((x) => !playable.data[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS).slice(0, PER_VISIT);
+    const tried = triedOf(profile.id);
+    const due = titles
+      .filter((x) => !playable.data[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS && Date.now() - (tried[x.id] ?? 0) > RECHECK_MS)
+      .slice(0, PER_VISIT);
     if (due.length === 0) return;
     const ctrl = new AbortController();
     // A search in the background for the next visit's shelf: a server that doesn't answer, a failed search or report
@@ -72,6 +99,7 @@ export function TorrentFindsRow() {
       const ts = await optional(torrServerFor(source.id), null);
       for (const x of due) {
         if (!ts || ctrl.signal.aborted) return;
+        markTried(profile.id, x.id);
         const found = await optional(ts.search(torrentQuery(x), ctrl.signal), null);
         if (!found || ctrl.signal.aborted) continue;
         if (x.kind === "tv") reportNumbering(x.id, "names", namesNumbering(found.results, x));
@@ -81,13 +109,13 @@ export function TorrentFindsRow() {
         const kept = keepThroughEmpty(qc.getQueryData<LookupResult>(key), { ...found, at: Date.now() });
         qc.setQueryData(key, kept);
         if (kept.emptyAt) continue;
-        const ranked = rankReleases(found.results, x, prefs);
+        const ranked = rankReleases(found.results, x, prefsNow.current);
         const f = await optional(reportFind(x.id, bestOf(ranked), ranked), null);
         if (f) qc.setQueryData<{ finds: TorrentFinds }>(findsKey(profile.id), (old) => ({ finds: { ...old?.finds, [x.id]: f } }));
       }
     })();
     return () => ctrl.abort();
-  }, [profile, source, titles, playable.data, prefs, stored.isSuccess]);
+  }, [profile, source, titles, playable.data, stored.isSuccess]);
 
   const shown = titles
     .filter((x) => !playable.data?.[x.id] && finds[x.id]?.best?.language)
