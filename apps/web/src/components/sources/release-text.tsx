@@ -6,10 +6,10 @@ import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { formatDate, formatSize } from "@/lib/format";
 import { QualityLine, qualityMarks } from "./QualityBadges";
 import { hasStudioMark, StudioMark } from "./StudioMark";
+import { studioWord } from "@/lib/media/dubbing";
 import {
   audioMatch,
   type HdrFormat,
-  isDubbing,
   kindOf,
   namedTracks,
   type PackInfo,
@@ -40,8 +40,11 @@ export { formatSize };
 
 /** A release in a few words: language, translation and studio, picture, seeders, tracker. */
 export function useReleaseText() {
-  const t = useTranslations("title");
-  const locale = useLocale();
+  return releaseText(useTranslations("title"), useLocale());
+}
+
+/** `useReleaseText` outside React: the same words from a "title" translator and a locale. */
+export function releaseText(t: ReturnType<typeof useTranslations<"title">>, locale: string) {
   const names = new Intl.DisplayNames([locale], { type: "language" });
   const cap = (s: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
   const language = (code: string) => names.of(code) ?? code;
@@ -183,9 +186,8 @@ export function VersionLine({ resolution, range }: { resolution: ReleaseInfo["re
 
 /** A studio of the profile as it is shown: the profile's "Dubbing" (`DUBBING`) in the interface language. `t`: "title". */
 export const studioShown = (t: ReturnType<typeof useTranslations>, studio: string) => {
-  if (!isDubbing(studio)) return studio;
   const word = t("voice_dub");
-  return word.charAt(0).toUpperCase() + word.slice(1);
+  return studioWord(studio, word.charAt(0).toUpperCase() + word.slice(1));
 };
 
 /** "Your voice-over · LostFilm": the profile's studio, with its mark at the start. */

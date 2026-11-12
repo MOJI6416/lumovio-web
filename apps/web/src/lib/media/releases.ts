@@ -1,8 +1,9 @@
 import type { Availability, ReleaseQuality, TitleDetails, TitleSummary } from "@lumovio/contracts";
+import { DUBBING, isDubbing } from "./dubbing";
 import { holdsSeason, type PackInfo, packOf } from "./packs";
 import type { TsSearchResult } from "./torrserver";
 
-export { holdsSeason, type PackInfo, packOf };
+export { DUBBING, holdsSeason, isDubbing, type PackInfo, packOf };
 
 /** Translation kinds as release names list them, best first: dubbing, professional multi- and two-voice, author's, single/amateur voice-over. */
 export type Voice = "dub" | "mvo" | "dvo" | "avo" | "vo";
@@ -142,13 +143,6 @@ export function creditsStudio(release: string, studio: string): boolean {
   const known = VOICE_STUDIOS.find((s) => s.name.toLowerCase() === studio.toLowerCase());
   return (known?.match ?? W(escapeRe(studio.trim()))).test(release.replace(/[._]/g, " "));
 }
-
-/**
- * "Dubbing" in the profile's studios: any studio's dub, as one entry of the order
- * ("1 — Dubbing, 2 — LostFilm"). Stored as `DUBBING`; the word typed by hand in a language counts as it too.
- */
-export const DUBBING = "dub";
-export const isDubbing = (studio: string) => /^(?:dub|dubbing|дубляж|дубльований|дубльоване|дублированный|doblaje|doublage|dublagem|doppiaggio|dublaj|synchronfassung|synchronisation)$/iu.test(studio.trim());
 
 /** Whether an audio option is a studio of the profile's: "Dubbing" is any option whose translation is a dub. */
 export const optionIsStudio = (o: Pick<VoiceOption, "studio" | "voice">, studio: string) => (isDubbing(studio) ? o.voice === "dub" : o.studio !== null && creditsStudio(o.studio, studio));

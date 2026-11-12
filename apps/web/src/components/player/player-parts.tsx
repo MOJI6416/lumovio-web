@@ -62,9 +62,16 @@ export function useSignedSeconds() {
 
 /** A file's track in words: its language and translation, or its own title when that says more, or "Track 2". */
 export function useTrackWords(originalLanguage: string | null) {
-  const t = useTranslations("player");
-  const tt = useTranslations("title");
-  const text = useReleaseText();
+  return trackWords(useTranslations("player"), useTranslations("title"), useReleaseText(), originalLanguage);
+}
+
+/** `useTrackWords` outside React: the "player" and "title" translators and the release words (`releaseText`). */
+export function trackWords(
+  t: ReturnType<typeof useTranslations<"player">>,
+  tt: ReturnType<typeof useTranslations<"title">>,
+  text: ReturnType<typeof useReleaseText>,
+  originalLanguage: string | null,
+) {
   return (title: string | null, tag: string | null, n?: number) => {
     const f = audioTrackFacts(title, tag, originalLanguage);
     const lang = f.language ? text.cap(text.language(f.language)) : null;

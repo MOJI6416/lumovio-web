@@ -9,6 +9,7 @@ import { QualityLine } from "@/components/sources/QualityBadges";
 import { usePlayable } from "@/hooks/useAvailability";
 import { autoSearchSource, isOut, type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { api } from "@/lib/api";
+import { studioWord } from "@/lib/media/dubbing";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { bestOf, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
@@ -122,7 +123,8 @@ export function TorrentFindsRow() {
     .sort((a, b) => (finds[b.id]!.firstSeen ?? "").localeCompare(finds[a.id]!.firstSeen ?? ""));
   if (!torrServer || shown.length === 0) return null;
   const names = new Intl.DisplayNames([locale], { type: "language" });
-  const audio = (b: TorrentFindBest) => [prefs.languages.length > 1 && b.language ? names.of(b.language) : null, b.studio ?? (b.voice ? tt(`voice_${b.voice}`) : null)];
+  // The studio a find was ranked by is the profile's: its "Dubbing" is said as a dub is ("dubbed [4K]").
+  const audio = (b: TorrentFindBest) => [prefs.languages.length > 1 && b.language ? names.of(b.language) : null, b.studio ? studioWord(b.studio, tt("voice_dub")) : b.voice ? tt(`voice_${b.voice}`) : null];
   // Said in full: every picture version it was found in: "Dub · 1080p, 4K HDR".
   const badge = (b: TorrentFindBest) => [...audio(b), findPictureText(b)].filter(Boolean).join(" · ");
   // Shown: what is heard, then its best version as marks (QualityBadges): "Dub [4K] [HDR]".

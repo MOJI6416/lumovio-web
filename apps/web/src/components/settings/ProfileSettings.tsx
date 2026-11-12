@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/Switch";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { languageName } from "@/lib/format";
+import { studioWord } from "@/lib/media/dubbing";
 import { SUBTITLE_DEFAULTS } from "@/lib/media/subs/view";
 import { useSettingsSave } from "@/lib/use-action";
 import { AUTO, capital, useLocaleOptions } from "./locale-options";
@@ -184,16 +185,20 @@ function WatchSection({ value, change, kids, onOpen }: SectionProps & { onOpen: 
   const t = useTranslations("profiles");
   const ts = useTranslations("settings");
   const tsub = useTranslations("subtitles");
+  const tt = useTranslations("title");
+  const locale = useLocale();
   const { state, save } = useSettingsSave();
   const list = useLanguageList();
   const ids = useId();
   const style = value.subtitleStyle;
   const audio = list(value.audioLanguages);
+  // The profile's "Dubbing" by its name in the interface, as its studios dialog lists it; the other studios as written.
+  const studios = value.voiceStudios.map((s) => studioWord(s, capital(tt("voice_dub"), locale))).join(", ");
   return (
     <SettingsSection title={ts("sectionAudio")} save={state}>
       <SettingsLink
         label={ts("audioRow")}
-        value={<span className="truncate">{kids || value.voiceStudios.length === 0 ? audio : `${audio} · ${value.voiceStudios.join(", ")}`}</span>}
+        value={<span className="truncate">{kids || value.voiceStudios.length === 0 ? audio : `${audio} · ${studios}`}</span>}
         description={t("audioLanguagesOrder")}
         opens
         onClick={() => onOpen("audio")}
