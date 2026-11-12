@@ -30,7 +30,8 @@ const SWIPE_PX = 48;
  *
  * Rotation: a new slide every 8 s; a mouse over it, keyboard focus inside, a hidden tab or the billboard scrolled mostly
  * away hold the current one where it is (its time and its timer are kept), and reduced motion turns it off. A slide
- * chosen by hand (a dot, ←/→, a swipe) stays, and after one round so does the first: the rotation stops. A new slide
+ * chosen by hand (a dot, ←/→, a swipe) gets its whole 8 s, then the rotation goes on; after one round the first one
+ * comes back and stays: the rotation stops. A new slide
  * fades in over the old one, which stays whole under it (no dip to the stage between two pictures), and only once its
  * art has loaded (at most 2.5 s on a slow network): the neighbours' art is fetched after the page has loaded, every
  * slide's once a pointer or focus reaches the billboard (2026-11-08). The dots sit at the end of the actions' row, the
@@ -39,7 +40,8 @@ const SWIPE_PX = 48;
  * keyboard and a screen reader, seen while it has focus (WCAG 2.2.2).
  *
  * The art and the title open the title's page (the largest thing on the screen does what "More info" does; the button
- * stays the keyboard's way there), and a finger swiped sideways over the billboard turns the slide.
+ * stays the keyboard's way there), and a finger swiped or a mouse dragged sideways over it turns the slide (a mouse on
+ * the art and the text, not on the buttons; owner, 2026-11-12).
  *
  * The art is never cut across (7.14, 2026-11-08). A phone, a portrait tablet or a squarish window: a band of art under
  * the header (2:1 on a phone, 16:9 from sm), the text and buttons under it on the stage, so the next shelf starts in
@@ -63,7 +65,10 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
   // Someone reached for the carousel (a pointer over it, focus in it): every slide's art is fetched.
   const [warm, setWarm] = useState(false);
+  // Paused with the toggle (the keyboard's and a screen reader's), and stopped after one round (a slide chosen by hand
+  // starts it again).
   const [paused, setPaused] = useState(false);
+  const [ended, setEnded] = useState(false);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -74,7 +79,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   const segments = useRef<(HTMLButtonElement | null)[]>([]);
   const [clock] = useState(() => new SlideClock(INTERVAL_MS));
   const slide = useRef(index);
-  // Where a finger went down (a swipe turns the slide), and whether the press that ends became a swipe.
+  // Where a finger or the mouse went down (a swipe turns the slide), and whether the press that ends became a swipe.
   const touch = useRef<{ x: number; y: number; id: number } | null>(null);
   const swiped = useRef(false);
   // "Watch" only where something can actually play; otherwise the details page is the main action.
@@ -107,7 +112,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
 
   const n = items.length;
   // The capsule of the shown slide fills with its time while the rotation may go on; stopped, it is full.
-  const timer = !reduced && !paused;
+  const filling = !reduced && !paused && !ended;
   const show = useCallback((to: number) => {
     setSlide((s) => (s.index === to ? s : { index: to, prev: s.index }));
     setPending(null);
@@ -125,9 +130,9 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   );
   const goRef = useRef(go);
   goRef.current = go;
-  // A slide chosen by hand stays: someone is reading it (the slide shown already, too).
-  const choose = (i: number) => {
-    setPaused(true);
+  // A slide chosen by hand (a dot, ←/→, a swipe) gets its whole time, then the rotation goes on — after a round, too.
+  const pick = (i: number) => {
+    setEnded(false);
     go(i);
   };
   useEffect(() => {
@@ -138,7 +143,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     return () => window.clearTimeout(timer);
   }, [pending, ready, items, show]);
 
-  const running = rotates(n, { paused, hover, focus, hidden, offscreen, reduced });
+  const running = rotates(n, { paused: paused || ended, hover, focus, hidden, offscreen, reduced });
   useEffect(() => {
     if (slide.current !== index) {
       slide.current = index;
@@ -159,7 +164,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     clock.resume(performance.now());
     // One round on its own (as Apple TV's and Prime Video's): after the last slide the first comes back and holds.
     const timer = window.setTimeout(() => {
-      if (index + 1 >= n) setPaused(true);
+      if (index + 1 >= n) setEnded(true);
       goRef.current(index + 1);
     }, clock.remaining(performance.now()));
     return () => {
@@ -177,12 +182,19 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     if (to === null) return;
     e.preventDefault();
     const next = ((to % items.length) + items.length) % items.length;
-    choose(next);
+    pick(next);
     segments.current[next]?.focus();
   };
   const onPointerDown = (e: PointerEvent) => {
     swiped.current = false;
-    touch.current = e.pointerType === "mouse" ? null : { x: e.clientX, y: e.clientY, id: e.pointerId };
+    touch.current = null;
+    if (e.pointerType === "mouse") {
+      // The mouse drags the art and the text (their links included: no Tab stop of their own), not the buttons and dots.
+      if (e.button !== 0 || (e.target as Element).closest("button, a:not([tabindex='-1'])")) return;
+      // No text selected and no picture dragged along the way; a plain click still opens the title.
+      e.preventDefault();
+    }
+    touch.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
   };
   const onPointerUp = (e: PointerEvent) => {
     const from = touch.current;
@@ -193,7 +205,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
     const rtl = root.current ? getComputedStyle(root.current).direction === "rtl" : false;
     swiped.current = true;
     // The next slide comes from the side the finger moves away from.
-    choose(index + (dx < 0 !== rtl ? 1 : -1));
+    pick(index + (dx < 0 !== rtl ? 1 : -1));
   };
   // The tap that ends a swipe opens nothing.
   const onClickCapture = (e: MouseEvent) => {
@@ -392,9 +404,12 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                   icon={Pause}
                   variant="stage"
                   size="sm"
-                  pressed={paused}
+                  pressed={paused || ended}
                   label={t("home.pauseRotation")}
-                  onClick={() => setPaused((p) => !p)}
+                  onClick={() => {
+                    setPaused(!(paused || ended));
+                    setEnded(false);
+                  }}
                   // Out of the flow and unseen until it has focus (`absolute` over the button's own `relative`).
                   className="absolute sr-only focus-visible:not-sr-only"
                 />
@@ -413,7 +428,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                       }}
                       type="button"
                       tabIndex={on ? 0 : -1}
-                      onClick={() => choose(i)}
+                      onClick={() => pick(i)}
                       onKeyDown={onSegmentKey}
                       aria-label={t("home.slide", { n: i + 1, total: items.length, title: f.title })}
                       aria-current={on}
@@ -429,7 +444,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
                         )}
                       >
                         {/* The shown slide's time, from the slide clock; it stays put while held. */}
-                        {on && <span ref={timer ? bar : undefined} className="absolute inset-0 rounded-full bg-text-1 ltr:origin-left rtl:origin-right" style={{ transform: timer ? "scaleX(0)" : "none" }} />}
+                        {on && <span ref={filling ? bar : undefined} className="absolute inset-0 rounded-full bg-text-1 ltr:origin-left rtl:origin-right" style={{ transform: filling ? "scaleX(0)" : "none" }} />}
                       </span>
                     </button>
                   );
