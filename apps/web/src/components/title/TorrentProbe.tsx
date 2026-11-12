@@ -8,6 +8,7 @@ import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
 import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
+import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
@@ -18,7 +19,7 @@ import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { useChosenSeason } from "./chosen-season";
-import { startEpisode, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import type { TorrentState } from "./hero-plan";
 
 export interface ProbeResult {
@@ -71,11 +72,11 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   // The release's marks (4K, Dolby Vision — QualityBadges) and the rest in words: what they don't say ("720p"), what is heard.
   const marks = chosen ? releaseMarks(chosen.info) : [];
   // The resolution in words where no mark says it: 1080p and 720p (HD is both), SD.
+  const heard = chosen
+    ? text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios))
+    : "";
   const summary = chosen
-    ? [
-        chosen.info.resolution && chosen.info.resolution !== 2160 ? RESOLUTION[chosen.info.resolution] : null,
-        text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios)),
-      ]
+    ? [chosen.info.resolution && chosen.info.resolution !== 2160 ? RESOLUTION[chosen.info.resolution] : null, heard]
         .filter(Boolean)
         .join(" · ")
     : "";
@@ -91,15 +92,28 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
     onChange({
       state: { state: "found", name: source.name, summary, marks },
       play: async () => {
-        // The launch's scene from the press, the add its first step, as "Where to watch" starts it.
+        // The launch's scene from the press, the add its first step and the release under it, as "Where to watch" and the
+        // sources screen start it; "Another source" drops the add for the sources screen.
         let dropped = false;
         startLaunch(
           {
             status: tp("stage_add"),
+            detail: `${[text.picture(chosen.info), heard].filter(Boolean).join(" · ")} — ${source.name}`,
             onBack: () => {
               dropped = true;
               endLaunch();
             },
+            actions: (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  dropped = true;
+                  router.push(sourcesHref(href, voice ? `&voice=${encodeURIComponent(voice)}` : ""));
+                }}
+              >
+                {tp("anotherSource")}
+              </Button>
+            ),
           },
           true,
         );

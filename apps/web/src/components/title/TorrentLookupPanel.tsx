@@ -75,8 +75,11 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const voice = option && (option.studio || option.language) ? option.key : null;
   // A cut and a picture go along only when chosen by hand: with nothing chosen the screen starts with the same release anyway.
   const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${edition && choice.edition ? `&edition=${edition}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
+  // One track of a release in words: the studio's, else the one the player starts of a language alone or its dub.
+  const heardOf = (x: RankedRelease) =>
+    text.audio({ info: x.info, language: option?.language ?? x.language }, option?.studio ?? wishNameTrack(x.info, voiceWish(option?.key ?? null), prefs.studios));
   // What the search does, for a screen reader (no explanation on screen).
-  const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
+  const about =<p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
   if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} />;
   if (lookup.isError)
@@ -121,17 +124,33 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const play = async (x: RankedRelease, voice: string | null, alternatives: RankedRelease[] = []) => {
     setAdding(true);
     setError(null);
-    // The launch's scene from the press: the add is its first step, the player's page goes on with it;
-    // "←" drops it before the player is asked for.
+    // The launch's scene from the press, as the sources screen starts it: the add is its first step, the release under it,
+    // the player's page goes on with it; "←" drops it before the player is asked for, "Another source" drops it for the
+    // sources screen.
     let dropped = false;
+    const drop = () => {
+      dropped = true;
+      setAdding(false);
+    };
     startLaunch(
       {
         status: tpl("stage_add"),
+        detail: `${[text.picture(x.info), heardOf(x)].filter(Boolean).join(" · ")} — ${source.name}`,
         onBack: () => {
-          dropped = true;
-          setAdding(false);
+          drop();
           endLaunch();
         },
+        actions: (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              drop();
+              router.push(pickHref);
+            }}
+          >
+            {tpl("anotherSource")}
+          </Button>
+        ),
       },
       true,
     );
@@ -161,10 +180,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   // The mode's reasons explain its own pick; a version the person picked needs none.
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
   // The heading says the chosen audio's own language ("Russian · dub" for a Russian dub, whatever else the release has).
-  // One track: the studio's, else the one the player starts of a language alone or its dub.
-  const heard =
-    text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios)) ||
-    text.option({ studio: null, voice: null, language: null });
+  const heard = heardOf(chosen) || text.option({ studio: null, voice: null, language: null });
   // "Your voice-over": the option is the profile's studio — or a dub, for the profile's "Dubbing".
   const studioMatch = chosen.studio && (option?.studio === chosen.studio || (isDubbing(chosen.studio) && option?.voice === "dub"));
   const kept = lookup.data?.emptyAt ? t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) }) : null;
