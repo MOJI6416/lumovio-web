@@ -201,7 +201,7 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
               <h2 id="pick-file-h" className="text-h2 text-text-1">
                 {files.title}
               </h2>
-              <p className="max-w-measure text-body-l text-text-2">{files.hint}</p>
+              <p className="sr-only">{files.hint}</p>
             </div>
             {files.groups.map((g, gi) => (
               <div key={g.key} className="flex flex-col gap-3">
@@ -249,8 +249,10 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
 
         {external}
 
+        {/* No copies, the search below: said to the screen reader only, and no empty block takes a gap of the column. */}
+        {list?.empty?.kind === "line" && <p className="sr-only">{list.empty.text}</p>}
         {list && (
-          <div id="sources" className="flex flex-col gap-5">
+          <div id="sources" className="flex flex-col gap-5 empty:hidden">
             {copies.length > 0 && (
               <section aria-labelledby="copies-h" className="flex flex-col gap-5">
                 <h2 id="copies-h" className="text-h2 text-text-1">
@@ -299,7 +301,6 @@ export function TvSources({ title, posterPath, subtitle, back, toPlayer, loading
                 </ul>
               </section>
             )}
-            {list.empty?.kind === "line" && <p className="text-body-l text-text-2">{list.empty.text}</p>}
             {list.empty?.kind === "error" && (
               <TvState icon={RefreshCw} title={list.empty.title}>
                 <TvButton icon={RefreshCw} loading={list.empty.retrying} data-tv-initial onClick={list.empty.retry}>

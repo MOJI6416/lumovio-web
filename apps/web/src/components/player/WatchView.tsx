@@ -1557,7 +1557,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                 id="pick-file-h"
                 title={fileTitle(phase.torrents)}
               >
-                <p className="text-body-s text-text-2">{d.kind === "tv" ? t("pickEpisodeFileHint") : t("pickMovieFileHint")}</p>
+                <p className="sr-only">{d.kind === "tv" ? t("pickEpisodeFileHint") : t("pickMovieFileHint")}</p>
                 {phase.torrents.map((tf) => (
                   <div key={tf.candidate.key} className="flex flex-col gap-2">
                     <p className="break-words text-body-s font-semibold text-text-2">

@@ -103,8 +103,8 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
         <h2 id="finder-h" className="text-h2 text-text-1">
           {tp("viaTorrServer", { name: f.server })}
         </h2>
-        {/* What "Watch" does here, before the first one is pressed. */}
-        <p className="max-w-measure text-body-l text-text-2">
+        {/* What "Watch" does here, before the first one is pressed: for the screen reader, as on the site. */}
+        <p className="sr-only">
           {t("finderNote", { server: f.server })} {f.where}
         </p>
       </div>
