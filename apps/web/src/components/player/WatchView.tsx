@@ -115,6 +115,11 @@ type Phase =
     };
 
 const KIND_LABEL = { jellyfin: "Jellyfin", plex: "Plex", torrserver: "TorrServer" } as const;
+
+/** A rebuild engine's failure that is the stream breaking off, not the file: the network, a fetch cut, a timeout. */
+const BROKE_OFF = /fetch|network|load failed|timed? ?out|connection|reset|aborted|ERR_/i;
+/** How long each try to open a broken-off stream again waits: at once, then longer — then the error is said (`onFatal`). */
+const REOPEN_AFTER = [0, 3_000, 10_000, 30_000, 60_000];
 /** A failure this screen has already put into words (translated), shown as it is. */
 class ShownError extends Error {}
 const hashOf = (externalId: string) => externalId.split(":")[0]!;
@@ -193,6 +198,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const failed = useRef(new Set<string>());
   // Copies whose plain stream failed to start here and were tried once more rebuilt in the browser.
   const rebuilt = useRef(new Set<string>());
+  // When each source was opened again after its stream broke off (`onFatal`).
+  const reopened = useRef(new Map<string, number[]>());
+  // A try to open it again that waits (`onFatal`): cancelled by leaving the page or by another start.
+  const pendingReopen = useRef<(() => void) | null>(null);
+  useEffect(() => () => pendingReopen.current?.(), []);
   const sessionId = useRef(randomId());
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
@@ -383,6 +393,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    */
   const prepare = useCallback(
     async (start: Candidate, opts: { auto: boolean; audioIndex?: number; added?: string | null; touch?: boolean; fromScreen?: boolean; rebuild?: boolean }) => {
+      pendingReopen.current?.();
       const my = ++attempt.current;
       const live = () => attempt.current === my;
       let c = start;
@@ -1050,6 +1061,38 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       onFatal={(message, code) => {
         const c = active.candidate;
         const prepared = active.prepared;
+        // The stream broke off — a window minimised, a tab in the background, a locked phone, TorrServer letting the torrent
+        // go (docs/torrserver-2026-11.md, 27): the same source opens again from where it stopped, with the same audio,
+        // without an error screen — up to three times in two minutes; then the error is said.
+        const now = Date.now();
+        const recent = (reopened.current.get(c.key) ?? []).filter((at) => now - at < 180_000);
+        if (c.provider === "torrserver" && (code === 2 || (code === null && BROKE_OFF.test(message))) && recent.length < REOPEN_AFTER.length) {
+          reopened.current.set(c.key, [...recent, now]);
+          resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
+          const audioIndex = chosenAudio.current ?? (prepared.type === "remux" ? prepared.remuxAudio : undefined);
+          // Each try waits a little longer (the network may take a moment to come back); the page shown again or the
+          // network back tries at once. Leaving the page or choosing another source cancels the wait.
+          const cancel = () => {
+            window.clearTimeout(timer);
+            window.removeEventListener("online", reopen);
+            document.removeEventListener("visibilitychange", onShown);
+            if (pendingReopen.current === cancel) pendingReopen.current = null;
+          };
+          const reopen = () => {
+            cancel();
+            setActive(null);
+            void prepare(c, { auto: false, audioIndex, rebuild: prepared.type === "remux" });
+          };
+          const onShown = () => {
+            if (document.visibilityState === "visible" && navigator.onLine !== false) reopen();
+          };
+          const timer = navigator.onLine === false ? undefined : window.setTimeout(reopen, REOPEN_AFTER[recent.length]);
+          window.addEventListener("online", reopen);
+          document.addEventListener("visibilitychange", onShown);
+          pendingReopen.current?.();
+          pendingReopen.current = cancel;
+          return;
+        }
         // A TorrServer file whose plain stream this browser couldn't take (a decoder or the password's service worker
         // failed): once, it is rebuilt in the browser from the same position, where it can be — no loop.
         if (c.provider === "torrserver" && prepared.type === "progressive" && code !== null && !rebuilt.current.has(c.key)) {
@@ -1065,6 +1108,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           // step broke (13 "media:?" from iPhones in a week said nothing, admin 2026-10-29).
           reportPlayback({ provider: c.provider, method: prepared.method, outcome: "failed", errorCode: code !== null ? `media:${code}` : `engine:${message.replace(/\w+:\/\/\S+/g, "…").slice(0, 52)}`, container: null, videoCodec: null, audioCodec: null, platform: detectCapabilities().platform }),
         );
+        // "Try again" goes on from where it stopped, not from where the page opened.
+        resumeOverride.current = last.current.pos > 5 ? last.current.pos : resumeOverride.current;
         // The player failed after every stage before it went through: the failure is the play stage's.
         const stages = lastPrep.current ?? { label: labelOf(c), prep: { stages: ["probe", "play"] as PrepStage[], at: "play" as const, facts: {} } };
         setActive(null);
