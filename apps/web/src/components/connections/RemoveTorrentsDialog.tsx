@@ -183,7 +183,8 @@ export function RemoveTorrentsDialog({
 
       {phase === "confirm" && (
         <div className="mt-4 space-y-2 text-body-s text-text-2">
-          {packs && <p className="font-semibold text-text-1">{t("confirmPack")}</p>}
+          {/* On screen (37, 7.x confirm dialog): the risks with their sign and what stays; the rest is for a screen reader. */}
+          {packs && <p className="sr-only">{t("confirmPack")}</p>}
           {active > 0 && (
             <p className="flex gap-2 text-text-1">
               <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
@@ -196,8 +197,8 @@ export function RemoveTorrentsDialog({
               {t("confirmOutside", { count: outside })}
             </p>
           )}
-          {others.length > 0 && <p>{t("confirmShared", { profiles: connection.profileIds.length === 0 ? `${t("allAdults")} (${users.map((p) => p.name).join(", ")})` : users.map((p) => p.name).join(", ") })}</p>}
-          {size > 0 && <p>{t("confirmSize", { size: formatBytes(size)! })}</p>}
+          {others.length > 0 && <p className="sr-only">{t("confirmShared", { profiles: connection.profileIds.length === 0 ? `${t("allAdults")} (${users.map((p) => p.name).join(", ")})` : users.map((p) => p.name).join(", ") })}</p>}
+          {size > 0 && <p className="sr-only">{t("confirmSize", { size: formatBytes(size)! })}</p>}
           <p>{t("confirmKeeps")}</p>
         </div>
       )}

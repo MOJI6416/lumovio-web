@@ -172,6 +172,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   return (
     <>
       {about}
+      {/* Results kept through an empty search: said to a screen reader, not on screen (37). */}
+      {kept && <p className="sr-only">{kept}</p>}
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
@@ -188,17 +190,13 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
           </>
         }
         where={[via, chosen.result.seeders !== null ? t("tsSeeders", { count: chosen.result.seeders }) : null, chosen.result.tracker].filter(Boolean).join(" · ")}
+        // A known risk only (37): "unknown" — a name without its codec, most of them — is said in the release's details.
         note={
-          (chosen.fit !== "ok" || kept) && (
-            <>
-              {chosen.fit !== "ok" && (
-                <p className="flex items-start gap-1.5">
-                  <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-                  {chosen.fit === "poor" ? t(chosen.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv") : t("tsFitUnknown")}
-                </p>
-              )}
-              {kept && <p className="text-text-2">{kept}</p>}
-            </>
+          chosen.fit === "poor" && (
+            <p className="flex items-start gap-1.5">
+              <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+              {t(chosen.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv")}
+            </p>
           )
         }
         actions={

@@ -250,7 +250,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const linked = f.isLinked(chosen.result);
   const studioMatch = chosen.studio && (!option || option.studio === chosen.studio || (isDubbing(chosen.studio) && option.voice === "dub"));
   const kept = found.emptyAt ? tt("tsKept", { minutes: f.minutes }) : null;
-  const failed = f.status.kind === "error" ? `${t("searchFailed")}. ${t("searchKept", { minutes: f.minutes })}` : null;
+  const failed = f.status.kind === "error" ? t("searchFailed") : null;
   const versionName = c.version ? text.version(c.version.resolution, c.version.range) : "";
   const qualityValue = f.picture ? versionName : [tt(`tsQuality_${f.mode}`), versionName].filter(Boolean).join(" · ");
   const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : t("anyVoice");
@@ -258,119 +258,124 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const busy = f.status.kind === "searching";
 
   return (
-    <WatchCard
-      id={CARD}
-      mark={<CardMark kind="torrserver" />}
-      tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: studioShown(tt, chosen.studio!) })}</Tag> : undefined}
-      heading={heard}
-      quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
-      where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
-      note={
-        (chosen.fit !== "ok" || kept || failed) && (
+    <>
+      {/* Results kept through an empty search: said to a screen reader, not on screen (37). */}
+      {kept && !failed && <p className="sr-only">{kept}</p>}
+      <WatchCard
+        id={CARD}
+        mark={<CardMark kind="torrserver" />}
+        tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: studioShown(tt, chosen.studio!) })}</Tag> : undefined}
+        heading={heard}
+        quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
+        where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
+        // On screen: a known risk (not "unknown" — most names don't give the codec; the details say it) and a failed
+        // search with "Retry"; that older results are shown is for a screen reader (37).
+        note={
+          (chosen.fit === "poor" || failed) && (
+            <>
+              {chosen.fit === "poor" && (
+                <p className="flex items-start gap-1.5">
+                  <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+                  {tt(chosen.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv")}
+                </p>
+              )}
+              {failed && (
+                <p className="flex flex-wrap items-center gap-x-3 text-text-2">
+                  {failed}
+                  <span className="sr-only">{t("searchKept", { minutes: f.minutes })}</span>
+                  <Button variant="tertiary" size="sm" onClick={() => void f.search()}>
+                    {tc("retry")}
+                  </Button>
+                </p>
+              )}
+            </>
+          )
+        }
+        actions={
           <>
-            {chosen.fit !== "ok" && (
-              <p className="flex items-start gap-1.5">
-                <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-                {chosen.fit === "poor" ? tt(chosen.info.codec === "hevc" ? "tsFitHevc" : "tsFitDv") : tt("tsFitUnknown")}
-              </p>
-            )}
-            {failed ? (
-              <p className="flex flex-wrap items-center gap-x-3 text-text-2">
-                {failed}
-                <Button variant="tertiary" size="sm" onClick={() => void f.search()}>
-                  {tc("retry")}
-                </Button>
-              </p>
-            ) : (
-              kept && <p className="text-text-2">{kept}</p>
-            )}
+            <Button variant={lead ? "primary" : "secondary"} size="lg" data-link={releaseDomId(chosen.result.link)} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
+              <Play aria-hidden className="fill-current" />
+              {tt("tsWatch")}
+            </Button>
+            <IconButton icon={Info} variant="secondary" size="lg" label={tp("releaseDetails")} aria-haspopup="dialog" onClick={() => f.setDetailed(chosen.result)} />
           </>
-        )
-      }
-      actions={
-        <>
-          <Button variant={lead ? "primary" : "secondary"} size="lg" data-link={releaseDomId(chosen.result.link)} onClick={(e) => f.pick(chosen.result, e.currentTarget)}>
-            <Play aria-hidden className="fill-current" />
-            {tt("tsWatch")}
-          </Button>
-          <IconButton icon={Info} variant="secondary" size="lg" label={tp("releaseDetails")} aria-haspopup="dialog" onClick={() => f.setDetailed(chosen.result)} />
-        </>
-      }
-    >
-      {f.editing ? (
-        form
-      ) : (
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
-          {/* The pills of "Where to watch": one row that scrolls sideways on a phone (to the card's edges), wrapped on wider screens. */}
-          <div className="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 empty:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-            {c.options.length > 1 && (
-              <Menu label={tp("voiceChoice")} align="start" trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} aria-label={tt("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}>
-                <MenuCheckboxItem checked={!option} onCheckedChange={() => f.choose({ voice: null })}>
-                  {t("anyVoice")}
-                </MenuCheckboxItem>
-                <MenuSeparator />
-                {c.options.map((o) => (
-                  <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => f.choose({ voice: o.key })}>
-                    <PickItem
-                      name={text.option(o)}
-                      sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
-                    />
+        }
+      >
+        {f.editing ? (
+          form
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+            {/* The pills of "Where to watch": one row that scrolls sideways on a phone (to the card's edges), wrapped on wider screens. */}
+            <div className="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 empty:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+              {c.options.length > 1 && (
+                <Menu label={tp("voiceChoice")} align="start" trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} aria-label={tt("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}>
+                  <MenuCheckboxItem checked={!option} onCheckedChange={() => f.choose({ voice: null })}>
+                    {t("anyVoice")}
                   </MenuCheckboxItem>
-                ))}
-              </Menu>
-            )}
-            {c.editions.length > 1 && (
-              <Menu label={tt("pickEdition")} align="start" trigger={<PickPill name={tt("pickEdition")} value={editionValue} aria-label={tt("pickValue", { name: tt("pickEdition"), value: editionValue })} />}>
-                <MenuCheckboxItem checked={!f.edition} onCheckedChange={() => f.choose({ edition: null })}>
-                  {t("anyEdition")}
-                </MenuCheckboxItem>
-                <MenuSeparator />
-                {c.editions.map((e) => (
-                  <MenuCheckboxItem key={e.key} checked={e.key === f.edition} onCheckedChange={() => f.choose({ edition: e.key })}>
-                    <PickItem name={editionName(e.key)} sub={resolutions(e.resolutions)} />
+                  <MenuSeparator />
+                  {c.options.map((o) => (
+                    <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => f.choose({ voice: o.key })}>
+                      <PickItem
+                        name={text.option(o)}
+                        sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
+                      />
+                    </MenuCheckboxItem>
+                  ))}
+                </Menu>
+              )}
+              {c.editions.length > 1 && (
+                <Menu label={tt("pickEdition")} align="start" trigger={<PickPill name={tt("pickEdition")} value={editionValue} aria-label={tt("pickValue", { name: tt("pickEdition"), value: editionValue })} />}>
+                  <MenuCheckboxItem checked={!f.edition} onCheckedChange={() => f.choose({ edition: null })}>
+                    {t("anyEdition")}
                   </MenuCheckboxItem>
-                ))}
-              </Menu>
-            )}
-            {c.pool.length > 1 && (
-              <Menu label={tt("pickQuality")} align="start" trigger={<PickPill name={tt("pickQuality")} value={qualityValue} aria-label={tt("pickValue", { name: tt("pickQuality"), value: qualityValue })} />}>
-                {/* The mode picks the version for this screen (Auto), the best one or the smallest file, and orders the list so; a version by hand narrows it. */}
-                {QUALITY_MODES.map((m) => (
-                  <MenuCheckboxItem key={m} checked={!f.picture && f.mode === m} onCheckedChange={() => f.choose({ mode: m })}>
-                    {tt(`tsQuality_${m}`)}
-                  </MenuCheckboxItem>
-                ))}
-                {c.versions.length > 1 && (
-                  <>
-                    <MenuSeparator />
-                    {[...c.versions]
-                      .sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1))
-                      .map((v) => (
-                        <MenuCheckboxItem key={v.key} checked={f.picture === v.key} onCheckedChange={() => f.choose({ picture: v.key })}>
-                          <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
-                        </MenuCheckboxItem>
-                      ))}
-                  </>
-                )}
-              </Menu>
+                  <MenuSeparator />
+                  {c.editions.map((e) => (
+                    <MenuCheckboxItem key={e.key} checked={e.key === f.edition} onCheckedChange={() => f.choose({ edition: e.key })}>
+                      <PickItem name={editionName(e.key)} sub={resolutions(e.resolutions)} />
+                    </MenuCheckboxItem>
+                  ))}
+                </Menu>
+              )}
+              {c.pool.length > 1 && (
+                <Menu label={tt("pickQuality")} align="start" trigger={<PickPill name={tt("pickQuality")} value={qualityValue} aria-label={tt("pickValue", { name: tt("pickQuality"), value: qualityValue })} />}>
+                  {/* The mode picks the version for this screen (Auto), the best one or the smallest file, and orders the list so; a version by hand narrows it. */}
+                  {QUALITY_MODES.map((m) => (
+                    <MenuCheckboxItem key={m} checked={!f.picture && f.mode === m} onCheckedChange={() => f.choose({ mode: m })}>
+                      {tt(`tsQuality_${m}`)}
+                    </MenuCheckboxItem>
+                  ))}
+                  {c.versions.length > 1 && (
+                    <>
+                      <MenuSeparator />
+                      {[...c.versions]
+                        .sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1))
+                        .map((v) => (
+                          <MenuCheckboxItem key={v.key} checked={f.picture === v.key} onCheckedChange={() => f.choose({ picture: v.key })}>
+                            <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
+                          </MenuCheckboxItem>
+                        ))}
+                    </>
+                  )}
+                </Menu>
+              )}
+            </div>
+            {/* Where "Where to watch" has "All releases ›": the query, to search otherwise; a refresh says so here. */}
+            {busy ? (
+              <span role="status" className="inline-flex min-h-10 items-center gap-2 self-start text-body-s text-text-2 sm:ms-auto sm:self-auto">
+                {t("refreshing")}
+                <Button variant="tertiary" size="sm" onClick={f.cancel}>
+                  {tc("cancel")}
+                </Button>
+              </span>
+            ) : (
+              <Button variant="tertiary" size="sm" icon={Search} onClick={editQuery} aria-label={tt("pickValue", { name: t("editQuery"), value: found.query })} className="max-w-full self-start sm:ms-auto sm:self-auto">
+                <span className="truncate">{found.query}</span>
+              </Button>
             )}
           </div>
-          {/* Where "Where to watch" has "All releases ›": the query, to search otherwise; a refresh says so here. */}
-          {busy ? (
-            <span role="status" className="inline-flex min-h-10 items-center gap-2 self-start text-body-s text-text-2 sm:ms-auto sm:self-auto">
-              {t("refreshing")}
-              <Button variant="tertiary" size="sm" onClick={f.cancel}>
-                {tc("cancel")}
-              </Button>
-            </span>
-          ) : (
-            <Button variant="tertiary" size="sm" icon={Search} onClick={editQuery} aria-label={tt("pickValue", { name: t("editQuery"), value: found.query })} className="max-w-full self-start sm:ms-auto sm:self-auto">
-              <span className="truncate">{found.query}</span>
-            </Button>
-          )}
-        </div>
-      )}
-    </WatchCard>
+        )}
+      </WatchCard>
+    </>
   );
 }
 
