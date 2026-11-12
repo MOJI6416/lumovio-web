@@ -4,7 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { cache } from "react";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
-import { collectionName, titleCore } from "@/components/title/core";
+import { collectionName, notOutYet, titleCore, utcToday } from "@/components/title/core";
 import { MaturityBlocked } from "@/components/title/MaturityBlocked";
 import { OpenedSignal } from "@/components/title/OpenedSignal";
 import { Availability, PeopleRows, RatingsSection, RelatedShelves, SeasonBrowser, Soundtrack, VideoShelf } from "@/components/title/parts";
@@ -177,7 +177,8 @@ export default async function TitlePage({ params, searchParams }: { params: Para
             <PeopleRows cast={d.cast} crew={d.crew} creators={d.creators} />
           </div>
         )}
-        <RatingsSection kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
+        {/* No ratings for a title not out yet (as in the hero). */}
+        {!notOutYet(d, utcToday()) && <RatingsSection kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />}
         <TitleFacts details={d} locale={locale} />
         <div className="page-x">
           <Soundtrack kind={d.kind} tmdbId={d.tmdbId} searchQuery={`${d.originalTitle ?? d.title} soundtrack`} />

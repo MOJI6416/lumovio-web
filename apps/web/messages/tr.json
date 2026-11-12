@@ -2343,7 +2343,12 @@
     "upcomingEpisode": "Yeni bölüm {date}",
     "addToCalendar": "Takvime ekle",
     "calendarGoogle": "Google Takvim",
-    "calendarOther": "Apple, Outlook ve diğerleri"
+    "calendarOther": "Apple, Outlook ve diğerleri",
+    "calendarLumovio": "Lumovio takvimi",
+    "calendarViaWatchlist": "İzleneceklere de eklenir",
+    "calendarViaFollow": "Yeni bölüm bildirimleriyle",
+    "calendarAddedFilm": "“{title}” takviminde ve İzlenecekler'de",
+    "openCalendar": "Takvimi aç"
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",

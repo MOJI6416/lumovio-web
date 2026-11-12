@@ -2695,7 +2695,12 @@
     "upcomingEpisode": "Нова серія {date}",
     "addToCalendar": "Додати в календар",
     "calendarGoogle": "Google Календар",
-    "calendarOther": "Apple, Outlook та інші"
+    "calendarOther": "Apple, Outlook та інші",
+    "calendarLumovio": "Календар Lumovio",
+    "calendarViaWatchlist": "І до «Буду дивитися»",
+    "calendarViaFollow": "Зі сповіщеннями про нові серії",
+    "calendarAddedFilm": "«{title}» — у календарі та в «Буду дивитися»",
+    "openCalendar": "Відкрити календар"
   },
   "personPage": {
     "noCreditsKids": "Робіт, доступних у дитячому профілі, немає",

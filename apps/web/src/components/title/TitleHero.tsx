@@ -9,7 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { capitalize, formatRuntime, latinLang } from "@/lib/format";
 import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
 import { personHref } from "@/lib/slug";
-import type { TitleCore } from "./core";
+import { notOutYet, type TitleCore, utcToday } from "./core";
 import { ExpandableText } from "./ExpandableText";
 import { HeroRatings } from "./HeroRatings";
 import { TitleActions } from "./TitleActions";
@@ -190,11 +190,14 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
               ))}
               {d.certification && <AgeRating rating={d.certification} className="ms-1" />}
             </p>
-            {/* The title's ratings, then the profile's own: what others think, and what you did. */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
-              <YourRating title={core} />
-            </div>
+            {/* The title's ratings, then the profile's own: what others think, and what you did. A title not out yet has
+                neither: nobody has seen it, and what sources show then is anticipation, not a rating. */}
+            {!notOutYet(d, utcToday()) && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <HeroRatings kind={d.kind} tmdbId={d.tmdbId} tmdbRating={d.tmdbRating} tmdbVotes={d.tmdbVotes} />
+                <YourRating title={core} />
+              </div>
+            )}
             {d.overview && (
               <div className="mt-4 max-md:order-4">
                 <ExpandableText text={d.overview} lines={3} label={t("titlePage.readOverview")} className="text-body-l text-text-1" />

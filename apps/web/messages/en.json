@@ -2698,7 +2698,12 @@
     "upcomingEpisode": "New episode {date}",
     "addToCalendar": "Add to calendar",
     "calendarGoogle": "Google Calendar",
-    "calendarOther": "Apple, Outlook and others"
+    "calendarOther": "Apple, Outlook and others",
+    "calendarLumovio": "Lumovio calendar",
+    "calendarViaWatchlist": "Also adds it to your Watchlist",
+    "calendarViaFollow": "With new-episode alerts",
+    "calendarAddedFilm": "“{title}” is on your calendar and Watchlist",
+    "openCalendar": "Open calendar"
   },
   "personPage": {
     "noCreditsKids": "No titles available in a kids profile",

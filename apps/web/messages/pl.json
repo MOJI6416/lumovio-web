@@ -2343,7 +2343,12 @@
     "upcomingEpisode": "Nowy odcinek {date}",
     "addToCalendar": "Dodaj do kalendarza",
     "calendarGoogle": "Kalendarz Google",
-    "calendarOther": "Apple, Outlook i inne"
+    "calendarOther": "Apple, Outlook i inne",
+    "calendarLumovio": "Kalendarz Lumovio",
+    "calendarViaWatchlist": "Także na liście Do obejrzenia",
+    "calendarViaFollow": "Z powiadomieniami o nowych odcinkach",
+    "calendarAddedFilm": "„{title}” jest w kalendarzu i na liście Do obejrzenia",
+    "openCalendar": "Otwórz kalendarz"
   },
   "personPage": {
     "noCreditsKids": "Brak tytułów dostępnych w profilu dziecięcym",

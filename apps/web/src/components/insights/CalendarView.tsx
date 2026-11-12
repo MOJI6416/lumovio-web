@@ -23,8 +23,11 @@ const OutShelf = lazy(() => loadShelf().then((m) => ({ default: m.OutShelf })));
 
 /** Days shown one by one from today; after them, each show once at its next date ("Later"). */
 const NEAR_DAYS = 14;
-/** How far ahead the calendar asks: a show's next season is often announced months before (the API loads the same seasons for any window). */
-const AHEAD_DAYS = 120;
+/**
+ * How far ahead the calendar asks: a show's next season, and a film put on the calendar from its page, are often dated
+ * a year or more before (the API loads the same seasons for any window; films come from the profile's own list).
+ */
+const AHEAD_DAYS = 730;
 
 /**
  * The calendar: a timeline of the profile's shows and watchlist films, read top
