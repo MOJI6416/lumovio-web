@@ -1200,7 +1200,9 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
                       .map((at) => <span key={at} aria-hidden className="pointer-events-none absolute top-1/2 h-2 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-stage rtl:translate-x-1/2" style={{ insetInlineStart: `${(at / duration) * 100}%` }} />)}
                   {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus (PLR-09). */}
                   <TimeSlider.Thumb className="absolute start-(--media-slider-fill) size-4 -translate-x-1/2 scale-0 rounded-full bg-text-1 transition-transform duration-fast ease-fast group-hover/ts:scale-100 focus-visible:scale-125 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:shadow-(--focus-halo) rtl:translate-x-1/2" />
-                  <TimeSlider.Preview className="pointer-events-none absolute bottom-10 start-(--media-slider-pointer) flex -translate-x-1/2 flex-col items-center opacity-0 group-hover/ts:opacity-100 rtl:translate-x-1/2">
+                  {/* Placed by Vidstack itself (its inline `left`: the pointer less half its width, kept inside the bar): no shift of
+                      its own, or the time stands half its width beside the pointer (owner, 2026-11-12). */}
+                  <TimeSlider.Preview className="pointer-events-none absolute bottom-10 flex flex-col items-center opacity-0 group-hover/ts:opacity-100">
                     {tp && hoverTime !== null && <TrickplayThumb tp={tp} time={hoverTime} width={240} />}
                     <span className="rounded-xs bg-stage/85 px-2 py-1 text-body-s font-semibold tabular-nums">
                       <TimeSlider.Value type="pointer" />

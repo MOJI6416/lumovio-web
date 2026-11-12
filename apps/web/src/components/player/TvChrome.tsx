@@ -171,7 +171,8 @@ export function TvChrome(v: TvChromeProps) {
               ))}
             {/* The knob is the slider's focus stop: it shows, with the focus ring, while it has the keyboard's focus (PLR-09). */}
             <TimeSlider.Thumb className="absolute start-(--media-slider-fill) size-4 -translate-x-1/2 scale-0 rounded-full bg-text-1 transition-transform duration-fast ease-fast group-hover/ts:scale-100 focus-visible:scale-125 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-focus focus-visible:shadow-(--focus-halo) rtl:translate-x-1/2" />
-            <TimeSlider.Preview className="pointer-events-none absolute bottom-9 start-(--media-slider-pointer) flex -translate-x-1/2 flex-col items-center opacity-0 group-hover/ts:opacity-100 rtl:translate-x-1/2">
+            {/* Placed by Vidstack itself (its inline `left`): no shift of its own, or it stands half its width beside the pointer. */}
+            <TimeSlider.Preview className="pointer-events-none absolute bottom-9 flex flex-col items-center opacity-0 group-hover/ts:opacity-100">
               {tp && v.hoverTime !== null && <v.Thumb tp={tp} time={v.hoverTime} />}
               <span className="rounded-xs bg-stage/85 px-2 py-1 text-caption font-bold tabular-nums">
                 <TimeSlider.Value type="pointer" />
