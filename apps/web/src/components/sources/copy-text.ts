@@ -59,7 +59,8 @@ export function useCopyText() {
     const name = releaseName(s, all);
     if (name) {
       const info = parseRelease(name, null, originalLanguage);
-      const words = [info.resolution !== null || info.source !== null ? text.picture(info) : null, text.audio({ info, language: null })].filter(Boolean).join(" · ");
+      // What is heard as the copy's card says it: the one track the player starts for this profile, not every track of a language.
+      const words = [info.resolution !== null || info.source !== null ? text.picture(info) : null, sound(s, all, originalLanguage)].filter(Boolean).join(" · ");
       if (words) return words;
     }
     return KIND_LABEL[s.kind];
