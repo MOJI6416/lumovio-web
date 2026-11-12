@@ -79,7 +79,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const heardOf = (x: RankedRelease) =>
     text.audio({ info: x.info, language: option?.language ?? x.language }, option?.studio ?? wishNameTrack(x.info, voiceWish(option?.key ?? null), prefs.studios));
   // What the search does, for a screen reader (no explanation on screen).
-  const about =<p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
+  const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
   if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} />;
   if (lookup.isError)
