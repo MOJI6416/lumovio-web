@@ -39,6 +39,28 @@ const SLICE = 1 << 20;
  * fragment is what the first frame waits for — 6 MB of a 44 Mbit/s film at one second, 10 MB at two.
  */
 export const FRAGMENTED = { fastStart: "fragmented", minimumFragmentDuration: 1 } as const;
+/** A playhead stopped this long with media buffered past it is stuck: Media Source doesn't cross a hole on its own. */
+const STUCK_MS = 1500;
+
+/**
+ * What gets a stopped playhead moving when media lies buffered past it (`ranges`: the buffered stretches, in order). A
+ * hole of up to a second just ahead is stepped over, to where the media goes on; a longer hole, or a playhead stopped
+ * inside buffered media, starts the rebuild again from there — 2 s further on when it already restarted at that place,
+ * so a spot the rebuild keeps leaving out is passed. Null when nothing is buffered past the playhead: it waits for media
+ * still to come.
+ */
+export function unstick(
+  at: number,
+  ranges: readonly (readonly [number, number])[],
+  restartedAt: number | null,
+): { jump: number } | { restart: number } | null {
+  const inside = ranges.find(([start, end]) => at >= start && at < end);
+  const next = ranges.find(([start]) => start > at)?.[0];
+  const restart = { restart: restartedAt !== null && Math.abs(restartedAt - at) < 1 ? at + 2 : at };
+  if (inside && inside[1] - at > 0.5) return restart;
+  if (next === undefined) return null;
+  return next - at <= 1 ? { jump: next + 0.01 } : restart;
+}
 
 export interface RemuxHandle {
   /** Position of the track among the file's audio tracks (ffprobe order = container order). */
@@ -301,6 +323,8 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   let closed = false;
   // The run whose media is in the buffer now: removals before its first append are the engine's own.
   let appended = -1;
+  // Where the newest run starts: until its writer puts the playhead there, the playhead isn't stuck, only early.
+  let runFrom = 0;
   // Where the fragments in the buffer begin (key frames), oldest first: what `evictBehind` may remove up to.
   let cuts: number[] = [];
   // Writers waiting for room are woken by playback progress, seeks and restarts.
@@ -443,6 +467,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
 
   const restart = async (from: number) => {
     const mine = ++gen;
+    runFrom = from;
     nudge();
     const old = job;
     job = null;
@@ -508,6 +533,29 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   video.addEventListener("play", nudge);
   ms.addEventListener("startstreaming", nudge);
 
+  // A playhead that stops with media buffered past it (a hole in the buffer, frames the decoder can't get past) would
+  // wait for ever: the writer counts that media as the lead and reads nothing more, so the server's speed falls to 0
+  // under the loader. After a moment it is moved on (`unstick`).
+  let still = { at: -1, since: 0 };
+  let restartedAt: number | null = null;
+  const watch = setInterval(() => {
+    const t = video.currentTime;
+    if (closed || video.paused || video.seeking || video.ended || video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA || t !== still.at || t < runFrom - 0.5) {
+      still = { at: t, since: Date.now() };
+      return;
+    }
+    if (Date.now() - still.since < STUCK_MS) return;
+    still = { at: -1, since: 0 };
+    const b = video.buffered;
+    const step = unstick(t, Array.from({ length: b.length }, (_, i) => [b.start(i), b.end(i)] as const), restartedAt);
+    if (!step) return;
+    if ("jump" in step) video.currentTime = step.jump;
+    else {
+      restartedAt = step.restart;
+      void run(step.restart);
+    }
+  }, 250);
+
   // Resume only well inside the file, as for a plain stream (a position saved for another, longer file may be past the end).
   void run(opts.startAt > 5 && (!duration || opts.startAt < duration - 10) ? opts.startAt : 0);
 
@@ -522,6 +570,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
       gen++;
       nudge();
       clearTimeout(seekTimer);
+      clearInterval(watch);
       video.removeEventListener("seeking", onSeeking);
       video.removeEventListener("timeupdate", nudge);
       video.removeEventListener("play", nudge);
