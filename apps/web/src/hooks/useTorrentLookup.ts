@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { useTitleAvailability } from "@/hooks/useAvailability";
-import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
+import { detectCapabilities, onUhdSmooth, uhdDecodesNow, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
@@ -22,6 +22,7 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
   const p = me?.activeProfile;
   // MediaCapabilities' word on 4K HEVC (lib/media/capabilities): kept on the device after the first answer.
   const uhdSmooth = useSyncExternalStore(onUhdSmooth, uhdSmoothNow, () => null);
+  const uhdDecodes = useSyncExternalStore(onUhdSmooth, uhdDecodesNow, () => null);
   // Trackers whose torrents this device's TorrServer couldn't add lately: their releases go after the others.
   const failingTrackers = useSyncExternalStore(subscribeTrackers, failingTrackers_, noFailingTrackers);
   return useMemo(() => {
@@ -32,10 +33,10 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
       languagesFromProfile: own.length > 0,
       studios: p?.voiceStudios ?? [],
       quality: p?.releaseQuality ?? "auto",
-      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth, av1: caps ? caps.video.av1 : undefined },
+      device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth, av1: caps ? caps.video.av1 : undefined, hevc10: caps?.video.hevc10, uhdDecodes },
       failingTrackers,
     };
-  }, [p, locale, uhdSmooth, failingTrackers]);
+  }, [p, locale, uhdSmooth, uhdDecodes, failingTrackers]);
 }
 
 /** The TorrServer this device may search on its own for the profile, if any; never for kids profiles. */

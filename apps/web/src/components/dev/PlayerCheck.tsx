@@ -116,7 +116,7 @@ export function PlayerCheck() {
           [t("factEncoders"), names(facts.encoders, { aac: "AAC", opus: "Opus" })],
           [t("factWorker"), t(`worker_${facts.worker}`)],
           [t("factHls"), yesNo(caps.hls === "native")],
-          [t("factVideo"), names({ ...caps.video, dv: caps.dolbyVision }, { h264: "H.264", h264High10: "H.264 10-bit", hevc: "HEVC", av1: "AV1", vp9: "VP9", dv: "Dolby Vision 5" })],
+          [t("factVideo"), names({ ...caps.video, dv: caps.dolbyVision }, { h264: "H.264", h264High10: "H.264 10-bit", hevc: "HEVC", hevc10: "HEVC 10-bit", av1: "AV1", vp9: "VP9", dv: "Dolby Vision 5" })],
           [t("factAudio"), names(caps.audio, { aac: "AAC", mp3: "MP3", opus: "Opus", flac: "FLAC", ac3: "AC-3", eac3: "E-AC-3", dts: "DTS" })],
           [t("factMseAudio"), caps.mediaSource === "none" ? t("none") : names(caps.mseAudio, { aac: "AAC", mp3: "MP3", opus: "Opus", flac: "FLAC", ac3: "AC-3", eac3: "E-AC-3", dts: "DTS" })],
           [t("factContainers"), names({ mp4: caps.containers.mp4, mkv: caps.containers.mkv === "likely", webm: caps.containers.webm }, { mp4: "MP4", mkv: "MKV", webm: "WebM" })],

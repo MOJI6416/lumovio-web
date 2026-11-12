@@ -3,7 +3,8 @@
  * never from user-agent guesses, and used to pick Direct Play vs. server-side transcoding.
  */
 export interface PlaybackCapabilities {
-  video: { h264: boolean; hevc: boolean; av1: boolean; vp9: boolean; h264High10: boolean };
+  /** `hevc10`: HEVC Main 10 (10-bit, every HDR release) — a phone may decode HEVC only in 8 bits; false when it says so. */
+  video: { h264: boolean; hevc: boolean; av1: boolean; vp9: boolean; h264High10: boolean; hevc10?: boolean };
   audio: { aac: boolean; mp3: boolean; opus: boolean; flac: boolean; ac3: boolean; eac3: boolean; dts: boolean; truehd: boolean; vorbis: boolean };
   containers: { mp4: boolean; webm: boolean; mkv: "likely" | "no"; ts: boolean; mov: boolean };
   hls: "native" | "mse" | "none";
@@ -66,6 +67,7 @@ export function detectCapabilities(): PlaybackCapabilities {
       h264: can('video/mp4; codecs="avc1.640028"'),
       h264High10: can('video/mp4; codecs="avc1.6e0028"'),
       hevc: can('video/mp4; codecs="hvc1.1.6.L120.90"') || can('video/mp4; codecs="hev1.1.6.L120.90"'),
+      hevc10: can('video/mp4; codecs="hvc1.2.4.L120.90"') || can('video/mp4; codecs="hev1.2.4.L120.90"'),
       av1: can('video/mp4; codecs="av01.0.08M.08"'),
       vp9: can('video/webm; codecs="vp09.00.10.08"'),
     },
@@ -102,38 +104,55 @@ export function detectCapabilities(): PlaybackCapabilities {
     },
     hdr: typeof matchMedia === "function" && matchMedia("(dynamic-range: high)").matches,
     dolbyVision: can('video/mp4; codecs="dvh1.05.06"') || can('video/mp4; codecs="dvhe.05.06"'),
-    maxHeight: Math.max(window.screen.height, window.screen.width) * (window.devicePixelRatio || 1) >= 2000 ? 2160 : 1080,
+    maxHeight: screenPictureHeight(window.screen.width, window.screen.height, window.devicePixelRatio || 1) >= 1440 ? 2160 : 1080,
     pip: "pictureInPictureEnabled" in document && Boolean(document.pictureInPictureEnabled),
     platform: `${chromium ? "chromium" : safari ? "safari" : /Firefox\//.test(ua) ? "firefox" : "other"}/${/Android/.test(ua) ? "android" : /iPhone|iPad/.test(ua) ? "ios" : /Windows/.test(ua) ? "windows" : /Mac OS/.test(ua) ? "macos" : /Tizen|Web0S|SmartTV/.test(ua) ? "tv" : "other"}`,
   };
   return cached;
 }
 
+/** The height a 16:9 picture gets on this screen at full size, in device pixels: a phone's 1080 × 2400 panel shows 1080. */
+export function screenPictureHeight(width: number, height: number, pixelRatio: number): number {
+  return Math.min(Math.min(width, height) * pixelRatio, (Math.max(width, height) * pixelRatio * 9) / 16);
+}
+
 /*
- * Whether 4K HEVC plays smoothly here (MediaCapabilities as an extra signal, never the only one):
- * "decodes HEVC" says nothing about a 4K stream on a weak TV or phone. `decodingInfo()` is asked once for a
- * typical 4K release — HEVC Main 10, 3840 × 2160, 24 fps, 20 Mbit/s, as Media Source would get it (the in-browser
- * rebuild) or as a file — and its `smooth` kept on the device (localStorage, per browser version), so release search
- * ranks the same from the first answer on and rows don't move under the focus. null: not known (no API, refused, or
- * not asked yet).
+ * Whether 4K HEVC decodes here, and plays smoothly (MediaCapabilities, never user-agent guesses): "decodes HEVC" says
+ * nothing about a 4K stream on a weak TV or phone — a phone may decode HEVC up to 1080p only while its browser still
+ * says yes to the codec. `decodingInfo()` is asked once for 4K HEVC Main (3840 × 2160, 24 fps, 20 Mbit/s, as Media
+ * Source would get it — the in-browser rebuild — or as a file) and, to check the answer, for 1080p: 4K refused where
+ * 1080p is taken means it doesn't decode 4K; both refused, that this browser doesn't answer for HEVC (not known). Kept on
+ * the device (localStorage, per browser version), so release search ranks the same from the first answer on and rows
+ * don't move under the focus. null: not known (no API, no answer for HEVC, or not asked yet).
  */
-const SMOOTH_KEY = "lumovio.uhd-smooth";
-let uhdSmooth: boolean | null | undefined;
+const UHD_KEY = "lumovio.uhd-hevc";
+type UhdAnswer = { decodes: boolean; smooth: boolean };
+let uhd: UhdAnswer | null | undefined;
 const smoothListeners = new Set<() => void>();
 let probing = false;
 
-/** The 4K HEVC answer of this device as far as known now; starts asking the first time. */
-export function uhdSmoothNow(): boolean | null {
-  if (uhdSmooth !== undefined) return uhdSmooth;
+function uhdNow(): UhdAnswer | null {
+  if (uhd !== undefined) return uhd;
   if (typeof window === "undefined") return null;
   try {
-    const saved = JSON.parse(localStorage.getItem(SMOOTH_KEY) ?? "null") as { ua: string; smooth: boolean } | null;
-    if (saved && saved.ua === navigator.userAgent) uhdSmooth = saved.smooth;
+    const saved = JSON.parse(localStorage.getItem(UHD_KEY) ?? "null") as ({ ua: string } & UhdAnswer) | null;
+    if (saved && saved.ua === navigator.userAgent) uhd = { decodes: saved.decodes, smooth: saved.smooth };
   } catch {
     // No storage: asked again on this page.
   }
-  if (uhdSmooth === undefined) void probeUhdSmooth();
-  return uhdSmooth ?? null;
+  if (uhd === undefined) void probeUhd();
+  return uhd ?? null;
+}
+
+/** Whether 4K HEVC plays smoothly here as far as known now (false where it doesn't decode); starts asking the first time. */
+export function uhdSmoothNow(): boolean | null {
+  const a = uhdNow();
+  return a ? a.decodes && a.smooth : null;
+}
+
+/** Whether 4K HEVC decodes here at all as far as known now: false where the browser refuses it and takes 1080p. */
+export function uhdDecodesNow(): boolean | null {
+  return uhdNow()?.decodes ?? null;
 }
 
 /** For `useSyncExternalStore`: told once the answer arrives. */
@@ -142,22 +161,24 @@ export function onUhdSmooth(listener: () => void) {
   return () => smoothListeners.delete(listener);
 }
 
-async function probeUhdSmooth() {
+async function probeUhd() {
   const mc = (navigator as Navigator & { mediaCapabilities?: MediaCapabilities }).mediaCapabilities;
   if (probing || !mc?.decodingInfo) return;
   probing = true;
-  const video = { contentType: 'video/mp4; codecs="hvc1.2.4.L153.B0"', width: 3840, height: 2160, bitrate: 20_000_000, framerate: 24 };
-  let answer: boolean | null = null;
+  const type = mediaSourceClass() ? "media-source" : "file";
+  const ask = (codec: string, width: number, height: number, bitrate: number) =>
+    mc.decodingInfo({ type, video: { contentType: `video/mp4; codecs="${codec}"`, width, height, bitrate, framerate: 24 } });
+  let answer: UhdAnswer | null = null;
   try {
-    const info = await mc.decodingInfo({ type: mediaSourceClass() ? "media-source" : "file", video });
-    answer = info.supported ? info.smooth : null;
+    const [uhdInfo, hd] = await Promise.all([ask("hvc1.1.6.L153.B0", 3840, 2160, 20_000_000), ask("hvc1.1.6.L120.B0", 1920, 1080, 8_000_000)]);
+    answer = uhdInfo.supported ? { decodes: true, smooth: uhdInfo.smooth } : hd.supported ? { decodes: false, smooth: false } : null;
   } catch {
     answer = null;
   }
-  uhdSmooth = answer;
+  uhd = answer;
   if (answer !== null) {
     try {
-      localStorage.setItem(SMOOTH_KEY, JSON.stringify({ ua: navigator.userAgent, smooth: answer }));
+      localStorage.setItem(UHD_KEY, JSON.stringify({ ua: navigator.userAgent, ...answer }));
     } catch {
       // Kept for this page only.
     }
@@ -213,7 +234,7 @@ export function canDirectPlay(caps: PlaybackCapabilities, file: MediaFileFacts):
           ? false
           : !c;
   if (!containerOk) return { ok: false, reason: `container ${containerName(c)}` };
-  if (!videoPlayable(caps, v, file.bitDepth) && !(v.includes("vp8") && caps.containers.webm)) return { ok: false, reason: videoReason(v, file.bitDepth) };
+  if (!videoPlayable(caps, v, file) && !(v.includes("vp8") && caps.containers.webm)) return { ok: false, reason: videoReason(caps, v, file) };
   const audioOk =
     !a ||
     (a.includes("aac") && caps.audio.aac) ||
@@ -228,17 +249,23 @@ export function canDirectPlay(caps: PlaybackCapabilities, file: MediaFileFacts):
   return { ok: true };
 }
 
-function videoPlayable(caps: PlaybackCapabilities, v: string, bitDepth: number | null | undefined): boolean {
+const isHevc = (v: string) => v.includes("hevc") || v.includes("h265");
+/** HEVC past 1080p on a device whose browser refuses 4K HEVC but takes 1080p (`uhdDecodesNow`). */
+const hevcTooBig = (v: string, file: MediaFileFacts) => isHevc(v) && ((file.width ?? 0) > 1920 || (file.height ?? 0) > 1088) && uhdDecodesNow() === false;
+
+function videoPlayable(caps: PlaybackCapabilities, v: string, file: MediaFileFacts): boolean {
+  const deep = Boolean(file.bitDepth && file.bitDepth > 8);
   return (
     !v ||
-    (v.includes("h264") || v.includes("avc") ? caps.video.h264 && !(bitDepth && bitDepth > 8 && !caps.video.h264High10) : false) ||
-    ((v.includes("hevc") || v.includes("h265")) && caps.video.hevc) ||
+    (v.includes("h264") || v.includes("avc") ? caps.video.h264 && !(deep && !caps.video.h264High10) : false) ||
+    (isHevc(v) && caps.video.hevc && !(deep && caps.video.hevc10 === false) && !hevcTooBig(v, file)) ||
     (v.includes("av1") && caps.video.av1) ||
     (v.includes("vp9") && caps.video.vp9)
   );
 }
 
-const videoReason = (v: string, bitDepth: number | null | undefined) => `video ${v || "unknown"}${bitDepth && bitDepth > 8 ? ` ${bitDepth}-bit` : ""}`;
+const videoReason = (caps: PlaybackCapabilities, v: string, file: MediaFileFacts) =>
+  `video ${v || "unknown"}${caps.video.hevc && hevcTooBig(v, file) ? " 4K" : file.bitDepth && file.bitDepth > 8 ? ` ${file.bitDepth}-bit` : ""}`;
 
 /** Containers the rebuild reads (Mediabunny): Matroska/WebM, MP4/MOV and MPEG-TS (also Blu-ray's M2TS). Not AVI or WMV. */
 const REMUX_CONTAINERS = new Set(["mkv", "webm", "mp4", "mov", "ts"]);
@@ -256,7 +283,7 @@ export function canRemuxInBrowser(caps: PlaybackCapabilities, file: MediaFileFac
   // A container it never reads (AVI) is the reason, wherever it runs.
   if (!REMUX_CONTAINERS.has(c)) return { ok: false, reason: `container ${c}` };
   if (caps.mediaSource === "none") return { ok: false, reason: "no Media Source Extensions" };
-  if (v && !videoPlayable(caps, v, file.bitDepth)) return { ok: false, reason: videoReason(v, file.bitDepth) };
+  if (v && !videoPlayable(caps, v, file)) return { ok: false, reason: videoReason(caps, v, file) };
   if (a && !REMUXABLE_AUDIO.test(a)) return { ok: false, reason: `audio ${a}` };
   return { ok: true };
 }

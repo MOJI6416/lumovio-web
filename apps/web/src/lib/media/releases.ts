@@ -36,6 +36,8 @@ export interface ReleaseInfo {
   subtitles: boolean;
   hevc: boolean;
   codec: "hevc" | "avc" | "av1" | null;
+  /** A 10-bit picture by the name: it says so ("10-bit", "Hi10P", "Main 10") or names HDR, which is always 10-bit. */
+  tenBit: boolean;
   source: PictureSource | null;
   /** Audio languages the name states or, by the tracker's conventions, implies (ISO 639-1). */
   languages: string[];
@@ -398,6 +400,7 @@ export function parseRelease(title: string, tracker: string | null = null, origi
     subtitles: W("subs?|subtitles?|softsubs?|sdh|субтитр\\p{L}*|субтитри|сабы").test(t),
     hevc: codec === "hevc",
     codec,
+    tenBit: hdrFormats.length > 0 || W("10[ -]?bit|hi10p?|main ?10").test(t),
     source,
     languages: [...languages],
     voice,
@@ -545,9 +548,10 @@ export interface ReleasePrefs {
   /**
    * This device: decodes HEVC (most 4K releases are HEVC), shows HDR, has a 4K screen, decodes Dolby Vision without an
    * HDR10 base; and whether 4K HEVC plays smoothly by the browser's MediaCapabilities (`uhdSmoothNow`; null or left out:
-   * not known, which changes nothing); decodes AV1 (left out: not known).
+   * not known, which changes nothing); decodes AV1, HEVC in 10 bits (`hevc10`), 4K HEVC at all (`uhdDecodesNow`) —
+   * left out or null: not known.
    */
-  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null; av1?: boolean };
+  device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null; av1?: boolean; hevc10?: boolean; uhdDecodes?: boolean | null };
   /** Trackers whose torrents this device's TorrServer couldn't add lately (`tracker-adds`): their releases come after. */
   failingTrackers?: ReadonlySet<string>;
   /**
@@ -595,13 +599,16 @@ export function pictureKey(info: Pick<ReleaseInfo, "resolution" | "hdrFormats" |
 
 /**
  * Whether this device plays the picture, as far as the name tells: "poor" when it shows it can't
- * (HEVC or AV1 without a decoder, Dolby Vision alone without support), "unknown" for 4K that names no codec
- * on a device without HEVC (most 4K is HEVC). The file itself is checked only when it is prepared.
+ * (HEVC or AV1 without a decoder, 10-bit HEVC where it decodes 8 bits only, 4K HEVC — or 4K naming no codec — where it
+ * doesn't decode 4K, Dolby Vision alone without support), "unknown" for 4K that names no codec on a device without HEVC
+ * (most 4K is HEVC). The file itself is checked only when it is prepared.
  */
 export type Fit = "ok" | "unknown" | "poor";
 
 export function fitOf(info: ReleaseInfo, device: ReleasePrefs["device"]): Fit {
   if (info.codec === "hevc" && !device.hevc) return "poor";
+  if (info.codec === "hevc" && info.tenBit && device.hevc10 === false) return "poor";
+  if (info.resolution === 2160 && (info.codec === "hevc" || info.codec === null) && device.uhdDecodes === false) return "poor";
   if (info.codec === "av1" && device.av1 === false) return "poor";
   if (rangeOf(info) === "dv" && !device.dolbyVision) return "poor";
   if (info.resolution === 2160 && info.codec === null && !device.hevc) return "unknown";
