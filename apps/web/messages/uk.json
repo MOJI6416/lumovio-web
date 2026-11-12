@@ -507,7 +507,6 @@
     "tsNothing": "Роздач не знайшлося",
     "serversDown": "Немає зв'язку: {names}",
     "serversIndexing": "Ще індексується: {names}",
-    "otherCopies": "Інші копії",
     "offersPaid": "Оренда й купівля",
     "offerAdsShort": "З рекламою",
     "tsAddsNote": "«Дивитися» додасть обрану роздачу на «{name}».",
@@ -2645,7 +2644,6 @@
     "detailPicture": "Зображення",
     "detailSize": "Розмір",
     "detailServer": "Сервер",
-    "allSources": "Усі джерела",
     "otherRelease": "Інша роздача",
     "streamingIn": "Стримінг · {region}",
     "streaming": "Стримінг",
@@ -2703,7 +2701,10 @@
     "calendarViaWatchlist": "І до «Буду дивитися»",
     "calendarViaFollow": "Зі сповіщеннями про нові серії",
     "calendarAddedFilm": "«{title}» — у календарі та в «Буду дивитися»",
-    "openCalendar": "Відкрити календар"
+    "openCalendar": "Відкрити календар",
+    "copyPick": "Копія",
+    "copyOf": "{n} з {count}",
+    "backToCopy": "Повернутися до копії"
   },
   "personPage": {
     "noCreditsKids": "Робіт, доступних у дитячому профілі, немає",

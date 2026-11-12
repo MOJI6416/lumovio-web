@@ -507,7 +507,6 @@
     "tsNothing": "Nie znaleziono wydań",
     "serversDown": "Brak połączenia: {names}",
     "serversIndexing": "Nadal indeksuje: {names}",
-    "otherCopies": "Inne kopie",
     "offersPaid": "Wypożyczenie lub zakup",
     "offerAdsShort": "Z reklamami",
     "tsAddsNote": "„Oglądaj” dodaje wybrane wydanie do serwera {name}.",
@@ -2293,7 +2292,6 @@
     "detailPicture": "Obraz",
     "detailSize": "Rozmiar",
     "detailServer": "Serwer",
-    "allSources": "Wszystkie źródła",
     "otherRelease": "Inne wydanie",
     "streamingIn": "Streaming · {region}",
     "streaming": "Streaming",
@@ -2351,7 +2349,10 @@
     "calendarViaWatchlist": "Także na liście Do obejrzenia",
     "calendarViaFollow": "Z powiadomieniami o nowych odcinkach",
     "calendarAddedFilm": "„{title}” jest w kalendarzu i na liście Do obejrzenia",
-    "openCalendar": "Otwórz kalendarz"
+    "openCalendar": "Otwórz kalendarz",
+    "copyPick": "Kopia",
+    "copyOf": "{n} z {count}",
+    "backToCopy": "Wróć do kopii"
   },
   "personPage": {
     "noCreditsKids": "Brak tytułów dostępnych w profilu dziecięcym",

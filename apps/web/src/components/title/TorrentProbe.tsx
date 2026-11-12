@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
-import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
+import { RESOLUTION, ReleaseLine, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/Toast";
 import { useTitleAvailability } from "@/hooks/useAvailability";
@@ -125,7 +125,12 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
         startLaunch(
           {
             status: tp("stage_add"),
-            detail: `${[text.picture(chosen.info), heard].filter(Boolean).join(" · ")} — ${source.name}`,
+            // What is being added as its card says it: the marks, what they don't say, what is heard — and the server.
+            detail: (
+              <>
+                <ReleaseLine info={chosen.info} rest={[heard]} /> — {source.name}
+              </>
+            ),
             onBack: () => {
               dropped = true;
               endLaunch();

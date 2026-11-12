@@ -507,7 +507,6 @@
     "tsNothing": "No releases found",
     "serversDown": "Can't reach {names}",
     "serversIndexing": "Still indexing: {names}",
-    "otherCopies": "Other copies",
     "offersPaid": "Rent or buy",
     "offerAdsShort": "With ads",
     "tsAddsNote": "“Watch” adds the chosen release to {name}.",
@@ -2648,7 +2647,6 @@
     "detailPicture": "Picture",
     "detailSize": "Size",
     "detailServer": "Server",
-    "allSources": "All sources",
     "otherRelease": "Another release",
     "streamingIn": "Streaming · {region}",
     "streaming": "Streaming",
@@ -2706,7 +2704,10 @@
     "calendarViaWatchlist": "Also adds it to your Watchlist",
     "calendarViaFollow": "With new-episode alerts",
     "calendarAddedFilm": "“{title}” is on your calendar and Watchlist",
-    "openCalendar": "Open calendar"
+    "openCalendar": "Open calendar",
+    "copyPick": "Copy",
+    "copyOf": "{n} of {count}",
+    "backToCopy": "Back to the copy"
   },
   "personPage": {
     "noCreditsKids": "No titles available in a kids profile",

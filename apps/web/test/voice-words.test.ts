@@ -82,7 +82,12 @@ for (const [locale, messages] of Object.entries(LANGS)) {
     it("a file's tracks, as a copy's heading and the player's audio menu say them", () => {
       const file = ["rus|Dub, Movie Dubbing", "rus|MVO [LostFilm]", "rus|DVO (Pazl Voice)", "rus|AVO (Гаврилов)", "ukr|Dub", "eng|Original"];
       const info = withFileTracks(parseRelease("Oppenheimer.2023.1080p.WEB-DL", null, "en"), file, "en");
-      expect(text.audio({ info, language: "ru" }, profileNameTrack(info, prefs))).toBe(`${capital(new Intl.DisplayNames([locale], { type: "language" }).of("ru")!, locale)} · ${dubbed} (Movie Dubbing)`);
+      // A named studio says it all on a card or a row; its kind stays in the release's details.
+      const ru = capital(new Intl.DisplayNames([locale], { type: "language" }).of("ru")!, locale);
+      expect(text.audio({ info, language: "ru" }, profileNameTrack(info, prefs))).toBe(`${ru} · Movie Dubbing`);
+      expect(text.allTracks({ info }).join(" | ")).toContain(`${dubbed} (Movie Dubbing)`);
+      // Without a studio, the kind: the Ukrainian dub of the same file.
+      expect(text.audio({ info, language: "uk" })).toMatch(new RegExp(`${dubbed}$`));
       for (const entry of file.slice(0, 5)) {
         const [tag, title] = entry.split("|");
         expect(words(title!, tag!)).not.toMatch(TOKEN);

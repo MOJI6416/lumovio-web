@@ -3,8 +3,7 @@
 import type { Availability } from "@lumovio/contracts";
 import { Play, Server } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactNode } from "react";
-import { ServerMark } from "@/components/connections/ServerMark";
+import { type ReactNode, useState } from "react";
 import { GuestGate } from "@/components/shell/GuestGate";
 import { CardMark, ServerMarks, WatchCard } from "@/components/title/WatchCard";
 import { StatusBadge, Tag } from "@/components/ui/Badge";
@@ -13,6 +12,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Link } from "@/i18n/navigation";
 import type { WatchState } from "@/lib/watch-state";
 import { useCopyText } from "./copy-text";
+import { CopyPill } from "./CopyPill";
 import { QualityLine } from "./QualityBadges";
 import { formatSize, YourVoiceTag } from "./release-text";
 
@@ -29,7 +29,7 @@ export interface ChoiceCopy {
 /**
  * The profile's copies on the sources screen, as "Where to watch" says them:
  * the first — the one playing, else the one "Watch" starts — in the card (what is heard, the marks, where; the white
- * "Watch" or "Continue watching" and "•••"), the others under "Other copies" as rows. With no copy, the card says why
+ * "Watch" or "Continue watching" and "•••"), the others in its "Copy" choice. With no copy, the card says why
  * in its heading and its one button leads on: the guest's sign-in, a profile without servers, servers out of reach;
  * with a TorrServer to search, nothing — the search below is the way (a server out of reach is said quietly).
  */
@@ -73,18 +73,27 @@ export function CopyChoice({
   const tl = useTranslations("player");
   const locale = useLocale();
   const copyText = useCopyText();
+  // The copy in the card when there are several ("Copy"), by its key; none — the one playing, else the first.
+  const [picked, setPicked] = useState<string | null>(null);
   const down = state.kind === "unreachable" ? t("serversDown", { names: state.names.join(", ") }) : state.kind === "indexing" ? t("serversIndexing", { names: state.names.join(", ") }) : null;
 
+  const servers = new Set(copies.map((c) => c.server.connectionId)).size > 1;
+  /** A copy in the words of the title's card: what is heard, the marks with the size, where it is; its line for "Copy". */
   const face = (s: Availability) => {
     const q = copyText.quality(s, all, originalLanguage);
     const heard = copyText.sound(s, all, originalLanguage);
     const size = formatSize(s.quality?.sizeBytes ?? null, locale);
     // Two copies of one version differ in their sound and size: the audio format, when the server read it, says which.
     const codec = copies.length > 1 ? (s.quality?.audioCodecs?.find((c) => c !== "atmos")?.toUpperCase() ?? null) : null;
+    const words = q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size];
+    const lineWords = [...words, servers ? s.connectionName : null];
     return {
       heard: heard ?? q.words[0] ?? s.connectionName,
-      quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
-      where: [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
+      quality: <QualityLine marks={q.marks} words={words} />,
+      line: <QualityLine marks={q.marks} words={lineWords} />,
+      // Two copies are told apart by their words, not by a mark one name happens to carry ("CC").
+      detail: lineWords.filter(Boolean).join(" · "),
+      where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, originalLanguage),
     };
   };
@@ -127,18 +136,17 @@ export function CopyChoice({
     return <WatchCard id="copies-h" mark={state.kind === "noServers" && !kids ? <ServerMarks /> : <CardMark>{<Server />}</CardMark>} heading={heading} actions={action} />;
   }
 
-  // The one playing leads; else the first, which the title's "Watch" starts.
-  const first = copies.find((c) => c.playing) ?? copies[0]!;
-  const rest = copies.filter((c) => c !== first);
+  // The one playing leads; else the one picked in "Copy", else the first — which the title's "Watch" starts.
+  const first = copies.find((c) => c.key === picked) ?? copies.find((c) => c.playing) ?? copies[0]!;
   const f = face(first.server);
-  const watch = (c: ChoiceCopy, size: "md" | "lg", primary: boolean) =>
+  const watch = (c: ChoiceCopy) =>
     c.playing ? (
-      <Button variant={primary ? "primary" : "secondary"} size={size} onClick={onContinue}>
+      <Button variant="primary" size="lg" onClick={onContinue}>
         <Play aria-hidden className="fill-current" />
         {tl("continueWatching")}
       </Button>
     ) : (
-      <Button variant={primary ? "primary" : "secondary"} size={size} onClick={(e) => onWatch(c, e.currentTarget)}>
+      <Button variant="primary" size="lg" onClick={(e) => onWatch(c, e.currentTarget)}>
         <Play aria-hidden className="fill-current" />
         {t("tsWatch")}
       </Button>
@@ -158,45 +166,25 @@ export function CopyChoice({
         where={f.where}
         actions={
           <>
-            {watch(first, "lg", true)}
+            {watch(first)}
             {more?.(first.server, "lg")}
           </>
         }
-      />
-      {rest.length > 0 && (
-        <section aria-labelledby="other-copies-h" className="flex flex-col gap-2">
-          <h3 id="other-copies-h" className="text-body-s font-semibold text-text-2">
-            {t("otherCopies")}
-          </h3>
-          <ul className="divide-y divide-line overflow-hidden rounded-lg bg-surface-1">
-            {rest.map((c) => {
-              const r = face(c.server);
-              const tag = label(c);
-              return (
-                <li key={c.key} className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
-                  <div className="flex min-w-0 flex-1 basis-60 items-start gap-3">
-                    <span aria-hidden className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2">
-                      <ServerMark kind={c.server.kind} />
-                    </span>
-                    <div className="min-w-0">
-                      {tag && <div className="mb-1 flex flex-wrap gap-1.5">{tag}</div>}
-                      <p className="text-title break-words text-text-1">{r.heard}</p>
-                      <p className="mt-0.5 text-body-s break-words text-text-2">
-                        {r.quality}
-                        <span className="block">{r.where}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:[&>*:first-child]:flex-1">
-                    {watch(c, "md", false)}
-                    {more?.(c.server, "md")}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      >
+        {/* The other copies: the same "Copy" choice as the title's card; the search follows below anyway. */}
+        {copies.length > 1 && (
+          <div className="flex">
+            <CopyPill
+              items={copies.map((c) => {
+                const r = c === first ? f : face(c.server);
+                return { key: c.key, heard: r.heard, line: r.line, detail: r.detail, name: copyText.releaseName(c.server, all) ?? c.server.label, tag: label(c) ?? undefined };
+              })}
+              current={first.key}
+              onPick={setPicked}
+            />
+          </div>
+        )}
+      </WatchCard>
       {down && <p className="text-body-s text-text-3">{down}</p>}
     </section>
   );

@@ -4,10 +4,10 @@ import type { Availability as Copy, SourceState, WatchProvider } from "@lumovio/
 import { CalendarClock, ExternalLink, Play, Search, Server, Tv, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { ServerMark } from "@/components/connections/ServerMark";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
+import { CopyPill } from "@/components/sources/CopyPill";
 import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
 import { formatSize, YourVoiceTag } from "@/components/sources/release-text";
@@ -45,6 +45,7 @@ const OFFER_GROUPS: { key: "offerFlatrate" | "offerFree" | "offersPaid"; kinds: 
   { key: "offersPaid", kinds: ["rent", "buy"] },
 ];
 const reachable = (s: SourceState) => s.status !== "unreachable" && s.status !== "unauthorized";
+const copyKey = (s: Copy) => `${s.connectionId}:${s.externalId}`;
 
 /**
  * "Where to watch": the one
@@ -57,7 +58,6 @@ const reachable = (s: SourceState) => s.status !== "unreachable" && s.status !==
 export function Availability({ title: d }: { title: TitleCore }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
-  const tc = useTranslations("common");
   const locale = useLocale();
   const { me } = useSession();
   const { data: lib } = useLibraryState(d.id);
@@ -74,7 +74,9 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const data = raw ? titleCopies(raw, holds) : undefined;
   const [removal, setRemoval] = useState<RemovalTarget | null>(null);
   const [details, setDetails] = useState<Copy | null>(null);
-  // "Another release" under a copy: the search's card, closed by × and Escape.
+  // The copy in the card when the servers hold several ("Copy"), by its key; none — the first.
+  const [picked, setPicked] = useState<string | null>(null);
+  // "Another release": the search's card in the copy's place, back by × and Escape.
   const [other, setOther] = useState(false);
   const otherButton = useRef<HTMLButtonElement>(null);
   const otherClose = useRef<HTMLButtonElement>(null);
@@ -85,6 +87,12 @@ export function Availability({ title: d }: { title: TitleCore }) {
   useEffect(() => {
     if (other) otherClose.current?.focus();
   }, [other]);
+  // The search card's states (searching, found, nothing) each draw their own ×: one that comes while focus fell off the
+  // one that went takes it, so Escape still reaches the card.
+  const otherCloseRef = (el: HTMLButtonElement | null) => {
+    otherClose.current = el;
+    if (el && (!document.activeElement || document.activeElement === document.body)) el.focus();
+  };
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
@@ -103,17 +111,23 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // Servers out of reach or still indexing: said once, quietly when another way is shown, as the card when none is.
   const down = state.kind === "unreachable" ? t("serversDown", { names: state.names.join(", ") }) : state.kind === "indexing" ? t("serversIndexing", { names: state.names.join(", ") }) : null;
 
-  /** A copy as it is heard, its marks with the size, and where it is. */
+  /** A copy as it is heard, its marks with the size, and where it is; for the "Copy" menu, its line with the server. */
   const copyFace = (s: Copy) => {
     const q = copyText.quality(s, all, d.originalLanguage);
     const heard = copyText.sound(s, all, d.originalLanguage);
     const size = formatSize(s.quality?.sizeBytes ?? null, locale);
     // Two copies of one version differ in their sound and size: the audio format, when the server read it, says which.
     const codec = copies.length > 1 ? (s.quality?.audioCodecs?.find((c) => c !== "atmos")?.toUpperCase() ?? null) : null;
+    // The marks and what they don't say; without marks, the version in words unless the heading already says it.
+    const words = q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size];
+    const servers = new Set(copies.map((c) => c.connectionId)).size > 1;
+    const lineWords = [...words, servers ? s.connectionName : null];
     return {
       heard: heard ?? q.words[0] ?? s.connectionName,
-      // The marks and what they don't say; without marks, the version in words unless the heading already says it.
-      quality: <QualityLine marks={q.marks} words={q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size]} />,
+      quality: <QualityLine marks={q.marks} words={words} />,
+      line: <QualityLine marks={q.marks} words={lineWords} />,
+      // Two copies are told apart by their words, not by a mark one name happens to carry ("CC").
+      detail: lineWords.filter(Boolean).join(" · "),
       // A TorrServer copy says it is already there, not "On «torr» · TorrServer" beside a found release's "Through".
       where: s.kind === "torrserver" ? tp("onTorrServer", { server: s.connectionName }) : [tp("onServer", { server: s.connectionName }), copyText.kindLabel(s)].join(" · "),
       match: copyText.audioMatch(s, all, d.originalLanguage),
@@ -175,100 +189,67 @@ export function Availability({ title: d }: { title: TitleCore }) {
         <ErrorState variant="inline" error={avail.error} title={t("statusError")} onRetry={() => void avail.refetch()} retrying={avail.isFetching} />
       </section>
     );
-  } else if (copies.length > 0) {
-    const [first, ...rest] = copies as [Copy, ...Copy[]];
-    const f = copyFace(first);
+  } else if (copies.length > 0 && other && search) {
+    // "Another release": the search's card in the copy's place, × and Escape back to the copy.
     main = (
-      <>
-        <WatchCard
-          id="servers-h"
-          mark={<CardMark kind={first.kind} />}
-          tag={f.match?.kind === "studio" ? <YourVoiceTag studio={f.match.studio} /> : undefined}
-          heading={f.heard}
-          quality={f.quality}
-          where={f.where}
-          actions={
-            <>
-              <Link href={playOf(first)} className={buttonClass("primary", "lg")}>
-                <Play aria-hidden className="fill-current" />
-                {t("tsWatch")}
-              </Link>
-              {cast(first, "lg")}
-              {more(first, "lg")}
-            </>
-          }
-        />
-        {rest.length > 0 && (
-          <section aria-labelledby="copies-h" className="flex flex-col gap-2">
-            <h4 id="copies-h" className="text-body-s font-semibold text-text-2">
-              {t("otherCopies")}
-            </h4>
-            <ul className="divide-y divide-line overflow-hidden rounded-lg bg-surface-1">
-              {rest.map((s) => {
-                const c = copyFace(s);
-                return (
-                  <li key={`${s.connectionId}-${s.externalId}`} className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
-                    <div className="flex min-w-0 flex-1 basis-60 items-start gap-3">
-                      <span aria-hidden className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2">
-                        <ServerMark kind={s.kind} />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-title break-words text-text-1">{c.heard}</p>
-                        <p className="mt-0.5 text-body-s break-words text-text-2">
-                          {c.quality}
-                          <span className="block">{c.where}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:[&>*:first-child]:flex-1">
-                      <Link href={playOf(s)} className={buttonClass("secondary", "md")}>
-                        <Play aria-hidden className="fill-current" />
-                        {t("tsWatch")}
-                      </Link>
-                      {cast(s, "md")}
-                      {more(s, "md")}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-        {other && search ? (
-          <section
-            aria-labelledby="other-release-h"
-            className="flex flex-col gap-3"
-            onKeyDown={(e) => {
-              // Escape closes the card, unless a menu or a dialog inside it takes the key first.
-              if (e.key === "Escape" && !e.defaultPrevented && !(e.target as Element).closest("[role=menu],[role=dialog],[role=listbox]")) {
-                e.preventDefault();
-                closeOther();
-              }
-            }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h4 id="other-release-h" className="text-body-s font-semibold text-text-2">
+      <TorrentLookupPanel
+        title={d}
+        source={search}
+        dismiss={{ button: <IconButton ref={otherCloseRef} icon={X} label={tp("backToCopy")} variant="ghost" size="md" onClick={closeOther} />, onEscape: closeOther }}
+      />
+    );
+  } else if (copies.length > 0) {
+    // The copy in the card: the one picked in "Copy", else the first — the one the hero starts.
+    const current = copies.find((s) => copyKey(s) === picked) ?? copies[0]!;
+    const f = copyFace(current);
+    const faces = copies.map((s) => ({ s, f: s === current ? f : copyFace(s) }));
+    // The row under the line, only when there is a choice: the other copies, another release.
+    const row =
+      copies.length > 1 || torrServers.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {copies.length > 1 && (
+            <div className="flex">
+              <CopyPill
+                items={faces.map(({ s, f }) => ({ key: copyKey(s), heard: f.heard, line: f.line, detail: f.detail, name: copyText.releaseName(s, all) ?? s.label }))}
+                current={copyKey(current)}
+                onPick={setPicked}
+              />
+            </div>
+          )}
+          {search ? (
+            <Button ref={otherButton} id={FIND_SOURCE_ID} variant="tertiary" size="sm" icon={Search} onClick={() => setOther(true)} className="ms-auto">
+              {tp("otherRelease")}
+            </Button>
+          ) : (
+            torrServers.length > 0 && (
+              <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="ms-auto">
                 {tp("otherRelease")}
-              </h4>
-              <IconButton ref={otherClose} icon={X} label={tc("close")} variant="ghost" size="md" onClick={closeOther} />
-            </div>
-            <TorrentLookupPanel title={d} source={search} lead={false} />
-          </section>
-        ) : (
-          torrServers.length > 0 && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {search && (
-                <Button ref={otherButton} variant="secondary" icon={Search} onClick={() => setOther(true)}>
-                  {tp("otherRelease")}
-                </Button>
-              )}
-              <ActionLink id={FIND_SOURCE_ID} variant="action" arrow href={sourcesHref(resume)} className="self-start">
-                {tp("allSources")}
               </ActionLink>
-            </div>
-          )
-        )}
-      </>
+            )
+          )}
+        </div>
+      ) : undefined;
+    main = (
+      <WatchCard
+        id="servers-h"
+        mark={<CardMark kind={current.kind} />}
+        tag={f.match?.kind === "studio" ? <YourVoiceTag studio={f.match.studio} /> : undefined}
+        heading={f.heard}
+        quality={f.quality}
+        where={f.where}
+        actions={
+          <>
+            <Link href={playOf(current)} className={buttonClass("primary", "lg")}>
+              <Play aria-hidden className="fill-current" />
+              {t("tsWatch")}
+            </Link>
+            {cast(current, "lg")}
+            {more(current, "lg")}
+          </>
+        }
+      >
+        {row}
+      </WatchCard>
     );
   } else if (search) {
     // No copy yet: the profile's TorrServer is searched from this device.

@@ -154,11 +154,14 @@ export function ReleaseFinder(props: FinderProps) {
   const nothingPicked = Boolean(found) && !choice?.chosen;
   return (
     <section aria-labelledby="finder-h" className="flex flex-col gap-8">
-      <h2 id="finder-h" className="sr-only">
-        {via}
-      </h2>
       {about}
-      {card}
+      {/* Under a copy's card the search's card has a heading of its own, so the two don't read as one list. */}
+      <div className="flex flex-col gap-2">
+        <h2 id="finder-h" className={copiesHere ? "text-body-s font-semibold text-text-2" : "sr-only"}>
+          {copiesHere ? tp("otherRelease") : via}
+        </h2>
+        {card}
+      </div>
       {rows.length > 0 && (
         <section aria-labelledby="releases-h" className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
@@ -462,8 +465,9 @@ function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResul
 
 /**
  * One release: the card's anatomy at a row's size — what is heard, the marks with what they don't say and the
- * size, where from (seeders, tracker, date) — one label when something matters (a cinema recording, no seeders, another
- * season, a format this device may not play, already on the server, the profile's studio), "Watch" and "i".
+ * size, where from (seeders, tracker, date) — one label when something about the row itself matters (a cinema
+ * recording, no seeders, another season, a format this device may not play, already on the server), "Watch" and "i".
+ * The profile's studio is the row's heading, its match the card's label: not on every row.
  */
 function ReleaseItem({
   r,
@@ -509,8 +513,6 @@ function ReleaseItem({
     <StatusBadge status="warning">{tt(x.info.codec === "hevc" ? "tsFitHevcShort" : "tsFitDvShort")}</StatusBadge>
   ) : linked ? (
     <Tag>{t("alreadyAdded")}</Tag>
-  ) : x?.studio ? (
-    <YourVoiceTag studio={x.studio} />
   ) : null;
   return (
     <li className="flex items-center gap-3 p-4">

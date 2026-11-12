@@ -21,8 +21,8 @@ export interface LaunchScene {
    * already shown stay (the player's page loading after an add on the title page).
    */
   status?: string | null;
-  /** One line under it: the copy being started, a torrent's peers and speed. */
-  detail?: string | null;
+  /** One line under it: the copy being started (its quality marks and what is heard, as its card says it), a torrent's peers and speed. */
+  detail?: ReactNode;
   /** Ways out when it takes a while ("Another source", "Back to watching"); shown after a few seconds. */
   actions?: ReactNode;
   /** "←" (with its name): to the title, or a cancel. */

@@ -449,7 +449,7 @@ function TvReleaseRow({
           {(recommended || x) && (
             <span className="flex flex-wrap items-center gap-2 empty:hidden">
               {recommended && <AccentBadge>{tt("tsRecommended")}</AccentBadge>}
-              {x && <ReleaseTag x={x} linked={linked} season={season} />}
+              {x && <ReleaseTag x={x} linked={linked} season={season} match={recommended} />}
             </span>
           )}
           <span className="break-words text-body-l">{x ? heard(x) || text.option({ studio: null, voice: null, language: null }) : r.title}</span>

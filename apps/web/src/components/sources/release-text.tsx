@@ -10,7 +10,6 @@ import { studioWord } from "@/lib/media/dubbing";
 import {
   audioMatch,
   type HdrFormat,
-  kindOf,
   namedTracks,
   type PackInfo,
   type PictureSource,
@@ -48,16 +47,21 @@ export function releaseText(t: ReturnType<typeof useTranslations<"title">>, loca
   const names = new Intl.DisplayNames([locale], { type: "language" });
   const cap = (s: string) => s.charAt(0).toLocaleUpperCase(locale) + s.slice(1);
   const language = (code: string) => names.of(code) ?? code;
-  /** One track's translation: "dubbed (Pifagor)", "multi-voice", "LostFilm" when the name gives no kind. */
-  const track = (tr: ReleaseTrack) => {
+  /**
+   * One track as it is said on a card or a row: its studio or author when one is named ("LostFilm", "Pifagor"), its kind
+   * only without one ("dubbed", "multi-voice") — one voice-over reads the same wherever it is shown.
+   */
+  const track = (tr: ReleaseTrack) => tr.studio ?? tr.credit ?? (tr.voice ? t(`voice_${tr.voice}`) : "");
+  /** One track in full, for a release's details: "dubbed (Pifagor)", "multi-voice", "LostFilm" when the name gives no kind. */
+  const trackFull = (tr: ReleaseTrack) => {
     const who = tr.studio ?? tr.credit;
     if (!tr.voice) return who ?? "";
     return who ? `${t(`voice_${tr.voice}`)} (${who})` : t(`voice_${tr.voice}`);
   };
   /**
-   * "Ukrainian · dubbed (Le Doyen)": the audio of one language as the name lists it, each track with its own kind and
-   * studio — the profile's language the release has (`x.language`), else its first track's; never every studio under
-   * one language. `only`: that studio's track. At most three tracks, then "+ N more"; the other languages are
+   * "Ukrainian · Le Doyen": the audio of one language as the name lists it, each track by its studio, else its kind —
+   * the profile's language the release has (`x.language`), else its first track's; never every studio under one
+   * language. `only`: that studio's track. At most three tracks, then "+ N more"; the other languages are
    * `otherLanguages`.
    */
   const audio = (x: Pick<RankedRelease, "info" | "language">, only?: string | ReleaseTrack | null) => {
@@ -70,11 +74,7 @@ export function releaseText(t: ReturnType<typeof useTranslations<"title">>, loca
     if (mine.length === 0 && named.length === 0) {
       // A name that pairs nothing: its languages and its best kind, as before tracks were read.
       const studios = typeof only === "string" && only ? [only] : x.info.studios;
-      const pair = (s: string) => {
-        const kind = kindOf(x.info, s);
-        return kind ? `${t(`voice_${kind}`)} (${s})` : s;
-      };
-      const voice = studios.length ? studios.map(pair).join(" + ") : x.info.voice ? t(`voice_${x.info.voice}`) : null;
+      const voice = studios.length ? studios.join(" + ") : x.info.voice ? t(`voice_${x.info.voice}`) : null;
       return [lang ? cap(language(lang)) : null, voice].filter(Boolean).join(" · ");
     }
     const shown = mine.slice(0, 3).map(track);
@@ -95,7 +95,7 @@ export function releaseText(t: ReturnType<typeof useTranslations<"title">>, loca
     const by = new Map<string, string[]>();
     for (const tr of x.info.tracks) {
       const key = tr.language ?? "";
-      const words = tr.original ? t("tsOriginal") : track(tr);
+      const words = tr.original ? t("tsOriginal") : trackFull(tr);
       if (!words) continue;
       by.set(key, [...(by.get(key) ?? []), words]);
     }
@@ -229,10 +229,11 @@ export const isPack = (p: PackInfo) => (p.episodes ? p.episodes.to > p.episodes.
 
 
 /**
- * The one label besides "Recommended" on a release's row: what matters most first — a cinema recording, the
- * wrong season, no seeders, a format this device may not play, already on the server — else its audio's match.
+ * The one label besides "Recommended" on a release's row: what matters about the row itself — a cinema recording, the
+ * wrong season, no seeders, a format this device may not play, already on the server — and, on the recommended row
+ * only (`match`), its audio's match with the profile: the other rows name their studio in their heading.
  */
-export function ReleaseTag({ x, linked, season }: { x: RankedRelease; linked: boolean; season: number | null }) {
+export function ReleaseTag({ x, linked, season, match = false }: { x: RankedRelease; linked: boolean; season: number | null; match?: boolean }) {
   const t = useTranslations("player");
   const tt = useTranslations("title");
   return x.info.cam ? (
@@ -245,9 +246,9 @@ export function ReleaseTag({ x, linked, season }: { x: RankedRelease; linked: bo
     <StatusBadge status="warning">{tt(x.info.codec === "hevc" ? "tsFitHevcShort" : "tsFitDvShort")}</StatusBadge>
   ) : linked ? (
     <Tag>{t("alreadyAdded")}</Tag>
-  ) : (
+  ) : match ? (
     <AudioMatchBadge x={x} />
-  );
+  ) : null;
 }
 
 /**

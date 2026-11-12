@@ -13,7 +13,7 @@ import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
-import { InlineAlert } from "@/components/ui/InlineAlert";
+import { Link as ActionLink } from "@/components/ui/Link";
 import { LoadMore } from "@/components/ui/LoadMore";
 import { QueryState } from "@/components/ui/QueryState";
 import { Link } from "@/i18n/navigation";
@@ -191,23 +191,18 @@ export function ServersTab() {
       {() => (
         <div>
           <p className="sr-only">{t("rows.watchNowNote")}</p>
+          {/* A server out of reach or still indexing: one quiet line, as under the title's "Where to watch" card. */}
           {(down.length > 0 || pending.length > 0) && (
-            <div className="mb-6 flex flex-col gap-3">
-              {down.length > 0 && (
-                <InlineAlert
-                  tone="warning"
-                  title={t("title.serversDown", { names: down.map((s) => s.name).join(", ") })}
-                  action={
-                    !kids && (
-                      <Link href="/settings/connections" className={buttonClass("tertiary", "sm")}>
-                        {t("nav.connections")}
-                      </Link>
-                    )
-                  }
-                />
+            <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-s text-text-3">
+              {[down.length > 0 ? t("title.serversDown", { names: down.map((s) => s.name).join(", ") }) : null, pending.length > 0 ? t("title.serversIndexing", { names: pending.map((s) => s.name).join(", ") }) : null]
+                .filter(Boolean)
+                .join(" · ")}
+              {!kids && down.length > 0 && (
+                <ActionLink variant="action" arrow href="/settings/connections">
+                  {t("title.checkConnection")}
+                </ActionLink>
               )}
-              {pending.length > 0 && <InlineAlert title={t("title.serversIndexing", { names: pending.map((s) => s.name).join(", ") })} />}
-            </div>
+            </p>
           )}
           {total === 0 && !filters.show ? (
             <EmptyState icon={Server} title={tl("serversEmpty")} />

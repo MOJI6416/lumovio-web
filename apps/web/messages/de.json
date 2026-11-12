@@ -507,7 +507,6 @@
     "tsNothing": "Keine Releases gefunden",
     "serversDown": "Nicht erreichbar: {names}",
     "serversIndexing": "Wird noch indexiert: {names}",
-    "otherCopies": "Weitere Kopien",
     "offersPaid": "Leihen oder kaufen",
     "offerAdsShort": "Mit Werbung",
     "tsAddsNote": "„Ansehen“ fügt das gewählte Release zu {name} hinzu.",
@@ -2293,7 +2292,6 @@
     "detailPicture": "Bild",
     "detailSize": "Größe",
     "detailServer": "Server",
-    "allSources": "Alle Quellen",
     "otherRelease": "Anderes Release",
     "streamingIn": "Streaming · {region}",
     "streaming": "Streaming",
@@ -2351,7 +2349,10 @@
     "calendarViaWatchlist": "Auch auf die Merkliste",
     "calendarViaFollow": "Mit Benachrichtigungen zu neuen Folgen",
     "calendarAddedFilm": "„{title}“ steht im Kalender und auf der Merkliste",
-    "openCalendar": "Kalender öffnen"
+    "openCalendar": "Kalender öffnen",
+    "copyPick": "Kopie",
+    "copyOf": "{n} von {count}",
+    "backToCopy": "Zurück zur Kopie"
   },
   "personPage": {
     "noCreditsKids": "Keine Titel im Kinderprofil verfügbar",

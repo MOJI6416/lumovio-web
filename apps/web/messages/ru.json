@@ -507,7 +507,6 @@
     "tsNothing": "Раздач не нашлось",
     "serversDown": "Нет связи: {names}",
     "serversIndexing": "Ещё индексируется: {names}",
-    "otherCopies": "Другие копии",
     "offersPaid": "Аренда и покупка",
     "offerAdsShort": "С рекламой",
     "tsAddsNote": "«Смотреть» добавит выбранную раздачу на «{name}».",
@@ -2648,7 +2647,6 @@
     "detailPicture": "Изображение",
     "detailSize": "Размер",
     "detailServer": "Сервер",
-    "allSources": "Все источники",
     "otherRelease": "Другая раздача",
     "streamingIn": "Стриминг · {region}",
     "streaming": "Стриминг",
@@ -2706,7 +2704,10 @@
     "calendarViaWatchlist": "И в «Буду смотреть»",
     "calendarViaFollow": "С уведомлениями о новых сериях",
     "calendarAddedFilm": "«{title}» — в календаре и в «Буду смотреть»",
-    "openCalendar": "Открыть календарь"
+    "openCalendar": "Открыть календарь",
+    "copyPick": "Копия",
+    "copyOf": "{n} из {count}",
+    "backToCopy": "Вернуться к копии"
   },
   "personPage": {
     "noCreditsKids": "Работ, доступных в детском профиле, нет",

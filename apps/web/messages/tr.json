@@ -507,7 +507,6 @@
     "tsNothing": "Sürüm bulunamadı",
     "serversDown": "Ulaşılamıyor: {names}",
     "serversIndexing": "Hâlâ dizinleniyor: {names}",
-    "otherCopies": "Diğer kopyalar",
     "offersPaid": "Kiralama veya satın alma",
     "offerAdsShort": "Reklamlı",
     "tsAddsNote": "“İzle”, seçilen sürümü {name} sunucusuna ekler.",
@@ -2293,7 +2292,6 @@
     "detailPicture": "Görüntü",
     "detailSize": "Boyut",
     "detailServer": "Sunucu",
-    "allSources": "Tüm kaynaklar",
     "otherRelease": "Başka bir sürüm",
     "streamingIn": "Yayın · {region}",
     "streaming": "Yayın",
@@ -2351,7 +2349,10 @@
     "calendarViaWatchlist": "İzleneceklere de eklenir",
     "calendarViaFollow": "Yeni bölüm bildirimleriyle",
     "calendarAddedFilm": "“{title}” takviminde ve İzlenecekler'de",
-    "openCalendar": "Takvimi aç"
+    "openCalendar": "Takvimi aç",
+    "copyPick": "Kopya",
+    "copyOf": "{n}/{count}",
+    "backToCopy": "Kopyaya dön"
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",

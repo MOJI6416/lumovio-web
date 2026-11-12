@@ -342,28 +342,26 @@ function AvailabilityLine({
   switch (s.kind) {
     case "copy": {
       icon = <Server aria-hidden className="size-4 shrink-0" />;
-      const others = s.others > 0 ? tt("moreCopies", { count: s.others }) : null;
-      // A TorrServer copy: "Already on your TorrServer «torr» · [HD] Russian · multi-voice (LostFilm)" — as a found release.
+      // What "Watch" starts, in the card's words; the other copies are the card's "Copy" choice, not counted here.
+      // A TorrServer copy: "Already on your TorrServer «torr» · [HD] Russian · LostFilm" — as a found release.
       if (s.torrServer) {
         text = (
           <>
             {t("onTorrServer", { server: s.server })}
             {(s.marks?.length || s.heard) && " · "}
             <QualityLine marks={s.marks ?? []} words={[s.heard]} />
-            {others && ` · ${others}`}
           </>
         );
         break;
       }
-      // "On «Home» [4K] [Dolby Vision] · 2 more copies": the marks say the resolution, never the words too.
+      // "On «Home» [4K] [Dolby Vision]": the marks say the resolution, never the words too.
       text = s.marks?.length ? (
         <>
           {[t("onServer", { server: s.server }), resolutionBesideMarks(s.resolution)].filter(Boolean).join(" · ")}
-          <QualityBadges className="ms-2 me-1.5" marks={s.marks} />
-          {others && `· ${others}`}
+          <QualityBadges className="ms-2" marks={s.marks} />
         </>
       ) : (
-        [t("onServer", { server: s.server }), s.resolution, others].filter(Boolean).join(" · ")
+        [t("onServer", { server: s.server }), s.resolution].filter(Boolean).join(" · ")
       );
       break;
     }

@@ -1,14 +1,14 @@
 "use client";
 
-import type { ReleaseQuality, SourceState } from "@lumovio/contracts";
+import type { SourceState } from "@lumovio/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { Info, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, packWords, QUALITY_MODES, ReleaseLine, useReleaseText, VersionLine, YourVoiceTag } from "@/components/sources/release-text";
+import { formatSize, packWords, ReleaseLine, useReleaseText, VersionLine, YourVoiceTag } from "@/components/sources/release-text";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { InlineAlert } from "@/components/ui/InlineAlert";
@@ -33,12 +33,12 @@ const ID = "torrserver-h";
  * the profile's own TorrServer and shows one release in the card — what is heard, the picture as marks, where from —
  * with the white "Watch" that adds it and starts the player. Under it, three pills lead to another release, each
  * narrowing the one before: the audio (the profile's languages first), the cut of the film (theatrical, extended, the
- * director's) and the quality (the mode — Auto, Best, Smaller file — or a picture version by hand); a pill shows only
+ * director's) and the quality (the profile's mode, or a picture version by hand); a pill shows only
  * when there is something to choose. Choosing changes the card and nothing else: nothing is added before "Watch".
  * The hero starts the same release (lib/media/release-pick, TorrentProbe).
  */
-/** `lead`: the screen's first way to watch — its "Watch" is white; under a copy ("Another release") it is secondary. */
-export function TorrentLookupPanel({ title: d, source, lead = true }: { title: TitleCore; source: SourceState; lead?: boolean }) {
+/** `dismiss`: the card stands in a copy's place ("Another release"), its × and Escape back to the copy. */
+export function TorrentLookupPanel({ title: d, source, dismiss: back }: { title: TitleCore; source: SourceState; dismiss?: { button: ReactNode; onEscape: () => void } }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tpl = useTranslations("player");
@@ -48,7 +48,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const router = useRouter();
   const qc = useQueryClient();
   const prefs = useReleasePrefs();
-  const [mode, setMode] = useState<ReleaseQuality>(prefs.quality);
+  // The profile's quality mode: the card offers its picture versions, not the other modes (the sources screen has them).
+  const mode = prefs.quality;
   const { data: state } = useLibraryState(d.id);
   // "Watch" opens the episode the title's Play would (resume, else the next): the release has to hold its season.
   // The season picked in "Episodes", else the one the profile is in (./chosen-season): the release has to hold it.
@@ -60,12 +61,22 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const [error, setError] = useState<string | null>(null);
   const [details, setDetails] = useState<RankedRelease | null>(null);
   const [choice, setChoice] = useState<ReleaseChoice>(NO_CHOICE);
-  useEffect(() => setMode(prefs.quality), [prefs.quality]);
   const ranked = lookup.data?.ranked;
   const pick = useMemo(() => pickRelease(ranked ?? [], prefs, choice), [ranked, prefs, choice]);
 
   // Nothing is searched for a title that is not out yet, so nothing is said either.
   if (!isOut(d)) return null;
+
+  // In a copy's place: its × at the card's top end, and Escape — unless a menu or a dialog inside the card takes the key.
+  const dismiss = back?.button;
+  const onKeyDown = back
+    ? (e: KeyboardEvent<HTMLElement>) => {
+        if (e.key === "Escape" && !e.defaultPrevented && !(e.target as Element).closest("[role=menu],[role=dialog],[role=listbox]")) {
+          e.preventDefault();
+          back.onEscape();
+        }
+      }
+    : undefined;
 
   const playHref = watchHref(d, state?.progress, season);
   const join = playHref.includes("?") ? "&" : "?";
@@ -74,19 +85,21 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   // What "Watch" asks the player to start: a studio's track, or a language's alone ("Ukrainian · MVO").
   const voice = option && (option.studio || option.language) ? option.key : null;
   // A cut and a picture go along only when chosen by hand: with nothing chosen the screen starts with the same release anyway.
-  const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${edition && choice.edition ? `&edition=${edition}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
+  const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${edition && choice.edition ? `&edition=${edition}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}`);
   // One track of a release in words: the studio's, else the one the player starts of a language alone or its dub.
   const heardOf = (x: RankedRelease) =>
     text.audio({ info: x.info, language: option?.language ?? x.language }, option?.studio ?? wishNameTrack(x.info, voiceWish(option?.key ?? null), prefs.studios));
   // What the search does, for a screen reader (no explanation on screen).
   const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
-  if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} />;
+  if (lookup.isLoading) return <WatchCardLoading id={ID} kind="torrserver" status={t("tsSearching", { name: source.name })} dismiss={dismiss} onKeyDown={onKeyDown} />;
   if (lookup.isError)
     return (
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
+        dismiss={dismiss}
+        onKeyDown={onKeyDown}
         heading={t("tsFailed", { name: source.name })}
         where={mediaError(lookup.error)}
         actions={
@@ -108,6 +121,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
         <WatchCard
           id={ID}
           mark={<CardMark kind="torrserver" />}
+          dismiss={dismiss}
+          onKeyDown={onKeyDown}
           heading={<span aria-live="polite">{t("tsNothing")}</span>}
           where={via}
           actions={
@@ -135,7 +150,12 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
     startLaunch(
       {
         status: tpl("stage_add"),
-        detail: `${[text.picture(x.info), heardOf(x)].filter(Boolean).join(" · ")} — ${source.name}`,
+        // What is being added as its card says it: the marks, what they don't say, what is heard — and the server.
+        detail: (
+          <>
+            <ReleaseLine info={x.info} rest={[heardOf(x)]} /> — {source.name}
+          </>
+        ),
         onBack: () => {
           drop();
           endLaunch();
@@ -198,6 +218,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
+        dismiss={dismiss}
+        onKeyDown={onKeyDown}
         tag={studioMatch ? <YourVoiceTag studio={chosen.studio!} /> : undefined}
         heading={heard}
         quality={
@@ -222,7 +244,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
         }
         actions={
           <>
-            <Button size="lg" variant={lead ? "primary" : "secondary"} loading={adding} onClick={() => void play(chosen, voice, pickAlternatives(pick))}>
+            <Button size="lg" loading={adding} onClick={() => void play(chosen, voice, pickAlternatives(pick))}>
               <Play aria-hidden className="fill-current" />
               {t("tsWatch")}
             </Button>
@@ -267,35 +289,22 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
                 ))}
               </Menu>
             )}
-            {pick.pool.length > 1 && (
+            {pick.versions.length > 1 && (
               <Menu
                 label={t("pickQuality")}
                 align="start"
                 trigger={<PickPill name={t("pickQuality")} value={qualityValue} disabled={adding} aria-label={t("pickValue", { name: t("pickQuality"), value: qualityValue })} />}
               >
-                {/* The mode picks the version for this screen (Auto), the best one or the smallest file; a version by hand overrides it. */}
-                {QUALITY_MODES.map((m) => (
-                  <MenuCheckboxItem
-                    key={m}
-                    checked={choice.picture === null && mode === m}
-                    onCheckedChange={() => {
-                      setMode(m);
-                      choose({ picture: null });
-                    }}
-                  >
-                    {t(`tsQuality_${m}`)}
+                {/* The profile's mode picks the version for this screen; a version by hand overrides it. */}
+                <MenuCheckboxItem checked={choice.picture === null} onCheckedChange={() => choose({ picture: null })}>
+                  {t(`tsQuality_${mode}`)}
+                </MenuCheckboxItem>
+                <MenuSeparator />
+                {[...pick.versions].reverse().sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1)).map((v) => (
+                  <MenuCheckboxItem key={v.key} checked={choice.picture === v.key} onCheckedChange={() => choose({ picture: v.key })}>
+                    <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
                   </MenuCheckboxItem>
                 ))}
-                {pick.versions.length > 1 && (
-                  <>
-                    <MenuSeparator />
-                    {[...pick.versions].reverse().sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1)).map((v) => (
-                      <MenuCheckboxItem key={v.key} checked={choice.picture === v.key} onCheckedChange={() => choose({ picture: v.key })}>
-                        <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
-                      </MenuCheckboxItem>
-                    ))}
-                  </>
-                )}
               </Menu>
             )}
           </div>

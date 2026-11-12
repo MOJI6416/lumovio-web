@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
+import { type ButtonHTMLAttributes, forwardRef, type KeyboardEventHandler, type ReactNode } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
 import { FilterChip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
@@ -21,6 +21,8 @@ export function WatchCard({
   where,
   note,
   actions,
+  dismiss,
+  onKeyDown,
   children,
   className,
 }: {
@@ -39,12 +41,16 @@ export function WatchCard({
   note?: ReactNode;
   /** "Watch" and its "i" / "More", or the state's one action. */
   actions?: ReactNode;
+  /** A round × at the top end: the card stands in for another one and goes back to it ("Back to the copy"). */
+  dismiss?: ReactNode;
+  /** Escape back, with `dismiss`. */
+  onKeyDown?: KeyboardEventHandler<HTMLElement>;
   /** Under a line: the pickers and a quiet link, or an alert. */
   children?: ReactNode;
   className?: string;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("rounded-lg bg-surface-1 p-4 sm:p-6", className)}>
+    <section aria-labelledby={id} onKeyDown={onKeyDown} className={cn("rounded-lg bg-surface-1 p-4 sm:p-6", className)}>
       <div className="flex items-start gap-4">
         {mark}
         <div className="min-w-0 flex-1 sm:pt-0.5">
@@ -57,6 +63,7 @@ export function WatchCard({
           {where && <p className="mt-1 text-body-s break-words text-text-2">{where}</p>}
           {note && <div className="mt-2 text-body-s text-text-1">{note}</div>}
         </div>
+        {dismiss && <div className="-me-2 -mt-2 shrink-0 sm:-me-3 sm:-mt-3">{dismiss}</div>}
       </div>
       {actions && <div className="mt-5 flex flex-wrap items-center gap-3 max-sm:[&>*:first-child]:flex-1">{actions}</div>}
       {children && <div className="mt-5 flex flex-col gap-4 border-t border-line pt-5">{children}</div>}
@@ -87,10 +94,12 @@ export function ServerMarks() {
 }
 
 /** The card while its answer is on the way: the same layout; a search that takes a while says so in the heading's place. */
-export function WatchCardLoading({ id, kind, status }: { id: string; kind?: string; status?: string }) {
+export function WatchCardLoading({ id, kind, status, dismiss, onKeyDown }: { id: string; kind?: string; status?: string; dismiss?: ReactNode; onKeyDown?: KeyboardEventHandler<HTMLElement> }) {
   return (
     <WatchCard
       id={id}
+      dismiss={dismiss}
+      onKeyDown={onKeyDown}
       mark={kind ? <CardMark kind={kind} /> : <Skeleton shape="full" className="size-12 shrink-0" />}
       heading={
         <>
