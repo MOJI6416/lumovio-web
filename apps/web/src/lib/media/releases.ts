@@ -608,10 +608,14 @@ function floorOf(info: Pick<ReleaseInfo, "resolution">, fit: Fit, prefs: Pick<Re
 }
 
 /**
- * A swarm too weak to stream from: the indexer counts one or two seeders. It sinks below the same picture's healthy
- * releases in every mode (an unknown count is not weak), never below another picture version.
+ * How alive a release's swarm is, by the seeders its indexer counts (an unknown count is not weak): 0 — almost dead (one
+ * or two), 1 — thin (under ten), 2 — alive. The owner, 2026-11 (docs/torrserver-2026-11.md, 6): "4K with 2 peers is worse
+ * than Full HD with 20" — an almost dead release never wins over a live one, whatever its picture or studio (`rankReleases`),
+ * and among releases of one picture a thin swarm comes after a live one before the source decides (`pictureRank`).
  */
 const WEAK_SWARM = 3;
+const LIVE_SWARM = 10;
+export const swarmOf = (seeders: number | null): 0 | 1 | 2 => (seeders === null ? 2 : seeders < WEAK_SWARM ? 0 : seeders < LIVE_SWARM ? 1 : 2);
 
 /**
  * Where the picture comes from, as "auto" wants it — "what loads at your speed" (Settings → quality): a disc's encode,
@@ -630,20 +634,21 @@ function resolutionOrder(prefs: ReleasePrefs): (number | null)[] {
 
 /**
  * The picture part of the rank, by the quality mode. "auto" and "best": resolution in the mode's order,
- * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then a healthy swarm (`WEAK_SWARM`),
+ * then HDR only on a screen that shows it (an SDR screen gets the SDR version), then how alive the swarm is (`swarmOf`),
  * then the source — "auto" an encode before the untouched disc (`AUTO_SOURCES`), "best" the disc first; "best"
  * also takes a film's bigger file (an episode's bitrate can't be told from a season pack's size).
- * "small": a healthy swarm, then the smallest known size, unknown sizes last.
+ * "small": how alive the swarm is, then the smallest known size, unknown sizes last.
  */
 function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | null, prefs: ReleasePrefs, movie: boolean): number[] {
   const order = resolutionOrder(prefs);
   const res = order.length - order.indexOf(info.resolution);
   const range = rangeOf(info);
   const dynamic = range === "hdr" || range === "dv" ? (prefs.device.hdr ? 2 : 0) : 1;
-  const healthy = seeders === null || seeders >= WEAK_SWARM ? 1 : 0;
+  const healthy = swarmOf(seeders);
   const sources = prefs.quality === "auto" ? AUTO_SOURCES : SOURCES;
   const source = info.source ? sources.length - sources.indexOf(info.source) : 0;
-  if (prefs.quality === "small") return [healthy, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
+  // "Smaller file" asks for the smallest file of the live ones: almost dead ones aside, size decides.
+  if (prefs.quality === "small") return [healthy > 0 ? 1 : 0, size ? -size : UNKNOWN_SIZE, res, dynamic, source];
   if (prefs.quality === "best") return [res, dynamic, healthy, source, movie && size ? size : 0];
   return [res, dynamic, healthy, source];
 }
@@ -655,14 +660,13 @@ function compareRank(a: number[], b: number[]): number {
 
 /**
  * Releases of this title, best for this profile and device first. In order: alive (no seeders sinks to
- * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, the floor (`floorOf`:
- * plays here, then HD), one of its studios (earlier ones first), the kind of translation (only where no studio of the
- * profile is credited: a studio's own track is heard whatever kind the name writes, or doesn't, beside it), a picture
- * this device surely plays, the picture by the quality mode (`pictureRank`: resolution, dynamic range, a healthy swarm,
- * the source or the size), for a series a pack before a single episode (the next episodes come with it), and
- * seeders as the indexer reports them for releases equal in all of that; the sort is stable after that. Seeders never
- * outweigh a picture version, and a 4K release is never swapped for 1080p by them. Results for other titles are left
- * out. With a wanted `season` (and `episode`), a release whose name says it holds other seasons (or other episodes of
+ * the end), one of the profile's audio languages (earlier ones first), not a cinema recording, not almost dead (one or
+ * two seeders, `swarmOf`: "4K with 2 peers is worse than Full HD with 20"), the floor (`floorOf`: plays here, then HD),
+ * one of its studios (earlier ones first), the kind of translation (only where no studio of the profile is credited: a
+ * studio's own track is heard whatever kind the name writes, or doesn't, beside it), a picture this device surely plays,
+ * the picture by the quality mode (`pictureRank`: resolution, dynamic range, how alive the swarm is, the source or the
+ * size), for a series a pack before a single episode (the next episodes come with it), and seeders as the indexer reports
+ * them for releases equal in all of that; the sort is stable after that. Results for other titles are left out. With a wanted `season` (and `episode`), a release whose name says it holds other seasons (or other episodes of
  * that season) only sinks below the rest, like one without seeders, and is never recommended. `fileOf`: the audio
  * tracks its file was read to have (a release already on the profile's server, `fileTracks`), else null — the name's
  * "6x MVO" then credits the studios the file names.
@@ -695,6 +699,7 @@ export function rankReleases(
         dead || holds === false ? 0 : 1,
         i >= 0 ? prefs.languages.length - i : 0,
         info.cam ? 0 : 1,
+        swarmOf(result.seeders) === 0 ? 0 : 1,
         floor,
         j >= 0 ? prefs.studios.length - j : 0,
         kind ? VOICE_SCORE[kind] : 0,

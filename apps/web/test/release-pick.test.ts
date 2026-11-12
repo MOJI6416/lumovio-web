@@ -96,8 +96,17 @@ describe("pickRelease with the profile's order of studios (1 — LostFilm, 2 —
     const sd = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEBRip] MVO (LostFilm) + Original", 80);
     const rezka720 = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (HDRezka Studio) + Original", 8);
     expect(pickRelease(rankReleases([sd, rezka720], dexter, order), order).option?.key).toBe("ru|HDrezka Studio");
-    const lost720 = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (LostFilm) + Original", 2);
+    const lost720 = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 720p] MVO (LostFilm) + Original", 5);
     expect(pickRelease(rankReleases([sd, rezka720, lost720], dexter, order), order).chosen?.result).toBe(lost720);
+  });
+
+  // docs/torrserver-2026-11.md, 6: an almost dead release never wins over a live one, the profile's first studio's either.
+  it("doesn't start the first studio's release when it is almost dead (one or two seeders) and another studio's is alive", () => {
+    const lost = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (LostFilm) + Original", 2);
+    const rezka = result("Dexter: Resurrection / S1E1-10 of 10 [2025, WEB-DL 1080p] MVO (HDRezka Studio) + Original", 40);
+    const x = pickRelease(rankReleases([lost, rezka], dexter, order), order);
+    expect(x.option?.key).toBe("ru|HDrezka Studio");
+    expect(x.options.map((o) => o.key)).toEqual(["ru|HDrezka Studio", "ru|LostFilm"]);
   });
 });
 
@@ -116,14 +125,22 @@ describe("what plays by default: the whole pick on the owner's torr answers (202
     expect(pickRelease(rankReleases([remux, webdl, bdrip], dune2, ru({ quality: "best" })), ru({ quality: "best" })).chosen?.result).toBe(remux);
   });
 
-  it("sinks a swarm of one or two seeders below the same picture's healthy releases, never below another picture", () => {
+  it("sinks a swarm of one or two seeders below every live release, a sharper picture's too (4K with 2 below Full HD with 40)", () => {
     const weak = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 2, 14 * GB, "Kinozal");
     const healthy = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 40, 9 * GB, "Kinozal");
     expect(rankReleases([weak, healthy], dune2, ru())[0]!.result).toBe(healthy);
-    // 4K on a 4K screen stays 4K with two seeders; unknown seeders are not weak.
+    // The owner's words (docs/torrserver-2026-11.md, 6): "4K with 2 peers is worse than Full HD with 20". Unknown seeders
+    // are not weak.
     const uhd = { hevc: true, hdr: true, uhd: true, dolbyVision: false };
     const weak4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 2, 30 * GB, "Kinozal");
-    expect(rankReleases([healthy, weak4k], dune2, ru({ device: uhd }))[0]!.result).toBe(weak4k);
+    expect(rankReleases([healthy, weak4k], dune2, ru({ device: uhd }))[0]!.result).toBe(healthy);
+    const live4k = result("Dune: Part Two [2024, BDRip 2160p, HDR10] HEVC Dub + Original (Eng)", 18, 30 * GB, "Kinozal");
+    expect(rankReleases([healthy, live4k], dune2, ru({ device: uhd }))[0]!.result).toBe(live4k);
+    // One picture: a thin swarm (under ten) after a live one before the source decides (The Penguin: Blu-ray with 8
+    // seeders came before WEB-DL with 54).
+    const thin = result("Dune: Part Two [2024, BDRip 1080p] Dub + Original (Eng)", 8, 14 * GB, "RuTracker.org");
+    const live = result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", 54, 9 * GB, "RuTracker.org");
+    expect(rankReleases([thin, live], dune2, ru())[0]!.result).toBe(live);
     expect(rankReleases([weak, result("Dune: Part Two [2024, WEB-DL 1080p] Dub + Original (Eng)", null, 9 * GB, "LostFilm.tv")], dune2, ru())[0]!.result.tracker).toBe("LostFilm.tv");
     // "Smaller file": the healthy one before the smaller one.
     const tiny = result("Dune: Part Two [2024, WEB-DL 720p] Dub + Original (Eng)", 1, 2 * GB, "Kinozal");

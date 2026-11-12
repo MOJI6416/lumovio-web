@@ -1,5 +1,5 @@
 import { type Edition, editionOf } from "./editions";
-import { creditsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
+import { creditsStudio, type PictureVersion, pictureVersions, type RankedRelease, type ReleasePrefs, swarmOf, type VoiceOption, voiceKeys, voiceOptions } from "./releases";
 
 export { type Edition, editionOf };
 
@@ -51,7 +51,7 @@ export interface ReleasePick {
 
 /**
  * Audio options for the profile, in the ranking's own order: the ones in its audio languages first, in their order;
- * then by the floor of their best release (`RankedRelease.floor`: plays here, then HD); then its studios, in their
+ * then the ones with a live release before those whose releases are all almost dead (`swarmOf`); then by the floor of their best release (`RankedRelease.floor`: plays here, then HD); then its studios, in their
  * order; else as their best releases rank. A release lists its tracks in its own order ("7 x MVO (HDrezka Studio,
  * NewStudio, …, LostFilm)"), so the first option of the best release may not be the profile's: "1 — LostFilm,
  * 2 — HDRezka" offers LostFilm first.
@@ -62,6 +62,8 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
     return i < 0 ? prefs.languages.length : i;
   };
   const hd = (o: VoiceOption) => 2 - o.best.floor;
+  // An option whose releases are all almost dead (one or two seeders) comes after the live ones, whatever its studio.
+  const dying = (o: VoiceOption) => (swarmOf(o.best.result.seeders) === 0 ? 1 : 0);
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
   const studio = (o: VoiceOption) => {
     const i = o.studio ? prefs.studios.findIndex((s) => creditsStudio(o.studio!, s)) : -1;
@@ -69,7 +71,7 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
   };
   return options
     .map((o, i) => ({ o, i }))
-    .sort((a, b) => lang(a.o) - lang(b.o) || hd(a.o) - hd(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
+    .sort((a, b) => lang(a.o) - lang(b.o) || dying(a.o) - dying(b.o) || hd(a.o) - hd(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
     .map((x) => x.o);
 }
 
