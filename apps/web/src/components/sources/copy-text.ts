@@ -104,6 +104,11 @@ export function useCopyText() {
     version,
     marks,
     sound,
+    /** A TorrServer copy's release as its name and its file's tracks say it (for its details), or null. */
+    info: (s: Availability, all: Availability[] = [], originalLanguage: string | null = null) => {
+      const name = releaseName(s, all);
+      return name ? withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage) : null;
+    },
     /**
      * The copy for a line of marks and words (QualityLine): its marks, then what they don't say — "720p" under HD, a
      * release's source — and what is heard; its version in words when it has no marks.
