@@ -790,7 +790,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   );
   // What the title page had picked when it opened this screen (audio, picture version, quality mode).
   const quality = params.get("quality");
-  const finderStart = { voice: params.get("voice"), picture: params.get("picture"), quality: quality !== null && Object.hasOwn(QUALITY_MODES, quality) ? (quality as ReleaseQuality) : null };
+  // The cut chosen on the title page comes too (docs/torrserver-2026-11.md 7): the screen starts in it, as its pill says.
+  const finderStart = { voice: params.get("voice"), picture: params.get("picture"), quality: quality !== null && Object.hasOwn(QUALITY_MODES, quality) ? (quality as ReleaseQuality) : null, edition: params.get("edition") };
   const finderShown = signedIn && !isKids && torrServers.length > 0;
   // The audio tracks the player read in this title's copies on the profile's TorrServers: a search result that is the
   // same release (by its hash, or the name the copy was saved under) takes its studios from the file ("6x MVO").

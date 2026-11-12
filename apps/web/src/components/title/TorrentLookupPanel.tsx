@@ -73,7 +73,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const { option, edition, version, chosen } = pick;
   // What "Watch" asks the player to start: a studio's track, or a language's alone ("Ukrainian · MVO").
   const voice = option && (option.studio || option.language) ? option.key : null;
-  const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
+  // A cut and a picture go along only when chosen by hand: with nothing chosen the screen starts with the same release anyway.
+  const pickHref = sourcesHref(playHref, `${option ? `&voice=${encodeURIComponent(option.key)}` : ""}${edition && choice.edition ? `&edition=${edition}` : ""}${version && choice.picture ? `&picture=${version.key}` : ""}${mode !== prefs.quality ? `&quality=${mode}` : ""}`);
   // What the search does, for a screen reader (no explanation on screen, 2026-11-06).
   const about = <p className="sr-only">{`${t("tsAddsNote", { name: source.name })} ${prefs.languagesFromProfile ? t("tsNote") : t("tsNoteLocale")}`}</p>;
 
