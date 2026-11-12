@@ -5,7 +5,9 @@ import {
   creditsStudio,
   fileTracks,
   holdsSeason,
+  endedIn,
   isSameTitle,
+  sameTitleResults,
   packOf,
   parseRelease,
   pictureReasons,
@@ -112,6 +114,62 @@ describe("isSameTitle", () => {
   });
   it("does not require a year for series", () => {
     expect(isSameTitle("Фрирен, провожающая в последний путь / Sousou no Frieren [TV] [1-28 из 28]", ["葬送のフリーレン", "Фрирен, провожающая в последний путь"], 2023, "tv")).toBe(true);
+  });
+  // The owner's torr, 2026-11-12: ten releases of the 2024 film passed as the 2024 series (docs/torrserver-2026-11.md, 25).
+  it("does not take another title whose name goes on from a series' title (The Penguin Lessons for The Penguin)", () => {
+    const penguin = ["The Penguin", "Пингвин"];
+    for (const r of [
+      "The Penguin Lessons 2024 DUB, MVO, Sub BDRip 1080p - RUSSIAN",
+      "The Penguin Lessons [2024, WEB-DL-AVC] MVO (TVShows) + Sub Eng, Fra + Original Eng",
+      "Школа мистера Пингвина / The Penguin Lessons (2024) WEB-DL [H.264/1080p] [MVO]",
+      "The.Penguin.Lessons.2024.1080p.WEB-DL",
+    ])
+      expect(isSameTitle(r, penguin, 2024, "tv")).toBe(false);
+    for (const r of [
+      "The Penguin / S1E1-8 of 8 [2024, BDRip 1080p] 6 x MVO (HDRezka Studio, Syncmer, LostFilm)",
+      "The Penguin (S1) (2024) WEB-DL 4K 2160p H.265 DV HDR 3xUkr/Eng | Sub Ukr/Eng (S1)",
+      "The.Penguin.S01.1080p.WEB-DL",
+      "The Penguin 2024 WEB-DL 1080p",
+      "The Penguin WEB-DL 1080p MVO",
+      "The Penguin Complete",
+      "The Penguin. All seasons (2024) BDRip-AVC Ukr/Eng",
+      "Пингвин (1 сезон: 1-8 серии из 8) / The Penguin / 2024 / ПМ (LostFilm) / WEB-DL (1080p)",
+      "The Penguin LostFilm",
+    ])
+      expect(isSameTitle(r, penguin, 2024, "tv")).toBe(true);
+    // A subtitle after a colon is the same series, as before; a film's own name is judged by its year, as before.
+    expect(isSameTitle("Arcane: League of Legends / S2E1-9 of 9 [2024, WEB-DL 1080p]", ["Arcane", "Аркейн"], 2021, "tv")).toBe(true);
+    expect(isSameTitle("The Penguin Lessons 2024 WEB-DL", ["The Penguin Lessons"], 2024, "movie")).toBe(true);
+    expect(isSameTitle("House M.D. (S1-8) (2004-2012) BDRip 1080p", ["House", "Доктор Хаус"], 2004, "tv")).toBe(true);
+  });
+  // The same searches on the owner's torr: titles that start alike, with seasons in the name too.
+  it("does not take a longer title with seasons, a same-name film before the series, or a later show after it ended", () => {
+    expect(isSameTitle("House of the Dragon / S3E1-8 of 8 [2026, WEB-DL 1080p]", ["House"], 2004, "tv", 2011)).toBe(false);
+    expect(isSameTitle("Lost in Space (S1) (2018) WEB-DL 1080p", ["Lost"], 2004, "tv", 2010)).toBe(false);
+    expect(isSameTitle("Lost - S5 - rus 720p HDTV (LostFilm)", ["Lost"], 2004, "tv", 2010)).toBe(true);
+    expect(isSameTitle("Fargo [1996, UHD BDRemux 2160p, HDR10, Dolby Vision]", ["Fargo"], 2014, "tv", 2023)).toBe(false);
+    expect(isSameTitle("Fargo - S1-5E1-51 - 2014-2024  MVO (LostFilm) WEBDL 1080p - RUSSIAN", ["Fargo"], 2014, "tv", 2023)).toBe(true);
+    expect(isSameTitle("Сёгун / Shogun  / S1E1-3 of 3 (1980) BDRip [H.264/1080p]", ["Shōgun", "Сёгун"], 2024, "tv")).toBe(false);
+    expect(isSameTitle("Dexter: New Blood / S1E1-10 of 10 [2021, WEB-DL 1080p]", ["Dexter"], 2006, "tv", 2013)).toBe(false);
+    expect(isSameTitle("Dexter / S1E1-96 of 96 [2006-2013, WEB-DL 1080p]", ["Dexter"], 2006, "tv", 2013)).toBe(true);
+    // A series going on has no end: its new seasons are dated after the last one TMDB knows.
+    expect(isSameTitle("The Boys - S5E1-8 - 2026  DUB, Sub WEBDL 1080p - RUSSIAN", ["The Boys"], 2019, "tv")).toBe(true);
+    // A frame size is no year.
+    expect(isSameTitle("Fargo - S2 - 1920x1080 WEBDL", ["Fargo"], 2014, "tv", 2023)).toBe(true);
+  });
+  it("knows a later show in its undated names once its dated ones told it, and keeps a subtitle dated within the series", () => {
+    const dexter = { title: "Декстер", originalTitle: "Dexter", kind: "tv" as const, year: 2006, status: "Ended", seasons: [{ seasonNumber: 1, airDate: "2006-10-01" }, { seasonNumber: 8, airDate: "2013-06-30" }] } as const;
+    const kept = sameTitleResults(
+      ["Dexter: New Blood / S1E1-10 of 10 [2021, WEB-DL 1080p]", "Dexter: New Blood - S1 - rus 1080p WEBDL (LostFilm)", "Dexter - S1 - rus 720p WEBDL (LostFilm)", "Dexter / S1E1-12 of 12 [2006, BDRemux 1080p]"].map((title) => ({ title })),
+      { ...dexter, seasons: [...dexter.seasons] },
+    ).map((r) => r.title);
+    expect(kept).toEqual(["Dexter - S1 - rus 720p WEBDL (LostFilm)", "Dexter / S1E1-12 of 12 [2006, BDRemux 1080p]"]);
+    const arcane = sameTitleResults(
+      ["Arcane: League of Legends / S2E1-9 of 9 [2024, WEB-DL 1080p]", "Arcane: League of Legends - S2 - rus 1080p WEBDL (LostFilm)"].map((title) => ({ title })),
+      { title: "Аркейн", originalTitle: "Arcane", kind: "tv", year: 2021, status: "Ended", seasons: [{ seasonNumber: 1, airDate: "2021-11-06" }, { seasonNumber: 2, airDate: "2024-11-09" }] as never },
+    );
+    expect(arcane).toHaveLength(2);
+    expect(endedIn({ kind: "tv", status: "Returning Series", seasons: [{ seasonNumber: 1, airDate: "2019-07-26" }] })).toBeNull();
   });
 });
 

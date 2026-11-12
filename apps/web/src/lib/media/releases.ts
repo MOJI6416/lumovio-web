@@ -492,11 +492,38 @@ const norm = (s: string) =>
 const EXTRAS = W("саундтрек|soundtrack|ost|making of|бонус\\p{L}*|bonus|трейлер|trailer|featurette");
 
 /**
+ * Words a series' release name puts right after the title: season and episode words, the source, languages and kinds of
+ * translation, services, codecs. Any other word there starts another title's name ("The Penguin Lessons").
+ */
+const RELEASE_WORD =
+  /^(?:s\d+\p{L}*|e\d+|seasons?|сезон\p{L}*|сезони|сери\p{L}*|episodes?|complete|all|все|tv|ova|ona|specials?|web\p{L}*|hdtv\p{L}*|hdrip|bd\p{L}*|blu|bluray|brrip|remux|dvd\p{L}*|uhd|hdr\p{L}*|sdr|dv|imax|rus|ukr|eng|ru|ua|en|mvo|dvo|avo|vo|dub|sub|subs|multi|dual|proper|repack|amzn|nf|dsnp|atvp|hmax|max|x26[45]|h26[45]|hevc|avc|mkv|mp4|avi|part|vol|extended|uncut)$/iu;
+
+/**
+ * A series' name part that goes on with a word of another title's after this one ("the penguin" in "the penguin lessons
+ * 2024"). A single letter is an abbreviation of this title's own name ("House M.D.").
+ */
+function goesOn(part: string, name: string): boolean {
+  const word = /^[\p{L}][\p{L}\d'’]*/u.exec(part.slice(name.length).trimStart())?.[0];
+  return word !== undefined && word.length > 1 && !RELEASE_WORD.test(word) && !VOICE_STUDIOS.some((s) => s.match.test(word));
+}
+
+/** The years a release name states (never a frame size: "1920x1080"). */
+const yearsIn = (release: string) => [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?![\dx×])/g)].map((m) => Number(m[1]));
+
+/**
  * Whether a search result is this title: one of the name's parts (Russian trackers write "Рус / Eng")
  * starts with the original or localized title, and a film's year, when the name has one, is within a
  * year of it. A different film that merely contains the words ("The Science of Interstellar") does not count.
+ *
+ * A series' searches bring other titles that start alike (owner's torr, 2026-11-12, docs/torrserver-2026-11.md, 25): a
+ * name where the title goes on with another word is another title's — "The Penguin Lessons" (a 2024 film) for "The
+ * Penguin", "House of the Dragon / S3" for "House", "Lost in Space (S1)" for "Lost" — while a subtitle after a colon or a
+ * dash still may be this one ("Arcane: League of Legends"); a name dated before the series began is a film or an older
+ * series of the same name ("Fargo (1996)", "Shogun (1980)"); and one dated only after an ended series' last season is a
+ * later show ("Dexter: New Blood (2021)" for "Dexter", which ended in 2013). `ended`: that last season's year, for a
+ * series that ended.
  */
-export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv"): boolean {
+export function isSameTitle(release: string, names: string[], year: number | null, kind: "movie" | "tv", ended: number | null = null): boolean {
   if (EXTRAS.test(release)) return false;
   // A film is never a release that names seasons: "Avatar: The Last Airbender - S1 - rus 1080p" is not "Avatar" (2009).
   if (kind === "movie") {
@@ -505,11 +532,57 @@ export function isSameTitle(release: string, names: string[], year: number | nul
   }
   const parts = norm(release).split(/\s*[/|]\s*/);
   const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
-  const starts = parts.some((p) => wanted.some((n) => p.startsWith(n) && !/[\p{L}\d]/u.test(p.charAt(n.length))));
+  const starts = parts.some((p) => wanted.some((n) => p.startsWith(n) && !/[\p{L}\d]/u.test(p.charAt(n.length)) && !(kind === "tv" && goesOn(p, n))));
   if (!starts) return false;
-  if (kind === "tv" || !year) return true;
-  const years = [...release.matchAll(/(?<!\d)(19\d{2}|20\d{2})(?!\d)/g)].map((m) => Number(m[1]));
+  const years = yearsIn(release);
+  if (kind === "tv") {
+    if (years.length === 0) return true;
+    const first = Math.min(...years);
+    return !(year && first < year - 1) && !(ended && first > ended + 1);
+  }
+  if (!year) return true;
   return years.length === 0 || years.some((y) => Math.abs(y - year) <= 1);
+}
+
+/**
+ * The title a release name gives, as far as it goes on from one of `names` (normalised): its part up to the first
+ * bracket, season mark, year or " - " — "dexter: new blood" in "Dexter: New Blood - S1 - rus 1080p WEBDL (LostFilm)" and in
+ * "Dexter: New Blood / S1E1-10 of 10 [2021, WEB-DL 1080p]". Null when no part starts with a name.
+ */
+function titleStem(release: string, wanted: string[]): string | null {
+  for (const p of norm(release).split(/\s*[/|]\s*/)) {
+    if (!wanted.some((n) => p.startsWith(n))) continue;
+    return p.split(/\s*[([]|\s+[-–—]\s+|\s+s\d|\s+(?:19|20)\d\d(?!\d)/u)[0]!.trim();
+  }
+  return null;
+}
+
+/**
+ * The search results that are this title (`isSameTitle`). For a series, a show whose name goes on after a colon is told
+ * by its dated names and then known in the undated ones too: LostFilm's indexer gives no year, so "Dexter: New Blood - S1"
+ * is the 2021 show once "Dexter: New Blood / S1E1-10 [2021]" was found to be it (not "Dexter", ended 2013) — while a
+ * subtitle dated within the series ("Arcane: League of Legends [2024]") keeps its undated names too.
+ */
+export function sameTitleResults<T extends { title: string }>(
+  results: T[],
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year"> & Partial<Pick<TitleDetails, "status" | "seasons">>,
+): T[] {
+  const names = [d.originalTitle ?? "", d.title];
+  const ended = endedIn(d);
+  const judged = results.map((r) => ({ r, ok: isSameTitle(r.title, names, d.year, d.kind, ended), dated: yearsIn(r.title).length > 0 }));
+  if (d.kind !== "tv") return judged.filter((j) => j.ok).map((j) => j.r);
+  const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
+  const stem = new Map(judged.map((j) => [j.r, titleStem(j.r.title, wanted)]));
+  const own = new Set(judged.filter((j) => j.ok && j.dated).map((j) => stem.get(j.r)));
+  const other = new Set(judged.filter((j) => !j.ok && j.dated).map((j) => stem.get(j.r)).filter((s): s is string => !!s && !wanted.includes(s) && !own.has(s)));
+  return judged.filter((j) => j.ok && (j.dated || !other.has(stem.get(j.r) ?? ""))).map((j) => j.r);
+}
+
+/** The year an ended series' last season began (TMDB's "Ended" or "Canceled"), else null: a series going on has no end yet. */
+export function endedIn(d: { kind: "movie" | "tv"; status?: string | null; seasons?: readonly { seasonNumber: number; airDate: string | null }[] }): number | null {
+  if (d.kind !== "tv" || (d.status !== "Ended" && d.status !== "Canceled")) return null;
+  const years = (d.seasons ?? []).filter((s) => s.seasonNumber > 0 && s.airDate).map((s) => Number(s.airDate!.slice(0, 4)));
+  return years.length ? Math.max(...years) : null;
 }
 
 /**
@@ -672,15 +745,13 @@ function compareRank(a: number[], b: number[]): number {
  */
 export function rankReleases(
   results: TsSearchResult[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage">,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "status" | "seasons">>,
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
   fileOf: ((r: TsSearchResult) => readonly string[] | null | undefined) | null = null,
 ): RankedRelease[] {
-  const names = [d.originalTitle ?? "", d.title];
-  return results
-    .filter((r) => isSameTitle(r.title, names, d.year, d.kind))
+  return sameTitleResults(results, d)
     .map((result) => {
       const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
