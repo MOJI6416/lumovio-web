@@ -26,6 +26,24 @@ export const artBox = (shape: ArtShape) => SHAPE[shape];
 
 const PLACEHOLDER: Record<"movie" | "tv" | "person", LucideIcon> = { movie: Film, tv: Tv, person: User };
 
+// Under a caption's scrim the picture fades out 1–2 px short of the frame's foot, and of its sides in the lower
+// 2.5–4 rem, over an opaque band of the stage colour wherever it isn't whole. The frame's rounded clip anti-aliases
+// each layer on its own: on an edge that falls between device pixels — a scaled screen, the hover's 1.04 — the picture
+// showed through the dark scrim as a light hairline. The frame's own --surface-2 moves onto the image for the same
+// reason (it would show there instead, light in the light theme).
+// A mask counts only alpha: black is "shown". The picture: off the foot ∩ (off the sides ∪ above the lower band).
+const ART_UNDER_CAPTION = {
+  maskImage:
+    "linear-gradient(to top, transparent 1px, black 2px), linear-gradient(to right, transparent 1px, black 2px calc(100% - 2px), transparent calc(100% - 1px)), linear-gradient(to top, transparent 2.5rem, black 4rem)",
+  maskComposite: "intersect, add",
+};
+// The band, under it: the foot ∪ (the sides ∩ the lower band), hard-edged where the picture becomes whole.
+const EDGE_BAND = {
+  maskImage:
+    "linear-gradient(to top, black 2px, transparent 2px), linear-gradient(to right, black 2px, transparent 2px calc(100% - 2px), black calc(100% - 2px)), linear-gradient(to top, black 4rem, transparent 4rem)",
+  maskComposite: "add, intersect",
+};
+
 /**
  * A card's artwork: the image in its shape, or a --surface-2 placeholder with the type's icon
  * (never a broken image or "no image" text); at most one MediaBadge top-start ("4K", "New episode", "On your server"),
@@ -72,10 +90,12 @@ export function Artwork({
   className?: string;
 }) {
   const Placeholder = PLACEHOLDER[placeholder];
+  const underCaption = Boolean(overlay && src);
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-surface-2 ring-line-2 transition-[scale,box-shadow] duration-base ease-base",
+        "relative overflow-hidden ring-line-2 transition-[scale,box-shadow] duration-base ease-base",
+        !underCaption && "bg-surface-2",
         "pointer-fine:group-hover/card:scale-[1.04] pointer-fine:group-hover/card:ring-2",
         "group-focus-visible/link:scale-[1.04] group-focus-visible/link:shadow-(--focus-halo) group-focus-visible/link:outline-(length:--focus-width) group-focus-visible/link:outline-offset-2 group-focus-visible/link:outline-focus",
         "motion-reduce:scale-100!",
@@ -83,6 +103,7 @@ export function Artwork({
         className,
       )}
     >
+      {underCaption && <div aria-hidden className="absolute inset-0 bg-stage" style={EDGE_BAND} />}
       {src ? (
         <img
           src={src}
@@ -96,8 +117,10 @@ export function Artwork({
             if (el?.complete && el.naturalWidth > 0) seen.add(src);
           }}
           onLoad={() => seen.add(src)}
+          style={underCaption ? ART_UNDER_CAPTION : undefined}
           className={cn(
             "size-full object-cover transition-[filter,scale] duration-base ease-base motion-reduce:transition-none",
+            underCaption && "relative bg-surface-2",
             blurred && "scale-110 blur-lg",
           )}
         />
