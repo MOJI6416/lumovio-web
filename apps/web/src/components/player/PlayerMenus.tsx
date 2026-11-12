@@ -161,7 +161,7 @@ function Heading({ children }: { children: ReactNode }) {
 }
 
 const ROW =
-  "flex min-h-11 w-full items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:not-disabled:bg-surface-2 focus-visible:bg-surface-3 focus-visible:outline-none disabled:opacity-40";
+  "flex min-h-11 w-full items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:not-disabled:bg-text-1/8 focus-visible:bg-text-1/12 focus-visible:outline-none disabled:opacity-40";
 
 /** One choice of a list: its words, a format or fact under them, a check at the end on the chosen one. */
 function Choice({ checked, label, description, icon, badge, disabled, onSelect }: { checked: boolean; label: ReactNode; description?: string; icon?: ReactNode; badge?: ReactNode; disabled?: boolean; onSelect: () => void }) {

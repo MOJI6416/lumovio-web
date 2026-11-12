@@ -315,7 +315,7 @@ export function Surface({ anchor, label, onClose, className, over = "button", ch
       onFocus={(e) => (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" })}
       style={box ? { insetInlineEnd: box.end, bottom: box.bottom, maxHeight: box.max } : { visibility: "hidden" }}
       className={cn(
-        "pointer-events-auto absolute z-10 max-w-[calc(100%-2rem)] animate-fade-up overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface-1/95 p-2 text-text-1 shadow-float outline-none",
+        "pointer-events-auto absolute z-10 max-w-[calc(100%-2rem)] animate-fade-up overflow-y-auto overscroll-contain material rounded-lg p-2 text-text-1 outline-none",
         className,
       )}
     >

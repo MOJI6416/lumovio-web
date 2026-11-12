@@ -289,7 +289,7 @@ export function ServersTab() {
           {/* The selection's action stays in sight while the grid scrolls, above the phone's bottom bar (as the server's list's). */}
           {selecting && selected.size > 0 && (
             <section
-              className="sticky bottom-20 z-sticky mt-4 flex items-center gap-2 rounded-md border border-line bg-surface-1 p-2 shadow-float md:bottom-4 md:gap-3 md:p-3"
+              className="sticky bottom-20 z-sticky mt-4 flex items-center gap-2 material rounded-lg p-2 md:bottom-4 md:gap-3 md:p-3"
               aria-label={tl("select")}
             >
               <IconButton icon={X} label={t("torrentManager.clearSelection")} onClick={() => setSelected(new Set())} />

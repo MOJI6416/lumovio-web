@@ -29,9 +29,9 @@ import { PREFS_TRIGGER_ID } from "./PrefsMenu";
  * and SegmentedControl's segments. A phone gets a sheet with the real SegmentedControl and Select instead.
  */
 const ITEM =
-  "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-surface-3 data-[state=open]:bg-surface-3 in-data-[tv=1]:min-h-12";
+  "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-text-1/8 data-[state=open]:bg-text-1/8 in-data-[tv=1]:min-h-12";
 const PANEL =
-  "z-popover max-h-(--radix-dropdown-menu-content-available-height) min-w-48 overflow-y-auto rounded-md border border-line bg-surface-2 p-1 text-text-1 shadow-float";
+  "z-popover max-h-(--radix-dropdown-menu-content-available-height) min-w-48 overflow-y-auto material rounded-lg p-2 text-text-1";
 const SEGMENT =
   "flex min-w-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-full px-2 text-body-s font-semibold text-text-2 transition-colors duration-base ease-base focus-visible:-outline-offset-2 data-highlighted:text-text-1 data-[state=checked]:bg-text-1/14 data-[state=checked]:text-text-1";
 

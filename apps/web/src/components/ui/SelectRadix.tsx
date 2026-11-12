@@ -76,13 +76,13 @@ export function SelectRadix<V extends string>({
             stage && "stage",
           )}
         >
-          <S.Viewport className="p-1">
+          <S.Viewport className="p-2">
             {options.map((o) => (
               <S.Item
                 key={o.value}
                 value={o.value}
                 disabled={o.disabled}
-                className={cn(listItem, "pe-9 data-highlighted:bg-surface-3")}
+                className={cn(listItem, "pe-9 data-highlighted:bg-text-1/8")}
               >
                 <S.ItemText>{o.label}</S.ItemText>
                 <S.ItemIndicator className="absolute end-3 inline-flex">

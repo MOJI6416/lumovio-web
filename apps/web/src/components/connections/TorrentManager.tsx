@@ -322,7 +322,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
 
       {/* The bulk action stays in sight while the list scrolls, above the phone's bottom bar. */}
       {shownSelected.length > 0 && (
-        <section className="sticky bottom-20 z-sticky flex items-center gap-2 rounded-md border border-line bg-surface-1 p-2 shadow-float md:bottom-4 md:gap-3 md:p-3" aria-label={t("selection")}>
+        <section className="sticky bottom-20 z-sticky flex items-center gap-2 material rounded-lg p-2 md:bottom-4 md:gap-3 md:p-3" aria-label={t("selection")}>
           <IconButton icon={X} label={t("clearSelection")} onClick={() => setSelected(new Set())} />
           <p className="min-w-0 flex-1 text-body-s text-text-1 tabular-nums" aria-live="polite">
             {t("selectedCount", { count: shownSelected.length, size: formatSize(shownSelected.reduce((s, x) => s + (x.sizeBytes ?? 0), 0), locale) ?? "—" })}

@@ -177,7 +177,7 @@ export function ComboboxPopover<V extends string>({
                     onClick={() => choose(o)}
                     className={cn(
                       listItem,
-                      "data-[active=true]:bg-surface-3",
+                      "data-[active=true]:bg-text-1/8",
                       o.disabled && "cursor-not-allowed opacity-40",
                     )}
                   >

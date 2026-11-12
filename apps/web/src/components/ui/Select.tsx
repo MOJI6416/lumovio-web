@@ -14,15 +14,15 @@ export interface SelectOption<V extends string = string> {
 }
 
 /**
- * `md` 44 and `lg` 48 as every field; `sm` 32 with 13/600 text — the height of FilterChip and Button `sm` — for
- * a select in a row of chips or small buttons (library filters, a list's header). On a phone `sm` is 44, as Button
- * `sm` there; on a TV every size is lg with body text, and so are the list's items.
+ * `md` 44 and `lg` 48 as every field; `sm` 32 with 13/600 text — the height and pill shape of FilterChip and Button
+ * `sm` — for a select in a row of chips or small buttons (library filters, a list's header, a season, a settings row).
+ * On a phone `sm` is 44, as Button `sm` there; on a TV every size is lg with body text, and so are the list's items.
  */
 export type SelectSize = FieldSize | "sm";
 
 const TV_LG = "in-data-[tv=1]:h-12 in-data-[tv=1]:text-body";
 const TRIGGER_SIZE: Record<SelectSize, string> = {
-  sm: `h-8 gap-1.5 px-3 text-body-s font-semibold max-sm:h-11 ${TV_LG}`,
+  sm: `h-8 gap-1.5 rounded-full ps-3.5 pe-3 text-body-s font-semibold max-sm:h-11 ${TV_LG}`,
   md: `h-11 gap-2 px-3 ${TV_LG}`,
   lg: "h-12 gap-2 px-3",
 };
@@ -35,10 +35,9 @@ export const selectTrigger = (size: SelectSize = "md") =>
     TRIGGER_SIZE[size],
     "flex select-none items-center justify-between text-start data-[state=open]:border-focus data-placeholder:text-text-3",
   );
-export const listPanel =
-  "z-popover overflow-hidden rounded-md border border-line bg-surface-2 text-text-1 shadow-float";
+export const listPanel = "material z-popover overflow-hidden rounded-lg text-text-1";
 export const listItem =
-  "relative flex h-10 cursor-pointer select-none items-center gap-2 rounded-xs px-3 text-body text-text-1 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-40 max-sm:h-11 in-data-[tv=1]:h-12";
+  "relative flex h-10 cursor-pointer select-none items-center gap-2 rounded-sm px-3 text-body text-text-1 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-40 max-sm:h-11 in-data-[tv=1]:h-12";
 
 export interface SelectProps<V extends string> {
   value: V | undefined;

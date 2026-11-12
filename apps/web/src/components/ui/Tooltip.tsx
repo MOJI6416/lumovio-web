@@ -182,7 +182,7 @@ export function Tooltip({
             role="tooltip"
             style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: "hidden" }}
             className={cn(
-              "pointer-events-none fixed z-popover max-w-60 rounded-sm bg-surface-3 px-2 py-1 text-caption text-text-1 shadow-float transition-opacity duration-fast ease-fast starting:opacity-0 in-data-[tv=1]:text-body",
+              "pointer-events-none fixed z-popover max-w-60 material rounded-sm px-2.5 py-1 text-caption text-text-1 transition-opacity duration-fast ease-fast starting:opacity-0 in-data-[tv=1]:text-body",
               stage && "stage",
             )}
           >

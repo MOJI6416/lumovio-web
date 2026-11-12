@@ -69,7 +69,7 @@ export function Popover({
             }
           }}
           className={cn(
-            "z-popover w-max min-w-70 max-w-[min(22.5rem,var(--radix-popover-content-available-width))] origin-(--radix-popover-content-transform-origin) rounded-md border border-line bg-surface-2 p-4 text-body text-text-1 shadow-float outline-none transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
+            "z-popover w-max min-w-70 max-w-[min(22.5rem,var(--radix-popover-content-available-width))] origin-(--radix-popover-content-transform-origin) material rounded-lg p-4 text-body text-text-1 outline-none transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
             stage && "stage",
           )}
         >

@@ -68,6 +68,9 @@
   --chart-4: #9085e9;
   /* Depth: floating layers only */
   --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  /* Floating layers' frosted glass (.material): --surface-2 letting the blurred page through; text-2 keeps 4.5:1 on
+   * it even over a white frame */
+  --float: rgb(31 31 34 / 0.9);
 }
 
 [data-theme="light"] {
@@ -113,6 +116,7 @@
   --chart-4: #6250d6;
   /* Depth: floating layers only */
   --shadow-float: 0 16px 40px -12px rgb(10 12 16 / 0.25);
+  --float: rgb(255 255 255 / 0.9);
 }
 
 /* References between roles, re-resolved on every themed element (a variable keeps the value it had where it was
@@ -339,6 +343,22 @@
   padding-inline: var(--gutter);
 }
 
+/* Every floating layer (menus, lists, popovers, tooltips, toasts) is one frosted glass — the material of the phone's
+ * tab bar: --float over the blurred page, a hairline edge and --shadow-float. A TV draws it solid: blur costs too much
+ * there. */
+@utility material {
+  background-color: var(--float);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-float);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  [data-tv="1"] & {
+    background-color: var(--surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @layer base {
   html {
     background: var(--bg);
@@ -365,9 +385,9 @@
   .stage :focus-visible {
     box-shadow: var(--focus-halo);
   }
-  /* A menu's items show where the pointer or the arrows are with their highlight (--surface-3), with no ring — the
-   * ring of a desktop menu read as the TV mode's. On a TV the ring stays. Nor the stage's
-   * dark halo: a menu opened over art is still a solid panel, and the halo drew a thick black frame round the row. */
+  /* A menu's items show where the pointer or the arrows are with their highlight (a veil of the text's colour), with
+   * no ring — the ring of a desktop menu read as the TV mode's. On a TV the ring stays. Nor the stage's dark halo: a
+   * menu opened over art is its own glass panel, and the halo drew a thick black frame round the row. */
   [role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]):focus-visible {
     outline: none;
     box-shadow: none;

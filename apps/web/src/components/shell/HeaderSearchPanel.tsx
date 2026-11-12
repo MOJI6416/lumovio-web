@@ -224,7 +224,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
       onClick={() => choose(o)}
       className={cn(
         "flex w-full cursor-pointer items-center gap-3 rounded-sm px-3 py-2 text-start transition-colors duration-fast ease-fast",
-        i === active && "bg-surface-3",
+        i === active && "bg-text-1/8",
       )}
     >
       {body}
@@ -330,7 +330,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
         <div
           data-theme={document.documentElement.dataset.theme}
           className={cn(
-            "absolute end-0 top-10 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto rounded-md border border-line bg-surface-2 p-2 text-text-1 shadow-float",
+            "absolute end-0 top-10 z-popover max-h-[calc(100svh-5rem)] w-120 overflow-y-auto material rounded-lg p-2 text-text-1",
             "transition-[opacity,translate] duration-base ease-base starting:-translate-y-1 starting:opacity-0 in-data-[tv=1]:transition-none",
             closing && "pointer-events-none -translate-y-1 opacity-0",
           )}

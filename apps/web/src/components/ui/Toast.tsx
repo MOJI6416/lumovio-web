@@ -68,7 +68,7 @@ export function ToastCard({
     // On a phone the action goes under the message (at the end), so a long line isn't squeezed into a column.
     <div
       className={cn(
-        "pointer-events-auto grid w-full max-w-md grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 rounded-md border border-line bg-surface-2 py-2 ps-4 pe-2 text-body text-text-1 shadow-float transition-[opacity,translate] duration-base ease-base starting:translate-y-2 starting:opacity-0",
+        "pointer-events-auto grid w-full max-w-md grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 material rounded-lg py-2 ps-4 pe-2 text-body text-text-1 transition-[opacity,translate] duration-base ease-base starting:translate-y-2 starting:opacity-0",
         item.action && "sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]",
       )}
     >

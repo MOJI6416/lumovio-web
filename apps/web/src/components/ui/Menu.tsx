@@ -19,11 +19,12 @@ import { useOnStage, usePortalContainer } from "./portal";
 type Mode = { sheet: false } | { sheet: true; close: () => void };
 const MenuMode = createContext<Mode>({ sheet: false });
 
-// 40 px rows (on TV 66), the icon in --text-2; the ring of the keyboard and remote sits inside the row.
+// 40 px rows (on TV 66), the icon in --text-2, the highlight a veil of the text's colour over the glass (both themes);
+// the ring of the keyboard and remote sits inside the row. The row's radius 12 sits 8 inside the menu's 20.
 const ITEM =
-  "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-surface-3 data-disabled:cursor-not-allowed data-disabled:opacity-40 in-data-[tv=1]:min-h-12";
+  "relative flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 py-2 text-start text-body text-text-1 transition-colors duration-fast ease-fast focus-visible:-outline-offset-3 data-highlighted:bg-text-1/8 data-disabled:cursor-not-allowed data-disabled:opacity-40 in-data-[tv=1]:min-h-12";
 const SHEET_ITEM =
-  "flex min-h-13 w-full items-center gap-4 rounded-sm px-3 py-3 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:bg-surface-2 focus-visible:-outline-offset-3 active:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40";
+  "flex min-h-13 w-full items-center gap-4 rounded-sm px-3 py-3 text-start text-body text-text-1 transition-colors duration-fast ease-fast hover:bg-text-1/8 focus-visible:-outline-offset-3 active:bg-text-1/8 disabled:cursor-not-allowed disabled:opacity-40";
 const DANGER = "text-danger data-highlighted:bg-danger-soft";
 const LABEL = "px-3 pt-2 pb-1 text-body-s font-semibold text-text-2";
 
@@ -40,8 +41,8 @@ export interface MenuProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /**
-   * A panel rather than a list (the account menu, "Language and theme"): 320 wide with the dialogs' radius and
-   * room inside, for faces (MenuFaces) and rows without icons.
+   * A panel rather than a list (the account menu, "Language and theme"): 320 wide, for faces (MenuFaces) and rows
+   * without icons. Every menu has the dialogs' radius and room inside.
    */
   panel?: boolean;
 }
@@ -98,8 +99,8 @@ export function Menu({
             }
           }}
           className={cn(
-            "z-popover max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-y-auto border border-line bg-surface-2 text-text-1 shadow-float transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
-            panel ? "w-80 rounded-lg p-2" : "min-w-56 max-w-80 rounded-md p-1",
+            "material z-popover max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-y-auto rounded-lg p-2 text-text-1 transition-[opacity,scale] duration-base ease-base starting:scale-95 starting:opacity-0",
+            panel ? "w-80" : "min-w-60 max-w-90",
             stage && "stage",
           )}
         >
@@ -261,9 +262,9 @@ export function MenuSeparator({ quiet = false }: { quiet?: boolean }) {
   const mode = useContext(MenuMode);
   if (quiet) return mode.sheet ? <hr className="my-1.5 h-0 border-0" /> : <DM.Separator className="h-2" />;
   return mode.sheet ? (
-    <hr className="my-2 h-px border-0 bg-line" />
+    <hr className="mx-3 my-2 h-px border-0 bg-line" />
   ) : (
-    <DM.Separator className="-mx-1 my-1 h-px bg-line" />
+    <DM.Separator className="mx-3 my-1 h-px bg-line" />
   );
 }
 
@@ -328,7 +329,7 @@ export function MenuFace({ face, label, tag, current, note, onSelect, href }: Me
       </div>
     );
   if (mode.sheet) {
-    const cls = cn(FACE, "w-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus active:bg-surface-2");
+    const cls = cn(FACE, "w-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus active:bg-text-1/8");
     if (href)
       return (
         <IntlLink href={href} className={cls} onClick={mode.close}>
@@ -348,7 +349,7 @@ export function MenuFace({ face, label, tag, current, note, onSelect, href }: Me
       </button>
     );
   }
-  const cls = cn(FACE, "cursor-pointer select-none transition-colors duration-fast ease-fast data-highlighted:bg-surface-3");
+  const cls = cn(FACE, "cursor-pointer select-none transition-colors duration-fast ease-fast data-highlighted:bg-text-1/8");
   if (href)
     return (
       <DM.Item asChild onSelect={onSelect}>

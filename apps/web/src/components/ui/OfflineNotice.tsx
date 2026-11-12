@@ -39,7 +39,7 @@ export function OfflineNotice() {
   }, [back]);
   if ((online && !back) || (typeof document !== "undefined" && document.documentElement.dataset.tv === "1")) return null;
   return (
-    <p className="flex min-h-10 items-center rounded-full border border-line bg-surface-2 px-4 text-body text-text-1 shadow-float transition-[opacity,translate] duration-base ease-base starting:translate-y-2 starting:opacity-0">
+    <p className="flex min-h-10 items-center material rounded-full px-4 text-body text-text-1 transition-[opacity,translate] duration-base ease-base starting:translate-y-2 starting:opacity-0">
       {t(online ? "backOnline" : "offlineTitle")}
     </p>
   );
