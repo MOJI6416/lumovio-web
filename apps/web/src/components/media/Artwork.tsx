@@ -47,6 +47,7 @@ export function Artwork({
   badge,
   mark,
   progress,
+  overlay,
   blurred,
   className,
 }: {
@@ -64,6 +65,8 @@ export function Artwork({
   mark?: PersonalMark;
   /** 0–1; shown between 1 % and 98 %. */
   progress?: number | null;
+  /** Laid on the image, under the badge, mark and progress, and scaled with it (a landscape card's ArtCaption). */
+  overlay?: ReactNode;
   /** Only the image blurred, a spoiler not yet shown (ui/Spoiler); the badge, mark and progress stay sharp. */
   blurred?: boolean;
   className?: string;
@@ -103,6 +106,7 @@ export function Artwork({
           <Placeholder aria-hidden className="size-8" />
         </div>
       )}
+      {overlay}
       {badge && <MediaBadge className="absolute start-1.5 top-1.5 max-w-[calc(100%-0.75rem)]">{badge}</MediaBadge>}
       {/* One mark, one look: the same dark disk with a white sign — a check for watched, a bookmark for the watchlist. */}
       {mark && (
@@ -110,7 +114,11 @@ export function Artwork({
           {mark === "watched" ? <Check className="size-4" strokeWidth={3} /> : <BookmarkCheck className="size-4" />}
         </span>
       )}
-      <ArtProgress value={progress} />
+      {progressShown(progress) && (
+        <div aria-hidden className="stage absolute inset-x-0 bottom-0 h-1 bg-text-1/25">
+          <div className="h-full bg-progress" style={{ width: `${Math.round(progress * 100)}%` }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -118,13 +126,3 @@ export function Artwork({
 /** Whether a watch progress (0–1) is shown: between 1 % and 98 %. */
 export const progressShown = (value: number | null | undefined): value is number =>
   value != null && value > 0.01 && value < 0.98;
-
-/** The watch progress as a bar along a frame's bottom (the art's own, or a caption's on its scrim). */
-export function ArtProgress({ value }: { value?: number | null }) {
-  if (!progressShown(value)) return null;
-  return (
-    <div aria-hidden className="stage absolute inset-x-0 bottom-0 h-1 bg-text-1/25">
-      <div className="h-full bg-progress" style={{ width: `${Math.round(value * 100)}%` }} />
-    </div>
-  );
-}

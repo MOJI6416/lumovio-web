@@ -63,14 +63,15 @@ export function VideoShelf({ videos, title }: { videos: Video[]; title: string }
                   src={v.site === "YouTube" ? `https://i.ytimg.com/vi/${v.key}/hqdefault.jpg` : null}
                   sizes={LANDSCAPE_SIZES}
                   placeholder="movie"
-                />
-                {/* The video's own title is in its language ("Official Trailer" on a Russian page). */}
-                <ArtCaption
-                  shape="landscape"
-                  title={v.name}
-                  titleLang={v.language && v.language !== lang ? v.language : undefined}
-                  meta={[type, language(v.language)]}
-                  lead={<Play aria-hidden className="me-1 size-3 shrink-0 self-center fill-current" />}
+                  overlay={
+                    // The video's own title is in its language ("Official Trailer" on a Russian page).
+                    <ArtCaption
+                      title={v.name}
+                      titleLang={v.language && v.language !== lang ? v.language : undefined}
+                      meta={[type, language(v.language)]}
+                      lead={<Play aria-hidden className="me-1 inline size-3 fill-current align-[-0.125em]" />}
+                    />
+                  }
                 />
               </a>
             </div>

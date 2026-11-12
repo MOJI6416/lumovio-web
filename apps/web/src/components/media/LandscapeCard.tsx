@@ -10,7 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { tmdbImage } from "@/lib/images";
 import { titleHref } from "@/lib/slug";
 import { ArtCaption } from "./ArtCaption";
-import { Artwork, artBox } from "./Artwork";
+import { Artwork, artBox, progressShown } from "./Artwork";
 import { CardMeta } from "./CardMeta";
 import { CardMore, type MoreVisibility, useLongPress } from "./CardMore";
 import type { CardMenuExtra } from "./CardMenu";
@@ -104,19 +104,20 @@ export function LandscapeCard({
           badge={title.onServer ? tr("onServerBadge") : null}
           mark={showState ? mark : null}
           progress={shownProgress}
+          overlay={
+            bare && (
+              <ArtCaption
+                title={title.title}
+                meta={meta}
+                lead={plays ? <Play aria-hidden className="me-1 inline size-3 fill-current align-[-0.125em]" /> : undefined}
+                wrap={!metaProp && Boolean(fact)}
+                aboveBar={progressShown(shownProgress)}
+              />
+            )
+          }
         />
         {/* In a shelf the name and line stand on the art, as every card of a shelf (ArtCaption); a backdrop has no title. */}
         <CardMeta title={title.title} meta={meta} wrap={!metaProp && Boolean(fact)} className={bare ? "hidden in-data-[tv=1]:block" : undefined} />
-        {bare && (
-          <ArtCaption
-            shape="landscape"
-            title={title.title}
-            meta={meta}
-            lead={plays ? <Play aria-hidden className="me-1 inline size-3 fill-current align-[-0.125em]" /> : undefined}
-            wrap={!metaProp && Boolean(fact)}
-            progress={shownProgress}
-          />
-        )}
       </Link>
       {more && (
         <div className={cn("pointer-events-none absolute inset-x-0 top-0", artBox("landscape"))}>
