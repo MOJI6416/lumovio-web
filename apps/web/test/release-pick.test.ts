@@ -301,16 +301,16 @@ describe("pickRelease for the sources screen (ANY)", () => {
   const p = prefs({ languages: ["uk"] });
   const ranked = rankReleases(releases, lotr, p);
 
-  it("keeps every audio and every cut, and picks the best of all", () => {
+  it("keeps every audio and every cut, and starts with the release Where to watch starts (docs/torrserver-2026-11.md 7)", () => {
     const x = pickRelease(ranked, p, { voice: ANY, edition: ANY, picture: null });
     expect(x.option).toBeUndefined();
     expect(x.pool).toHaveLength(3);
-    // The best alive release of the title, whatever its audio (the dead MVO release is never picked).
-    expect(x.chosen).toBe(ranked.find((r) => !r.dead));
     expect(x.editions.map((e) => e.key).sort()).toEqual(["extended", "theatrical"]);
-    // The cut shown is the chosen release's own (auto on a screen without 4K: the theatrical 1080p).
-    expect(x.chosen?.result.title).toContain("BDRip 1080p] [Theatrical");
-    expect(x.edition).toBe("theatrical");
+    // The profile's audio (Ukrainian dub) in its own most seeded cut — not the theatrical cut, most seeded only when the
+    // Russian releases count too, as the screen once had it while the title page said Extended.
+    expect(x.chosen).toBe(pickRelease(ranked, p).chosen);
+    expect(x.chosen?.result.title).toContain("[Extended Edition] Dub (Ukr)");
+    expect(x.edition).toBe("extended");
     expect(x.options.map((o) => o.key)).toEqual(pickRelease(ranked, p).options.map((o) => o.key));
   });
 

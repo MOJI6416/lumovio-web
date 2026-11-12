@@ -134,8 +134,15 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   // Every cut listed (the sources screen): the card still starts the default cut's release, as "Where to watch" does
   // with nothing chosen, unless a picture version was chosen by hand.
   const lead = anyCut ? (pool.find((x) => cutOf(x, true) === preferred) ?? inCut[0]) : inCut[0];
-  const version = versions.find((v) => v.key === choice.picture) ?? versions.find((v) => v.key === lead?.picture);
-  const chosen = anyCut && !choice.picture ? lead : (version?.best ?? inCut[0]);
+  // Every audio listed with nothing picked by hand (the sources screen's start): the card is the release "Where to
+  // watch" starts — the profile's first audio in its own default cut — not the cut most seeded across every audio nor
+  // the rank's first of another audio (docs/torrserver-2026-11.md 7).
+  const asTitle =
+    anyVoice && options[0] && (choice.edition === ANY || choice.edition === null) && !choice.picture
+      ? pickRelease(ranked, prefs, { voice: options[0].key, edition: null, picture: null }, max).chosen
+      : undefined;
+  const version = versions.find((v) => v.key === choice.picture) ?? versions.find((v) => v.key === (asTitle ?? lead)?.picture);
+  const chosen = asTitle ?? (anyCut && !choice.picture ? lead : (version?.best ?? inCut[0]));
   // Every cut: the one shown is the chosen release's own (a release without a cut in its name is the theatrical one).
-  return { options, option, editions: many ? editions : [], edition: anyCut && chosen ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
+  return { options, option, editions: many ? editions : [], edition: (anyCut || asTitle) && chosen && many ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
 }

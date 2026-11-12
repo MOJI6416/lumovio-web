@@ -8,8 +8,8 @@ import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
-import { optionIsStudio, pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
+import { ANY, type Edition, forProfile, pickRelease } from "@/lib/media/release-pick";
+import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -235,16 +235,13 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
       const i = o.language ? base.languages.indexOf(o.language) : -1;
       return i >= 0 ? i : o.language ? base.languages.length : base.languages.length + 1;
     };
-    // In a language, the profile's studios first, in their order ("1 — LostFilm, 2 — HDRezka"), as "Where to watch" offers them.
-    const studio = (o: VoiceOption) => {
-      const i = base.studios.findIndex((s) => optionIsStudio(o, s));
-      return i >= 0 ? i : base.studios.length;
-    };
-    return all
+    // In a language, the order "Where to watch" offers them (`forProfile`: live ones before almost dead, HD, then the
+    // profile's studios in their order, "1 — LostFilm, 2 — HDRezka"), so both say the same (docs/torrserver-2026-11.md 7).
+    return forProfile(all, base)
       .map((o, i) => ({ o, i }))
-      .sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || studio(a.o) - studio(b.o) || a.i - b.i)
+      .sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || a.i - b.i)
       .map((x) => x.o);
-  }, [view, base.languages, base.studios]);
+  }, [view, base]);
   const inVoice = (x: RankedRelease) => voice === null || voiceKeys(x).includes(voice);
   const versions = useMemo(
     () => pictureVersions((view?.ranked ?? []).filter((x) => !x.dead && x.holds !== false && (voice === null || voiceKeys(x).includes(voice)))),

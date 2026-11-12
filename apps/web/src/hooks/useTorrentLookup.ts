@@ -4,9 +4,10 @@ import type { ReleaseQuality, SourceState, TitleSummary } from "@lumovio/contrac
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
+import { useTitleAvailability } from "@/hooks/useAvailability";
 import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
+import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
@@ -73,16 +74,20 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
   const { me } = useSession();
   const base = useReleasePrefs();
   const prefs = useMemo(() => (quality ? { ...base, quality } : base), [base, quality]);
+  // The tracks read in the title's copies (the page's own availability query, not another request): a result that is
+  // a copy takes its studios from the file, as on the sources screen (docs/torrserver-2026-11.md 7).
+  const avail = useTitleAvailability(d.id);
+  const fileOf = useMemo(() => copyFileTracks(avail.data?.servers ?? []), [avail.data]);
   const select = useCallback(
     (r: LookupResult): TorrentLookup => ({
       connectionId: source?.id ?? "",
       connectionName: source?.name ?? "",
       total: r.results.length,
-      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null),
+      ranked: rankReleases(r.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileOf),
       at: r.at,
       emptyAt: r.emptyAt,
     }),
-    [source, d, prefs, season, episode],
+    [source, d, prefs, season, episode, fileOf],
   );
   const qc = useQueryClient();
   const key = lookupKey(me?.activeProfile?.id ?? null, source?.id ?? null, d.id);

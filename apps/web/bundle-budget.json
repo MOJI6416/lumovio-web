@@ -97,7 +97,7 @@
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 202332,
+      "jsGzip": 202639,
       "cssGzip": 20624,
       "jsChunks": 14
     },

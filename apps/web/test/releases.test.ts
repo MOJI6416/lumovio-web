@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   audioMatch,
   bestOf,
+  copyFileTracks,
   creditsStudio,
   fileTracks,
   holdsSeason,
@@ -795,5 +796,21 @@ describe("releaseDomId", () => {
     expect(id).toMatch(/^[0-9a-z]{1,7}$/);
     expect(id).not.toContain("abcdef");
     expect(releaseDomId(link.replace("file=Dune", "file=Dune2"))).not.toBe(id);
+  });
+});
+
+describe("copyFileTracks", () => {
+  const copy = (externalId: string, label: string | null, audioTracks?: string[]) => ({ kind: "torrserver" as const, externalId, label, quality: audioTracks ? ({ audioTracks } as never) : null });
+  it("gives a search result the tracks read in the copy it is — by hash, or by the name the copy was saved under", () => {
+    const hash = "a".repeat(40);
+    const of = copyFileTracks([copy(hash, "Dune.2021.1080p", ["ru|LostFilm", "en|"]), copy(`${hash}:1`, null), copy("b".repeat(40), "Other")])!;
+    expect(of({ hash: hash.toUpperCase(), title: "whatever" })).toEqual(["ru|LostFilm", "en|"]);
+    expect(of({ hash: null, title: "Dune.2021.1080p" })).toEqual(["ru|LostFilm", "en|"]);
+    expect(of({ hash: null, title: "Other" })).toBeNull();
+  });
+
+  it("is null when no copy's tracks were read, and leaves Jellyfin and Plex out", () => {
+    expect(copyFileTracks([copy("c".repeat(40), "X")])).toBeNull();
+    expect(copyFileTracks([{ kind: "jellyfin", externalId: "j1", label: "X", quality: { audioTracks: ["ru|"] } as never }])).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import type { ReleaseQuality, TitleDetails, TitleSummary } from "@lumovio/contracts";
+import type { Availability, ReleaseQuality, TitleDetails, TitleSummary } from "@lumovio/contracts";
 import { holdsSeason, type PackInfo, packOf } from "./packs";
 import type { TsSearchResult } from "./torrserver";
 
@@ -1028,4 +1028,24 @@ export function releaseDomId(link: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < link.length; i++) h = Math.imul(h ^ link.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36);
+}
+
+/**
+ * The audio tracks the player read in a title's copies on the profile's TorrServers, for `rankReleases`' `fileOf`: a
+ * search result that is the same release — by its hash, or the name the copy was saved under — takes its studios from
+ * the file ("6x MVO"). The title page reads them as the sources screen does, so both recommend the same
+ * (docs/torrserver-2026-11.md 2, 7). Null when no copy's tracks were read.
+ */
+export function copyFileTracks(servers: readonly Pick<Availability, "kind" | "externalId" | "label" | "quality">[]): ((r: Pick<TsSearchResult, "hash" | "title">) => readonly string[] | null) | null {
+  const m = new Map<string, readonly string[]>();
+  const hash = (externalId: string) => externalId.split(":")[0]!.toLowerCase();
+  const torrents = servers.filter((s) => s.kind === "torrserver");
+  // Any entry of the torrent may hold them (its file bound to the film, the torrent's own entry added again).
+  for (const s of torrents) if (s.quality?.audioTracks?.length) m.set(`hash:${hash(s.externalId)}`, s.quality.audioTracks);
+  for (const s of torrents) {
+    const tracks = s.quality?.audioTracks?.length ? s.quality.audioTracks : m.get(`hash:${hash(s.externalId)}`);
+    if (tracks && s.label) m.set(`name:${s.label}`, tracks);
+  }
+  if (m.size === 0) return null;
+  return (r) => (r.hash ? m.get(`hash:${r.hash.toLowerCase()}`) : undefined) ?? m.get(`name:${r.title.slice(0, 190)}`) ?? null;
 }
