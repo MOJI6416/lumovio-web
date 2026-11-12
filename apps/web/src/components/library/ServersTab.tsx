@@ -1,19 +1,24 @@
 "use client";
 
-import type { SourceState, TitleSummary } from "@lumovio/contracts";
-import { type InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
-import { Server } from "lucide-react";
+import type { ConnectionSummary, SourceState, TitleSummary } from "@lumovio/contracts";
+import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Server, Trash2, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useState } from "react";
+import type { TorrentConnection } from "@/components/connections/RemoveTorrentsDialog";
 import { PosterCard } from "@/components/media/PosterCard";
 import { useSession } from "@/components/providers/Providers";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { IconButton } from "@/components/ui/IconButton";
 import { InlineAlert } from "@/components/ui/InlineAlert";
 import { LoadMore } from "@/components/ui/LoadMore";
 import { QueryState } from "@/components/ui/QueryState";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
+import { invalidateAvailability, loadTorrentManager, type ManagedTorrent, type TorrentManagerData } from "@/lib/media/torrent-manage";
 import { CollectionToolbar } from "./CollectionToolbar";
 import { GridSkeleton } from "./GridSkeleton";
 import { ListGrid } from "./ListGrid";
@@ -34,6 +39,12 @@ type Sort = (typeof SORTS)[number];
 const plain = (t: TitleSummary): TitleSummary => (t.onServer ? { ...t, onServer: false } : t);
 const Card = memo(PosterCard);
 
+// The TS7 removal (its confirmation and per-torrent results) loads when a removal is asked for.
+const RemoveTorrentsDialog = dynamic(() => import("@/components/connections/RemoveTorrentsDialog").then((m) => m.RemoveTorrentsDialog), { ssr: false });
+
+/** One server's part of a removal: its torrents of the chosen titles. */
+type Removal = { connection: TorrentConnection; torrents: ManagedTorrent[]; titles: TorrentManagerData["titles"] };
+
 /**
  * "On my servers" (S09; the owner's decision of 2026-11-07, design-system 9 "Library"): everything already on the
  * profile's own servers that plays in one press — films, series, anime — as Apple TV's library and Plex's do it: the
@@ -52,6 +63,12 @@ export function ServersTab() {
   const filters = readFilters(params);
   const sort = readSort<Sort>(params, SORTS, "added");
   const sorts = useTitleSorts();
+  const qc = useQueryClient();
+  // "Select" (docs/torrserver-2026-11.md, 19a): titles whose torrents are on the profile's TorrServers, removed from there
+  // through TS7's dialog. Jellyfin and Plex copies aren't removed here (deleting their files is the server's business).
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [removals, setRemovals] = useState<Removal[]>([]);
   const q = useInfiniteQuery({
     queryKey: ["on-servers", "all", filters.show],
     queryFn: ({ pageParam }) =>
@@ -86,6 +103,44 @@ export function ServersTab() {
     if (limit + SHOW_PAGE >= items.length && q.hasNextPage && !isFetchingNextPage) void fetchNextPage();
   };
   const down = (first?.sources ?? []).filter((s) => s.status === "unreachable" || s.status === "unauthorized");
+  const torrServers = kids ? [] : (first?.sources ?? []).filter((s) => s.kind === "torrserver" && s.status !== "unreachable" && s.status !== "unauthorized");
+  const managers = useQuery({
+    queryKey: ["on-servers", "torrents", torrServers.map((s) => s.id).join(",")],
+    enabled: selecting && torrServers.length > 0,
+    queryFn: async () => {
+      const { connections } = await api<{ connections: ConnectionSummary[] }>("/api/connections");
+      const all = await Promise.all(torrServers.map(async (s) => ({ connection: connections.find((c) => c.id === s.id), data: await loadTorrentManager(s.id) })));
+      return all.flatMap((m) => (m.connection ? [{ connection: m.connection, data: m.data }] : []));
+    },
+  });
+  // A title's torrents on each server, by the index's links.
+  const torrentsOf = (titleId: string): Removal[] =>
+    (managers.data ?? [])
+      .map((m) => ({ connection: m.connection, titles: m.data.titles, torrents: m.data.torrents.filter((t) => t.links.some((l) => l.titleId === titleId)) }))
+      .filter((r) => r.torrents.length > 0);
+  const toggle = (id: string) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const startRemoval = () => {
+    const byServer = new Map<string, Removal>();
+    for (const id of selected)
+      for (const r of torrentsOf(id)) {
+        const into = byServer.get(r.connection.id) ?? { connection: r.connection, titles: r.titles, torrents: [] };
+        for (const t of r.torrents) if (!into.torrents.some((x) => x.hash === t.hash)) into.torrents.push(t);
+        byServer.set(r.connection.id, into);
+      }
+    setRemovals([...byServer.values()]);
+  };
+  const finishRemoval = () => {
+    setRemovals((rest) => rest.slice(1));
+    setSelected(new Set());
+    invalidateAvailability(qc);
+    void qc.invalidateQueries({ queryKey: ["on-servers"] });
+  };
   const pending = (first?.sources ?? []).filter((s) => !s.indexed);
 
   return (
@@ -141,6 +196,20 @@ export function ServersTab() {
                 sort={{ value: sort, onChange: (v) => set({ sort: v === "added" ? null : v }), options: sorts({ value: "added" }) }}
                 shown={narrowed && !q.hasNextPage ? items.length : total}
                 total={total}
+                action={
+                  torrServers.length > 0 && (
+                    <Button
+                      variant="tertiary"
+                      size="sm"
+                      onClick={() => {
+                        setSelecting((v) => !v);
+                        setSelected(new Set());
+                      }}
+                    >
+                      {selecting ? t("common.done") : tl("select")}
+                    </Button>
+                  )
+                }
               />
               {completing && !isFetchNextPageError ? (
                 <GridSkeleton />
@@ -157,9 +226,20 @@ export function ServersTab() {
               ) : (
                 <>
                   <ListGrid>
-                    {shown.map((item) => (
-                      <Card key={item.id} title={plain(item)} />
-                    ))}
+                    {shown.map((item) =>
+                      selecting ? (
+                        <SelectableCard
+                          key={item.id}
+                          title={plain(item)}
+                          label={tl("selectTitle", { title: item.title })}
+                          selected={selected.has(item.id)}
+                          disabled={!managers.data || torrentsOf(item.id).length === 0}
+                          onToggle={() => toggle(item.id)}
+                        />
+                      ) : (
+                        <Card key={item.id} title={plain(item)} />
+                      ),
+                    )}
                   </ListGrid>
                   {/* The next 60: drawn from what is here, then the index's next page; one that didn't come — Retry here (8.4). */}
                   <LoadMore
@@ -175,8 +255,53 @@ export function ServersTab() {
               )}
             </>
           )}
+          {/* The selection's action stays in sight while the grid scrolls, above the phone's bottom bar (as the server's list's). */}
+          {selecting && selected.size > 0 && (
+            <section
+              className="sticky bottom-20 z-sticky mt-4 flex items-center gap-2 rounded-md border border-line bg-surface-1 p-2 shadow-float md:bottom-4 md:gap-3 md:p-3"
+              aria-label={tl("select")}
+            >
+              <IconButton icon={X} label={t("torrentManager.clearSelection")} onClick={() => setSelected(new Set())} />
+              <p className="min-w-0 flex-1 text-body-s text-text-1 tabular-nums" aria-live="polite">
+                {tl("selectedTitles", { count: selected.size })}
+              </p>
+              <Button variant="danger-tertiary" icon={Trash2} onClick={startRemoval} className="shrink-0">
+                {tl("removeFromServer")}
+              </Button>
+            </section>
+          )}
+          {removals[0] && <RemoveTorrentsDialog connection={removals[0].connection} torrents={removals[0].torrents} titles={removals[0].titles} onClose={finishRemoval} />}
         </div>
       )}
     </QueryState>
+  );
+}
+
+/**
+ * A poster in "Select" (19a): the press marks it instead of opening the title; a title without torrents on the profile's
+ * TorrServers is dimmed and can't be marked. The card itself is inert meanwhile, so neither touch nor keyboard opens it.
+ */
+function SelectableCard({ title, label, selected, disabled, onToggle }: { title: TitleSummary; label: string; selected: boolean; disabled: boolean; onToggle: () => void }) {
+  return (
+    <div className={cn("relative", disabled && "opacity-40")}>
+      <div inert>
+        <Card title={title} />
+      </div>
+      <button /* ui-lint-ignore raw-button: the poster's whole face is the toggle in Select (19a), a card, not a Button */
+        type="button"
+        aria-pressed={selected}
+        aria-label={label}
+        disabled={disabled}
+        onClick={onToggle}
+        className={cn("absolute inset-0 rounded-md focus-visible:outline-(length:--focus-width) focus-visible:outline-focus disabled:cursor-not-allowed", selected && "ring-2 ring-accent")}
+      >
+        <span
+          aria-hidden
+          className={cn("absolute end-2 top-2 grid size-7 place-items-center rounded-full ring-2", selected ? "bg-accent text-on-accent ring-accent" : "stage bg-stage ring-text-1/80")}
+        >
+          {selected && <Check className="size-4" strokeWidth={3} />}
+        </span>
+      </button>
+    </div>
   );
 }

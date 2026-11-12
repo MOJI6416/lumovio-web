@@ -993,7 +993,11 @@
     "switchProfile": "Змінити профіль",
     "joined": "Ви приєдналися до списку",
     "joinFailed": "Не вдалося приєднатися. Повторіть спробу",
-    "notNow": "Не зараз"
+    "notNow": "Не зараз",
+    "select": "Вибрати",
+    "selectedTitles": "Вибрано: {count}",
+    "removeFromServer": "Видалити із сервера",
+    "selectTitle": "Вибрати «{title}»"
   },
   "player": {
     "loading": "Готуємо відтворення…",

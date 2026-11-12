@@ -993,7 +993,11 @@
     "switchProfile": "Changer de profil",
     "joined": "Vous avez rejoint la liste",
     "joinFailed": "Impossible de rejoindre la liste. Réessayez",
-    "notNow": "Pas maintenant"
+    "notNow": "Pas maintenant",
+    "select": "Sélectionner",
+    "selectedTitles": "Sélectionnés : {count}",
+    "removeFromServer": "Retirer du serveur",
+    "selectTitle": "Sélectionner « {title} »"
   },
   "player": {
     "loading": "Préparation de la lecture…",
