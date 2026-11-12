@@ -101,7 +101,13 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       : { state: "none" };
   const onProbe = useCallback((r: ProbeResult) => setProbe(r), []);
 
-  const first = avail.data ? orderedSources(titleCopies(avail.data, holds), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
+  // The copy the hero starts. TorrServer copies are ordered by their release names only in ./CopyProbe's chunk (the release
+  // names' reading stays out of the first load): until it answers, the light order of the servers' own data.
+  const copies = avail.data ? titleCopies(avail.data, holds) : null;
+  const languages = me?.activeProfile?.audioLanguages ?? [];
+  const studios = me?.activeProfile?.voiceStudios ?? [];
+  const named = copies && copyFace && copies.servers.some((s) => s.connectionId === copyFace.copy.connectionId && s.externalId === copyFace.copy.externalId) ? copyFace.copy : undefined;
+  const first = named ?? (copies ? orderedSources(copies, undefined, languages, studios)[0]?.server : undefined);
   const offers = (d.watchProviders?.providers ?? []).filter((p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads");
   // A service once, its plan with ads folded in ("Netflix", not "Netflix, Netflix Standard with Ads"; TTL-26).
   const offerNames = [...new Set((offers.length ? offers : (d.watchProviders?.providers ?? [])).map((p) => serviceOf(p.name).name))].slice(0, 3);
@@ -213,7 +219,9 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         <AvailabilityLine summary={plan.summary} kids={kids} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
       )}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
-      {first?.kind === "torrserver" && avail.state.kind === "playable" && <CopyProbe copy={first} all={avail.data?.servers ?? []} originalLanguage={d.originalLanguage} onChange={onCopyFace} />}
+      {copies?.servers.some((s) => s.kind === "torrserver") && avail.state.kind === "playable" && (
+        <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} onChange={onCopyFace} />
+      )}
       <GuestGate {...actions.gate} />
       {d.trailer && <TrailerDialog video={trailerOpen ? d.trailer : null} title={d.title} onClose={() => setTrailerOpen(false)} />}
     </div>

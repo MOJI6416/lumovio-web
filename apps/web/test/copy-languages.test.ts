@@ -2,6 +2,7 @@ import type { Availability } from "@lumovio/contracts";
 import { describe, expect, it } from "vitest";
 import type { PlaybackCapabilities } from "../src/lib/media/capabilities";
 import { audioLanguages, languageCode } from "../src/lib/media/languages";
+import { copyAudio } from "../src/lib/media/copy-audio";
 import { languageRank, orderedSources, sourceRank } from "../src/lib/media/source-order";
 
 /** Jellyfin and Plex copies' audio languages (roadmap Stage 7 «Jellyfin track languages»): read, stored, ranked. */
@@ -52,5 +53,32 @@ describe("copies in the profile's audio language start first", () => {
 
   it("calls a series' entry with only its languages unknown, not a transcode", () => {
     expect(sourceRank(caps, { server: copy("show", { audioLanguages: ["ru"] }) })).toBe(2);
+  });
+});
+
+// TorrServer copies in the profile's order too, by their release names and the tracks read in their files.
+describe("TorrServer copies by the profile's audio", () => {
+  const ts = (externalId: string, label: string, audioTracks?: string[]): Availability => ({ ...copy(externalId, audioTracks ? ({ audioTracks } as never) : null, "torrserver"), label });
+  const hdrezka = ts("a".repeat(40), "Dune (2021) WEB-DL 1080p | MVO (HDRezka)");
+  const ukr = ts("b".repeat(40), "Дюна / Dune (2021) BDRip 1080p | Dub (Ukr)");
+  const lostfilm = ts("c".repeat(40), "Dune (2021) BDRip 1080p | MVO (LostFilm)");
+  const sixMvo = ts("d".repeat(40), "Dune (2021) WEB-DL 2160p | 6x MVO", ["rus|MVO, HDrezka Studio", "rus|MVO, LostFilm"]);
+  const order = (langs: string[], studios: string[], list: Availability[], audio = copyAudio) => orderedSources({ servers: list, connections: 1, sources: [] }, caps, langs, studios, audio).map((x) => x.server.externalId[0]);
+
+  it("puts the profile's languages first in their order, then its studios in theirs", () => {
+    expect(order(["uk", "ru"], ["LostFilm"], [hdrezka, ukr, lostfilm])).toEqual(["b", "c", "a"]);
+    expect(order(["ru"], ["LostFilm", "HDRezka"], [hdrezka, lostfilm])).toEqual(["c", "a"]);
+  });
+
+  it("reads the studios a name doesn't give from the tracks read in its file", () => {
+    expect(order(["ru"], ["LostFilm"], [hdrezka, sixMvo])).toEqual(["d", "a"]);
+  });
+
+  it("keeps the server's order for a profile with no languages nor studios", () => {
+    expect(order([], [], [hdrezka, ukr, lostfilm])).toEqual(["a", "b", "c"]);
+  });
+
+  it("reads no release names without the parser passed in (the light order of a title's first load)", () => {
+    expect(orderedSources({ servers: [hdrezka, ukr, lostfilm], connections: 1, sources: [] }, caps, ["uk", "ru"], ["LostFilm"]).map((x) => x.server.externalId[0])).toEqual(["a", "b", "c"]);
   });
 });

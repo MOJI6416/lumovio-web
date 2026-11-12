@@ -24,6 +24,7 @@ import { autoSearchSource } from "@/hooks/useTorrentLookup";
 import { Link } from "@/i18n/navigation";
 import { regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
+import { copyAudio } from "@/lib/media/copy-audio";
 import { orderedSources } from "@/lib/media/source-order";
 import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
@@ -86,7 +87,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const signedIn = Boolean(me?.activeProfile);
   const kids = Boolean(me?.activeProfile?.isKids);
   // Copies in the order the player tries them: the first one is what "Watch" starts.
-  const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages).map((x) => x.server) : [];
+  const copies = data ? orderedSources(data, undefined, me?.activeProfile?.audioLanguages, me?.activeProfile?.voiceStudios, copyAudio).map((x) => x.server) : [];
   const manage = signedIn && !kids;
   const torrServers = manage ? (raw?.sources ?? []).filter((s) => s.kind === "torrserver") : [];
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.

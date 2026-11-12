@@ -45,6 +45,7 @@ import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence"
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
 import { voiceWish } from "@/lib/media/releases";
 import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
+import { copyAudio } from "@/lib/media/copy-audio";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
 import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
@@ -172,6 +173,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const isKids = Boolean(me?.activeProfile?.isKids);
   // Copies in the profile's audio language start first (lib/media/source-order).
   const audioLangs = me?.activeProfile?.audioLanguages;
+  const voiceStudios = me?.activeProfile?.voiceStudios;
   const season = d.kind === "tv" ? Number(params.get("s") ?? d.seasons.find((s) => s.seasonNumber > 0)?.seasonNumber ?? 1) : null;
   const episode = d.kind === "tv" ? Number(params.get("e") ?? 1) : null;
   const wanted = params.get("source");
@@ -204,14 +206,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const pendingReopen = useRef<(() => void) | null>(null);
   useEffect(() => () => pendingReopen.current?.(), []);
   // A torrent this launch brought to the server — the title page's add (`?brought=1`) or the sources screen's — until its
-  // first frame: one that never got there is taken back when the person leaves, cancels or goes to another source
-  // (docs/torrserver-2026-11.md 18). Never one that was on the server before.
+  // first frame: one that never got there is taken back when the person leaves, cancels or goes to another source.
+  // Never one that was on the server before.
   const brought = useRef<{ connectionId: string; hash: string } | null>(null);
   const takeBackBrought = useCallback((keep?: string) => {
     const b = brought.current;
     if (!b || keep === `${b.connectionId}:${b.hash}`) return;
     brought.current = null;
-    // Once the player has let it go: a request for it by hash after the removal would add it back, nameless (43).
+    // Once the player has let it go: a request for it by hash after the removal would add it back, nameless.
     window.setTimeout(() => background(takeBack(b.connectionId, b.hash).then(() => invalidateAvailability(qc))), 1500);
   }, [qc]);
   useEffect(() => () => takeBackBrought(), [takeBackBrought]);
@@ -220,10 +222,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
   const attempt = useRef(0);
   // The preparation's requests (the server's probe, its subtitles, the torrent's start): stopped on the server when it is
-  // cancelled, replaced or the page left — not only its next step (docs/torrserver-2026-11.md 39).
+  // cancelled, replaced or the page left — not only its next step.
   const prepAbort = useRef<AbortController | null>(null);
   useEffect(() => () => prepAbort.current?.abort(), []);
-  // The copy being prepared, by key: a second press on its "Watch" while it is prepared starts nothing again (39).
+  // The copy being prepared, by key: a second press on its "Watch" while it is prepared starts nothing again.
   const preparingKey = useRef<string | null>(null);
   // Where to continue after switching source within this session (same title, same episode, same position).
   const resumeOverride = useRef<number | null>(null);
@@ -262,7 +264,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const candidates = useMemo<Candidate[]>(() => {
     if (!avail.data) return [];
     // Files this browser can play untouched come first; transcodes and incompatible files last.
-    const list = orderedSources(avail.data, undefined, audioLangs).flatMap(({ server: s }): Candidate[] => {
+    const list = orderedSources(avail.data, undefined, audioLangs, voiceStudios, copyAudio).flatMap(({ server: s }): Candidate[] => {
       // A torrent file bound to another episode is not a source for this one; nor a whole torrent whose release name holds
       // other seasons only (a season-1 pack for season 2): with nothing left, the sources screen searches this season.
       if (s.kind === "torrserver" && s.season !== null && (s.season !== season || s.episode !== episode)) return [];
@@ -276,7 +278,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const ordered = [...torrents.filter(isBound), ...torrents.filter((c) => !isBound(c))];
     let i = 0;
     return list.flatMap((c) => (c.provider !== "torrserver" ? [c] : isBound(c) || !bound.has(c.key) ? [ordered[i++]!] : []));
-  }, [avail.data, season, episode, audioLangs, d.kind]);
+  }, [avail.data, season, episode, audioLangs, voiceStudios, d.kind]);
 
   const saved = progress.data?.progress.find((x) => x.season === season && x.episode === episode);
   const resumeAt = resumeOverride.current ?? castStart.current ?? (saved && !saved.completed && saved.positionSec > 30 ? saved.positionSec : 0);
@@ -443,7 +445,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             if ("files" in r && opts.auto && d.kind === "tv") {
               // Nothing was chosen explicitly: look for the episode in this title's other torrents before asking — those
               // whose names say they hold this season first, three at most, each read from the server's database only:
-              // no torrent is started (up to a minute each) for the look (docs/torrserver-2026-11.md 34).
+              // no torrent is started (up to a minute each) for the look.
               asked.push(r);
               const says = (x: Candidate) => season !== null && Boolean(x.server.label) && holdsSeason(packOf(x.server.label!), season) === true;
               const others = candidates
@@ -526,7 +528,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           return;
         }
         lastGood.current = { candidate: c, voice: new URL(window.location.href).searchParams.get("voice") };
-        // From the press of "Watch" — the add, the player's page and the probe included (docs/torrserver-2026-11.md 40).
+        // From the press of "Watch" — the add, the player's page and the probe included.
         startClock.current = launchSince() ?? performance.now();
         setActive({ candidate: c, prepared });
         setPhase({ kind: "playing" });
@@ -592,7 +594,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   /**
    * Before a torrent is removed from the server (the screen's "Remove from TorrServer…" over the player): the player
    * that streams it, or the preparation that reads it, lets it go — stopped, unmounted, no reopen waiting — so no request
-   * by its hash comes after the removal and adds it back, nameless (docs/torrserver-2026-11.md 43).
+   * by its hash comes after the removal and adds it back, nameless.
    */
   const releaseTorrents = async (hashes: string[]) => {
     const reads = (c: Candidate | null | undefined) => c?.provider === "torrserver" && hashes.includes(hashOf(c.server.externalId).toLowerCase());
@@ -615,9 +617,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    */
   const choose = useCallback(
     (c: Candidate, voice: string | null = null, added: string | null = null) => {
-      // A second press on the "Watch" of the copy being prepared (39).
+      // A second press on the "Watch" of the copy being prepared starts nothing again.
       if (preparing.current && preparingKey.current === c.key) return;
-      // Another source: a torrent this launch brought and that never played goes back (18).
+      // Another source: a torrent this launch brought and that never played goes back.
       takeBackBrought(c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId).toLowerCase()}` : undefined);
       wishedVoice.current = voiceWish(voice);
       setUrl({ source: c.key, pick: null, voice });
@@ -711,7 +713,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     const pick = exact ?? (wanted ? candidates.find(sameTorrent) : undefined) ?? (castId && wanted ? undefined : candidates[0]);
     // "?added=1": the title page has just added this release, the first of its stages.
     const added = pick && params.get("added") === "1" ? t("stageAddedFact", { server: pick.label }) : null;
-    // "?brought=1": that add brought the torrent to the server (it wasn't there): taken back if it never plays (18).
+    // "?brought=1": that add brought the torrent to the server (it wasn't there): taken back if it never plays.
     if (pick?.provider === "torrserver" && params.get("brought") === "1") brought.current = { connectionId: pick.server.connectionId, hash: hashOf(pick.server.externalId).toLowerCase() };
     if (params.has("added") || params.has("brought")) setUrl({ added: null, brought: null });
     if (pick) void prepare(pick, { auto: !exact, added, audioIndex: castAudio.current });
@@ -857,7 +859,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   );
   // What the title page had picked when it opened this screen (audio, picture version, quality mode).
   const quality = params.get("quality");
-  // The cut chosen on the title page comes too (docs/torrserver-2026-11.md 7): the screen starts in it, as its pill says.
+  // The cut chosen on the title page comes too: the screen starts in it, as its pill says.
   const finderStart = { voice: params.get("voice"), picture: params.get("picture"), quality: quality !== null && Object.hasOwn(QUALITY_MODES, quality) ? (quality as ReleaseQuality) : null, edition: params.get("edition") };
   const finderShown = signedIn && !isKids && torrServers.length > 0;
   // The audio tracks the player read in this title's copies on the profile's TorrServers: a search result that is the
@@ -1106,7 +1108,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         active.prepared.reportProgress?.(pos, paused);
       }}
       onPlay={(pos) => {
-        // It played: a torrent this launch brought stays (18).
+        // It played: a torrent this launch brought stays.
         brought.current = null;
         // A play counts for the shelf the title was opened from (anonymous, C5; once per open).
         if (seq.current === 0) trackOutcome(d.id, "play");
@@ -1133,7 +1135,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const c = active.candidate;
         const prepared = active.prepared;
         // The stream broke off — a window minimised, a tab in the background, a locked phone, TorrServer letting the torrent
-        // go (docs/torrserver-2026-11.md, 27): the same source opens again from where it stopped, with the same audio,
+        // go: the same source opens again from where it stopped, with the same audio,
         // without an error screen — up to three times in two minutes; then the error is said.
         const now = Date.now();
         const recent = (reopened.current.get(c.key) ?? []).filter((at) => now - at < 180_000);

@@ -96,7 +96,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     : manual && out && avail.state.kind !== "playable"
       ? { state: "manual", name: manual.name }
       : { state: "none" };
-  const first = avail.data ? orderedSources(titleCopies(avail.data), undefined, me?.activeProfile?.audioLanguages)[0]?.server : undefined;
+  const first = avail.data ? orderedSources(titleCopies(avail.data), undefined, me?.activeProfile?.audioLanguages, me?.activeProfile?.voiceStudios)[0]?.server : undefined;
   const offers = (d.watchProviders?.providers ?? []).filter(
     (p) => p.kind === "flatrate" || p.kind === "free" || p.kind === "ads",
   );
