@@ -114,7 +114,7 @@ export function LandscapeCard({
             meta={meta}
             lead={plays ? <Play aria-hidden className="me-1 inline size-3 fill-current align-[-0.125em]" /> : undefined}
             wrap={!metaProp && Boolean(fact)}
-            aboveBar={shownProgress != null}
+            progress={shownProgress}
           />
         )}
       </Link>

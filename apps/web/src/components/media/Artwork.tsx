@@ -110,11 +110,21 @@ export function Artwork({
           {mark === "watched" ? <Check className="size-4" strokeWidth={3} /> : <BookmarkCheck className="size-4" />}
         </span>
       )}
-      {progress != null && progress > 0.01 && progress < 0.98 && (
-        <div aria-hidden className="stage absolute inset-x-0 bottom-0 h-1 bg-text-1/25">
-          <div className="h-full bg-progress" style={{ width: `${Math.round(progress * 100)}%` }} />
-        </div>
-      )}
+      <ArtProgress value={progress} />
+    </div>
+  );
+}
+
+/** Whether a watch progress (0–1) is shown: between 1 % and 98 %. */
+export const progressShown = (value: number | null | undefined): value is number =>
+  value != null && value > 0.01 && value < 0.98;
+
+/** The watch progress as a bar along a frame's bottom (the art's own, or a caption's on its scrim). */
+export function ArtProgress({ value }: { value?: number | null }) {
+  if (!progressShown(value)) return null;
+  return (
+    <div aria-hidden className="stage absolute inset-x-0 bottom-0 h-1 bg-text-1/25">
+      <div className="h-full bg-progress" style={{ width: `${Math.round(value * 100)}%` }} />
     </div>
   );
 }
