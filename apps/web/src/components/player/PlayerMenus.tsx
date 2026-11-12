@@ -2,7 +2,7 @@
 
 import type { SubtitleStyle } from "@lumovio/contracts";
 import { usePlayer } from "@videojs/react/video";
-import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink, Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
@@ -49,6 +49,7 @@ export function PlayerMenus({
   hasSegments,
   subtitleMeta,
   look,
+  onExternal,
 }: {
   panel: PlayerPanel;
   onPanel: (p: PlayerPanel) => void;
@@ -65,6 +66,8 @@ export function PlayerMenus({
   hasSegments: boolean;
   subtitleMeta: SubtitleMeta;
   look: SubtitleLook;
+  /** This file in an app on this device, from this position on the player's stage. */
+  onExternal?: (positionSec: number) => void;
 }) {
   const t = useTranslations("player");
   const phone = usePhoneLayout();
@@ -118,6 +121,13 @@ export function PlayerMenus({
             (() => {
               close();
               sources.onSearch?.(currentTime);
+            })
+          }
+          onExternal={
+            onExternal &&
+            (() => {
+              close();
+              onExternal(currentTime);
             })
           }
         />,
@@ -398,6 +408,7 @@ function SettingsLevel({
   subtitles,
   onPickSource,
   onSearch,
+  onExternal,
 }: {
   level: Level;
   onLevel: (l: Level) => void;
@@ -410,6 +421,7 @@ function SettingsLevel({
   subtitles: boolean;
   onPickSource: (key: string) => void;
   onSearch?: () => void;
+  onExternal?: () => void;
 }) {
   const t = useTranslations("player");
   const locale = useLocale();
@@ -515,6 +527,18 @@ function SettingsLevel({
       <SettingRow label={t("quality")} value={quality ?? undefined} onOpen={renditions.length > 1 ? () => onLevel("quality") : undefined} />
       <SettingRow label={t("speed")} value={speedName(rate)} onOpen={() => onLevel("speed")} />
       {sources && <SettingRow label={t("source")} value={current ? info.version : undefined} onOpen={() => onLevel("source")} />}
+      {onExternal && (
+        <button /* ui-lint-ignore raw-button: a row of the player's settings menu that leaves the player for another app */
+          type="button"
+          role="menuitem"
+          data-menu-row
+          onClick={onExternal}
+          className={ROW}
+        >
+          <span className="flex-1">{t("externalTitle")}</span>
+          <ExternalLink aria-hidden className="size-5 shrink-0 text-text-2" />
+        </button>
+      )}
       <SettingRow label={t("playbackInfo")} onOpen={() => onLevel("info")} />
       {!coarse && <SettingRow label={t("shortcuts")} onOpen={() => onLevel("keys")} />}
     </div>

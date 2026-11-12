@@ -109,6 +109,8 @@ export interface PlayerProps extends PlayerEvents {
    * audio track now, and the way to pause it here once the TV has it.
    */
   castButton?: (now: { position: number; audio: number | null; pause: () => void }) => ReactNode;
+  /** "Play in another app" in the site's settings menu: this file in an app on this device, from this position. */
+  onExternal?: (positionSec: number) => void;
 }
 
 const VOLUME_KEY = "lumovio.player.volume";
@@ -1323,7 +1325,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
 
         {endShown && props.end && <EndScreen end={props.end} title={props.title} logo={props.logo ?? null} backdrop={props.poster} onReplay={replay} onBack={props.onBack} />}
 
-        <PlayerMenus {...panels} anchors={anchors} />
+        <PlayerMenus {...panels} anchors={anchors} onExternal={props.onExternal} />
       </Controls.Root>
     </PortalContainerContext.Provider>
   );

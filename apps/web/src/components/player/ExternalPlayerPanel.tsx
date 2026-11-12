@@ -5,17 +5,20 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useTvNavOptional } from "@/components/tvui/nav/context";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
 import { api } from "@/lib/api";
+import { setOtherAppDefault, useOtherAppDefault } from "@/lib/media/other-app";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { useAction } from "@/lib/use-action";
 
 /**
- * A file this browser can't play: why, in words; the main button opens it in an app on
+ * A file played in an app on this device — because this browser can't play it, or because the person chose to: why,
+ * in words, when there is a reason; the main button opens it in an app on
  * this device (VLC or MX Player on Android, VLC, Infuse or nPlayer on an iPhone; on a computer a playlist VLC opens); a copy of the title that plays here is
  * offered when there is one. A web page can't read the other app's position, so progress is honest: once the app was
  * opened, "I've finished it" marks the title watched — a secondary button, never the first thing on the screen.
- * On the site it stands on the player's stage (WatchView's StartStage) and names the apps on its buttons only; the TV's
- * sources screen keeps the line that lists them.
+ * On the site it stands on the player's stage (WatchView's StartStage), names the apps on its buttons only and keeps the
+ * device's "Always play in another app"; the TV's sources screen keeps the line that lists them.
  */
 export function ExternalPlayerPanel({
   prepared,
@@ -25,6 +28,7 @@ export function ExternalPlayerPanel({
   season,
   episode,
   onFinished,
+  onLaunch,
   inBrowser,
 }: {
   prepared: PreparedPlayback;
@@ -35,14 +39,21 @@ export function ExternalPlayerPanel({
   season: number | null;
   episode: number | null;
   onFinished: () => void;
-  /** Another copy of this title that plays in the browser: its version and how to start it. */
-  inBrowser: { version: string; play: () => void } | null;
+  /** The stream went to another app (opened, downloaded as a playlist, copied). */
+  onLaunch?: () => void;
+  /** A copy of this title that plays in the browser and how to start it; `version` when it is another copy. */
+  inBrowser: { version: string | null; play: () => void } | null;
 }) {
   const t = useTranslations("player");
   const tc = useTranslations("common");
   const locale = useLocale();
   const tvNav = useTvNavOptional();
-  const [launched, setLaunched] = useState(false);
+  const always = useOtherAppDefault();
+  const [launched, setOpened] = useState(false);
+  const setLaunched = (v: boolean) => {
+    setOpened(v);
+    if (v) onLaunch?.();
+  };
   const [marked, setMarked] = useState(false);
   const url = prepared.externalUrl;
   // A failure says so and leaves the button pressable again (it used to count as watched anyway).
@@ -139,9 +150,11 @@ export function ExternalPlayerPanel({
           {t("linkWarning")}
         </p>
       )}
+      {/* The device's choice, where it is made use of: off again here or in Settings → This device. */}
+      {!tvNav && <Switch checked={always} onCheckedChange={setOtherAppDefault} label={t("alwaysOtherApp")} className="py-0" />}
       {inBrowser && (
         <div className="flex flex-col items-start gap-2 border-t border-line pt-4">
-          <p className="text-body-s text-text-2">{t("inBrowserText", { version: inBrowser.version })}</p>
+          {inBrowser.version && <p className="text-body-s text-text-2">{t("inBrowserText", { version: inBrowser.version })}</p>}
           <Button variant="secondary" icon={MonitorPlay} onClick={inBrowser.play}>
             {t("inBrowser")}
           </Button>

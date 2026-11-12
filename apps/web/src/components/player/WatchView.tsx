@@ -46,6 +46,7 @@ import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/pr
 import { voiceWish } from "@/lib/media/releases";
 import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
+import { otherAppDefault } from "@/lib/media/other-app";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
 import { noteLine } from "@/lib/media/line-speed";
@@ -99,7 +100,8 @@ type Phase =
   | { kind: "preparing"; candidate: Candidate | null; label: string; prep: Prep; fromScreen: boolean }
   | { kind: "pickFile"; torrents: TorrentFiles[]; added: string | null }
   | { kind: "playing" }
-  | { kind: "external"; candidate: Candidate; prepared: PreparedPlayback; reason: string | null }
+  // `chosen`: the person's choice ("Always play in another app", the player's "Play in another app"): it plays here too.
+  | { kind: "external"; candidate: Candidate; prepared: PreparedPlayback; reason: string | null; chosen?: boolean }
   | {
       kind: "error";
       candidate: Candidate | null;
@@ -241,6 +243,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const lastPrep = useRef<{ label: string; prep: Prep } | null>(null);
   // When the launch of the source playing now began (the press): its first play reports the start and how long it took.
   const startClock = useRef<number | null>(null);
+  // Something has played in this viewing's player: "Always play in another app" no longer takes its next start there
+  // (another source or audio from the player, a stream opened again).
+  const inPlayer = useRef(false);
   // Where the sources screen was when a preparation started from it: the control picked and where it stood.
   const savedPlace = useRef<{ el: Element | null; top: number } | null>(null);
   /** Keeps the screen's place — read before the screen is hidden, as the shorter page would clamp it. */
@@ -410,6 +415,22 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     [t],
   );
 
+  /** The prepared copy in this viewing's player. */
+  const playHere = useCallback(
+    (c: Candidate, prepared: PreparedPlayback) => {
+      inPlayer.current = true;
+      lastGood.current = { candidate: c, voice: new URL(window.location.href).searchParams.get("voice") };
+      // From the press of "Watch" — the add, the player's page and the probe included.
+      startClock.current = launchSince() ?? performance.now();
+      setActive({ candidate: c, prepared });
+      setPhase({ kind: "playing" });
+      // Dolby Vision 5 here plays with wrong colours: said at once, with the way to another app.
+      if (prepared.warning === "dv5")
+        toast.info(t("dv5Warning"), { action: { label: t("openExternal"), onClick: () => setPhase({ kind: "external", candidate: c, prepared, reason: t("why_dv5") }) } });
+    },
+    [t],
+  );
+
   /**
    * Starts a candidate stage by stage, each shown as it happens. `added`: what the add stage found, when
    * the release was just added from search. `touch`: an explicit choice, remembered as the copy to start
@@ -529,14 +550,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           setPhase({ kind: "external", candidate: c, prepared, reason: t("swRequired") });
           return;
         }
-        lastGood.current = { candidate: c, voice: new URL(window.location.href).searchParams.get("voice") };
-        // From the press of "Watch" — the add, the player's page and the probe included.
-        startClock.current = launchSince() ?? performance.now();
-        setActive({ candidate: c, prepared });
-        setPhase({ kind: "playing" });
-        // Dolby Vision 5 here plays with wrong colours: said at once, with the way to another app.
-        if (prepared.warning === "dv5")
-          toast.info(t("dv5Warning"), { action: { label: t("openExternal"), onClick: () => setPhase({ kind: "external", candidate: c, prepared, reason: t("why_dv5") }) } });
+        // "Always play in another app" on this device (the site's): the card with its apps, until it is played here.
+        if (!tvNav && prepared.externalUrl && !inPlayer.current && otherAppDefault()) {
+          setPhase({ kind: "external", candidate: c, prepared, reason: null, chosen: true });
+          return;
+        }
+        playHere(c, prepared);
       } catch (e) {
         if (!live()) return;
         failed.current.add(c.key);
@@ -579,7 +598,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         }
       }
     },
-    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
+    [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc, playHere],
   );
 
   /** "Cancel" while preparing: the preparation stops at its next step and the screen comes back as it was. */
@@ -1209,6 +1228,15 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         });
       }}
       castButton={castButton}
+      // The site's: the player paused under the card, "Back to watching" goes on from where it was.
+      onExternal={
+        !tvNav && active.prepared.externalUrl
+          ? (pos) => {
+              send("pause", pos, last.current.dur);
+              setPhase({ kind: "external", candidate: active.candidate, prepared: active.prepared, reason: null, chosen: true });
+            }
+          : undefined
+      }
     />
   );
 
@@ -1262,7 +1290,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     });
 
   const playable = (c: Candidate) => !failed.current.has(c.key) && sourceRank(detectCapabilities(), { server: c.server }) < 3;
-  const inBrowser = phase.kind === "external" ? candidates.find((c) => c.key !== phase.candidate.key && playable(c)) : undefined;
+  const inBrowser = phase.kind === "external" && !phase.chosen ? candidates.find((c) => c.key !== phase.candidate.key && playable(c)) : undefined;
   const fileMeta = (f: TsFile | EpisodeFile) => {
     const parsed = "parsed" in f ? f.parsed : null;
     return [
@@ -1280,10 +1308,23 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         title={d.title}
         reason={phase.reason}
         onFinished={() => send("complete", phase.prepared.durationSec ?? 0, phase.prepared.durationSec)}
+        // Played in another app: a torrent this launch brought stays on the server.
+        onLaunch={() => {
+          brought.current = null;
+        }}
         titleId={d.id}
         season={season}
         episode={episode}
-        inBrowser={inBrowser ? { version: versionOf(inBrowser), play: () => choose(inBrowser) } : null}
+        // Chosen: this copy plays here as it is (the player under the card goes on with "Back to watching").
+        inBrowser={
+          phase.chosen
+            ? active
+              ? null
+              : { version: null, play: () => playHere(phase.candidate, phase.prepared) }
+            : inBrowser
+              ? { version: versionOf(inBrowser), play: () => choose(inBrowser) }
+              : null
+        }
       />
     ) : null;
   const finderOn = finderShown && (phase.kind === "choose" || phase.kind === "error" || phase.kind === "external" || phase.kind === "pickFile" || (phase.kind === "preparing" && phase.fromScreen));
@@ -1460,10 +1501,19 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       {phase.kind === "external" && (
         <div className="flex w-full max-w-xl flex-col gap-4 text-start">
           {external}
-          {alternatives && (
-            <Button variant="secondary" className="self-center" onClick={anotherSource}>
-              {t("anotherSource")}
-            </Button>
+          {(active || alternatives) && (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {active && (
+                <Button variant="secondary" icon={Play} onClick={backToPlayer}>
+                  {t("backToWatching")}
+                </Button>
+              )}
+              {alternatives && (
+                <Button variant="secondary" onClick={anotherSource}>
+                  {t("anotherSource")}
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
