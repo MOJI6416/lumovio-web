@@ -9,6 +9,7 @@ import type {
 import { background, optional } from "../optional";
 import { detectCapabilities, mediaSourceClass } from "./capabilities";
 import { nameTrueHdTracks, enableWasmDecoders } from "./codecs/audio";
+import { keyAtRecoveryPoints } from "./codecs/h264";
 import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
 
 /**
@@ -33,6 +34,11 @@ const BEHIND = 30;
  * (iOS 27.2). A fragment split across appends is fine: the buffer parses a stream.
  */
 const SLICE = 1 << 20;
+/**
+ * The MP4 a rebuild writes: fragments, each ending at the first key frame a second or more after its start. The first
+ * fragment is what the first frame waits for — 6 MB of a 44 Mbit/s film at one second, 10 MB at two.
+ */
+export const FRAGMENTED = { fastStart: "fragmented", minimumFragmentDuration: 1 } as const;
 
 export interface RemuxHandle {
   /** Position of the track among the file's audio tracks (ffprobe order = container order). */
@@ -140,6 +146,8 @@ async function openFile(mb: Mediabunny, src: FileSource): Promise<Opened> {
   });
   try {
     const videoTrack = await input.getPrimaryVideoTrack();
+    // A Blu-ray's H.264 is cut and started at its every-second I-frames, not only at IDR frames half a minute apart.
+    if (videoTrack) keyAtRecoveryPoints(videoTrack);
     const audioTracks = await input.getAudioTracks();
     // TrueHD / MLP tracks get their codec's name, so they can be decoded (codecs/audio.ts).
     nameTrueHdTracks(audioTracks);
@@ -310,7 +318,8 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     return end !== null && end - video.currentTime > 0.5;
   };
   const appendSlice = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
-    for (let attempt = 0; ; attempt++) {
+    // Tries that had nothing to wait for: only they end in an error.
+    for (let stuck = 0; ; ) {
       await evictBehind(BEHIND);
       if (mine !== gen || !sb) return;
       try {
@@ -318,13 +327,16 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
         await idle();
         return;
       } catch (e) {
-        // A full buffer frees up as playback moves on: drop more of what was played, then wait. With nothing to play,
-        // nothing moves on — a moment, then the next try, and an error in the end rather than loading for ever.
-        if (!(e instanceof DOMException && e.name === "QuotaExceededError") || attempt > 20) throw e;
+        // A full buffer frees up as playback moves on: drop more of what was played, then wait for it — however long
+        // (a pause, steps back and forth inside what's buffered). With nothing to play, nothing moves on: a moment,
+        // then the next try, and an error in the end rather than loading for ever.
+        if (!(e instanceof DOMException && e.name === "QuotaExceededError") || stuck > 20) throw e;
         await evictBehind(2);
+        const waits = playable();
+        if (!waits) stuck++;
         await new Promise<void>((r) => {
           wake.push(r);
-          if (!playable()) setTimeout(r, 500);
+          if (!waits) setTimeout(r, 500);
         });
       }
     }
@@ -409,7 +421,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
       isCurrent: () => mine === gen && !closed,
       newOutput: (route, codec) => {
         const output: Output = new mb.Output({
-          format: new mb.Mp4OutputFormat({ fastStart: "fragmented", minimumFragmentDuration: 2 }),
+          format: new mb.Mp4OutputFormat(FRAGMENTED),
           target: new mb.StreamTarget(writer(mine, from, { getMimeType: (): Promise<string> => output.getMimeType() }, route, codec)),
         });
         return output;
