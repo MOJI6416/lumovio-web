@@ -51,6 +51,7 @@ const MARKS: Record<string, string> = {
   moviedalen: "moviedalen",
   videofilm: "videofilm",
   ictv: "ictv",
+  tvshows: "tvshows",
 };
 
 const fileOf = (studio: string | null | undefined) => (studio ? MARKS[studio.trim().toLowerCase()] : undefined);
