@@ -306,11 +306,17 @@ describe("pickRelease for the sources screen (ANY)", () => {
     expect(x.option).toBeUndefined();
     expect(x.pool).toHaveLength(3);
     expect(x.editions.map((e) => e.key).sort()).toEqual(["extended", "theatrical"]);
-    // The profile's audio (Ukrainian dub) in its own most seeded cut — not the theatrical cut, most seeded only when the
-    // Russian releases count too, as the screen once had it while the title page said Extended.
+    // The profile's audio (Ukrainian dub) in its own cut — chosen alike on both (once the screen took the cut most
+    // seeded across every audio). On this screen without 4K and HDR that is the theatrical 1080p: the extended cut,
+    // seeded more, only comes as a 4K HDR Remux (8).
     expect(x.chosen).toBe(pickRelease(ranked, p).chosen);
-    expect(x.chosen?.result.title).toContain("[Extended Edition] Dub (Ukr)");
-    expect(x.edition).toBe("extended");
+    expect(x.chosen?.result.title).toContain("[Theatrical Cut] Dub (Ukr)");
+    expect(x.edition).toBe("theatrical");
+    // On a 4K HDR screen the extended cut it is, on both.
+    const tv = prefs({ languages: ["uk"], device: { uhd: true, hdr: true } });
+    const onTv = rankReleases(releases, lotr, tv);
+    expect(pickRelease(onTv, tv).chosen?.result.title).toContain("[Extended Edition] Dub (Ukr)");
+    expect(pickRelease(onTv, tv, { voice: ANY, edition: ANY, picture: null }).chosen).toBe(pickRelease(onTv, tv).chosen);
     expect(x.options.map((o) => o.key)).toEqual(pickRelease(ranked, p).options.map((o) => o.key));
   });
 

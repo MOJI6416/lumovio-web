@@ -313,15 +313,18 @@ function tracksOf(name: string, tracker: string | null, originalLanguage: string
  */
 export function parseRelease(title: string, tracker: string | null = null, originalLanguage: string | null = null): ReleaseInfo {
   const t = title.replace(/[._]/g, " ");
-  const res = /(?<![\d])(2160p|4k|uhd)(?![\p{L}\d])/iu.test(t)
+  // The lines stated win over "4K" and "UHD": "UHD-BDRip 1080p" is 1080p taken from a UHD disc (docs/torrserver-2026-11.md 8).
+  const res = /(?<![\d])2160p/i.test(t)
     ? 2160
     : /(?<![\d])1080[pi]/i.test(t)
       ? 1080
       : /(?<![\d])720p/i.test(t)
         ? 720
-        : W("dvdrip|satrip|hdtvrip|tvrip|webrip|dvd5|dvd9|xvid|divx|480p|576p").test(t)
-          ? 480
-          : null;
+        : /(?<![\d])(4k|uhd)(?![\p{L}\d])/iu.test(t)
+          ? 2160
+          : W("dvdrip|satrip|hdtvrip|tvrip|webrip|dvd5|dvd9|xvid|divx|480p|576p").test(t)
+            ? 480
+            : null;
   const cam = W("camrip|cam|ts|telesync|tc|telecine|hdcam|tsrip|hdts|звук с ts").test(t);
   const hdrFormats: HdrFormat[] = [];
   const plus = /(?<![\p{L}\d])hdr10(?:\+|\s?plus)/iu;
@@ -464,6 +467,9 @@ export function isSameTitle(release: string, names: string[], year: number | nul
   if (kind === "movie") {
     const pack = packOf(release);
     if (pack.seasons && !pack.cours) return false;
+    // Nor a broadcast: a season named by its year or a date — "S2025 / 19 / F1 TV [17-19.10.2025, WEB-DL 1080p]" is a
+    // race, not "F1" (2025) (docs/torrserver-2026-11.md 8).
+    if (/(?<![\p{L}\d])s(?:19|20)\d\d(?![\p{L}\d])/iu.test(release) || /(?<!\d)\d{1,2}\.\d{2}\.(?:19|20)\d\d(?!\d)/u.test(release)) return false;
   }
   const parts = norm(release).split(/\s*[/|]\s*/);
   const wanted = [...new Set(names.filter(Boolean).map(norm))].filter((n) => n.length > 0);
@@ -593,6 +599,13 @@ export interface RankedRelease {
    * a picture the name doesn't state, 0 — this device can't play it. A studio further down the order wins only by this.
    */
   floor: 0 | 1 | 2;
+  /**
+   * How well its picture suits this device and the quality mode, higher better: it surely plays here (`fit`), then the
+   * mode's resolution order (`resolutionOrder`: 1080p before 4K where 4K doesn't fit) and the dynamic range the screen
+   * shows. A film's default cut is chosen among the cuts whose best release suits as well as the best of all
+   * (`defaultCut`): a cut found only in 4K HDR isn't a 1080p screen's default (docs/torrserver-2026-11.md 8).
+   */
+  suits: number;
   fit: Fit;
   /** The indexer reports no seeders: listed last and never recommended. Unknown seeders are not zero. */
   dead: boolean;
@@ -664,6 +677,15 @@ function pictureRank(info: ReleaseInfo, size: number | null, seeders: number | n
   return [res, dynamic, healthy, source];
 }
 
+/** `RankedRelease.suits`: the fit, then — but for "Smaller file", which asks for no picture — resolution and range. */
+function suitsOf(info: ReleaseInfo, fit: Fit, prefs: ReleasePrefs): number {
+  if (prefs.quality === "small") return FIT_SCORE[fit];
+  const order = resolutionOrder(prefs);
+  const range = rangeOf(info);
+  const dynamic = range === "hdr" || range === "dv" ? (prefs.device.hdr ? 2 : 0) : 1;
+  return FIT_SCORE[fit] * 100 + (order.length - order.indexOf(info.resolution)) * 10 + dynamic;
+}
+
 function compareRank(a: number[], b: number[]): number {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return b[i]! - a[i]!;
   return 0;
@@ -690,9 +712,11 @@ export function rankReleases(
   episode: number | null = null,
   fileOf: ((r: TsSearchResult) => readonly string[] | null | undefined) | null = null,
 ): RankedRelease[] {
-  return sameTitleResults(results, d)
-    .map((result) => {
-      const info = withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage);
+  const own = sameTitleResults(results, d).map((result) => ({ result, info: withFileTracks(parseRelease(result.title, result.tracker, d.originalLanguage), fileOf?.(result), d.originalLanguage) }));
+  const kinds = studioKinds(own.map((x) => x.info));
+  return own
+    .map(({ result, info: named }) => {
+      const info = withStudioKinds(named, kinds);
       const i = prefs.languages.findIndex((l) => info.languages.includes(l));
       // "Dubbing": a dub in the language the release is the profile's by (a Ukrainian dub doesn't make a Russian release dubbed).
       const dubbed = info.tracks.length ? info.tracks.some((t) => t.voice === "dub" && (i < 0 || t.language === null || t.language === prefs.languages[i])) : info.voice === "dub";
@@ -702,7 +726,10 @@ export function rankReleases(
       // Without a studio of the profile: the best translation in the profile's language the release has (its tracks say
       // which), else the release's best one. A studio of the profile decides by itself: "MVO (LostFilm)" and LostFilm's
       // own "rus 1080p WEBDL (LostFilm)" are the same track, and the picture tells them apart (Dexter: Resurrection).
-      const kind = j >= 0 ? null : ((i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice);
+      // Tracks listed in that language speak for it alone: a Russian dub doesn't make a Ukrainian track without a kind a
+      // dub ("Dub (Red Head Sound) + Цікава Ідея" for "uk, ru"; docs/torrserver-2026-11.md 8).
+      const listed = i >= 0 && info.tracks.some((t) => t.language === prefs.languages[i]);
+      const kind = j >= 0 ? null : listed ? bestVoiceIn(info, prefs.languages[i]!) : ((i >= 0 ? bestVoiceIn(info, prefs.languages[i]!) : null) ?? info.voice);
       const fit = fitOf(info, prefs.device);
       const floor = floorOf(info, fit, prefs);
       const dead = result.seeders === 0;
@@ -723,9 +750,36 @@ export function rankReleases(
         held,
         result.seeders ?? -1,
       ];
-      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, fit, dead, holds, rank };
+      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, suits: suitsOf(info, fit, prefs), fit, dead, holds, rank };
     })
     .sort((a, b) => compareRank(a.rank, b.rank));
+}
+
+/**
+ * The kind of translation each studio does, as the names of one search pair them ("Dub (Red Head Sound)"): the kind
+ * most names give it. For a name that credits the studio without a kind ("WEB-DL [H.264/1080p] RHS"), which would
+ * otherwise rank below the same studio's track named "Dub" whatever its picture (docs/torrserver-2026-11.md 8).
+ */
+function studioKinds(infos: readonly ReleaseInfo[]): Map<string, Voice> {
+  const counts = new Map<string, Map<Voice, number>>();
+  for (const info of infos)
+    for (const t of info.tracks) {
+      if (!t.studio || !t.voice) continue;
+      const m = counts.get(t.studio) ?? new Map<Voice, number>();
+      m.set(t.voice, (m.get(t.voice) ?? 0) + 1);
+      counts.set(t.studio, m);
+    }
+  return new Map([...counts].map(([studio, m]) => [studio, [...m].sort((a, b) => b[1] - a[1] || VOICES.indexOf(a[0]) - VOICES.indexOf(b[0]))[0]![0]]));
+}
+
+/** A name's studio tracks without a kind take the kind the search gives the studio (`studioKinds`); the name's best kind follows. */
+function withStudioKinds(info: ReleaseInfo, kinds: ReadonlyMap<string, Voice>): ReleaseInfo {
+  if (!info.tracks.some((t) => t.studio && !t.voice && kinds.has(t.studio))) return info;
+  const tracks = info.tracks.map((t) => (t.studio && !t.voice && kinds.has(t.studio) ? { ...t, voice: kinds.get(t.studio)! } : t));
+  const studioVoices = { ...info.studioVoices };
+  for (const t of tracks) if (t.studio && t.voice && !studioVoices[t.studio]) studioVoices[t.studio] = t.voice;
+  const voice = VOICES.find((v) => v === info.voice || tracks.some((t) => t.voice === v)) ?? null;
+  return { ...info, tracks, studioVoices, voice };
 }
 
 /**

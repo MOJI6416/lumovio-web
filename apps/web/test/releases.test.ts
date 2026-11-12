@@ -4,6 +4,7 @@ import {
   bestOf,
   copyFileTracks,
   creditsStudio,
+  DUBBING,
   fileTracks,
   holdsSeason,
   endedIn,
@@ -827,5 +828,51 @@ describe("wishNameTrack", () => {
   it("leaves a studio's choice to its studio, and says nothing without a choice", () => {
     expect(wishNameTrack(info, voiceWish("ru|LostFilm"), [])).toBeNull();
     expect(wishNameTrack(info, null, [])).toBeNull();
+  });
+});
+
+// docs/torrserver-2026-11.md 8: one studio's track, named with its kind in one release and without it in another.
+describe("a studio's kind of translation, from the names of one search", () => {
+  const tlou = { title: "Одни из нас", originalTitle: "The Last of Us", kind: "tv" as const, year: 2023, originalLanguage: "en" };
+  const r = (title: string, seeders: number) => ({ title, link: `magnet:?xt=urn:btih:${title.length.toString(16).padStart(40, "0")}${seeders}`, hash: null, size: 20e9, seeders, peers: 1, tracker: "RuTracker.org", published: null });
+  const uhd = r("The Last of Us / S1E1-9 of 9 [2023, SDR, WEB-DL 2160p] Dub (Red Head Sound) + MVO (HDrezka)", 13);
+  const hd = r("Одни из нас / The Last of Us / S1E1-9 of 9 (2023) WEB-DL [H.264/1080p] RHS", 4);
+
+  it("gives a name that credits the studio alone the kind the others pair it with", () => {
+    const ranked = rankReleases([uhd, hd], tlou, prefsOf({}), 1, 1);
+    expect(ranked.find((x) => x.result === hd)?.info.tracks[0]).toMatchObject({ studio: "Red Head Sound", voice: "dub" });
+  });
+
+  it("never lends another language's kind to the profile's track: a Ukrainian release stays first for \"uk, ru\"", () => {
+    const both = r("Одни из нас / The Last of Us / S1E1-9 of 9 (2023) WEB-DL [H.265/2160p] [4K, HDR10, 10-bit] RHS, Цікава Ідея", 20);
+    const ukr = { ...r("The Last of Us (S1) (2023) BDRip 1080p H.265 3Ukr/Eng | Sub 2Ukr/Eng (S1)", 32), tracker: "Toloka" };
+    const ranked = rankReleases([uhd, both, ukr], tlou, prefsOf({ languages: ["uk", "ru"], hevc: true }), 1, 1);
+    expect(ranked[0]!.result).toBe(ukr);
+  });
+
+  it("so the picture decides between them: 1080p H.264 on a PC without HEVC, not 4K above it for its word Dub", () => {
+    expect(rankReleases([uhd, hd], tlou, prefsOf({ hevc: false }), 1, 1)[0]!.result).toBe(hd);
+    // And the profile's "Dubbing" counts it as a dub.
+    expect(rankReleases([uhd, hd], tlou, prefsOf({ hevc: false, studios: [DUBBING] }), 1, 1).find((x) => x.result === hd)?.studio).toBe(DUBBING);
+  });
+});
+
+describe("the resolution a name states", () => {
+  it("takes the lines it writes over the words 4K and UHD (8)", () => {
+    expect(parseRelease("Oppenheimer (2023) UHD-BDRip 1080p H.265 HDR Ukr/Eng [IMAX Edition]").resolution).toBe(1080);
+    expect(parseRelease("Oppenheimer [2023, UHD BDRemux 2160p, HDR10, Dolby Vision]").resolution).toBe(2160);
+    expect(parseRelease("Dune (2021) WEB-DL 4K HDR").resolution).toBe(2160);
+    expect(parseRelease("Dune (2021) UHD BDRemux HDR").resolution).toBe(2160);
+  });
+});
+
+describe("a film's releases, not broadcasts", () => {
+  it("leaves out races and other broadcasts that only share a short name (F1, 8)", () => {
+    const names = ["F1", "F1: The Movie"];
+    expect(isSameTitle("S2025 / 19 / - / / F1 TV [17-19.10.2025, 1, WEB-DL/1080p/50fps, MKV/H.264, RUS/ENG]", names, 2025, "movie")).toBe(false);
+    expect(isSameTitle("1 | S2025 | 01-06 | F1 TV WEB-DL 1080p 50fps Ukr/Eng", names, 2025, "movie")).toBe(false);
+    expect(isSameTitle("Formula 2 2025 / 12 / / F1 TV [20.09.2025-21.09.2025, WEB-DL/1080p/50fps, MKV/H.264]", names, 2025, "movie")).toBe(false);
+    expect(isSameTitle("F1: / F1: The Movie (2025) BDRemux 1080p Ukr/Eng | Sub Ukr/Eng", names, 2025, "movie")).toBe(true);
+    expect(isSameTitle("F1 [2025, WEB-DL 2160p, HDR10, Dolby Vision] Dub (Red Head Sound)", names, 2025, "movie")).toBe(true);
   });
 });

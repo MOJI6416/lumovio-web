@@ -80,15 +80,20 @@ const cutOf = (x: RankedRelease, any: boolean) => editionOf(x.result.title) ?? (
 /**
  * The cut to start with nothing chosen: the one most seeded among the audio's releases — the version viewers keep, the
  * director's where that is the film (Blade Runner: The Final Cut), the theatrical one where the others are for fans —
- * among the cuts whose best release reaches the best one's floor (`RankedRelease.floor`: an SD-only cut never wins);
- * a tie goes to the theatrical cut, then the best release's. The others are offered right beside it in the "Version"
- * pill. `editions` come best first; `pool` is the audio's releases.
+ * among the cuts whose best release reaches the best one's floor (`RankedRelease.floor`: an SD-only cut never wins) and
+ * has a release that suits this device as well as the best of all (`RankedRelease.suits`: a cut found only in 4K HDR
+ * isn't a 1080p screen's default — Oppenheimer's IMAX cut with a Ukrainian dub only in a UHD Remux;
+ * docs/torrserver-2026-11.md 8); a tie goes to the theatrical cut, then the best release's. The others are offered
+ * right beside it in the "Version" pill. `editions` come best first; `pool` is the audio's releases.
  */
 function defaultCut(editions: EditionOption[], pool: RankedRelease[]): Edition {
   const top = editions[0]!.best.floor;
   const seeded = (key: Edition) => pool.filter((x) => cutOf(x, true) === key).reduce((n, x) => n + (x.result.seeders ?? 0), 0);
+  // An almost dead release (one or two seeders) doesn't make its cut suit: it would never be the one that plays.
+  const suits = (key: Edition) => Math.max(-1, ...pool.filter((x) => cutOf(x, true) === key && x.floor === top && swarmOf(x.result.seeders) > 0).map((x) => x.suits));
+  const best = Math.max(...editions.map((e) => suits(e.key)));
   const order = editions
-    .filter((e) => e.best.floor === top)
+    .filter((e) => e.best.floor === top && suits(e.key) === best)
     .map((e, i) => ({ key: e.key, n: seeded(e.key), i }))
     .sort((a, b) => b.n - a.n || Number(b.key === "theatrical") - Number(a.key === "theatrical") || a.i - b.i);
   return order[0]!.key;
