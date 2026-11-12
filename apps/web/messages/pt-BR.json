@@ -1363,6 +1363,8 @@
     "syncProgress": "Enviar o progresso da reprodução para este servidor",
     "autoSearch": "Buscar releases automaticamente",
     "autoSearchHint": "As páginas dos títulos e sua lista Quero assistir procuram releases nos idiomas de áudio e estúdios do perfil. A busca sai do seu dispositivo por este TorrServer; nada é adicionado até você tocar.",
+    "sweepAll": "Limpar também o que foi adicionado fora do Lumovio",
+    "sweepAllHint": "O Lumovio limpa sozinho o que adicionou ao servidor: o assistido depois de um dia, o nunca iniciado depois de uma semana, o abandonado depois de 30 dias. Ative para que os outros releases de títulos saiam do mesmo jeito.",
     "importWatched": "Importar status de assistido na varredura",
     "errMixedContent": "Seu navegador bloqueia servidores HTTP simples em páginas seguras. Use HTTPS (proxy reverso, Tailscale Serve ou os endereços plex.direct do Plex).",
     "errMixedContentLan": "Este navegador bloqueia endereços http:// da sua rede doméstica em páginas seguras. O Chrome e o Edge os acessam depois que você permite o acesso à rede local; em outros navegadores, use o endereço HTTPS do servidor.",

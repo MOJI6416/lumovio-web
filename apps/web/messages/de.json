@@ -1363,6 +1363,8 @@
     "syncProgress": "Wiedergabefortschritt an diesen Server senden",
     "autoSearch": "Selbstständig nach Releases suchen",
     "autoSearchHint": "Titelseiten und deine Merkliste suchen Releases in den Audiosprachen und Synchronstudios des Profils. Die Suche läuft von deinem Gerät über diesen TorrServer; nichts wird hinzugefügt, bevor du tippst.",
+    "sweepAll": "Auch außerhalb von Lumovio Hinzugefügtes entfernen",
+    "sweepAllHint": "Lumovio entfernt von selbst, was es auf den Server gelegt hat: Gesehenes nach einem Tag, nie Begonnenes nach einer Woche, Abgebrochenes nach 30 Tagen. Schalte das ein, damit die übrigen Releases von Titeln genauso verschwinden.",
     "importWatched": "Gesehen-Status beim Scannen importieren",
     "errMixedContent": "Dein Browser blockiert unverschlüsselte HTTP-Server auf sicheren Seiten. Nutze HTTPS (Reverse Proxy, Tailscale Serve oder die plex.direct-Adressen von Plex).",
     "errMixedContentLan": "Dieser Browser blockiert http://-Adressen deines Heimnetzes auf sicheren Seiten. Chrome und Edge erreichen sie, sobald du den Zugriff auf das lokale Netzwerk erlaubst; anderswo brauchst du die HTTPS-Adresse des Servers.",

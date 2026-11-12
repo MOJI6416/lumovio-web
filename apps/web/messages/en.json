@@ -1363,6 +1363,8 @@
     "syncProgress": "Send playback progress to this server",
     "autoSearch": "Search for releases on its own",
     "autoSearchHint": "Title pages and your watchlist look for releases in the profile's audio languages and studios. The search runs from your device through this TorrServer; nothing is added until you tap.",
+    "sweepAll": "Also clear releases added outside Lumovio",
+    "sweepAllHint": "Lumovio clears what it added from the server by itself: watched — after a day, never started — after a week, left — after 30 days. Turn this on to clear the server's other releases of titles the same way.",
     "importWatched": "Import watched state on scan",
     "errMixedContent": "Your browser blocks plain-HTTP servers on secure pages. Use HTTPS (reverse proxy, Tailscale Serve, or Plex's plex.direct addresses).",
     "errMixedContentLan": "This browser blocks http:// addresses of your home network on secure pages. Chrome and Edge reach them once you allow local network access; elsewhere use the server's HTTPS address.",

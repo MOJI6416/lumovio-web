@@ -1363,6 +1363,8 @@
     "syncProgress": "Oynatma ilerlemesini bu sunucuya gönder",
     "autoSearch": "Sürümleri kendiliğinden ara",
     "autoSearchHint": "İçerik sayfaları ve İzlenecekler listeniz, profilin ses dillerinde ve stüdyolarında sürüm arar. Arama cihazınızdan bu TorrServer üzerinden yapılır; siz dokunana kadar hiçbir şey eklenmez.",
+    "sweepAll": "Lumovio dışında eklenenleri de temizle",
+    "sweepAllHint": "Lumovio sunucuya eklediklerini kendisi temizler: izlenenleri bir gün, hiç başlanmayanları bir hafta, yarım bırakılanları 30 gün sonra. Başlıkların diğer sürümleri de aynı şekilde gitsin diye bunu açın.",
     "importWatched": "Taramada izlenme durumunu içe aktar",
     "errMixedContent": "Tarayıcınız güvenli sayfalarda düz HTTP sunucularını engelliyor. HTTPS kullanın (ters proxy, Tailscale Serve veya Plex’in plex.direct adresleri).",
     "errMixedContentLan": "Bu tarayıcı, güvenli sayfalarda ev ağınızdaki http:// adreslerini engelliyor. Chrome ve Edge, yerel ağ erişimine izin verdiğinizde bunlara ulaşır; diğer tarayıcılarda sunucunun HTTPS adresini kullanın.",

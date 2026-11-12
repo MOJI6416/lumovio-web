@@ -1363,6 +1363,8 @@
     "syncProgress": "Wysyłaj postęp odtwarzania na ten serwer",
     "autoSearch": "Szukaj wydań automatycznie",
     "autoSearchHint": "Strony tytułów i twoja lista Do obejrzenia szukają wydań w językach audio i studiach z profilu. Wyszukiwanie idzie z twojego urządzenia przez ten TorrServer; nic nie jest dodawane, dopóki nie klikniesz.",
+    "sweepAll": "Usuwaj też dodane poza Lumovio",
+    "sweepAllHint": "Lumovio samo usuwa z serwera to, co dodało: obejrzane po dniu, nierozpoczęte po tygodniu, porzucone po 30 dniach. Włącz, aby tak samo znikały pozostałe wydania tytułów.",
     "importWatched": "Importuj stan obejrzenia podczas skanowania",
     "errMixedContent": "Twoja przeglądarka blokuje serwery na zwykłym HTTP na bezpiecznych stronach. Użyj HTTPS (reverse proxy, Tailscale Serve lub adresy plex.direct od Plex).",
     "errMixedContentLan": "Ta przeglądarka blokuje adresy http:// sieci domowej na bezpiecznych stronach. Chrome i Edge łączą się z nimi, gdy zezwolisz na dostęp do sieci lokalnej; w innych przeglądarkach użyj adresu HTTPS serwera.",

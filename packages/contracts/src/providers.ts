@@ -49,6 +49,11 @@ export const ConnectionSettings = z.object({
   preferDirectPlay: z.boolean().default(true),
   /** TorrServer: the device searches its indexers on its own (title pages, the watchlist) for the profile's audio languages. */
   autoSearch: z.boolean().default(true),
+  /**
+   * TorrServer: the clean-up (docs/torrserver-2026-11.md 18а) clears the server's other torrents of titles too — watched,
+   * never started, left — not only what Lumovio added. Off unless the person turns it on.
+   */
+  sweepAll: z.boolean().optional(),
 });
 export type ConnectionSettings = z.infer<typeof ConnectionSettings>;
 

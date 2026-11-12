@@ -77,6 +77,26 @@ interface Session {
 const SessionContext = createContext<Session>({ me: null, apiDown: false, tv: false, locale: "en" });
 
 export const useSession = () => useContext(SessionContext);
+// The clean-up of what Lumovio added to the profile's TorrServers (lib/media/torrent-sweep, docs/torrserver-2026-11.md
+// 18а): an adult profile's, at most every 12 hours on a device, 15 s after a page opens — never on the player's page,
+// whose start shares the server (23б), nor the TV's. Without storage it doesn't run (it would on every page).
+const SWEEP_EVERY_MS = 12 * 3_600_000;
+
+function TorrentSweep({ profileId, client }: { profileId: string; client: QueryClient }) {
+  useEffect(() => {
+    if (/(^|\/)watch(\/|$)/.test(location.pathname)) return;
+    const key = `lumovio.sweep.${profileId}`;
+    try {
+      if (Date.now() - Number(localStorage.getItem(key) ?? 0) < SWEEP_EVERY_MS) return;
+    } catch {
+      return;
+    }
+    const run = () => void import("@/lib/media/torrent-sweep").then((m) => m.sweepProfile(key, client)).catch(() => {}); // ui-lint-ignore swallowed-error: housekeeping; a failed clean-up is tried again in 12 hours, unsaid
+    const timer = setTimeout(run, 15_000);
+    return () => clearTimeout(timer);
+  }, [profileId, client]);
+  return null;
+}
 
 export function Providers({ children, me, apiDown = false, locale, tv }: { children: ReactNode; me: Me | null; apiDown?: boolean; locale: string; tv: boolean }) {
   setClientLocale(locale);
@@ -113,6 +133,7 @@ export function Providers({ children, me, apiDown = false, locale, tv }: { child
         <PerfGate tv={tv} />
         {!tv && <AccountDeletedNotice />}
         {!tv && <BackCover />}
+        {!tv && me?.activeProfile && !me.activeProfile.isKids && <TorrentSweep profileId={me.activeProfile.id} client={client} />}
       </QueryClientProvider>
     </SessionContext.Provider>
   );

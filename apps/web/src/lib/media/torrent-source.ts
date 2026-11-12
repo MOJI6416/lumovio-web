@@ -59,7 +59,9 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
   }
   if (!hash) return null;
   const existed = before.has(hash);
-  if (!existed) await ts.claim(hash, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}` }, tmdbImage(d.posterPath, "w342"));
+  // `added`: the mark of a torrent this add brought — only such a one is surely Lumovio's (before 061c2e7 an add also
+  // marked the person's torrent it rewrote), so only it is cleared by itself (torrent-sweep).
+  if (!existed) await ts.claim(hash, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, added: Date.now() }, tmdbImage(d.posterPath, "w342"));
   const label = r.title.slice(0, 190);
   for (let attempt = 1; ; attempt++) {
     try {

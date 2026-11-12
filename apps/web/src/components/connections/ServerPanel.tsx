@@ -148,7 +148,11 @@ export function ServerPanel({
                 <PanelSwitch checked={settings.importWatchedFromServer} onCheckedChange={(v) => set({ importWatchedFromServer: v })} label={t("importWatched")} />
               </>
             ) : (
-              <PanelSwitch checked={settings.autoSearch} onCheckedChange={(v) => set({ autoSearch: v })} label={t("autoSearch")} description={t("autoSearchHint")} />
+              <>
+                <PanelSwitch checked={settings.autoSearch} onCheckedChange={(v) => set({ autoSearch: v })} label={t("autoSearch")} description={t("autoSearchHint")} />
+                {/* The clean-up (18а): Lumovio's own always; the server's other torrents of titles only when turned on. */}
+                <PanelSwitch checked={settings.sweepAll === true} onCheckedChange={(v) => set({ sweepAll: v })} label={t("sweepAll")} description={t("sweepAllHint")} />
+              </>
             )}
           </Block>
 

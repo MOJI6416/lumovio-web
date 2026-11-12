@@ -39,6 +39,11 @@ export interface ManagedTorrent {
   active: boolean;
   /** Added through Lumovio (it leaves its mark in the torrent's data). */
   fromLumovio: boolean;
+  /**
+   * When Lumovio brought it (ms), from its mark's `added`: set only by an add that found the torrent new (since 2026-11-12),
+   * so surely Lumovio's — an older mark may sit on the person's torrent an add rewrote. Null without it.
+   */
+  claimedAt: number | null;
   /** The film or series it was added for in Lumovio, as written then ("Дюна (2021)"); null when it doesn't say. */
   addedFor: string | null;
   /** The title its own data names (Lumovio's mark, Lampa's card): a sure match while it isn't linked (`torrent-link`). */
@@ -50,8 +55,8 @@ export interface ManagedTorrent {
   addedAt: number | null;
 }
 
-/** Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title } }` (`title` since SRC-06). */
-function lumovioData(data: string | undefined): { titleId?: string; title?: string } | null {
+/** Lumovio's mark in a torrent's data: `{ lumovio: { titleId, season, title, added } }` (`title` since SRC-06, `added` 18а). */
+function lumovioData(data: string | undefined): { titleId?: string; title?: string; added?: unknown } | null {
   try {
     const mark = data ? JSON.parse(data)?.lumovio : null;
     return mark && typeof mark === "object" ? mark : null;
@@ -78,6 +83,7 @@ export function managedTorrents(list: ListedTorrent[], index: TorrentIndexEntry[
         sizeBytes: t.torrent_size && t.torrent_size > 0 ? t.torrent_size : files > 0 ? files : null,
         active: t.stat === 1 || t.stat === 2 || t.stat === 3,
         fromLumovio: mark !== null,
+        claimedAt: typeof mark?.added === "number" && mark.added > 0 ? mark.added : null,
         // Before SRC-06 a torrent was added under the film's name: that name is what it was added for.
         addedFor: typeof mark?.title === "string" ? mark.title : mark && t.title ? t.title : null,
         mark: markedTitle(t.data),
