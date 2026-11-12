@@ -314,39 +314,57 @@ function useSubtitles(ref: RefObject<HTMLVideoElement | null>, prepared: Prepare
     let engine: { destroy(): void } | null = null;
     let onChange: (() => void) | null = null;
     const audioLang = prepared.audio.find((a) => a.isDefault)?.lang ?? null;
-    // Subtitles are an extra of the stream: when they can't be read, the film plays without them.
-    background(
-      Promise.all([import("@/lib/media/subs/engine"), import("@/lib/media/subs/choice")]).then(async ([e, c]) => {
-        const handle = await e.startSubtitles({
-          video,
-          file: src.file,
-          files: src.files,
-          headers: src.headers,
-          targetAddressSpace: src.targetAddressSpace,
-          signal: abort.signal,
-          onTracks: (tracks) => {
-            const all = Array.from(video.textTracks);
-            setMeta(new Map(tracks.map((x) => [`track:${all.indexOf(x.track)}:subtitles:${x.track.language}:${x.track.label}`, { forced: x.forced, format: x.format, file: x.origin === "file" }])));
-            const key = prefs.current.key;
-            const at = c.pickSubtitle(tracks, { memory: key ? c.loadMemory(key) : null, audioLang, audioLanguages: prefs.current.audio, subtitleLanguages: prefs.current.subs });
-            let lastSet: TextTrack | null = at === null ? null : tracks[at]!.track;
-            if (lastSet) lastSet.mode = "showing";
-            // The person's own choice (menu, C key) is remembered for the title; the one made above isn't theirs.
-            onChange = () => {
-              const shown = tracks.find((x) => x.track.mode === "showing") ?? null;
-              if ((shown?.track ?? null) === lastSet || !key) return;
-              lastSet = shown?.track ?? null;
-              c.saveMemory(key, shown ? { lang: shown.lang, forced: shown.forced, name: shown.name } : { off: true });
-            };
-            video.textTracks.addEventListener("change", onChange);
-          },
-        });
-        if (abort.signal.aborted) handle.destroy();
-        else engine = handle;
-      }),
-    );
+    // Subtitles are an extra of the stream: when they can't be read, the film plays without them. Their own reading (the
+    // file's index at its end, the parts around the playhead) waits for the first frame: until then every byte the torrent
+    // brings goes to the picture (docs/torrserver-2026-11.md 23).
+    const start = () =>
+      background(
+        Promise.all([import("@/lib/media/subs/engine"), import("@/lib/media/subs/choice")]).then(async ([e, c]) => {
+          if (abort.signal.aborted) return;
+          const handle = await e.startSubtitles({
+            video,
+            file: src.file,
+            files: src.files,
+            headers: src.headers,
+            targetAddressSpace: src.targetAddressSpace,
+            signal: abort.signal,
+            onTracks: (tracks) => {
+              const all = Array.from(video.textTracks);
+              setMeta(new Map(tracks.map((x) => [`track:${all.indexOf(x.track)}:subtitles:${x.track.language}:${x.track.label}`, { forced: x.forced, format: x.format, file: x.origin === "file" }])));
+              const key = prefs.current.key;
+              const at = c.pickSubtitle(tracks, { memory: key ? c.loadMemory(key) : null, audioLang, audioLanguages: prefs.current.audio, subtitleLanguages: prefs.current.subs });
+              let lastSet: TextTrack | null = at === null ? null : tracks[at]!.track;
+              if (lastSet) lastSet.mode = "showing";
+              // The person's own choice (menu, C key) is remembered for the title; the one made above isn't theirs.
+              onChange = () => {
+                const shown = tracks.find((x) => x.track.mode === "showing") ?? null;
+                if ((shown?.track ?? null) === lastSet || !key) return;
+                lastSet = shown?.track ?? null;
+                c.saveMemory(key, shown ? { lang: shown.lang, forced: shown.forced, name: shown.name } : { off: true });
+              };
+              video.textTracks.addEventListener("change", onChange);
+            },
+          });
+          if (abort.signal.aborted) handle.destroy();
+          else engine = handle;
+        }),
+      );
+    let started = false;
+    const begin = () => {
+      if (started) return;
+      started = true;
+      video.removeEventListener("loadeddata", begin);
+      clearTimeout(late);
+      start();
+    };
+    // A player that never gets its first frame still gets its subtitles in the end.
+    const late = setTimeout(begin, 20_000);
+    if (video.readyState >= 2) begin();
+    else video.addEventListener("loadeddata", begin);
     return () => {
       abort.abort();
+      clearTimeout(late);
+      video.removeEventListener("loadeddata", begin);
       if (onChange) video.textTracks.removeEventListener("change", onChange);
       engine?.destroy();
       engine = null;

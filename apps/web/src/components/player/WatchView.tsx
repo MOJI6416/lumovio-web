@@ -56,7 +56,7 @@ import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
 import { ExternalPlayerPanel } from "./ExternalPlayerPanel";
-import { startLaunch, useLaunch } from "./launch";
+import { launchSince, startLaunch, useLaunch } from "./launch";
 import { LumovioPlayer } from "./LumovioPlayer";
 import type { FinderPick, FinderProps } from "./finder";
 import { TorrentFinder } from "./TorrentFinder";
@@ -218,7 +218,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const lastGood = useRef<{ candidate: Candidate; voice: string | null } | null>(null);
   // The stages of the source playing now, for a failure in the player itself.
   const lastPrep = useRef<{ label: string; prep: Prep } | null>(null);
-  // When the source playing now was handed to the player: its first play reports the start and how long it took.
+  // When the launch of the source playing now began (the press): its first play reports the start and how long it took.
   const startClock = useRef<number | null>(null);
   // Where the sources screen was when a preparation started from it: the control picked and where it stood.
   const savedPlace = useRef<{ el: Element | null; top: number } | null>(null);
@@ -494,7 +494,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           return;
         }
         lastGood.current = { candidate: c, voice: new URL(window.location.href).searchParams.get("voice") };
-        startClock.current = performance.now();
+        // From the press of "Watch" — the add, the player's page and the probe included (docs/torrserver-2026-11.md 40).
+        startClock.current = launchSince() ?? performance.now();
         setActive({ candidate: c, prepared });
         setPhase({ kind: "playing" });
         // Dolby Vision 5 here plays with wrong colours (PLR-15): said at once, with the way to another app.
@@ -1043,7 +1044,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         if (seq.current <= 1) active.prepared.reportStart?.(pos);
         // The start, with the time to the first frame (the admin's playback success and speed).
         if (startClock.current !== null) {
-          const ttffMs = Math.round(performance.now() - startClock.current);
+          const ttffMs = Math.min(600_000, Math.round(performance.now() - startClock.current));
           startClock.current = null;
           background(
             reportPlayback({ provider: active.candidate.provider, method: active.prepared.method, outcome: "started", errorCode: null, container: null, videoCodec: null, audioCodec: null, platform: detectCapabilities().platform, ttffMs }),

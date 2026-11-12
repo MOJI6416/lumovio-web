@@ -81,8 +81,9 @@ export function endLaunch() {
   });
 }
 
-export function isLaunching() {
-  return state.open;
+/** When the launch under way began (performance.now: the press, before any add or page), or null when none is. */
+export function launchSince() {
+  return state.open ? state.since : null;
 }
 
 const subscribe = (l: () => void) => {

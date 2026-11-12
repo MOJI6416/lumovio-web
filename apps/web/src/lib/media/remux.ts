@@ -27,6 +27,12 @@ import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
 
 const AHEAD = 30;
 const BEHIND = 30;
+/**
+ * The most one append gives Media Source: an iPhone's ManagedMediaSource refuses a whole fragment of a high-bitrate film
+ * (8.4 MB of a 20 GB Blu-ray rip) even into an empty buffer, QuotaExceededError, and takes the same bytes in slices
+ * (iOS 27.2, docs/torrserver-2026-11.md 23в). A fragment split across appends is fine: the buffer parses a stream.
+ */
+const SLICE = 1 << 20;
 
 export interface RemuxHandle {
   /** Position of the track among the file's audio tracks (ffprobe order = container order). */
@@ -117,22 +123,61 @@ export function startRemux(video: HTMLVideoElement, opts: RemuxOptions): Promise
   return startEngine(video, opts, (mb) => mediabunnySource(mb, opts));
 }
 
-/** Mediabunny reading the file by ranges: the video copied, the audio copied or converted. */
-async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<RebuildSource> {
+type FileSource = Pick<RemuxOptions, "url" | "headers" | "targetAddressSpace">;
+interface Opened {
+  input: Input;
+  videoTrack: InputVideoTrack | null;
+  audioTracks: InputAudioTrack[];
+}
+
+/** The file opened for reading by ranges, its tracks read (the head and, for Matroska, the index at the end). */
+async function openFile(mb: Mediabunny, src: FileSource): Promise<Opened> {
   const input: Input = new mb.Input({
-    source: new mb.UrlSource(new URL(opts.url, location.href).href, {
-      requestInit: { headers: opts.headers, credentials: "omit", cache: "no-store", ...(opts.targetAddressSpace ? { targetAddressSpace: opts.targetAddressSpace } : {}) } as RequestInit,
+    source: new mb.UrlSource(new URL(src.url, location.href).href, {
+      requestInit: { headers: src.headers, credentials: "omit", cache: "no-store", ...(src.targetAddressSpace ? { targetAddressSpace: src.targetAddressSpace } : {}) } as RequestInit,
     }),
     formats: mb.ALL_FORMATS,
   });
-  let videoTrack: InputVideoTrack | null;
-  let audioTracks: InputAudioTrack[];
-  let duration: number | null;
   try {
-    videoTrack = await input.getPrimaryVideoTrack();
-    audioTracks = await input.getAudioTracks();
+    const videoTrack = await input.getPrimaryVideoTrack();
+    const audioTracks = await input.getAudioTracks();
     // TrueHD / MLP tracks get their codec's name, so they can be decoded (codecs/audio.ts).
     nameTrueHdTracks(audioTracks);
+    return { input, videoTrack, audioTracks };
+  } catch (e) {
+    input.dispose();
+    throw e;
+  }
+}
+
+/** Files opened before their player asked (`preopen`), by address. */
+const opened = new Map<string, Promise<Opened>>();
+
+/**
+ * Starts reading a file that will be rebuilt, while the rest of its preparation (TorrServer's probe) still runs: the
+ * player's rebuild then takes it as it is. One its player doesn't take within a minute is let go.
+ */
+export function preopen(src: FileSource) {
+  const href = new URL(src.url, location.href).href;
+  if (opened.has(href)) return;
+  const p = load().then((mb) => openFile(mb, src));
+  opened.set(href, p);
+  p.catch(() => opened.get(href) === p && opened.delete(href));
+  setTimeout(() => {
+    if (opened.get(href) !== p) return;
+    opened.delete(href);
+    p.then((o) => o.input.dispose(), () => undefined);
+  }, 60_000);
+}
+
+/** Mediabunny reading the file by ranges: the video copied, the audio copied or converted. */
+async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<RebuildSource> {
+  const href = new URL(opts.url, location.href).href;
+  const early = opened.get(href);
+  opened.delete(href);
+  const { input, videoTrack, audioTracks } = (early ? await early.catch(() => null) : null) ?? (await openFile(mb, opts));
+  let duration: number | null;
+  try {
     duration = opts.durationSec ?? (await input.getDurationFromMetadata());
   } catch (e) {
     input.dispose();
@@ -259,7 +304,12 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     await idle();
   };
 
-  const append = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
+  /** Whether the video has something to play from where it is: then playback moving on frees room in a full buffer. */
+  const playable = () => {
+    const end = bufferedEnd(video.currentTime);
+    return end !== null && end - video.currentTime > 0.5;
+  };
+  const appendSlice = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
     for (let attempt = 0; ; attempt++) {
       await evictBehind(BEHIND);
       if (mine !== gen || !sb) return;
@@ -268,11 +318,21 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
         await idle();
         return;
       } catch (e) {
-        // A full buffer frees up as playback moves on: drop more of what was played, then wait.
+        // A full buffer frees up as playback moves on: drop more of what was played, then wait. With nothing to play,
+        // nothing moves on — a moment, then the next try, and an error in the end rather than loading for ever.
         if (!(e instanceof DOMException && e.name === "QuotaExceededError") || attempt > 20) throw e;
         await evictBehind(2);
-        await new Promise<void>((r) => wake.push(r));
+        await new Promise<void>((r) => {
+          wake.push(r);
+          if (!playable()) setTimeout(r, 500);
+        });
       }
+    }
+  };
+  const append = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
+    for (let at = 0; at < data.byteLength; at += SLICE) {
+      await appendSlice(data.subarray(at, at + SLICE), mine);
+      if (mine !== gen || !sb) return;
     }
   };
 

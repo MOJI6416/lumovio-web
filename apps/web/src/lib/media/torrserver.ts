@@ -325,6 +325,26 @@ export function episodeFiles(files: TsFile[], torrentTitle: string, season: numb
   return { candidates: [...annotated].sort((a, b) => order(a) - order(b) || a.path.localeCompare(b.path, undefined, { numeric: true })), exact };
 }
 
+/** What TorrServer's ffprobe (`/ffp`) says about a file — the part a playback uses. */
+export interface FileProbe {
+  format?: { format_name?: string; duration?: string; bit_rate?: string };
+  streams?: {
+    index: number;
+    codec_type: string;
+    codec_name: string;
+    tags?: { language?: string; title?: string };
+    disposition?: { default?: number };
+    bits_per_raw_sample?: string;
+    pix_fmt?: string;
+    width?: number;
+    height?: number;
+    side_data_list?: { side_data_type?: string; dv_profile?: number }[];
+    color_transfer?: string;
+    channels?: number;
+  }[];
+  chapters?: ProbeChapter[];
+}
+
 export function torrServerClient(base: string, auth: TsAuth, opts: { connectionId?: string } = {}): ProviderClient & {
   list(): Promise<TsTorrent[]>;
   quietAdd(link: string): Promise<TsTorrent>;
@@ -422,34 +442,30 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean } = {}) {
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
+      // What this device remembers of its files' probes: loaded only by a playback, alongside the server's first answer.
+      const memory = import("./probe-memory");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
       const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
       const file = (t.file_stats ?? []).find((f) => String(f.id) === idx && isVideoFile(f.path));
       if (!file) throw new TorrentFileMissing(idx ?? "");
 
       const caps = detectCapabilities();
-      let probe: {
-        format?: { format_name?: string; duration?: string; bit_rate?: string };
-        streams?: {
-          index: number;
-          codec_type: string;
-          codec_name: string;
-          tags?: { language?: string; title?: string };
-          disposition?: { default?: number };
-          bits_per_raw_sample?: string;
-          pix_fmt?: string;
-          width?: number;
-          height?: number;
-          side_data_list?: { side_data_type?: string; dv_profile?: number }[];
-          color_transfer?: string;
-          channels?: number;
-        }[];
-        chapters?: ProbeChapter[];
-      } | null = null;
-      try {
-        probe = await get(`/ffp/${hash}/${file.id}`, 60_000);
-      } catch {
-        probe = null;
+      const raw: { url: string; headers: Record<string, string>; targetAddressSpace?: "loopback" | "local" } = { url: streamUrl(hash, file, false), headers: authHeader ? { Authorization: authHeader } : {}, targetAddressSpace: targetAddressSpace(base) };
+      // The server's subtitle list is asked alongside the probe, not after it.
+      const subsAsked = get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000).catch(() => null);
+      const probeKey = `${hash.toLowerCase()}:${file.id}`;
+      const { rememberedProbe, rememberProbe } = await memory;
+      let probe: FileProbe | null = rememberedProbe(probeKey);
+      if (!probe) {
+        // A Matroska file where this browser has no Matroska (an iPhone) is rebuilt whatever the probe says: the rebuild
+        // reads the file's head and index meanwhile, instead of after it (~2 s on a phone).
+        if (/\.(mkv|mk3d|webm)$/i.test(file.path) && caps.containers.mkv === "no" && caps.mediaSource !== "none") void import("./remux").then((m) => m.preopen(raw), () => undefined);
+        try {
+          probe = await get<FileProbe>(`/ffp/${hash}/${file.id}`, 60_000);
+          if (probe?.streams?.length) rememberProbe(probeKey, probe);
+        } catch {
+          probe = null;
+        }
       }
       const vs = probe?.streams?.find((s) => s.codec_type === "video");
       const as = probe?.streams?.filter((s) => s.codec_type === "audio") ?? [];
@@ -474,7 +490,6 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       // Loaded only now: pages that show copies (home, titles) load this module but never prepare a playback.
       const { choosePlayback } = await import("./playback-choice");
       let how = await choosePlayback(caps, file0, { otherTrack: otherTrack || Boolean(choice.rebuild), noBridge });
-      const raw: { url: string; headers: Record<string, string>; targetAddressSpace?: "loopback" | "local" } = { url: streamUrl(hash, file, false), headers: authHeader ? { Authorization: authHeader } : {}, targetAddressSpace: targetAddressSpace(base) };
       // An old AVI: played here only if this device decodes it fast enough, measured on the file's first seconds.
       if (how.path === "legacy") {
         const { probeLegacy } = await import("./legacy");
@@ -486,19 +501,14 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const route = how.path === "remux" || how.path === "legacy" ? how.audio : undefined;
       const verdict = how.path === "external" ? { ok: false as const, reason: how.reason } : { ok: true as const };
 
-      let subtitles: SubtitleTrack[] = [];
-      try {
-        const subs = await get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000);
-        subtitles = (subs ?? []).map((s, i) => ({
-          id: String(s.index ?? s.id ?? i),
-          lang: s.lang ?? "und",
-          label: s.name ?? s.path?.split("/").pop() ?? `#${i + 1}`,
-          url: authHeader && opts.connectionId ? `/__ts/${opts.connectionId}/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}` : joinUrl(base, `/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}`),
-          kind: "subtitles" as const,
-        }));
-      } catch {
-        subtitles = [];
-      }
+      const listed = await subsAsked;
+      const subtitles: SubtitleTrack[] = (Array.isArray(listed) ? listed : []).map((s, i) => ({
+        id: String(s.index ?? s.id ?? i),
+        lang: s.lang ?? "und",
+        label: s.name ?? s.path?.split("/").pop() ?? `#${i + 1}`,
+        url: authHeader && opts.connectionId ? `/__ts/${opts.connectionId}/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}` : joinUrl(base, `/subs/${hash}/${file.id}?track=${s.index ?? s.id ?? i}`),
+        kind: "subtitles" as const,
+      }));
       // Subtitles the browser can't read itself (PLR-14): a Matroska file's text and picture tracks and an MP4's text
       // tracks, read by ranges around the playhead, and subtitle files next to it in the torrent.
       const subtitleCodecs = (probe?.streams ?? []).filter((s) => s.codec_type === "subtitle").map((s) => s.codec_name);
