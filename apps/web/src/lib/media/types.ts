@@ -1,6 +1,7 @@
 import type { LibraryIndexEntry, PlaybackMethod, ProviderKind, ServerHistory } from "@lumovio/contracts";
 import type { AudioRoute } from "./playback-choice";
 import type { VoiceWish } from "./releases";
+import type { FileProbe } from "./torrserver";
 
 /** A concrete thing we could play for a title (one file on one server, or one open source). */
 export interface PlayableCandidate {
@@ -101,6 +102,11 @@ export interface PreparedPlayback {
   durationSec: number | null;
   /** The file's size, when the server says it (TorrServer): with `durationSec`, its bytes per second for `watchLine`. */
   sizeBytes?: number | null;
+  /**
+   * TorrServer: the file's probe when this preparation read it (not one remembered on the device), with the torrent's
+   * name and size on the server — the player shares it with every account (`release-files`).
+   */
+  fileRead?: { hash: string; file: number; probe: FileProbe; torrentTitle: string; torrentSize: number | null };
   /** It plays, but not as it should here: "dv5" — Dolby Vision profile 5 on a browser that doesn't decode it (wrong colours). */
   warning?: "dv5";
   /** Link for VLC/mpv/Infuse (may embed server credentials — never shown in full). */

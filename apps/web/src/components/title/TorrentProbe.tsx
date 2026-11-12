@@ -3,18 +3,20 @@
 import type { SourceState } from "@lumovio/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { useMediaErrorText } from "@/components/sources/media-error";
 import { useSession } from "@/components/providers/Providers";
 import { RESOLUTION, releaseMarks, useReleaseText } from "@/components/sources/release-text";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/Toast";
+import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
 import { pickAlternatives, pickRelease } from "@/lib/media/release-pick";
-import { bestOf, voiceWish, wishNameTrack } from "@/lib/media/releases";
+import { sharedFileOf } from "@/lib/media/release-files";
+import { bestOf, copyFileTracks, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
@@ -55,6 +57,31 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const { option, chosen } = pick;
   // A studio's option or a language's alone ("Ukrainian · MVO"): the player starts that track, not the file's default.
   const voice = option && (option.studio || option.language) ? option.key : null;
+
+  // What the releases' files hold, read ahead through the server when the page is idle (lib/media/read-ahead): the
+  // pick then knows the studios a name like "6x MVO" hides. It reads the ranking as it is after every read.
+  const avail = useTitleAvailability(d.id);
+  const copies = useMemo(() => copyFileTracks(avail.data?.servers ?? []), [avail.data]);
+  const now = useRef({ ranked, prefs, copies });
+  now.current = { ranked, prefs, copies };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one round per search answer and episode
+  useEffect(() => {
+    if (!lookup.data) return;
+    let cancel: (() => void) | null = null;
+    let gone = false;
+    void import("@/lib/media/read-ahead").then((m) => {
+      if (gone) return;
+      cancel = m.readAhead(
+        { connectionId: source.id, titleId: d.id, movie: d.kind === "movie", year: d.year ?? null, season: start?.season ?? null, episode: start?.episode ?? null },
+        () => (now.current.ranked ? { ranked: now.current.ranked, prefs: now.current.prefs, known: (r) => sharedFileOf(r) != null || Boolean(now.current.copies?.(r)) } : null),
+        () => undefined,
+      );
+    });
+    return () => {
+      gone = true;
+      cancel?.();
+    };
+  }, [lookup.data?.at, source.id, d.id, start?.season, start?.episode]);
 
   // A search for a watchlist title counts for the profile's other devices too (and spares them one for 12 hours).
   const profileId = me?.activeProfile?.id ?? null;

@@ -347,10 +347,11 @@ export interface FileProbe {
 
 export function torrServerClient(base: string, auth: TsAuth, opts: { connectionId?: string } = {}): ProviderClient & {
   list(): Promise<TsTorrent[]>;
-  quietAdd(link: string): Promise<TsTorrent>;
+  quietAdd(link: string, timeoutMs?: number): Promise<TsTorrent>;
   claim(hash: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
   get(hash: string): Promise<TsTorrent>;
-  files(hash: string, load?: boolean): Promise<{ title: string; files: TsFile[] }>;
+  files(hash: string, load?: boolean, timeoutMs?: number, signal?: AbortSignal): Promise<{ title: string; files: TsFile[] }>;
+  readProbe(hash: string, file: TsFile, signal: AbortSignal, timeoutMs?: number): Promise<FileProbe | null>;
   remove(hash: string): Promise<void>;
   search(query: string, signal?: AbortSignal): Promise<{ results: TsSearchResult[]; skipped: number }>;
   streamUrl(hash: string, file: TsFile, viaWorker: boolean): string;
@@ -399,9 +400,9 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits
      * for the metadata — unless `load` is false (a look through other torrents: none is started for it).
      */
-    async files(hash: string, load = true) {
+    async files(hash: string, load = true, timeoutMs = 60_000, signal?: AbortSignal) {
       let t = await post<TsTorrent>("/torrents", { action: "get", hash });
-      if (!t?.file_stats?.length && load) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
+      if (!t?.file_stats?.length && load) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, timeoutMs, signal);
       return { title: t?.title ?? "", files: t?.file_stats ?? [] };
     },
     /**
@@ -409,7 +410,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * which a slow tracker stretches well past the usual 12 s. A torrent already in the server's database keeps its own
      * title, poster and data — an add that brings them rewrites it (MatriX.147).
      */
-    quietAdd: (link: string) => post<TsTorrent>("/torrents", { action: "add", link, title: "", poster: "", data: "", save_to_db: false }, 60_000),
+    quietAdd: (link: string, timeoutMs = 60_000) => post<TsTorrent>("/torrents", { action: "add", link, title: "", poster: "", data: "", save_to_db: false }, timeoutMs),
     /**
      * Names a torrent `quietAdd` brought and keeps it in the server's database: `set` gives the loaded torrent its title,
      * poster and Lumovio's mark, and an add by its hash's magnet saves it without fetching the .torrent again.
@@ -433,6 +434,17 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       return normalizeTorznab(raw);
     },
     streamUrl,
+    /**
+     * What a file holds, read through the server without a playback (a read ahead): a Matroska file's own first
+     * kilobytes, else TorrServer's ffprobe. Null when neither told within `timeoutMs`.
+     */
+    async readProbe(hash: string, file: TsFile, signal: AbortSignal, timeoutMs = 30_000) {
+      const within = typeof AbortSignal.any === "function" ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : signal;
+      const raw = { url: streamUrl(hash, file, false), headers: (authHeader ? { Authorization: authHeader } : {}) as Record<string, string>, targetAddressSpace: targetAddressSpace(base) };
+      const own = /\.(mkv|mk3d|webm)$/i.test(file.path) ? await optional(import("./matroska-probe").then((m) => m.serverFileProbe(raw, file.length, within)), null) : null;
+      if (own || within.aborted) return own;
+      return optional(get<FileProbe>(`/ffp/${hash}/${file.id}`, timeoutMs, signal), null).then((p) => (p?.streams?.length ? p : null));
+    },
 
     /**
      * externalId = "<hash>:<fileIndex>"; the caller has already chosen the file (`pickMovieFile`,
@@ -461,6 +473,8 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const probeKey = `${hash.toLowerCase()}:${file.id}`;
       const { rememberedProbe, rememberProbe } = await memory;
       let probe: FileProbe | null = rememberedProbe(probeKey);
+      // Read now, not remembered: the player shares it (lib/media/release-files).
+      let fresh = false;
       if (!probe) {
         const matroska = /\.(mkv|mk3d|webm)$/i.test(file.path);
         // A Matroska file where this browser has no Matroska (an iPhone) is rebuilt whatever the probe says: the rebuild
@@ -482,6 +496,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
           probe = own;
         } else probe = await ask();
         signal?.throwIfAborted();
+        fresh = Boolean(probe?.streams?.length);
       }
       const vs = probe?.streams?.find((s) => s.codec_type === "video");
       const as = probe?.streams?.filter((s) => s.codec_type === "audio") ?? [];
@@ -590,6 +605,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
           : undefined,
         durationSec: probe?.format?.duration ? Number(probe.format.duration) : null,
         sizeBytes: file.length || null,
+        fileRead: fresh && probe ? { hash: hash.toLowerCase(), file: file.id, probe, torrentTitle: t.title ?? "", torrentSize: t.torrent_size ?? null } : undefined,
         // Dolby Vision without an HDR10 base layer (profile 5) shows wrong colours where it isn't decoded.
         warning: vs?.side_data_list?.some((x) => /dovi|dolby vision/i.test(x.side_data_type ?? "") && x.dv_profile === 5) && !caps.dolbyVision ? "dv5" : undefined,
         externalUrl: externalUrl(hash, file),

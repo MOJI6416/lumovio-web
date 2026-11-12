@@ -6,6 +6,7 @@ export * from "./library";
 export * from "./media";
 export * from "./providers";
 export * from "./recommendations";
+export * from "./releases";
 
 /** Error body returned by every failing Lumovio API call. */
 export interface ApiError {

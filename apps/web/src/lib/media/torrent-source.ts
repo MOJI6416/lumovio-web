@@ -3,6 +3,7 @@ import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
 import { getCredentials } from "./clients";
 import { MediaNetError } from "./net";
+import { whileAdding } from "./read-lock";
 import { type TsSearchResult, torrServerClient } from "./torrserver";
 import { noteAdd } from "./tracker-adds";
 
@@ -40,10 +41,18 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * A slow tracker can keep the server fetching the .torrent past the wait: it may still have added it, and then it is the
  * one torrent its list has that it didn't have before. An index that can't be written after a few tries takes back a
  * torrent this add brought (it would be on the server linked to nothing); one that was there stays as it was.
+ *
+ * Read aheads on the server stop first (`read-lock`); a torrent one of them added for a moment is new to the add, and the
+ * one the add takes stays on the server.
  */
-export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
+export function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
+  return whileAdding(connectionId, (quiet, adopt) => addNow(connectionId, d, season, r, quiet, adopt));
+}
+
+async function addNow(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult, quiet: ReadonlySet<string>, adopt: (hash: string) => void) {
   const ts = await torrServerFor(connectionId);
   const before = await hashesOn(ts);
+  for (const h of quiet) before.delete(h);
   const links = r.origins?.map((o) => o.link) ?? [r.link];
   let hash: string | null = null;
   for (const [i, link] of links.entries()) {
@@ -59,6 +68,7 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
     if (hash) break;
   }
   if (!hash) return null;
+  adopt(hash);
   const existed = before.has(hash);
   // `added`: the mark of a torrent this add brought — only such a one is surely Lumovio's (in older versions
   // an add also marked the person's torrent it rewrote), so only it is cleared by itself (torrent-sweep).

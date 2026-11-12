@@ -534,6 +534,18 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           if ((c.server.quality?.audioTracks ?? []).join("\n") !== tracks.join("\n"))
             background(api(`/api/connections/${c.server.connectionId}/index/tracks`, { method: "POST", json: { hash: hashOf(c.server.externalId).toLowerCase(), tracks } }).then(() => invalidateAvailability(qc)));
         }
+        // A file read now (not remembered here) goes to the shared cache: every account's pick knows what it holds.
+        if (c.provider === "torrserver" && signedIn && !isKids && prepared.fileRead) {
+          const read = prepared.fileRead;
+          background(
+            import("@/lib/media/release-files").then((m) =>
+              m.shareFile(read.hash, read.file, read.probe, [
+                { title: read.torrentTitle, size: read.torrentSize },
+                { title: c.server.label, size: read.torrentSize },
+              ]),
+            ),
+          );
+        }
         // No track could be told to be the chosen dubbing: the default plays, and the person is told so.
         if (prepared.voice?.match === "unknown") toast.info(t("voiceTrackUnknown", { studio: prepared.voice.studio }));
 

@@ -6,11 +6,12 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
-import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
+import { type LookupResult, lookupKey, sharedFilesOf, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
 import { type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
+import { filesVersion, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult } from "@/lib/media/torrserver";
 
@@ -178,6 +179,9 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
       const r = await (await torrServerFor(connId)).search(q, ctrl.signal);
       if (run.current !== ctrl) return;
       if (d.kind === "tv") reportNumbering(d.id, "names", namesNumbering(r.results, d));
+      // What every account's reads know of these files, before the list is shown (as on the title page).
+      await sharedFilesOf(r.results, d, ctrl.signal);
+      if (run.current !== ctrl) return;
       // A refresh of the same search that comes back empty keeps the results shown (failing indexers
       // answer so too), with their age; another query's empty answer is just that.
       const next = keepThroughEmpty(found?.query === q ? found : null, { ...r, at: Date.now() });
@@ -200,15 +204,18 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
 
   // Releases of this title first, best for the profile's languages, studios, mode and this device; the
   // rest follow by seeders (the indexer's numbers; unknown ones last), so a custom query still shows everything.
+  const shared = useSyncExternalStore(subscribeFiles, filesVersion, () => 0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shared` is the version of what withSharedFiles reads
   const view = useMemo(() => {
     if (!found) return null;
     // An episode is wanted: a release whose name holds other seasons (or other episodes of the season) only sinks.
-    // A result that is a copy already on the server: its studios as its file's tracks name them ("6x MVO").
-    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, fileTracks ?? null);
+    // A result that is a copy already on the server: its studios as its file's tracks name them ("6x MVO"); any other,
+    // as the file some account's TorrServer read names them (lib/media/release-files).
+    const ranked = rankReleases(found.results, d, prefs, d.kind === "tv" ? season : null, d.kind === "tv" ? episode : null, withSharedFiles(fileTracks ?? null));
     const mine = new Set(ranked.map((x) => x.result.link));
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
-  }, [found, d, prefs, season, episode, fileTracks]);
+  }, [found, d, prefs, season, episode, fileTracks, shared]);
 
   const server = connections.find((c) => c.id === connId)?.name ?? "TorrServer";
   /** Any audio, cut and picture again (the TV's "Reset"). */

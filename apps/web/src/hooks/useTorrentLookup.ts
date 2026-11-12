@@ -7,8 +7,9 @@ import { useSession } from "@/components/providers/Providers";
 import { useTitleAvailability } from "@/hooks/useAvailability";
 import { detectCapabilities, onUhdSmooth, uhdDecodesNow, uhdSmoothNow } from "@/lib/media/capabilities";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
+import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, sameTitleResults, torrentQuery } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
+import { filesVersion, lookupFiles, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { failingTrackers as failingTrackers_, noFailingTrackers, subscribeTrackers } from "@/lib/media/tracker-adds";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
@@ -68,6 +69,15 @@ export const lookupKey = (profileId: string | null, connectionId: string | null,
 export type LookupResult = SearchAnswer;
 
 /**
+ * The shared cache's word on a search's results that are this title (`lookupFiles`), waited for at most 3 s: the
+ * search's answer goes on without it.
+ */
+export function sharedFilesOf(results: SearchAnswer["results"], d: Parameters<typeof sameTitleResults>[1], signal?: AbortSignal): Promise<void> {
+  const within = typeof AbortSignal.any === "function" ? AbortSignal.any([AbortSignal.timeout(3000), ...(signal ? [signal] : [])]) : signal;
+  return lookupFiles(sameTitleResults(results, d), within).catch(() => undefined); // ui-lint-ignore swallowed-error: the cache is a help; a pick goes by the names without it
+}
+
+/**
  * One search of the profile's own TorrServer indexers for a title, from this device (Lumovio's
  * servers never search, store or relay torrents). Results stay in memory for 30 minutes; ranking
  * follows the profile's preferences, or `quality` for this viewing, without searching again.
@@ -83,9 +93,12 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
   const lineBps = useSyncExternalStore(subscribeLine, () => lineSpeed(source?.id), () => null);
   const prefs = useMemo(() => ({ ...base, ...(quality ? { quality } : {}), lineBps }), [base, quality, lineBps]);
   // The tracks read in the title's copies (the page's own availability query, not another request): a result that is
-  // a copy takes its studios from the file, as on the sources screen.
+  // a copy takes its studios from the file, as on the sources screen; any other, from the file some account's
+  // TorrServer read (lib/media/release-files), asked with the search and again after a read ahead.
   const avail = useTitleAvailability(d.id);
-  const fileOf = useMemo(() => copyFileTracks(avail.data?.servers ?? []), [avail.data]);
+  const shared = useSyncExternalStore(subscribeFiles, filesVersion, () => 0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `shared` is the version of what withSharedFiles reads
+  const fileOf = useMemo(() => withSharedFiles(copyFileTracks(avail.data?.servers ?? [])), [avail.data, shared]);
   const select = useCallback(
     (r: LookupResult): TorrentLookup => ({
       connectionId: source?.id ?? "",
@@ -110,6 +123,8 @@ export function useTorrentLookup(d: TitleSummary, source: SourceState | null, en
       const found = await (await torrServerFor(source!.id)).search(torrentQuery(d), signal);
       // What the names say about the seasons, for numbering the series as releases do.
       if (d.kind === "tv") reportNumbering(d.id, "names", namesNumbering(found.results, d));
+      // What the shared cache knows of these files, before the first ranking: the card doesn't change a moment later.
+      await sharedFilesOf(found.results, d, signal);
       return keepThroughEmpty(qc.getQueryData<LookupResult>(key), { ...found, at: Date.now() });
     },
     select,
