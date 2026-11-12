@@ -46,6 +46,11 @@ const MARKS: Record<string, string> = {
   "1+1": "1plus1",
   "новий канал": "novyikanal",
   тет: "tet",
+  newstudio: "newstudio",
+  baibako: "baibako",
+  moviedalen: "moviedalen",
+  videofilm: "videofilm",
+  ictv: "ictv",
 };
 
 const fileOf = (studio: string | null | undefined) => (studio ? MARKS[studio.trim().toLowerCase()] : undefined);
