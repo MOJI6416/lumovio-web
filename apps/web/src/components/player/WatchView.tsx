@@ -1510,10 +1510,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                     signedIn && !isKids
                       ? (copy, size) => (
                           <CopyActions
-                            title={{ ...d, trailer: null }}
                             copy={copy}
                             size={size}
-                            episodes={(avail.data?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.connectionId === copy.connectionId && hashOf(x.externalId).toLowerCase() === hashOf(copy.externalId).toLowerCase())}
                             manage={copy.kind === "torrserver"}
                             onRemove={setRemoval}
                             onDetails={() => setDetails(copy)}

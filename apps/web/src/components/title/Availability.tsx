@@ -79,10 +79,6 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
-  // A torrent's files bound to episodes of this series (they are not copies of their own).
-  const hashOf = (s: { externalId: string }) => s.externalId.split(":")[0]!.toLowerCase();
-  const episodeFilesOf = (copy: Copy) =>
-    (raw?.servers ?? []).filter((x) => x.kind === "torrserver" && x.season !== null && x.episode !== null && x.connectionId === copy.connectionId && hashOf(x) === hashOf(copy));
   const resume = watchHref(d, lib?.progress, chosen);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
@@ -117,7 +113,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
     />
   );
   const more = (s: Copy, size: "md" | "lg") => (
-    <CopyActions title={d} copy={s} episodes={episodeFilesOf(s)} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
+    <CopyActions copy={s} manage={manage && s.kind === "torrserver"} onRemove={setRemoval} onDetails={() => setDetails(s)} size={size} />
   );
 
   let main: ReactNode = null;
