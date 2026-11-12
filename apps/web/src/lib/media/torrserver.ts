@@ -350,7 +350,7 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
   quietAdd(link: string): Promise<TsTorrent>;
   claim(hash: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
   get(hash: string): Promise<TsTorrent>;
-  files(hash: string): Promise<{ title: string; files: TsFile[] }>;
+  files(hash: string, load?: boolean): Promise<{ title: string; files: TsFile[] }>;
   remove(hash: string): Promise<void>;
   search(query: string, signal?: AbortSignal): Promise<{ results: TsSearchResult[]; skipped: number }>;
   streamUrl(hash: string, file: TsFile, viaWorker: boolean): string;
@@ -395,10 +395,13 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
     },
     list: () => post<TsTorrent[]>("/torrents", { action: "list" }),
     get: (hash: string) => post<TsTorrent>("/torrents", { action: "get", hash }),
-    /** The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits for the metadata. */
-    async files(hash: string) {
+    /**
+     * The torrent's files. One restored from TorrServer's database may not have them yet; /stream?stat starts it and waits
+     * for the metadata — unless `load` is false (a look through other torrents: none is started for it; 34).
+     */
+    async files(hash: string, load = true) {
       let t = await post<TsTorrent>("/torrents", { action: "get", hash });
-      if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
+      if (!t?.file_stats?.length && load) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
       return { title: t?.title ?? "", files: t?.file_stats ?? [] };
     },
     /**

@@ -44,7 +44,7 @@ import { MediaNetError } from "@/lib/media/net";
 import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
 import { voiceWish } from "@/lib/media/releases";
-import { holdsByName } from "@/lib/media/packs";
+import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
 import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
@@ -334,11 +334,13 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    * to the person — never the first or biggest file in place of the requested one.
    */
   const resolveTorrent = useCallback(
-    async (c: Candidate, explicit: boolean): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
+    async (c: Candidate, explicit: boolean, load = true): Promise<{ externalId: string; file: string; videos: number | null } | TorrentFiles> => {
       const s = c.server;
       if (s.externalId.includes(":")) return { externalId: s.externalId, file: s.label ?? "", videos: null };
       const ts = (await clientFor(connOf(s))) as ReturnType<typeof torrServerClient>;
-      const { title, files } = await ts.files(s.externalId);
+      const { title, files } = await ts.files(s.externalId, load);
+      // Not started on the server and not to be (`load` false): its files aren't known — the caller passes it by.
+      if (files.length === 0 && !load) throw new Error("torrent not loaded");
       // The release's name (the index keeps it): a torrent added before SRC-06 has only the film's name on the server.
       const name = s.label || title || "";
       // How this release numbers the seasons, for numbering the series as releases do (kids profiles send nothing).
@@ -429,11 +431,18 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             if (!live()) return;
             const asked: TorrentFiles[] = [];
             if ("files" in r && opts.auto && d.kind === "tv") {
-              // Nothing was chosen explicitly: look for the episode in this title's other torrents before asking.
+              // Nothing was chosen explicitly: look for the episode in this title's other torrents before asking — those
+              // whose names say they hold this season first, three at most, each read from the server's database only:
+              // no torrent is started (up to a minute each) for the look (docs/torrserver-2026-11.md 34).
               asked.push(r);
-              for (const other of candidates.filter((x) => x.provider === "torrserver" && !isBound(x) && x.key !== c.key)) {
-                // A torrent that can't be read is skipped: the others are still asked.
-                const o = await optional(resolveTorrent(other, false), null);
+              const says = (x: Candidate) => season !== null && Boolean(x.server.label) && holdsSeason(packOf(x.server.label!), season) === true;
+              const others = candidates
+                .filter((x) => x.provider === "torrserver" && !isBound(x) && x.key !== c.key)
+                .sort((a, b) => Number(says(b)) - Number(says(a)))
+                .slice(0, 3);
+              for (const other of others) {
+                // A torrent that can't be read, or isn't started on the server, is passed by: the others are still asked.
+                const o = await optional(resolveTorrent(other, false, false), null);
                 if (!live()) return;
                 if (!o) continue;
                 if ("externalId" in o) {
