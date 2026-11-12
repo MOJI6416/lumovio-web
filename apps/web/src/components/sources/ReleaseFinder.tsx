@@ -18,7 +18,7 @@ import { useTitleAvailability } from "@/hooks/useAvailability";
 import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
 import { type Edition, editionOf } from "@/lib/media/editions";
-import { isDubbing, type RankedRelease, releaseDomId } from "@/lib/media/releases";
+import { isDubbing, type RankedRelease, releaseDomId, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
@@ -240,7 +240,9 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const editionName = (e: Edition) => tt(`edition_${e}`);
   const resolutions = text.resolutions;
   // "Any" audio: what "Watch" plays of the release (the profile's studio), not every track it lists.
-  const heard = (option ? text.audio({ info: chosen.info, language: option.language ?? chosen.language }, option.studio) : f.heard(chosen)) || text.option({ studio: null, voice: null, language: null });
+  const heard =
+    (option ? text.audio({ info: chosen.info, language: option.language ?? chosen.language }, option.studio ?? wishNameTrack(chosen.info, voiceWish(option.key), prefs.studios)) : f.heard(chosen)) ||
+    text.option({ studio: null, voice: null, language: null });
   const size = formatSize(chosen.result.size, locale);
   const pack = tv ? packWords(t, chosen.info.pack) : "";
   // The cut in words, unless its pill names it.

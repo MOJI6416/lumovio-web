@@ -56,14 +56,16 @@ export function useReleaseText() {
    * one language (SRC-05). `only`: that studio's track. At most three tracks, then "+ N more"; the other languages are
    * `otherLanguages`.
    */
-  const audio = (x: Pick<RankedRelease, "info" | "language">, only?: string | null) => {
+  const audio = (x: Pick<RankedRelease, "info" | "language">, only?: string | ReleaseTrack | null) => {
     const named = namedTracks(x.info);
-    const picked = only ? named.find((tr) => tr.studio === only) : undefined;
+    // A track itself (a copy's, the one the player starts — `profileNameTrack`): that one only, with or without a studio
+    // ("Russian · dubbed", not every dub of the file; docs/torrserver-2026-11.md 36).
+    const picked = typeof only === "object" && only !== null ? only : only ? named.find((tr) => tr.studio === only) : undefined;
     const lang = picked?.language ?? x.language ?? named[0]?.language ?? x.info.languages[0] ?? null;
     const mine = picked ? [picked] : named.filter((tr) => tr.language === lang || (tr.language === null && lang === null));
     if (mine.length === 0 && named.length === 0) {
       // A name that pairs nothing: its languages and its best kind, as before tracks were read.
-      const studios = only ? [only] : x.info.studios;
+      const studios = typeof only === "string" && only ? [only] : x.info.studios;
       const pair = (s: string) => {
         const kind = kindOf(x.info, s);
         return kind ? `${t(`voice_${kind}`)} (${s})` : s;

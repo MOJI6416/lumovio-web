@@ -9,7 +9,7 @@ import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { ANY, type Edition, forProfile, pickRelease } from "@/lib/media/release-pick";
-import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish } from "@/lib/media/releases";
+import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 
@@ -344,7 +344,10 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   };
   // What a release plays when picked here, in words: the studio `voiceFor` starts ("Russian · multi-voice (LostFilm)"),
   // not every track its name lists in its own order (HDrezka Studio first on RuTracker).
-  const heard = (x: RankedRelease) => text.audio(x, voiceWish(voiceFor(x.result))?.studio);
+  const heard = (x: RankedRelease) => {
+    const wish = voiceWish(voiceFor(x.result));
+    return text.audio(x, wish?.studio ?? wishNameTrack(x.info, wish, base.studios));
+  };
   const isLinked = (r: TsSearchResult) => r.hash !== null && existing.has(`${connId}:${r.hash}`);
   const versionOf = (r: TsSearchResult) => {
     const x = view?.byLink.get(r.link);

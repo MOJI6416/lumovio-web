@@ -21,6 +21,7 @@ import {
   voiceOptions,
   voiceTrack,
   voiceWish,
+  wishNameTrack,
   withFileTracks,
 } from "../src/lib/media/releases";
 import type { TsSearchResult } from "../src/lib/media/torrserver";
@@ -812,5 +813,19 @@ describe("copyFileTracks", () => {
   it("is null when no copy's tracks were read, and leaves Jellyfin and Plex out", () => {
     expect(copyFileTracks([copy("c".repeat(40), "X")])).toBeNull();
     expect(copyFileTracks([{ kind: "jellyfin", externalId: "j1", label: "X", quality: { audioTracks: ["ru|"] } as never }])).toBeNull();
+  });
+});
+
+describe("wishNameTrack", () => {
+  const info = parseRelease("Дюна: Часть вторая / Dune: Part Two (2024) WEB-DL 1080p | Dub (Movie Dubbing) + Dub (Red Head Sound) + MVO (LostFilm) + Original Eng");
+  it("names the one track a language alone or its dub starts, as the player picks the file's (36)", () => {
+    expect(wishNameTrack(info, voiceWish("ru|dub"), [])).toMatchObject({ voice: "dub", studio: "Movie Dubbing" });
+    expect(wishNameTrack(info, voiceWish("ru|"), ["LostFilm"])).toMatchObject({ studio: "LostFilm" });
+    expect(wishNameTrack(info, voiceWish("ru|dub"), ["LostFilm"])).toMatchObject({ voice: "dub" });
+  });
+
+  it("leaves a studio's choice to its studio, and says nothing without a choice", () => {
+    expect(wishNameTrack(info, voiceWish("ru|LostFilm"), [])).toBeNull();
+    expect(wishNameTrack(info, null, [])).toBeNull();
   });
 });

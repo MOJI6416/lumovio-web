@@ -85,8 +85,9 @@ export function useCopyText() {
 
   /**
    * What is heard, beside the marks: the server's audio languages, or the release's translation ("Dub (Pifagor)") — of
-   * a TorrServer copy, the track the player starts for this profile (`profileNameTrack`, as `profileTrack` picks the
-   * file's): "Russian · multi-voice (LostFilm)" from "7 x MVO (HDrezka Studio, …, LostFilm)" for "1 — LostFilm".
+   * a TorrServer copy, the one track the player starts for this profile (`profileNameTrack`, as `profileTrack` picks the
+   * file's, else the file's default — the name's first): "Russian · multi-voice (LostFilm)" from "7 x MVO (HDrezka
+   * Studio, …, LostFilm)" for "1 — LostFilm", "Russian · dubbed" from "2x Dub + MVO + AVO" (36).
    */
   const sound = (s: Availability, all: Availability[] = [], originalLanguage: string | null = null): string | null => {
     const own = languagesOf(s);
@@ -94,8 +95,9 @@ export function useCopyText() {
     const name = releaseName(s, all);
     if (!name) return null;
     const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
-    const heard = profileNameTrack(info, { languages: langs, studios });
-    return text.audio({ info, language: heard?.language ?? null }, heard?.studio) || null;
+    // None of the profile's: the file's default plays — a name lists the tracks in the file's order, its first (36).
+    const heard = profileNameTrack(info, { languages: langs, studios }) ?? info.tracks[0] ?? null;
+    return text.audio({ info, language: heard?.language ?? null }, heard) || null;
   };
 
   return {

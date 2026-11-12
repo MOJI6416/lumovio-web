@@ -1014,10 +1014,22 @@ export function withFileTracks(info: ReleaseInfo, list: readonly string[] | null
  */
 export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<ReleasePrefs, "languages" | "studios">): ReleaseTrack | null {
   const i = profileTrack(
-    info.tracks.map((t, index) => ({ index, title: t.studio ?? t.credit, language: t.language, default: index === 0 })),
+    // A dub says so in its title, as a file's track does ("Dub, Movie Dubbing"): the profile's "Dubbing" finds it.
+    info.tracks.map((t, index) => ({ index, title: [t.voice === "dub" ? "Dub" : null, t.studio ?? t.credit].filter(Boolean).join(", ") || null, language: t.language, default: index === 0 })),
     prefs,
   );
   return i === null ? null : (info.tracks[i] ?? null);
+}
+
+/**
+ * The track of a release's name an audio choice starts, when the choice names no studio — a language alone, or its dub —
+ * as the player picks the file's (`voiceTrack` → `profileTrack` in that language, a dub first for a dub): what a heading
+ * says is heard, one track, not every one of the language (docs/torrserver-2026-11.md 36). Null for a studio's choice
+ * (its studio names the track) or none.
+ */
+export function wishNameTrack(info: Pick<ReleaseInfo, "tracks">, wish: VoiceWish | null, studios: readonly string[]): ReleaseTrack | null {
+  if (!wish?.language || wish.studio) return null;
+  return profileNameTrack(info, { languages: [wish.language], studios: wish.dub ? [DUBBING, ...studios] : [...studios] });
 }
 
 /**

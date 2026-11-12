@@ -13,7 +13,7 @@ import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
 import { pickRelease } from "@/lib/media/release-pick";
-import { bestOf } from "@/lib/media/releases";
+import { bestOf, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
@@ -73,7 +73,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const summary = chosen
     ? [
         chosen.info.resolution && chosen.info.resolution !== 2160 ? RESOLUTION[chosen.info.resolution] : null,
-        text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio),
+        text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios)),
       ]
         .filter(Boolean)
         .join(" · ")

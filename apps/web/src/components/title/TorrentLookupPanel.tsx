@@ -19,7 +19,7 @@ import { useLibraryState } from "@/hooks/useLibraryState";
 import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
-import { isDubbing, pictureReasons, type RankedRelease } from "@/lib/media/releases";
+import { isDubbing, pictureReasons, type RankedRelease, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { background } from "@/lib/optional";
 import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
@@ -158,7 +158,10 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   // The mode's reasons explain its own pick; a version the person picked needs none.
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
   // The heading says the chosen audio's own language ("Russian · dub" for a Russian dub, whatever else the release has).
-  const heard = text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio) || text.option({ studio: null, voice: null, language: null });
+  // One track: the studio's, else the one the player starts of a language alone or its dub (36).
+  const heard =
+    text.audio({ info: chosen.info, language: option?.language ?? chosen.language }, option?.studio ?? wishNameTrack(chosen.info, voiceWish(option?.key ?? null), prefs.studios)) ||
+    text.option({ studio: null, voice: null, language: null });
   // "Your voice-over": the option is the profile's studio — or a dub, for the profile's "Dubbing".
   const studioMatch = chosen.studio && (option?.studio === chosen.studio || (isDubbing(chosen.studio) && option?.voice === "dub"));
   const kept = lookup.data?.emptyAt ? t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) }) : null;
