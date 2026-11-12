@@ -971,7 +971,9 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     // A cue's line is ~4.4 % of the player's height × the profile's size × 1.25 (globals.css `::cue`); line −n stands
     // n − 1 lines above the bottom.
     const lineH = (container instanceof HTMLElement ? container.clientHeight : window.innerHeight) * 0.044 * subScale * 1.25;
-    const above = -Math.max(4, Math.ceil((barHeight + 12) / lineH) + 1);
+    // A player of no height yet (a window minimised or not laid out) would make it −Infinity, which a cue refuses.
+    const steps = Math.ceil((barHeight + 12) / lineH) + 1;
+    const above = -Math.max(4, Number.isFinite(steps) ? steps : 4);
     const line = showChrome ? (tvNav ? -4 : above) : raised ? -3 : "auto";
     // Subtitles drawn on a canvas over the picture — ASS by libass, PGS pictures — keep their own layout: the layer
     // moves up just as far as the picture's lower edge is under the controls, and back down (PLR-18).

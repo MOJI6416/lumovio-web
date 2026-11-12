@@ -65,7 +65,9 @@ export function StatsView() {
   // All time knows the first watch, so only years from it on are offered; it is the "All time" segment's answer too.
   const all = useQuery(statsQuery(null, locale));
   const genres = useQuery({
-    queryKey: ["genres-all", locale],
+    // Not "genres-all": that key holds the genre picker's entries (GenresDialog), another shape — Stats first, then
+    // Settings → Recommendations broke on it ("reading 'some'").
+    queryKey: ["genres-stats", locale],
     queryFn: async () => {
       const [m, tv] = await Promise.all([api<{ genres: Genre[] }>("/api/catalog/genres/movie"), api<{ genres: Genre[] }>("/api/catalog/genres/tv")]);
       // Film names first: the statistics count series genres as their film counterparts (INS-01).
