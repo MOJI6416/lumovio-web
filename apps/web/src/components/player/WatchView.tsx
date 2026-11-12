@@ -219,6 +219,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const seq = useRef(0);
   // A preparation that is cancelled or replaced by another stops at its next step: only the latest one counts.
   const attempt = useRef(0);
+  // The preparation's requests (the server's probe, its subtitles, the torrent's start): stopped on the server when it is
+  // cancelled, replaced or the page left — not only its next step (docs/torrserver-2026-11.md 39).
+  const prepAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => prepAbort.current?.abort(), []);
+  // The copy being prepared, by key: a second press on its "Watch" while it is prepared starts nothing again (39).
+  const preparingKey = useRef<string | null>(null);
   // Where to continue after switching source within this session (same title, same episode, same position).
   const resumeOverride = useRef<number | null>(null);
   // The dubbing chosen with a TorrServer release ("?voice=ru|HDrezka Studio"): its track plays once the file is read.
@@ -410,6 +416,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       pendingReopen.current?.();
       const my = ++attempt.current;
       const live = () => attempt.current === my;
+      prepAbort.current?.abort();
+      const ctrl = new AbortController();
+      prepAbort.current = ctrl;
+      preparingKey.current = start.key;
       let c = start;
       if (opts.fromScreen) keepPlace(document.activeElement);
       setCurrent(c);
@@ -484,6 +494,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             voice: c.provider === "torrserver" ? wishedVoice.current : null,
             profile: c.provider === "torrserver" ? heard.current : null,
             rebuild: opts.rebuild,
+            signal: ctrl.signal,
           });
         }
         if (!live()) return;
@@ -558,7 +569,10 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           retry: auth || blocked || e instanceof TorrentFileMissing ? null : () => void prepare(failedAt, { ...opts, auto: false }),
         });
       } finally {
-        if (live()) preparing.current = false;
+        if (live()) {
+          preparing.current = false;
+          preparingKey.current = null;
+        }
       }
     },
     [candidates, connOf, d.id, d.kind, season, episode, resumeAt, resolveTorrent, errorText, methodFact, keepPlace, labelOf, versionOf, reasonText, t, tvNav, signedIn, isKids, qc],
@@ -567,7 +581,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   /** "Cancel" while preparing (SRC-18): the preparation stops at its next step and the screen comes back as it was. */
   const cancel = () => {
     attempt.current++;
+    prepAbort.current?.abort();
     preparing.current = false;
+    preparingKey.current = null;
     takeBackBrought();
     setPhase({ kind: "choose" });
     requestAnimationFrame(toList);
@@ -584,7 +600,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     if (!reads(active?.candidate) && !(preparing.current && reads(current))) return;
     pendingReopen.current?.();
     attempt.current++;
+    prepAbort.current?.abort();
     preparing.current = false;
+    preparingKey.current = null;
     setActive(null);
     setPhase({ kind: "choose" });
     await new Promise((done) => window.setTimeout(done, 800));
@@ -597,6 +615,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
    */
   const choose = useCallback(
     (c: Candidate, voice: string | null = null, added: string | null = null) => {
+      // A second press on the "Watch" of the copy being prepared (39).
+      if (preparing.current && preparingKey.current === c.key) return;
       // Another source: a torrent this launch brought and that never played goes back (18).
       takeBackBrought(c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId).toLowerCase()}` : undefined);
       wishedVoice.current = voiceWish(voice);

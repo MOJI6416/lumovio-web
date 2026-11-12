@@ -442,20 +442,22 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
      * chosen with the release (`voice`) plays the track that credits it, when one can be told to; with nothing chosen,
      * the track the profile's languages and studios find first (`profileTrack`), else the file's default.
      */
-    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean } = {}) {
+    async prepare(externalId: string, choice: { audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal } = {}) {
+      // A cancelled or replaced preparation stops its requests to the server, not only its next step (39).
+      const signal = choice.signal;
       const [hash, idx] = externalId.split(":");
       if (!hash) throw new Error("Bad torrent id");
       // What this device remembers of its files' probes: loaded only by a playback, alongside the server's first answer.
       const memory = import("./probe-memory");
       // Ask TorrServer to start the torrent (preload metadata), then take exactly the chosen file.
-      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
+      const t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000, signal);
       const file = (t.file_stats ?? []).find((f) => String(f.id) === idx && isVideoFile(f.path));
       if (!file) throw new TorrentFileMissing(idx ?? "");
 
       const caps = detectCapabilities();
       const raw: { url: string; headers: Record<string, string>; targetAddressSpace?: "loopback" | "local" } = { url: streamUrl(hash, file, false), headers: authHeader ? { Authorization: authHeader } : {}, targetAddressSpace: targetAddressSpace(base) };
       // The server's subtitle list is asked alongside the probe, not after it.
-      const subsAsked = optional(get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000), null);
+      const subsAsked = optional(get<{ index?: number; id?: number; name?: string; path?: string; lang?: string }[]>(`/subs/${hash}/${file.id}`, 20_000, signal), null);
       const probeKey = `${hash.toLowerCase()}:${file.id}`;
       const { rememberedProbe, rememberProbe } = await memory;
       let probe: FileProbe | null = rememberedProbe(probeKey);
@@ -464,11 +466,12 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
         // reads the file's head and index meanwhile, instead of after it (~2 s on a phone).
         if (/\.(mkv|mk3d|webm)$/i.test(file.path) && caps.containers.mkv === "no" && caps.mediaSource !== "none") void import("./remux").then((m) => m.preopen(raw), () => undefined);
         try {
-          probe = await get<FileProbe>(`/ffp/${hash}/${file.id}`, 60_000);
+          probe = await get<FileProbe>(`/ffp/${hash}/${file.id}`, 60_000, signal);
           if (probe?.streams?.length) rememberProbe(probeKey, probe);
         } catch {
           probe = null;
         }
+        signal?.throwIfAborted();
       }
       const vs = probe?.streams?.find((s) => s.codec_type === "video");
       const as = probe?.streams?.filter((s) => s.codec_type === "audio") ?? [];

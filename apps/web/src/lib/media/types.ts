@@ -133,9 +133,10 @@ export interface ProviderClient {
   /** `voice`: the dubbing chosen with a TorrServer release, matched to the file's tracks when no `audioIndex` is given. */
   /** `profile`: the profile's audio languages and studios, in order: the track they find plays when nothing was chosen (TorrServer). */
   /** `rebuild`: the plain stream failed to start here: rebuild the file in the browser when it can be (TorrServer). */
+  /** `signal`: the preparation was cancelled or replaced — its requests stop on the server too (TorrServer). */
   prepare(
     externalId: string,
-    opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean },
+    opts: { startSec?: number; audioIndex?: number; voice?: VoiceWish | null; profile?: { languages: string[]; studios: string[] } | null; rebuild?: boolean; signal?: AbortSignal },
   ): Promise<PreparedPlayback>;
   /** Locate an episode's file id on the server (episode-level playback). */
   findEpisode?(seriesExternalId: string, season: number, episode: number): Promise<string | null>;

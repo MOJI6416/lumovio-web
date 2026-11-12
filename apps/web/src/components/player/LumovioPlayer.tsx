@@ -496,19 +496,25 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     else if (startOver === "show" && !near) setStartOver("gone");
   }, [startOver, started, currentTime, props.startAt]);
 
-  // While a torrent buffers, what its server reports (peers, speed, loaded) — asked every 2 s only then.
+  // While a torrent buffers, what its server reports (peers, speed, loaded) — asked only then, 2 s after the last answer:
+  // a slow server never has several asks waiting at once (docs/torrserver-2026-11.md 39).
   const [torrent, setTorrent] = useState<TorrentStats>(null);
   const stats = props.prepared.stats;
   const buffering = (waiting || !started) && !error && !hidden;
   useEffect(() => {
     if (!stats || !buffering) return;
     let live = true;
-    const tick = () => void stats().then((s) => live && setTorrent(s));
+    let id: number | undefined;
+    const tick = () =>
+      void stats().then((s) => {
+        if (!live) return;
+        setTorrent(s);
+        id = window.setTimeout(tick, 2000);
+      });
     tick();
-    const id = window.setInterval(tick, 2000);
     return () => {
       live = false;
-      window.clearInterval(id);
+      window.clearTimeout(id);
     };
   }, [stats, buffering]);
 
