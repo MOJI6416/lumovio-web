@@ -3,9 +3,10 @@
 import {
   ArrowDownUp,
   AudioLines,
+  ChevronDown,
   CircleAlert,
+  Film,
   Info,
-  ListFilter,
   Magnet,
   MonitorPlay,
   Play,
@@ -20,11 +21,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { type FocusEvent, useEffect, useRef, useState } from "react";
 import { type FinderProps, PAGE, SORTS, type Sort, useTorrentFinder } from "@/components/player/finder";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, isPack, packWords, ReleaseLine, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, ReleaseLine, ReleaseTag, useReleaseFacts, useReleaseText } from "@/components/sources/release-text";
 import { AccentBadge } from "@/components/ui/Badge";
 import { cn } from "@/components/ui/cn";
 import { TvButton } from "@/components/ui/tv/TvButton";
+import { useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { formatDate } from "@/lib/format";
+import type { Edition } from "@/lib/media/release-pick";
 import { type RankedRelease, releaseDomId } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { TvLayer } from "../nav/TvLayer";
@@ -35,13 +38,14 @@ import { TvState } from "../shell/TvState";
 
 /*
  * "Through TorrServer" on the TV's sources screen: the same
- * search as the site's (components/player/finder) in the TV's composition — a line of the server, the query and
- * Refresh / Cancel; the filters as buttons that say their value, each opening a card; the releases as rows, one
- * stop each (OK is "Watch"), "i" beside for the details. The next part of the list appears as the focus nears its end;
- * nothing reorders under the focus (the answer changes on Refresh only).
+ * search and the same choices as the site's (components/player/finder) in the TV's composition — a line of the server,
+ * the query and Refresh / Cancel; Audio, Cut and Quality as buttons that say their value, each opening a card, each
+ * narrowing the next; the recommended release first, then the chosen audio's other releases, as rows, one stop each
+ * (OK is "Watch"), "i" beside for the details; what can't be picked folded under them. The next part of the list
+ * appears as the focus nears its end; nothing reorders under the focus (the answer changes on Refresh only).
  */
 
-type Picking = "server" | "query" | "voice" | "picture" | "tracker" | "sort" | null;
+type Picking = "server" | "query" | "voice" | "edition" | "quality" | "sort" | null;
 
 /** `first`: the screen has no copy above, so its focus starts here — on the recommended release once there is one. */
 export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) {
@@ -53,26 +57,57 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
   const text = useReleaseText();
   const f = useTorrentFinder(props);
   const { details: d, season, connections } = props;
+  const prefs = useReleasePrefs();
+  const locale = useLocale();
   const [picking, setPicking] = useState<Picking>(null);
   const [draft, setDraft] = useState(f.query);
+  const [restOpen, setRestOpen] = useState(false);
+  const [restShown, setRestShown] = useState(PAGE);
   const list = useRef<HTMLUListElement>(null);
   const nav = useTvNav();
 
   const found = f.found;
   const searching = f.status.kind === "searching";
-  const option = f.options.find((o) => o.key === f.voice);
-  const version = f.versions.find((v) => v.key === f.picture);
-  const titleRows = f.view ? f.visible.filter((r) => f.view!.byLink.has(r.link)).length : 0;
-  const recommendedLink = f.recommended?.result.link;
-  const shownRows = f.visible.slice(0, f.shown);
-  // Where the focus starts when the screen has no copy: the recommended release, else the first one.
-  const initialLink = shownRows.some((r) => r.link === recommendedLink) ? recommendedLink : shownRows[0]?.link;
+  // The site's choice: the recommendation of the chosen audio, cut and picture, its other releases, what can't be picked.
+  const c = f.choice;
+  const chosen = c?.chosen ?? null;
+  const option = c?.option ?? null;
+  const rows = f.listed.rows.slice(0, f.shown);
+  const nothingPicked = Boolean(found) && !chosen;
+  const rest = restOpen || nothingPicked ? f.listed.rest.slice(0, restShown) : [];
+  const editionName = (e: string) => tt(`edition_${e as Edition}`);
+  const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : t("anyVoice");
+  const editionValue = f.edition ? editionName(f.edition) : t("anyEdition");
+  const versionName = c?.version ? text.version(c.version.resolution, c.version.range) : "";
+  const qualityValue = f.picture ? versionName : [tt(`tsQuality_${f.mode}`), versionName].filter(Boolean).join(" · ");
+  // Where the focus starts when the screen has no copy: the recommended release, else the first one shown.
+  const initialLink = chosen?.result.link ?? rows[0]?.result.link ?? rest[0]?.link;
 
-  // The next part of the list arrives before the focus gets to the end.
+  // The next part of a list arrives before the focus gets to its end.
   const onListFocus = (e: FocusEvent<HTMLUListElement>) => {
     const i = Number((e.target as HTMLElement).dataset.index);
-    if (Number.isFinite(i) && i >= f.shown - 5 && f.visible.length > f.shown) f.setShown((n) => n + PAGE);
+    if (Number.isFinite(i) && i >= f.shown - 5 && f.listed.rows.length > f.shown) f.setShown((n) => n + PAGE);
   };
+  const onRestFocus = (e: FocusEvent<HTMLUListElement>) => {
+    const i = Number((e.target as HTMLElement).dataset.index);
+    if (Number.isFinite(i) && i >= restShown - 5 && f.listed.rest.length > restShown) setRestShown((n) => n + PAGE);
+  };
+  const row = (r: TsSearchResult, x: RankedRelease | undefined, i: number, recommended = false) => (
+    <TvReleaseRow
+      key={r.link}
+      r={r}
+      x={x}
+      heard={f.heard}
+      index={i}
+      initial={first && r.link === initialLink}
+      recommended={recommended}
+      linked={f.isLinked(r)}
+      series={d.kind === "tv"}
+      season={season}
+      onWatch={() => watch(r)}
+      onDetails={() => f.setDetailed(r)}
+    />
+  );
   // The first answer (results, nothing found, a failure) takes the focus to where this section starts — the release it
   // recommends, Retry, Edit query — as long as the remote hasn't moved since the screen opened.
   const section = useRef<HTMLElement>(null);
@@ -197,67 +232,76 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
         </p>
       )}
 
-      {found && f.view && found.results.length > 0 && (
+      {found && f.view && c && found.results.length > 0 && (
         <>
           <div className="flex flex-col gap-3">
             <fieldset data-zone="filters" data-zone-axis="x" data-zone-entry="first" className="flex min-w-0 flex-wrap gap-4">
               <legend className="sr-only">{t("filters")}</legend>
-              {f.options.length > 1 && (
+              {c.options.length > 1 && (
                 <TvButton icon={AudioLines} aria-haspopup="dialog" className="max-w-150" onClick={() => setPicking("voice")}>
-                  <span className="truncate">{option ? f.optionLabel(option) : t("allVoices")}</span>
+                  <span className="truncate">{`${tp("voiceChoice")} · ${voiceValue}`}</span>
                 </TvButton>
               )}
-              {f.versions.length > 1 && (
-                <TvButton icon={MonitorPlay} aria-haspopup="dialog" onClick={() => setPicking("picture")}>
-                  {version ? text.version(version.resolution, version.range) : t("allPictures")}
+              {c.editions.length > 1 && (
+                <TvButton icon={Film} aria-haspopup="dialog" onClick={() => setPicking("edition")}>
+                  {`${tt("pickEdition")} · ${editionValue}`}
                 </TvButton>
               )}
-              {f.trackers.length > 1 && (
-                <TvButton icon={ListFilter} aria-haspopup="dialog" onClick={() => setPicking("tracker")}>
-                  {f.tracker === null ? t("allTrackersCount", { count: found.results.length }) : f.tracker === "?" ? t("trackerUnknown") : f.tracker}
+              {c.pool.length > 1 && (
+                <TvButton icon={MonitorPlay} aria-haspopup="dialog" onClick={() => setPicking("quality")}>
+                  {`${tt("pickQuality")} · ${qualityValue}`}
                 </TvButton>
               )}
               <TvButton icon={ArrowDownUp} aria-haspopup="dialog" aria-label={`${t("sortBy")}: ${t(`sort_${f.sort}`)}`} onClick={() => setPicking("sort")}>
                 {t(`sort_${f.sort}`)}
               </TvButton>
-              {f.filtered && (
+              {(option || f.edition || f.picture) && (
                 <TvButton icon={RotateCcw} onClick={f.reset}>
                   {tc("resetFilters")}
                 </TvButton>
               )}
             </fieldset>
-            {/* The title's releases, as the title page counts them; other results of the query apart. */}
-            <p className="text-body-l text-text-2 tabular-nums">
-              {t("shownCount", { shown: titleRows, total: f.view.ranked.length })}
-              {f.view.rest.length > 0 && f.voice === null && f.picture === null ? ` · ${t("otherResults", { count: f.visible.length - titleRows })}` : ""}
-            </p>
+            {/* The chosen audio's releases, the recommendation among them; what can't be picked is counted apart. */}
+            {chosen && <p className="text-body-l text-text-2 tabular-nums">{t("shownCount", { shown: 1 + f.listed.rows.length, total: f.view.ranked.length })}</p>}
           </div>
 
-          {f.visible.length === 0 ? (
-            <TvState icon={SearchX} title={t("filteredEmpty")} text={t("filteredEmptyText")}>
-              <TvButton icon={RotateCcw} onClick={f.reset}>
-                {tc("resetFilters")}
+          {chosen ? (
+            <ul ref={list} data-zone="releases" data-zone-axis="grid" onFocus={onListFocus} className="flex flex-col gap-5">
+              {row(chosen.result, chosen, -1, true)}
+              {rows.map((x, i) => row(x.result, x, i))}
+            </ul>
+          ) : (
+            <TvState icon={SearchX} title={tt("tsNothing")}>
+              <TvButton
+                icon={Search}
+                onClick={() => {
+                  setDraft(f.query);
+                  setPicking("query");
+                }}
+              >
+                {t("editQuery")}
               </TvButton>
             </TvState>
-          ) : (
-            <ul ref={list} data-zone="releases" data-zone-axis="grid" onFocus={onListFocus} className="flex flex-col gap-5">
-              {shownRows.map((r, i) => (
-                <TvReleaseRow
-                  key={r.link}
-                  r={r}
-                  x={f.view!.byLink.get(r.link)}
-                  heard={f.heard}
-                  index={i}
-                  initial={first && r.link === initialLink}
-                  recommended={r.link === recommendedLink}
-                  linked={f.isLinked(r)}
-                  series={d.kind === "tv"}
-                  season={season}
-                  onWatch={() => watch(r)}
-                  onDetails={() => f.setDetailed(r)}
-                />
-              ))}
-            </ul>
+          )}
+
+          {f.listed.rest.length > 0 && (
+            <div className="flex flex-col gap-5">
+              {nothingPicked ? (
+                <p className="text-body-l font-semibold text-text-2">{t("restResults", { count: f.listed.rest.length })}</p>
+              ) : (
+                <div data-zone="rest-toggle">
+                  <TvButton aria-expanded={restOpen} onClick={() => setRestOpen((o) => !o)}>
+                    {t("restResults", { count: f.listed.rest.length })}
+                    <ChevronDown aria-hidden className={cn("transition-transform duration-fast ease-fast", restOpen && "rotate-180")} />
+                  </TvButton>
+                </div>
+              )}
+              {rest.length > 0 && (
+                <ul data-zone="rest" data-zone-axis="grid" onFocus={onRestFocus} className="flex flex-col gap-5">
+                  {rest.map((r, i) => row(r, f.view?.byLink.get(r.link), i))}
+                </ul>
+              )}
+            </div>
           )}
         </>
       )}
@@ -271,33 +315,38 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
           onClose={() => setPicking(null)}
         />
       )}
-      {picking === "voice" && (
+      {picking === "voice" && c && (
         <ChoiceLayer
-          title={tt("tsVoices")}
-          options={[{ value: "all", label: t("allVoices") }, ...f.options.map((o) => ({ value: o.key, label: f.optionLabel(o) }))]}
-          value={f.voice ?? "all"}
-          onPick={(v) => f.filter("voice", v === "all" ? null : v)}
+          title={tp("voiceChoice")}
+          options={[{ value: "all", label: t("anyVoice") }, ...c.options.map((o) => ({ value: o.key, label: f.optionLabel(o) }))]}
+          value={option?.key ?? "all"}
+          onPick={(v) => f.choose({ voice: v === "all" ? null : v })}
           onClose={() => setPicking(null)}
         />
       )}
-      {picking === "picture" && (
+      {picking === "edition" && c && (
         <ChoiceLayer
-          title={t("pictureVersions")}
-          options={[{ value: "all", label: t("allPictures") }, ...f.versions.map((v) => ({ value: v.key, label: `${text.version(v.resolution, v.range)} · ${v.count}` }))]}
-          value={f.picture ?? "all"}
-          onPick={(v) => f.filter("picture", v === "all" ? null : v)}
+          title={tt("pickEdition")}
+          options={[{ value: "all", label: t("anyEdition") }, ...c.editions.map((e) => ({ value: e.key, label: `${editionName(e.key)} · ${text.resolutions(e.resolutions)}` }))]}
+          value={f.edition ?? "all"}
+          onPick={(v) => f.choose({ edition: v === "all" ? null : v })}
           onClose={() => setPicking(null)}
         />
       )}
-      {picking === "tracker" && found && (
+      {picking === "quality" && c && (
         <ChoiceLayer
-          title={t("trackers")}
+          title={tt("pickQuality")}
+          // The mode picks the version for this screen (Auto), the best one or the smallest file; a version by hand narrows the list.
           options={[
-            { value: "all", label: t("allTrackersCount", { count: found.results.length }) },
-            ...f.trackers.map(([name, n]) => ({ value: name, label: `${name === "?" ? t("trackerUnknown") : name} · ${n}` })),
+            ...QUALITY_MODES.map((m) => ({ value: `mode:${m}`, label: tt(`tsQuality_${m}`) })),
+            ...(c.versions.length > 1
+              ? [...c.versions]
+                  .sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1))
+                  .map((v) => ({ value: `picture:${v.key}`, label: [text.version(v.resolution, v.range), formatSize(v.best.result.size, locale)].filter(Boolean).join(" · ") }))
+              : []),
           ]}
-          value={f.tracker ?? "all"}
-          onPick={(v) => f.filter("tracker", v === "all" ? null : v)}
+          value={f.picture ? `picture:${f.picture}` : `mode:${f.mode}`}
+          onPick={(v) => (v.startsWith("mode:") ? f.choose({ mode: v.slice(5) as (typeof QUALITY_MODES)[number] }) : f.choose({ picture: v.slice(8) }))}
           onClose={() => setPicking(null)}
         />
       )}

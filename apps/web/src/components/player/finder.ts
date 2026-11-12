@@ -8,44 +8,28 @@ import { useSession } from "@/components/providers/Providers";
 import { useReleaseText } from "@/components/sources/release-text";
 import { type LookupResult, lookupKey, useReleasePrefs } from "@/hooks/useTorrentLookup";
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
-import { ANY, type Edition, forProfile, pickRelease } from "@/lib/media/release-pick";
-import { pictureVersions, type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceOptions, voiceWish, wishNameTrack } from "@/lib/media/releases";
+import { ANY, type Edition, pickRelease } from "@/lib/media/release-pick";
+import { type RankedRelease, rankReleases, torrentQuery, type VoiceOption, voiceKeys, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
 import { torrServerFor } from "@/lib/media/torrent-source";
-import { keepThroughEmpty, type SearchAnswer, type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
+import { keepThroughEmpty, type SearchAnswer, type TsSearchResult } from "@/lib/media/torrserver";
 
 /*
  * The TorrServer search of the sources screen without its look: the server, the query and
- * its answer, the audio / picture / tracker filters and the order, the recommendation and what a pick carries. The
- * site's TorrentFinder and the TV's (tvui/sources) render it each their own way.
+ * its answer, the choice of audio, cut and quality as "Where to watch" makes it, the order, and what a pick carries.
+ * The site's TorrentFinder and the TV's (tvui/sources) render it each their own way.
  */
 
 export const PAGE = 30;
 const SERVER_KEY = "lumovio.sources.server";
 
-/**
- * The orders of the list, each one choice (one "quality" in the panel, not three): the recommendation under
- * the profile's quality mode, the best picture ("best" mode), the smaller file ("small" mode), seeders, date.
- */
-export type Sort = "recommended" | "quality" | "size" | "seeders" | "date";
-export const SORTS: Sort[] = ["recommended", "quality", "size", "seeders", "date"];
-const MODE_OF: Partial<Record<Sort, ReleaseQuality>> = { quality: "best", size: "small" };
-const SORT_OF: Record<ReleaseQuality, Sort> = { auto: "recommended", best: "quality", small: "size" };
-const RES_DESC = [2160, 1080, 720, 480];
-const SOURCE_DESC = ["remux", "bluray", "webdl", "webrip", "hdtv", "dvd"];
-const last = (n: number) => (n < 0 ? 99 : n);
+/** The orders of the list (the quality mode is the "Quality" choice's): as recommended, more seeders, newer first. */
+export type Sort = "recommended" | "seeders" | "date";
+export const SORTS: Sort[] = ["recommended", "seeders", "date"];
 const EDITIONS: Edition[] = ["theatrical", "extended", "directors", "final", "unrated", "imax"];
-/** The site's orders (its quality mode is the "Quality" pill's): as recommended, more seeders, newer first. */
-export const SITE_SORTS: Sort[] = ["recommended", "seeders", "date"];
 
-/** Picture (resolution, HDR, source, then the bigger file), smaller file, more seeders, newer. Unknown values go last, never as zero. */
+/** More seeders, newer. Unknown values go last, never as zero. */
 const ORDER: Record<Exclude<Sort, "recommended">, (a: RankedRelease, b: RankedRelease) => number> = {
-  quality: (a, b) =>
-    last(RES_DESC.indexOf(a.info.resolution ?? 0)) - last(RES_DESC.indexOf(b.info.resolution ?? 0)) ||
-    b.info.hdrFormats.length - a.info.hdrFormats.length ||
-    last(SOURCE_DESC.indexOf(a.info.source ?? "")) - last(SOURCE_DESC.indexOf(b.info.source ?? "")) ||
-    (b.result.size ?? 0) - (a.result.size ?? 0),
-  size: (a, b) => (a.result.size ?? Number.MAX_SAFE_INTEGER) - (b.result.size ?? Number.MAX_SAFE_INTEGER),
   seeders: (a, b) => (b.result.seeders ?? -1) - (a.result.seeders ?? -1),
   date: (a, b) => (b.result.published ?? "").localeCompare(a.result.published ?? ""),
 };
@@ -121,11 +105,8 @@ export interface FinderProps {
   lead?: boolean;
 }
 
-/**
- * `modeInSort` (the TV, as before): the order of the list carries the quality mode ("Best quality" ranks by the best
- * mode). The site keeps the mode in its "Quality" pill, as "Where to watch" does, and the order only orders the list.
- */
-export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, fileTracks, start, autoStart = false, onPick }: FinderProps, { modeInSort = true }: { modeInSort?: boolean } = {}) {
+/** The quality mode is a choice of its own ("Quality"), as on "Where to watch"; the order only orders the list. */
+export function useTorrentFinder({ details: d, season, episode, connections, defaultConnectionId, existing, fileTracks, start, autoStart = false, onPick }: FinderProps) {
   const t = useTranslations("player");
   const tt = useTranslations("title");
   const qc = useQueryClient();
@@ -142,21 +123,20 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   const [found, setFound] = useState<Found | null>(() => cachedFor(connId));
   const [status, setStatus] = useState<Status>(() => (found ? { kind: "done" } : { kind: "idle" }));
   const base = useReleasePrefs();
-  const [sort, setSort] = useState<Sort>(modeInSort && start?.quality ? SORT_OF[start.quality] : "recommended");
-  // The site's quality mode for this viewing (its "Quality" pill); the profile's until one is chosen.
-  const [ownMode, setMode] = useState<ReleaseQuality | null>(modeInSort ? null : (start?.quality ?? null));
-  const mode = (modeInSort ? MODE_OF[sort] : undefined) ?? ownMode ?? base.quality;
+  const [sort, setSort] = useState<Sort>("recommended");
+  // The quality mode for this viewing (the "Quality" choice); the profile's until one is chosen.
+  const [ownMode, setMode] = useState<ReleaseQuality | null>(start?.quality ?? null);
+  const mode = ownMode ?? base.quality;
   // What the chosen server's line gave this device's playbacks: "Auto" ranks by it (lib/media/line-speed).
   const lineBps = useSyncExternalStore(subscribeLine, () => lineSpeed(connId), () => null);
   const prefs = useMemo(() => ({ ...base, quality: mode, lineBps }), [base, mode, lineBps]);
   const text = useReleaseText();
-  const [tracker, setTracker] = useState<string | null>(null);
   const [voice, setVoice] = useState<string | null>(start?.voice ?? null);
   const [picture, setPicture] = useState<string | null>(start?.picture ?? null);
   const [shown, setShown] = useState(PAGE);
-  // The site's cut (null: any) and the audio the title page sent, until the person chooses one here.
+  // The cut (null: any) and the audio the title page sent, until the person chooses one here.
   const [edition, setEdition] = useState<string | null>(() => (start?.edition && EDITIONS.includes(start.edition as Edition) ? start.edition : null));
-  const startVoice = useRef(modeInSort ? null : (start?.voice ?? null));
+  const startVoice = useRef(start?.voice ?? null);
   // The release whose details are open (a dialog, a sheet on a phone; a card in the middle on a TV).
   const [detailed, setDetailed] = useState<TsSearchResult | null>(null);
   const run = useRef<AbortController | null>(null);
@@ -193,7 +173,6 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     run.current = ctrl;
     const q = (text ?? query).trim() || defaultQuery;
     setStatus({ kind: "searching" });
-    setTracker(null);
     setShown(PAGE);
     try {
       const r = await (await torrServerFor(connId)).search(q, ctrl.signal);
@@ -230,74 +209,24 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     const rest = found.results.filter((x) => !mine.has(x.link)).sort((a, b) => (b.seeders ?? -1) - (a.seeders ?? -1));
     return { ranked, byLink: new Map(ranked.map((x) => [x.result.link, x])), rest };
   }, [found, d, prefs, season, episode, fileTracks]);
-  // Audio options grouped by language: the profile's languages first, each studio under its own language.
-  const options = useMemo(() => {
-    // Releases of other seasons only aren't offered as an audio or a picture to pick (they stay in the list, last).
-    const all = voiceOptions((view?.ranked ?? []).filter((x) => x.holds !== false), 60);
-    const rank = (o: VoiceOption) => {
-      const i = o.language ? base.languages.indexOf(o.language) : -1;
-      return i >= 0 ? i : o.language ? base.languages.length : base.languages.length + 1;
-    };
-    // In a language, the order "Where to watch" offers them (`forProfile`: live ones before almost dead, HD, then the
-    // profile's studios in their order, "1 — LostFilm, 2 — HDRezka"), so both say the same.
-    return forProfile(all, base)
-      .map((o, i) => ({ o, i }))
-      .sort((a, b) => rank(a.o) - rank(b.o) || (a.o.language ?? "").localeCompare(b.o.language ?? "") || a.i - b.i)
-      .map((x) => x.o);
-  }, [view, base]);
-  const inVoice = (x: RankedRelease) => voice === null || voiceKeys(x).includes(voice);
-  const versions = useMemo(
-    () => pictureVersions((view?.ranked ?? []).filter((x) => !x.dead && x.holds !== false && (voice === null || voiceKeys(x).includes(voice)))),
-    [view, voice],
-  );
-  const trackers = useMemo(() => {
-    const m = new Map<string, number>();
-    // A torrent several indexers returned counts for each of them.
-    for (const r of found?.results ?? []) for (const name of trackersOf(r)) m.set(name ?? "?", (m.get(name ?? "?") ?? 0) + 1);
-    return [...m.entries()].sort((a, b) => b[1] - a[1]);
-  }, [found]);
-  const filtered = voice !== null || picture !== null || tracker !== null;
-  // Audio and picture filters keep releases of this title only; other results show without them.
-  const visible = view
-    ? [
-        ...view.ranked
-          .filter((x) => inVoice(x) && (picture === null || x.picture === picture))
-          // Whatever the order, releases of other seasons only stay below the wanted season's (the rank puts them there).
-          .sort(sort === "recommended" ? () => 0 : (a, b) => Number(a.holds === false) - Number(b.holds === false) || ORDER[sort](a, b))
-          .map((x) => x.result),
-        ...(voice === null && picture === null ? view.rest : []),
-      ].filter((r) => tracker === null || trackersOf(r).some((name) => (name ?? "?") === tracker))
-    : [];
-  // The recommendation follows the rank, whatever order the list is sorted in.
-  const shownLinks = new Set(visible.map((r) => r.link));
-  // The release "Where to watch" and the hero start (`pickRelease`: the profile's audio, the default cut, the mode's
-  // picture), when the list shows it; else the first one shown that could be.
-  const picked = view ? pickRelease(view.ranked, prefs).chosen : undefined;
-  const recommended = picked && shownLinks.has(picked.result.link) ? picked : view?.ranked.find((x) => shownLinks.has(x.result.link) && !x.dead && !x.info.cam && x.holds !== false);
+
   const server = connections.find((c) => c.id === connId)?.name ?? "TorrServer";
-  /** An audio, picture or tracker filter: the list starts again from its first part. */
-  const filter = (kind: "voice" | "picture" | "tracker", value: string | null) => {
-    if (kind === "voice") setVoice(value);
-    else if (kind === "picture") setPicture(value);
-    else setTracker(value);
-    setShown(PAGE);
-  };
+  /** Any audio, cut and picture again (the TV's "Reset"). */
   const reset = () => {
     setVoice(null);
     setPicture(null);
-    setTracker(null);
     setEdition(null);
     startVoice.current = null;
     setShown(PAGE);
   };
 
-  // The site: the pills of "Where to watch" narrowing the list, its card the
+  // The choices of "Where to watch" narrowing the list, its pick the
   // list's first. The title page always sends its audio; when that is just its default, nothing was chosen, and the
   // screen of "All releases" lists every audio (the card is the same release either way).
-  const titleDefault = useMemo(() => (view && !modeInSort ? (pickRelease(view.ranked, base).option?.key ?? null) : null), [view, base, modeInSort]);
+  const titleDefault = useMemo(() => (view ? (pickRelease(view.ranked, base).option?.key ?? null) : null), [view, base]);
   const siteVoice = voice !== null && voice === startVoice.current && voice === titleDefault ? null : voice;
-  const choice = useMemo(() => (modeInSort || !view ? null : pickRelease(view.ranked, base, { voice: siteVoice ?? ANY, edition: (edition as Edition | null) ?? ANY, picture }, 40)), [modeInSort, view, base, siteVoice, edition, picture]);
-  /** The site's choices, each narrowing the next and starting the list again (the ones after it go back to "any"). */
+  const choice = useMemo(() => (!view ? null : pickRelease(view.ranked, base, { voice: siteVoice ?? ANY, edition: (edition as Edition | null) ?? ANY, picture }, 40)), [view, base, siteVoice, edition, picture]);
+  /** The choices, each narrowing the next and starting the list again (the ones after it go back to "any"). */
   const choose = (next: { voice?: string | null; edition?: string | null; picture?: string | null; mode?: ReleaseQuality }) => {
     // The title page's audio is read once: whatever is chosen here keeps it as it is shown now (a new mode reranks the
     // releases, and the title's own pick may then be another audio — "Any" must not turn into it).
@@ -385,20 +314,12 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     setSort,
     voice,
     picture,
-    tracker,
-    filter,
-    filtered,
     reset,
     shown,
     setShown,
     detailed,
     setDetailed,
     view,
-    options,
-    versions,
-    trackers,
-    visible,
-    recommended,
     isLinked,
     versionOf,
     heard,
@@ -406,7 +327,6 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
     minutes,
     optionLabel,
     where,
-    // The site's (null on the TV).
     mode,
     edition,
     choice,

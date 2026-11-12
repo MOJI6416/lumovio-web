@@ -4,7 +4,7 @@ import { ChevronDown, Info, Play, RefreshCw, Search, TriangleAlert, X } from "lu
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useId, useRef, useState } from "react";
-import { type FinderProps, PAGE, SITE_SORTS, useTorrentFinder } from "@/components/player/finder";
+import { type FinderProps, PAGE, SORTS, useTorrentFinder } from "@/components/player/finder";
 import { CardMark, PickItem, PickPill, WatchCard } from "@/components/title/WatchCard";
 import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -46,7 +46,7 @@ export function ReleaseFinder(props: FinderProps) {
   // The cut chosen on the title page comes in the address ("&edition=extended"), as its audio and picture do.
   const params = useSearchParams();
   const start = props.start ?? { voice: null, picture: null, quality: null };
-  const f = useTorrentFinder({ ...props, start: { ...start, edition: start.edition ?? params.get("edition") } }, { modeInSort: false });
+  const f = useTorrentFinder({ ...props, start: { ...start, edition: start.edition ?? params.get("edition") } });
   const { details: d, season, episode, connections } = props;
   const { found, status, choice, listed, server } = f;
   const avail = useTitleAvailability(d.id);
@@ -432,7 +432,7 @@ function SortPill({ value, onChange }: { value: Finder["sort"]; onChange: (s: Fi
         </FilterChip>
       }
     >
-      {SITE_SORTS.map((s) => (
+      {SORTS.map((s) => (
         <MenuCheckboxItem key={s} checked={s === value} onCheckedChange={() => onChange(s)}>
           {t(`sort_${s}`)}
         </MenuCheckboxItem>
