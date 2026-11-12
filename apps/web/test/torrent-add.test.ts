@@ -22,7 +22,7 @@ vi.mock("../src/lib/api", () => ({
 vi.mock("../src/lib/media/clients", () => ({ getCredentials: async () => ({ id: "c1", baseUrl: "http://ts.test", auth: { kind: "torrserver" } }) }));
 vi.mock("../src/lib/media/torrserver", async (original) => ({ ...(await original<object>()), torrServerClient: () => server }));
 
-const { addTorrentSource } = await import("../src/lib/media/torrent-source");
+const { addTorrentSource, takeBack } = await import("../src/lib/media/torrent-source");
 
 const NEW = "a".repeat(40);
 const OWN = "b".repeat(40);
@@ -125,5 +125,11 @@ describe("adding a search result to a TorrServer", () => {
     await vi.runAllTimersAsync();
     await expect(added).resolves.toMatchObject({ hash: NEW });
     expect(server.remove).not.toHaveBeenCalled();
+  });
+
+  it("takes back a torrent the add brought when the person left before it played: off the server and out of the index", async () => {
+    await takeBack("c1", NEW);
+    expect(server.remove).toHaveBeenCalledWith(NEW);
+    expect(apiCalls).toEqual([{ path: "/api/connections/c1/index/forget", json: { hashes: [NEW] } }]);
   });
 });

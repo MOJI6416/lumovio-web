@@ -7,7 +7,6 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { GuestGate, takeGuestIntent } from "@/components/shell/GuestGate";
-import { useCopyText } from "@/components/sources/copy-text";
 import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
@@ -29,6 +28,7 @@ import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-
 import { setRateOpen } from "./rate-open";
 import { scrollToSection } from "./section-link";
 import { serviceOf } from "./services";
+import type { CopyFace } from "./CopyProbe";
 import type { ProbeResult } from "./TorrentProbe";
 import { TrailerDialog } from "./TrailerDialog";
 
@@ -36,6 +36,7 @@ import { TrailerDialog } from "./TrailerDialog";
 // it runs.
 const moreModule = lazyControl(() => import("./TitleMore"));
 const TorrentProbe = dynamic(() => import("./TorrentProbe").then((m) => m.TorrentProbe), { ssr: false });
+const CopyProbe = dynamic(() => import("./CopyProbe").then((m) => m.CopyProbe), { ssr: false });
 
 /**
  * The title hero's actions (design-system 7.14 items 6–7, 8.2; redesign-2026-11.md 2): one main button by the table of
@@ -59,7 +60,9 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   const ep = d.kind === "tv" ? startEpisode(d, state?.progress, chosen) : null;
   const holds = seasonCopies(ep?.season);
   const avail = useTitleAvailability(d.id, holds);
-  const copyText = useCopyText();
+  // A TorrServer copy's marks and audio by its release name, from its own chunk (./CopyProbe).
+  const [copyFace, setCopyFace] = useState<CopyFace | null>(null);
+  const onCopyFace = useCallback((f: CopyFace) => setCopyFace(f), []);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -116,8 +119,8 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
               // A TorrServer copy as a found release is said: its release name's marks and what is heard (16).
               server: first.connectionName,
               resolution: null,
-              marks: copyText.quality(first, avail.data?.servers ?? [], d.originalLanguage).marks,
-              heard: copyText.sound(first, avail.data?.servers ?? [], d.originalLanguage),
+              marks: copyFace?.marks ?? [],
+              heard: copyFace?.heard ?? null,
               torrServer: true,
               others: avail.state.copies - 1,
             }
@@ -210,6 +213,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         <AvailabilityLine summary={plan.summary} kids={kids} onRetry={() => void avail.refetch()} retrying={avail.isFetching} onSignIn={() => actions.requireAuth("watch")} />
       )}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
+      {first?.kind === "torrserver" && avail.state.kind === "playable" && <CopyProbe copy={first} all={avail.data?.servers ?? []} originalLanguage={d.originalLanguage} onChange={onCopyFace} />}
       <GuestGate {...actions.gate} />
       {d.trailer && <TrailerDialog video={trailerOpen ? d.trailer : null} title={d.title} onClose={() => setTrailerOpen(false)} />}
     </div>

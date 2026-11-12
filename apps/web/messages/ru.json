@@ -1384,6 +1384,7 @@
     "count": "{count, plural, one {# раздача} few {# раздачи} many {# раздач} other {# раздачи}}",
     "shown": "Показано {shown} из {total}",
     "selectAll": "Выбрать добавленные Lumovio",
+    "clearOurs": "Очистить добавленное Lumovio · {count}",
     "select": "Выбрать {name}",
     "removeOne": "Удалить {name} с TorrServer",
     "readFailed": "{error} Ничего не изменено, и список не считается пустым.",

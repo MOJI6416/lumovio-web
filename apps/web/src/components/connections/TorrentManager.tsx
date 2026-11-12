@@ -158,6 +158,7 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
     });
   // Picking many at once takes only what Lumovio added: the person's own releases are picked one by one (finding 29).
   const ours = rows.filter((x) => x.fromLumovio);
+  const oursAll = all.filter((x) => x.fromLumovio);
   const allShown = ours.length > 0 && ours.every((x) => selected.has(x.hash));
   const refresh = () => void data.refetch();
   const reconciled = data.data?.reconciled ?? [];
@@ -199,6 +200,12 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
         <Button variant="secondary" icon={RefreshCw} onClick={refresh} loading={data.isFetching}>
           {t("refresh")}
         </Button>
+        {/* Everything Lumovio added, in one press — the person's own releases never (docs/torrserver-2026-11.md, 18). */}
+        {oursAll.length > 0 && (
+          <Button variant="danger-tertiary" icon={Trash2} onClick={() => setRemoving(oursAll)}>
+            {t("clearOurs", { count: oursAll.length })}
+          </Button>
+        )}
       </div>
 
       {data.isError && (

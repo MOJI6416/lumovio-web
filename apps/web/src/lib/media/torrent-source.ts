@@ -79,3 +79,14 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
   }
   return { hash, label, existed };
 }
+
+/**
+ * Takes back a torrent an add brought (`existed: false`) when the person left before it played — "←" during the add
+ * (docs/torrserver-2026-11.md, 18): off the server and out of the index. Never one that was there before. Best effort:
+ * a failure leaves Lumovio's own marked torrent, which the server's list offers to clear.
+ */
+export async function takeBack(connectionId: string, hash: string) {
+  const ts = await torrServerFor(connectionId);
+  await ts.remove(hash);
+  await api(`/api/connections/${connectionId}/index/forget`, { method: "POST", json: { hashes: [hash] } });
+}

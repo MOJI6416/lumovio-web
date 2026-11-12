@@ -1384,6 +1384,7 @@
     "count": "{count, plural, one {# wydanie} few {# wydania} many {# wydań} other {# wydania}}",
     "shown": "Pokazano {shown} z {total}",
     "selectAll": "Zaznacz dodane przez Lumovio",
+    "clearOurs": "Wyczyść dodane przez Lumovio · {count}",
     "select": "Zaznacz: {name}",
     "removeOne": "Usuń z serwera TorrServer: {name}",
     "readFailed": "{error} Nic nie zostało zmienione, a lista nie jest traktowana jako pusta.",

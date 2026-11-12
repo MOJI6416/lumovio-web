@@ -1384,6 +1384,7 @@
     "count": "{count, plural, one {# роздача} few {# роздачі} many {# роздач} other {# роздачі}}",
     "shown": "Показано {shown} із {total}",
     "selectAll": "Вибрати додані Lumovio",
+    "clearOurs": "Очистити додане Lumovio · {count}",
     "select": "Вибрати {name}",
     "removeOne": "Видалити {name} з TorrServer",
     "readFailed": "{error} Нічого не змінено, і список не вважається порожнім.",

@@ -20,7 +20,8 @@ import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLook
 import { Link, useRouter } from "@/i18n/navigation";
 import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { isDubbing, pictureReasons, type RankedRelease } from "@/lib/media/releases";
-import { addTorrentSource } from "@/lib/media/torrent-source";
+import { background } from "@/lib/optional";
+import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
@@ -135,7 +136,11 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       const added = await addTorrentSource(source.id, d, start?.season ?? null, x.result);
       if (!added) throw new Error(tpl("addFailed"));
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
-      if (dropped) return;
+      if (dropped) {
+        // Left before it played ("←" during the add): a torrent this add brought is taken back (18), never one that was there.
+        if (!added.existed) background(takeBack(source.id, added.hash).then(() => qc.invalidateQueries({ queryKey: ["availability", d.id] })));
+        return;
+      }
       // The chosen dubbing goes along, so the player starts that studio's track once the file is read;
       // "added" lets the watch page show this add as the first of its stages.
       router.push(`${playHref}${join}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);

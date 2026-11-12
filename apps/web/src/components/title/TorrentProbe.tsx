@@ -14,7 +14,7 @@ import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
 import { pickRelease } from "@/lib/media/release-pick";
 import { bestOf } from "@/lib/media/releases";
-import { addTorrentSource } from "@/lib/media/torrent-source";
+import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { useChosenSeason } from "./chosen-season";
@@ -106,7 +106,11 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
           const added = await addTorrentSource(source.id, d, start?.season ?? null, chosen.result);
           if (!added) throw new Error(tp("addFailed"));
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
-          if (dropped) return false;
+          if (dropped) {
+            // Left before it played ("←" during the add): a torrent this add brought is taken back (18), never one that was there.
+            if (!added.existed) background(takeBack(source.id, added.hash).then(() => qc.invalidateQueries({ queryKey: ["availability", d.id] })));
+            return false;
+          }
           // The chosen dubbing goes along, so the player starts that studio's track (as "Where to watch" does).
           router.push(`${href}${href.includes("?") ? "&" : "?"}source=${source.id}:${encodeURIComponent(added.hash)}&added=1${voice ? `&voice=${encodeURIComponent(voice)}` : ""}`);
           return true;

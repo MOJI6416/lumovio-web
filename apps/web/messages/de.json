@@ -1384,6 +1384,7 @@
     "count": "{count, plural, one {# Release} other {# Releases}}",
     "shown": "{shown} von {total} angezeigt",
     "selectAll": "Von Lumovio hinzugefügte auswählen",
+    "clearOurs": "Von Lumovio Hinzugefügtes entfernen · {count}",
     "select": "{name} auswählen",
     "removeOne": "{name} von TorrServer entfernen",
     "readFailed": "{error} Nichts wurde geändert, und die Liste gilt nicht als leer.",

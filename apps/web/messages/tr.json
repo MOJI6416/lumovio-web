@@ -1384,6 +1384,7 @@
     "count": "{count, plural, one {# sürüm} other {# sürüm}}",
     "shown": "{shown}/{total} gösteriliyor",
     "selectAll": "Lumovio'nun eklediklerini seç",
+    "clearOurs": "Lumovio'nun eklediklerini temizle · {count}",
     "select": "Seç: {name}",
     "removeOne": "TorrServer’dan kaldır: {name}",
     "readFailed": "{error} Hiçbir şey değiştirilmedi ve liste boş sayılmadı.",
