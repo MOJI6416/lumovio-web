@@ -27,15 +27,37 @@ const PRIVATE = [
 // match "/browse/tv", and "/*/library" a public profile "/u/library".
 const PREFIXES = ["", ...LOCALE_CODES.map((c) => `/${c}`)];
 
+/**
+ * Crawlers that gather pages to train AI models stay out of the whole site (the owner, 2026-11-12): they were ~150k of
+ * ~210k API requests an hour and used up TMDB's limit (docs/operations.md, incident checklist 6). The agents that fetch
+ * a page to answer a person's question — OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot —
+ * aren't named, so they follow "*" like search engines, and Lumovio still shows up in AI answers. Google-Extended and
+ * Applebot-Extended are tokens, not crawlers: they keep pages out of Gemini's and Apple's training, not out of search.
+ */
+export const AI_TRAINING = [
+  "GPTBot",
+  "ClaudeBot",
+  "anthropic-ai",
+  "CCBot",
+  "Google-Extended",
+  "Applebot-Extended",
+  "Bytespider",
+  "Amazonbot",
+  "meta-externalagent",
+];
+
 export const dynamic = "force-dynamic"; // SITE_URL is the server's runtime setting
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/api/", ...PRIVATE.flatMap((segment) => PREFIXES.map((p) => `${p}/${segment}`))],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/api/", ...PRIVATE.flatMap((segment) => PREFIXES.map((p) => `${p}/${segment}`))],
+      },
+      { userAgent: AI_TRAINING, disallow: "/" },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

@@ -66,6 +66,18 @@ describe("robots.txt and sitemap.xml", () => {
     }
   });
 
+  it("closes the whole site to AI training crawlers, not to search engines or AI answers", () => {
+    const rules = robots().rules;
+    const groups = Array.isArray(rules) ? rules : [rules];
+    const agents = (g: (typeof groups)[number]) => (Array.isArray(g.userAgent) ? g.userAgent : [g.userAgent ?? ""]);
+    const closed = groups.find((g) => agents(g).includes("GPTBot"))!;
+    expect(closed.disallow).toBe("/");
+    for (const bot of ["ClaudeBot", "CCBot", "Google-Extended", "Bytespider"]) expect(agents(closed)).toContain(bot);
+    // A crawler named in a group reads only that group: these follow "*", as Googlebot does.
+    const named = groups.flatMap(agents);
+    for (const agent of ["Googlebot", "bingbot", "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User", "PerplexityBot"]) expect(named).not.toContain(agent);
+  });
+
   it("lists each public page once per finished language, with alternates", () => {
     const urls = sitemap();
     const home = urls.filter((u) => /^https?:\/\/[^/]+(\/(ru|uk|de|fr|it|pl|tr|es|pt-BR))?$/.test(u.url));
