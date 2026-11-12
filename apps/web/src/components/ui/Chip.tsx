@@ -82,21 +82,25 @@ export interface InputChipProps {
   /** What the chip stands for; also names its remove button ("Remove «Horror»"). */
   label: string;
   onRemove: () => void;
+  /** Before the label, a picture of what it stands for (24 px): a studio's mark. */
+  lead?: ReactNode;
   disabled?: boolean;
   className?: string;
 }
 
 /** A condition or a choice that can be taken away with its ×: AI search terms, studios. */
-export function InputChip({ label, onRemove, disabled, className }: InputChipProps) {
+export function InputChip({ label, onRemove, lead, disabled, className }: InputChipProps) {
   const t = useTranslations("ui");
   return (
     <span
       className={cn(
         "inline-flex h-8 max-w-full shrink-0 items-center gap-1 rounded-full bg-surface-2 ps-3 pe-0 text-body-s font-semibold text-text-1 max-sm:h-9",
+        lead && "ps-1 gap-1.5",
         disabled && "opacity-40",
         className,
       )}
     >
+      {lead}
       <span className="truncate">{label}</span>
       <button
         type="button"

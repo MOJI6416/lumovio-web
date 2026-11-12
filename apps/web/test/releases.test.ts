@@ -311,6 +311,14 @@ describe("creditsStudio", () => {
     expect(creditsStudio("Show S01 | MVO (Ozz)", "Ozz")).toBe(true);
     expect(creditsStudio("Нарезка лучших моментов", "HDrezka Studio")).toBe(false);
   });
+
+  it("knows a studio by the short or new name releases give it", () => {
+    expect(creditsStudio("Breaking Bad 2008-2013 MVO (LostFilm), DVO (Kubik), AVO", "Кубик в Кубе")).toBe(true);
+    expect(creditsStudio("Show S01 | Dub (Iyuno-SDI Group)", "SDI Media")).toBe(true);
+    expect(creditsStudio("Frieren [2023] MVO (AniLiberty)", "AniLibria")).toBe(true);
+    expect(creditsStudio("Шоу | MVO ТакТребаПродакшн", "Так Треба Продакшн")).toBe(true);
+    expect(parseRelease("The Penguin S01 [2024, WEB-DL 1080p] MVO (LE-Production, NewComers) + Original").studios).toEqual(["LE-Production", "NewComers"]);
+  });
 });
 
 describe("voiceOptions", () => {

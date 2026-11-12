@@ -4,6 +4,7 @@ import type { Profile, SubtitleStyle } from "@lumovio/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
+import { hasStudioMark, StudioMark } from "@/components/sources/StudioMark";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
@@ -128,7 +129,15 @@ export function AudioDialog({ value, change, onClose, kids }: Common & { kids: b
       {!kids && (
         <Part title={ts("sectionStudios")}>
           <p className="sr-only">{t("voiceStudiosHint")}</p>
-          <OrderedChoice value={value.voiceStudios} options={studios} max={12} addLabel={t("addStudio")} listLabel={t("voiceStudios")} onChange={(voiceStudios) => apply({ voiceStudios })} />
+          <OrderedChoice
+            value={value.voiceStudios}
+            options={studios}
+            max={12}
+            mark={(v) => (hasStudioMark(v) ? <StudioMark studio={v} /> : null)}
+            addLabel={t("addStudio")}
+            listLabel={t("voiceStudios")}
+            onChange={(voiceStudios) => apply({ voiceStudios })}
+          />
           {!full && (
             <form onSubmit={addCustom} className="flex flex-col gap-2" noValidate>
               <div className="flex gap-2">

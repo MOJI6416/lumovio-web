@@ -8,8 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, packWords, QUALITY_MODES, ReleaseLine, studioShown, useReleaseText, VersionLine } from "@/components/sources/release-text";
-import { Tag } from "@/components/ui/Badge";
+import { formatSize, packWords, QUALITY_MODES, ReleaseLine, useReleaseText, VersionLine, YourVoiceTag } from "@/components/sources/release-text";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { InlineAlert } from "@/components/ui/InlineAlert";
@@ -24,6 +23,7 @@ import { background } from "@/lib/optional";
 import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { hasStudioMark, StudioMark, StudioSlot } from "@/components/sources/StudioMark";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
 
 const ID = "torrserver-h";
@@ -186,6 +186,8 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   const kept = lookup.data?.emptyAt ? t("tsKept", { minutes: Math.max(0, Math.round((Date.now() - lookup.data.at) / 60_000)) }) : null;
   const versionName = version ? text.version(version.resolution, version.range) : "";
   const qualityValue = choice.picture ? versionName : [t(`tsQuality_${mode}`), versionName].filter(Boolean).join(" · ");
+  // The studios' marks in the choice, when one of its studios has one: every row keeps the place, so the names line up.
+  const voiceMarks = pick.options.some((o) => hasStudioMark(o.studio));
   const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : "";
 
   return (
@@ -196,7 +198,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       <WatchCard
         id={ID}
         mark={<CardMark kind="torrserver" />}
-        tag={studioMatch ? <Tag>{t("tsYourVoice", { studio: studioShown(t, chosen.studio!) })}</Tag> : undefined}
+        tag={studioMatch ? <YourVoiceTag studio={chosen.studio!} /> : undefined}
         heading={heard}
         quality={
           <>
@@ -237,9 +239,13 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
           {/* One row of pills that scrolls sideways on a phone (to the card's edges), wrapped on wider screens. */}
           <div className="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 empty:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             {pick.options.length > 1 && option && (
-              <Menu label={tp("voiceChoice")} align="start" trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} disabled={adding} aria-label={t("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}>
+              <Menu
+                label={tp("voiceChoice")}
+                align="start"
+                trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} lead={<StudioMark studio={option.studio} className="ms-0.5 size-5" />} disabled={adding} aria-label={t("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}
+              >
                 {pick.options.map((o) => (
-                  <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => choose({ voice: o.key, edition: null, picture: null })}>
+                  <MenuCheckboxItem key={o.key} checked={o === option} lead={voiceMarks ? <StudioSlot studio={o.studio} className="size-8" /> : undefined} onCheckedChange={() => choose({ voice: o.key, edition: null, picture: null })}>
                     <PickItem
                       name={text.option(o)}
                       sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}

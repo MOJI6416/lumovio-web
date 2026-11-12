@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { StatusBadge, Tag } from "@/components/ui/Badge";
 import { formatDate, formatSize } from "@/lib/format";
 import { QualityLine, qualityMarks } from "./QualityBadges";
+import { hasStudioMark, StudioMark } from "./StudioMark";
 import {
   audioMatch,
   type HdrFormat,
@@ -187,13 +188,24 @@ export const studioShown = (t: ReturnType<typeof useTranslations>, studio: strin
   return word.charAt(0).toUpperCase() + word.slice(1);
 };
 
+/** "Your voice-over · LostFilm": the profile's studio, with its mark at the start. */
+export function YourVoiceTag({ studio }: { studio: string }) {
+  const t = useTranslations("title");
+  return (
+    <Tag className={hasStudioMark(studio) ? "ps-1" : undefined}>
+      <StudioMark studio={studio} className="-me-0.5 size-4" />
+      {t("tsYourVoice", { studio: studioShown(t, studio) })}
+    </Tag>
+  );
+}
+
 /** The label that says what a release's audio has to do with the profile: its studio, or only its language. */
 export function AudioMatchBadge({ x }: { x: RankedRelease }) {
   const t = useTranslations("title");
   const text = useReleaseText();
   const m = audioMatch(x);
   if (!m) return null;
-  return <Tag>{m.kind === "studio" ? t("tsYourVoice", { studio: studioShown(t, m.studio) }) : t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
+  return m.kind === "studio" ? <YourVoiceTag studio={m.studio} /> : <Tag>{t("tsYourLanguage", { language: text.cap(text.language(m.language)) })}</Tag>;
 }
 
 const CODEC: Record<NonNullable<ReleaseInfo["codec"]>, string> = { hevc: "HEVC", avc: "AVC", av1: "AV1" };

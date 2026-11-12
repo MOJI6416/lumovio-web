@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 import { cn } from "./cn";
 import { lazyControl, useLazySwap, useStandIn } from "./lazy-swap";
 import { type SelectSize, selectTrigger } from "./Select";
@@ -11,6 +11,8 @@ export interface ComboboxOption<V extends string = string> {
   label: string;
   /** Other words that find it: a language's own name, a code. */
   keywords?: readonly string[];
+  /** Before the label in the list, a picture of it (24 px): a studio's mark. */
+  lead?: ReactNode;
   disabled?: boolean;
 }
 

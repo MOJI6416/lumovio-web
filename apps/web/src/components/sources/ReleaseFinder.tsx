@@ -22,7 +22,8 @@ import { isDubbing, type RankedRelease, releaseDomId, voiceWish, wishNameTrack }
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
-import { formatSize, isPack, packWords, QUALITY_MODES, ReleaseLine, studioShown, useReleaseText, VersionLine } from "./release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, ReleaseLine, useReleaseText, VersionLine, YourVoiceTag } from "./release-text";
+import { hasStudioMark, StudioMark, StudioSlot } from "./StudioMark";
 
 const CARD = "finder-card-h";
 
@@ -254,6 +255,8 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const versionName = c.version ? text.version(c.version.resolution, c.version.range) : "";
   const qualityValue = f.picture ? versionName : [tt(`tsQuality_${f.mode}`), versionName].filter(Boolean).join(" · ");
   const voiceValue = option ? [text.option(option), option.language && option.language !== prefs.languages[0] ? text.language(option.language) : null].filter(Boolean).join(", ") : t("anyVoice");
+  // The studios' marks in the choice, when one of its studios has one: every row keeps the place, so the names line up.
+  const voiceMarks = c.options.some((o) => hasStudioMark(o.studio));
   const editionValue = f.edition ? editionName(f.edition as Edition) : t("anyEdition");
   const busy = f.status.kind === "searching";
 
@@ -264,7 +267,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
       <WatchCard
         id={CARD}
         mark={<CardMark kind="torrserver" />}
-        tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <Tag>{tt("tsYourVoice", { studio: studioShown(tt, chosen.studio!) })}</Tag> : undefined}
+        tag={linked ? <Tag>{t("alreadyAdded")}</Tag> : studioMatch ? <YourVoiceTag studio={chosen.studio!} /> : undefined}
         heading={heard}
         quality={<ReleaseLine info={chosen.info} rest={[cutWords, pack || null, size ? (tv && isPack(chosen.info.pack) ? t("packWhole", { size }) : size) : null]} />}
         where={[tp("viaTorrServer", { name: f.server }), chosen.result.seeders !== null ? tt("tsSeeders", { count: chosen.result.seeders }) : null, trackersOf(chosen.result).filter(Boolean).join(", ") || null].filter(Boolean).join(" · ")}
@@ -308,13 +311,17 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
             {/* The pills of "Where to watch": one row that scrolls sideways on a phone (to the card's edges), wrapped on wider screens. */}
             <div className="scroll-row -mx-4 flex gap-2 overflow-x-auto px-4 empty:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               {c.options.length > 1 && (
-                <Menu label={tp("voiceChoice")} align="start" trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} aria-label={tt("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}>
+                <Menu
+                  label={tp("voiceChoice")}
+                  align="start"
+                  trigger={<PickPill name={tp("voiceChoice")} value={voiceValue} lead={<StudioMark studio={option?.studio} className="ms-0.5 size-5" />} aria-label={tt("pickValue", { name: tp("voiceChoice"), value: voiceValue })} />}
+                >
                   <MenuCheckboxItem checked={!option} onCheckedChange={() => f.choose({ voice: null })}>
                     {t("anyVoice")}
                   </MenuCheckboxItem>
                   <MenuSeparator />
                   {c.options.map((o) => (
-                    <MenuCheckboxItem key={o.key} checked={o === option} onCheckedChange={() => f.choose({ voice: o.key })}>
+                    <MenuCheckboxItem key={o.key} checked={o === option} lead={voiceMarks ? <StudioSlot studio={o.studio} className="size-8" /> : undefined} onCheckedChange={() => f.choose({ voice: o.key })}>
                       <PickItem
                         name={text.option(o)}
                         sub={[o.language && text.option(o) !== text.cap(text.language(o.language)) ? text.cap(text.language(o.language)) : null, resolutions(o.versions.map((v) => v.resolution))].filter(Boolean).join(" · ")}
@@ -503,7 +510,7 @@ function ReleaseItem({
   ) : linked ? (
     <Tag>{t("alreadyAdded")}</Tag>
   ) : x?.studio ? (
-    <Tag>{tt("tsYourVoice", { studio: studioShown(tt, x.studio) })}</Tag>
+    <YourVoiceTag studio={x.studio} />
   ) : null;
   return (
     <li className="flex items-center gap-3 p-4">

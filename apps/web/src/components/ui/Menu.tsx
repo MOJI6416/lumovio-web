@@ -204,6 +204,8 @@ export function MenuItem({ icon, lead, children, end, onSelect, href, tone, disa
 
 export interface MenuCheckboxItemProps {
   icon?: LucideIcon;
+  /** In the icon's place, something that is not an icon: a studio's mark in the choice of voice-over. */
+  lead?: ReactNode;
   children: ReactNode;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -215,6 +217,7 @@ export interface MenuCheckboxItemProps {
 /** An item that turns something on or off ("Favourites"): a check on the end while it is on. */
 export function MenuCheckboxItem({
   icon,
+  lead,
   children,
   checked,
   onCheckedChange,
@@ -236,7 +239,7 @@ export function MenuCheckboxItem({
           onCheckedChange(!checked);
         }}
       >
-        <ItemContent icon={icon} end={checked ? check : null}>
+        <ItemContent icon={icon} lead={lead} end={checked ? check : null}>
           {children}
         </ItemContent>
       </button>
@@ -251,7 +254,7 @@ export function MenuCheckboxItem({
       disabled={disabled}
       className={ITEM}
     >
-      <ItemContent icon={icon} end={<DM.ItemIndicator>{check}</DM.ItemIndicator>}>
+      <ItemContent icon={icon} lead={lead} end={<DM.ItemIndicator>{check}</DM.ItemIndicator>}>
         {children}
       </ItemContent>
     </DM.CheckboxItem>

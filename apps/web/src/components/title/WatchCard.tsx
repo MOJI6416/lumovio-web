@@ -117,14 +117,16 @@ const NOT_TOGGLE = { "aria-pressed": undefined };
  * value and a chevron — the catalog's filter pill, never "selected", since a value is always there. It opens a
  * Menu (`menu`), whose items are MenuCheckboxItems with the current one ticked.
  */
-export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: string } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">>(function PickPill(
-  { name, value, ...rest },
+export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: string; lead?: ReactNode } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">>(function PickPill(
+  { name, value, lead, ...rest },
   ref,
 ) {
   // Menu's trigger (asChild) hands its handlers and ref through.
   return (
     <FilterChip ref={ref} selected={false} {...rest} {...NOT_TOGGLE}>
       <span className="font-medium text-text-2">{name}</span>
+      {/* Before the value, what it is in a picture: the chosen studio's mark. */}
+      {lead}
       <span className="max-w-48 truncate">{value}</span>
       <ChevronDown aria-hidden className="-me-0.5 size-4 shrink-0 text-text-2" />
     </FilterChip>

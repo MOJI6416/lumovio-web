@@ -151,6 +151,9 @@ export const DOCS_TR: Record<LegalDoc, () => ReactNode> = {
         Paylaş penceresindeki işaretler bağlantının nereye gideceğini gösterir: Telegram, WhatsApp, X, Facebook ve Reddit sahiplerinin ticari markalarıdır, <A href="https://simpleicons.org">Simple Icons</A> (CC0) kaynağından alınmıştır. Lumovio bunlarla bağlantılı değildir ve bunlar tarafından onaylanmamıştır.
       </P>
       <P>
+        Seslendirme ve dublaj stüdyolarının adlarının yanındaki işaretler stüdyoların kendi logolarıdır (sitelerinin simgeleri ve resmî kanallarının avatarları) ve sahiplerinin ticari markalarıdır; yalnızca bir stüdyoyu tanımaya yardımcı olurlar. Lumovio bunlarla bağlantılı değildir ve bunlar tarafından onaylanmamıştır.
+      </P>
+      <P>
         Lumovio Score, Lumovio’nun yukarıdaki IMDb, TMDB, Rotten Tomatoes, Metacritic, Letterboxd, Trakt ve MyAnimeList puanlarından hesaplanan kendi türetilmiş puanıdır (TVmaze ve
         AniList dahil edilmez). Bu hizmetlerin hiçbiri onu yayınlamaz veya onaylamaz; nasıl çalıştığı aşağıda açıklanmıştır.
       </P>

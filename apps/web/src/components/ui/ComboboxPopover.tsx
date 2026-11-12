@@ -181,6 +181,7 @@ export function ComboboxPopover<V extends string>({
                       o.disabled && "cursor-not-allowed opacity-40",
                     )}
                   >
+                    {o.lead}
                     <span className="min-w-0 flex-1 truncate">{o.label}</span>
                     {on && <Check aria-hidden className="size-4 shrink-0" />}
                   </li>

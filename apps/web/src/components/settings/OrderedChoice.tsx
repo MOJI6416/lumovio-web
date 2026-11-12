@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { InputChip } from "@/components/ui/Chip";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { IconButton } from "@/components/ui/IconButton";
@@ -20,6 +20,7 @@ export function OrderedChoice({
   addLabel,
   listLabel,
   max,
+  mark,
   disabled,
   describedBy,
 }: {
@@ -31,6 +32,8 @@ export function OrderedChoice({
   /** Names the list for screen readers: "Audio languages, in order of preference". */
   listLabel: string;
   max: number;
+  /** A picture before a chosen one's name and in the list (24 px), or null: a studio's mark. */
+  mark?: (value: string) => ReactNode;
   disabled?: boolean;
   describedBy?: string;
 }) {
@@ -58,6 +61,9 @@ export function OrderedChoice({
     onChange(next);
   };
   const free = options.filter((o) => !value.includes(o.value));
+  // In the list every row keeps the mark's place once one of them has a mark, so the names line up.
+  const marked = mark && free.some((o) => mark(o.value) != null);
+  const listed = marked ? free.map((o) => ({ ...o, lead: mark(o.value) ?? <span aria-hidden className="size-6 shrink-0" /> })) : free;
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-3">
@@ -70,6 +76,7 @@ export function OrderedChoice({
               </span>
               <InputChip
                 label={labelOf(v)}
+                lead={mark?.(v)}
                 disabled={disabled}
                 onRemove={() => onChange(value.filter((x) => x !== v))}
                 className="me-auto min-w-0"
@@ -98,7 +105,7 @@ export function OrderedChoice({
         <Combobox
           value={null}
           onValueChange={(v) => onChange([...value, v])}
-          options={free}
+          options={listed}
           placeholder={addLabel}
           aria-label={addLabel}
           aria-describedby={describedBy}

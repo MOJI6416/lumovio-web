@@ -6,11 +6,13 @@ import { Check, ChevronLeft, ChevronRight, ExternalLink, Search } from "lucide-r
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { ServerMark } from "@/components/connections/ServerMark";
+import { hasStudioMark, StudioSlot } from "@/components/sources/StudioMark";
 import { Tag } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { Sheet } from "@/components/ui/Dialog";
 import { usePhoneLayout } from "@/components/ui/layers";
+import { audioTrackFacts } from "@/lib/media/explain";
 import { OFFSET_STEP, stepOffset } from "@/lib/media/subs/view";
 import type { PreparedPlayback } from "@/lib/media/types";
 import type { SubtitleLook, SubtitleMeta } from "./LumovioPlayer";
@@ -268,8 +270,11 @@ function TracksMenu({
   // HLS gives its own audio list; a file gives the server's (switched by preparing it again, or in place when rebuilt).
   const hls = audioTracks.length > 1;
   const audio = hls
-    ? audioTracks.map((a) => ({ value: a.id, label: words(a.label || null, a.language || null), description: undefined as string | undefined, checked: a.enabled }))
-    : prepared.audio.map((a, i) => ({ value: String(a.index), label: words(a.label, a.lang, i + 1), description: a.codec?.toUpperCase(), checked: a.isDefault }));
+    ? audioTracks.map((a) => ({ value: a.id, label: words(a.label || null, a.language || null), description: undefined as string | undefined, checked: a.enabled, title: a.label || null, tag: a.language || null }))
+    : prepared.audio.map((a, i) => ({ value: String(a.index), label: words(a.label, a.lang, i + 1), description: a.codec?.toUpperCase(), checked: a.isDefault, title: a.label, tag: a.lang }));
+  // A track of a studio with a mark shows it; once one does, every row keeps the place, so the names line up.
+  const studioOf = (a: { title: string | null; tag: string | null }) => audioTrackFacts(a.title, a.tag, originalLanguage).track?.studio ?? null;
+  const audioMarks = audio.some((a) => hasStudioMark(studioOf(a)));
   const canSwitch = hls || Boolean(onAudioChange);
   const shown = subtitlesShowing ? subtitleTracks.find((tr) => tr.mode === "showing") : undefined;
   return (
@@ -284,6 +289,7 @@ function TracksMenu({
               <Choice
                 key={a.value}
                 checked={a.checked}
+                icon={audioMarks ? <StudioSlot studio={studioOf(a)} /> : undefined}
                 label={a.label}
                 description={a.description}
                 disabled={!canSwitch && !a.checked}

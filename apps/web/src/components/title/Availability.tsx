@@ -10,10 +10,9 @@ import { GuestGate } from "@/components/shell/GuestGate";
 import { CopyDetails } from "@/components/sources/CopyDetails";
 import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
-import { formatSize, studioShown } from "@/components/sources/release-text";
+import { formatSize, YourVoiceTag } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
 import { CastButton } from "@/components/tv/CastButton";
-import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { IconButton } from "@/components/ui/IconButton";
@@ -184,7 +183,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
         <WatchCard
           id="servers-h"
           mark={<CardMark kind={first.kind} />}
-          tag={f.match?.kind === "studio" ? <Tag>{t("tsYourVoice", { studio: studioShown(t, f.match.studio) })}</Tag> : undefined}
+          tag={f.match?.kind === "studio" ? <YourVoiceTag studio={f.match.studio} /> : undefined}
           heading={f.heard}
           quality={f.quality}
           where={f.where}

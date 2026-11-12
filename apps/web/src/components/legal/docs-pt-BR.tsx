@@ -150,6 +150,9 @@ export const DOCS_PT_BR: Record<LegalDoc, () => ReactNode> = {
         As marcas da janela de compartilhar indicam para onde vai um link: Telegram, WhatsApp, X, Facebook e Reddit são marcas registradas de seus donos, desenhadas a partir do <A href="https://simpleicons.org">Simple Icons</A> (CC0). O Lumovio não é afiliado a eles nem endossado por eles.
       </P>
       <P>
+        As marcas ao lado dos nomes dos estúdios de dublagem e voice-over são os logotipos dos próprios estúdios (os ícones de seus sites e os avatares de seus canais oficiais) e marcas registradas de seus donos; elas só ajudam a reconhecer um estúdio. O Lumovio não é afiliado a eles nem endossado por eles.
+      </P>
+      <P>
         O Lumovio Score é a nota derivada do próprio Lumovio, calculada a partir das notas de IMDb, TMDB, Rotten Tomatoes, Metacritic, Letterboxd, Trakt e MyAnimeList citadas acima
         (TVmaze e AniList não fazem parte dela). Nenhum desses serviços a publica ou a endossa; o funcionamento está explicado abaixo.
       </P>
