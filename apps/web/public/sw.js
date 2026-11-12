@@ -7,7 +7,7 @@
  *    Video bytes never pass through Lumovio's backend.
  * 2. Offline fallback for page navigations.
  */
-const VERSION = "lumovio-sw-5";
+const VERSION = "lumovio-sw-6";
 const creds = new Map();
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -45,6 +45,9 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // A profile switch (any of its screens, site or TV) drops the passwords held for the last profile: the next player
+  // request asks again, as the new profile, and a server not shared with it is refused (docs/torrserver-2026-11.md 33).
+  if (event.request.method === "POST" && url.pathname.startsWith("/api/profiles/select")) creds.clear();
 
   const m = url.pathname.match(/^\/__ts\/([0-9a-f-]{36})\/(.+)$/);
   if (m) {

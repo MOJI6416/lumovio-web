@@ -25,7 +25,7 @@ import { AccentBadge } from "@/components/ui/Badge";
 import { cn } from "@/components/ui/cn";
 import { TvButton } from "@/components/ui/tv/TvButton";
 import { formatDate } from "@/lib/format";
-import type { RankedRelease } from "@/lib/media/releases";
+import { type RankedRelease, releaseDomId } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { TvLayer } from "../nav/TvLayer";
 import { useTvNav } from "../nav/TvNav";
@@ -95,7 +95,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
     });
   }, [f.status.kind, first, nav]);
   const watch = (r: TsSearchResult) =>
-    f.pick(r, list.current?.querySelector(`[data-link="${CSS.escape(r.link)}"]`) ?? null);
+    f.pick(r, list.current?.querySelector(`[data-link="${releaseDomId(r.link)}"]`) ?? null);
 
   return (
     <section ref={section} aria-labelledby="finder-h" className="flex flex-col gap-6">
@@ -388,8 +388,8 @@ function TvReleaseRow({
     <li className="flex items-center gap-8">
       <TvButton
         look="row"
-        data-key={r.link}
-        data-link={r.link}
+        data-key={releaseDomId(r.link)}
+        data-link={releaseDomId(r.link)}
         data-index={index}
         data-tv-initial={initial || undefined}
         className="min-h-22 flex-1 py-3"
@@ -415,7 +415,7 @@ function TvReleaseRow({
           {tt("tsWatch")}
         </span>
       </TvButton>
-      <TvButton look="round" icon={Info} label={tp("releaseDetails")} data-key={`${r.link}#i`} onClick={onDetails} />
+      <TvButton look="round" icon={Info} label={tp("releaseDetails")} data-key={`${releaseDomId(r.link)}#i`} onClick={onDetails} />
     </li>
   );
 }

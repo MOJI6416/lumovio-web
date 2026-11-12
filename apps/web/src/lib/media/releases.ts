@@ -1019,3 +1019,13 @@ export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<
   );
   return i === null ? null : (info.tracks[i] ?? null);
 }
+
+/**
+ * A found release's name in the page (`data-link`, the TV's `data-key`): a short hash of its link, never the link —
+ * an indexer's link carries its key (Jackett's `jackett_apikey`), which stays out of the DOM (docs/torrserver-2026-11.md 41).
+ */
+export function releaseDomId(link: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < link.length; i++) h = Math.imul(h ^ link.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}

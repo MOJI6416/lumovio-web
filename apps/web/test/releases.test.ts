@@ -15,6 +15,7 @@ import {
   profileTrack,
   type ReleasePrefs,
   rankReleases,
+  releaseDomId,
   torrentQuery,
   voiceOptions,
   voiceTrack,
@@ -783,5 +784,16 @@ describe("the track the profile hears when nothing was chosen (profileTrack)", (
     expect(profileNameTrack(info, { languages: ["ru"], studios: [] })).toMatchObject({ studio: "HDrezka Studio" });
     expect(profileNameTrack(info, { languages: ["uk", "ru"], studios: ["LostFilm"] })).toMatchObject({ language: "uk", voice: "mvo" });
     expect(profileNameTrack(info, { languages: ["ja"], studios: [] })).toBeNull();
+  });
+});
+
+describe("releaseDomId", () => {
+  it("names a release in the page without its link's key, the same each time, apart from the others", () => {
+    const link = "http://jackett:9117/dl/rutracker/?jackett_apikey=abcdef0123456789abcdef0123456789&path=Q2ZESjhP&file=Dune";
+    const id = releaseDomId(link);
+    expect(id).toBe(releaseDomId(link));
+    expect(id).toMatch(/^[0-9a-z]{1,7}$/);
+    expect(id).not.toContain("abcdef");
+    expect(releaseDomId(link.replace("file=Dune", "file=Dune2"))).not.toBe(id);
   });
 });
