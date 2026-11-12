@@ -10,7 +10,7 @@ import { CopyDetails } from "@/components/sources/CopyDetails";
 import { CopyPill } from "@/components/sources/CopyPill";
 import { useCopyText } from "@/components/sources/copy-text";
 import { QualityLine } from "@/components/sources/QualityBadges";
-import { formatSize, YourVoiceTag } from "@/components/sources/release-text";
+import { formatSize, packWords, YourVoiceTag } from "@/components/sources/release-text";
 import { providerSearch } from "@/components/sources/provider-links";
 import { CastButton } from "@/components/tv/CastButton";
 import { Button, buttonClass } from "@/components/ui/Button";
@@ -58,6 +58,7 @@ const copyKey = (s: Copy) => `${s.connectionId}:${s.externalId}`;
 export function Availability({ title: d }: { title: TitleCore }) {
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
+  const tpl = useTranslations("player");
   const locale = useLocale();
   const { me } = useSession();
   const { data: lib } = useLibraryState(d.id);
@@ -119,7 +120,10 @@ export function Availability({ title: d }: { title: TitleCore }) {
     // Two copies of one version differ in their sound and size: the audio format, when the server read it, says which.
     const codec = copies.length > 1 ? (s.quality?.audioCodecs?.find((c) => c !== "atmos")?.toUpperCase() ?? null) : null;
     // The marks and what they don't say; without marks, the version in words unless the heading already says it.
-    const words = q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size];
+    // A series' copy names its pack as a found release does ("Season 1 · Episodes 1–12 of 12").
+    const info = s.kind === "torrserver" ? copyText.info(s, all, d.originalLanguage) : null;
+    const pack = info ? packWords(tpl, info.pack) || null : null;
+    const words = q.marks.length ? [q.words[0], pack, codec, size] : [q.words[0] !== heard ? q.words[0] : null, pack, codec, size];
     const servers = new Set(copies.map((c) => c.connectionId)).size > 1;
     const lineWords = [...words, servers ? s.connectionName : null];
     return {

@@ -75,11 +75,12 @@ export function releaseText(t: ReturnType<typeof useTranslations<"title">>, loca
       // A name that pairs nothing: its languages and its best kind, as before tracks were read.
       const studios = typeof only === "string" && only ? [only] : x.info.studios;
       const voice = studios.length ? studios.join(" + ") : x.info.voice ? t(`voice_${x.info.voice}`) : null;
-      return [lang ? cap(language(lang)) : null, voice].filter(Boolean).join(" · ");
+      // A heading: it starts with a capital when the name gives no language ("Dubbed", not "dubbed").
+      return cap([lang ? cap(language(lang)) : null, voice].filter(Boolean).join(" · "));
     }
     const shown = mine.slice(0, 3).map(track);
     if (mine.length > 3) shown.push(t("tsMoreTracks", { count: mine.length - 3 }));
-    return [lang ? cap(language(lang)) : null, shown.join(" + ") || null].filter(Boolean).join(" · ");
+    return cap([lang ? cap(language(lang)) : null, shown.join(" + ") || null].filter(Boolean).join(" · "));
   };
   /** "Also Russian, English (original)": the languages of the tracks `audio` leaves out, or null. */
   const otherLanguages = (x: Pick<RankedRelease, "info" | "language">) => {

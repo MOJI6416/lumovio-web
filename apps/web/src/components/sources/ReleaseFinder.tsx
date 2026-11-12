@@ -451,7 +451,7 @@ function SortPill({ value, onChange }: { value: Finder["sort"]; onChange: (s: Fi
   );
 }
 
-/** Releases as one grouped list (as "Other copies" on the title page): each with "Watch" and "i" for its details. */
+/** Releases as one grouped list: each with "Watch" and "i" for its details. */
 function ReleaseList({ rows, f, tv, season, locale }: { rows: { r: TsSearchResult; x: RankedRelease | undefined }[]; f: Finder; tv: boolean; season: number | null; locale: string }) {
   const cuts = f.edition ? "chosen" : (f.choice?.editions.length ?? 0) > 1 ? "several" : "named";
   return (

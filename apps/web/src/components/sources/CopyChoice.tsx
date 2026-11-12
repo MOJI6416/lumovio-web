@@ -14,7 +14,7 @@ import type { WatchState } from "@/lib/watch-state";
 import { useCopyText } from "./copy-text";
 import { CopyPill } from "./CopyPill";
 import { QualityLine } from "./QualityBadges";
-import { formatSize, YourVoiceTag } from "./release-text";
+import { formatSize, packWords, YourVoiceTag } from "./release-text";
 
 /** A copy of the viewing on one of the profile's servers, as the sources screen lists it. */
 export interface ChoiceCopy {
@@ -85,7 +85,10 @@ export function CopyChoice({
     const size = formatSize(s.quality?.sizeBytes ?? null, locale);
     // Two copies of one version differ in their sound and size: the audio format, when the server read it, says which.
     const codec = copies.length > 1 ? (s.quality?.audioCodecs?.find((c) => c !== "atmos")?.toUpperCase() ?? null) : null;
-    const words = q.marks.length ? [q.words[0], codec, size] : [q.words[0] !== heard ? q.words[0] : null, codec, size];
+    // A series' copy names its pack as a found release does ("Season 1 · Episodes 1–12 of 12").
+    const info = s.kind === "torrserver" ? copyText.info(s, all, originalLanguage) : null;
+    const pack = info ? packWords(tl, info.pack) || null : null;
+    const words = q.marks.length ? [q.words[0], pack, codec, size] : [q.words[0] !== heard ? q.words[0] : null, pack, codec, size];
     const lineWords = [...words, servers ? s.connectionName : null];
     return {
       heard: heard ?? q.words[0] ?? s.connectionName,

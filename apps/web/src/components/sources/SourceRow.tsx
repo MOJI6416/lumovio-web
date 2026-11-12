@@ -3,7 +3,7 @@ import { cn } from "@/components/ui/cn";
 
 /**
  * One way to start watching: a copy on the profile's server, a file of a torrent,
- * a copy in the player's "Source" panel — in the look of "Other copies": `--surface-1`, `--radius-lg`, no
+ * a copy in the player's "Source" panel — a row on `--surface-1`, `--radius-lg`, no
  * border, the type's mark in a circle. Line 1 (`title`): what it is; line 2 (`meta`, body-s): where and how much; one
  * label above (`badges`: "Now", "Didn't start"); on the end the one action, always labelled "Watch" (`action`), and
  * "More" for what can be done with it (`more`: details, unlink, remove — each confirmed where it can't be undone).
