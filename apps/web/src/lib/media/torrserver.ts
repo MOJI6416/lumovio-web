@@ -327,7 +327,8 @@ export function episodeFiles(files: TsFile[], torrentTitle: string, season: numb
 
 export function torrServerClient(base: string, auth: TsAuth, opts: { connectionId?: string } = {}): ProviderClient & {
   list(): Promise<TsTorrent[]>;
-  add(link: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
+  quietAdd(link: string): Promise<TsTorrent>;
+  claim(hash: string, title: string, data: Record<string, unknown>, poster?: string | null): Promise<TsTorrent>;
   get(hash: string): Promise<TsTorrent>;
   files(hash: string): Promise<{ title: string; files: TsFile[] }>;
   remove(hash: string): Promise<void>;
@@ -336,8 +337,8 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
 } {
   const authHeader = auth.username ? `Basic ${btoa(unescape(encodeURIComponent(`${auth.username}:${auth.password ?? ""}`)))}` : null;
   const headers = (json = false): HeadersInit => ({ ...(authHeader ? { Authorization: authHeader } : {}), ...(json ? { "Content-Type": "application/json" } : {}) });
-  const post = async <T>(path: string, body: unknown): Promise<T> => {
-    const res = await mediaFetch(joinUrl(base, path), { method: "POST", headers: headers(true), body: JSON.stringify(body) });
+  const post = async <T>(path: string, body: unknown, timeoutMs?: number): Promise<T> => {
+    const res = await mediaFetch(joinUrl(base, path), { method: "POST", headers: headers(true), body: JSON.stringify(body), timeoutMs });
     const text = await res.text();
     return (text ? JSON.parse(text) : undefined) as T;
   };
@@ -380,9 +381,20 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       if (!t?.file_stats?.length) t = await get<TsTorrent>(`/stream?link=${hash}&stat`, 60_000);
       return { title: t?.title ?? "", files: t?.file_stats ?? [] };
     },
-    /** `link`: a magnet or a .torrent URL; TorrServer fetches the file itself. */
-    async add(link: string, title: string, data: Record<string, unknown>, poster?: string | null) {
-      return post<TsTorrent>("/torrents", { action: "add", link, title, poster: poster ?? "", data: JSON.stringify({ lumovio: data }), save_to_db: true });
+    /**
+     * Adds a torrent without naming or saving it. `link`: a magnet or a .torrent URL; TorrServer fetches the file itself,
+     * which a slow tracker stretches well past the usual 12 s. A torrent already in the server's database keeps its own
+     * title, poster and data — an add that brings them rewrites it (MatriX.147, checked 2026-11-12).
+     */
+    quietAdd: (link: string) => post<TsTorrent>("/torrents", { action: "add", link, title: "", poster: "", data: "", save_to_db: false }, 60_000),
+    /**
+     * Names a torrent `quietAdd` brought and keeps it in the server's database: `set` gives the loaded torrent its title,
+     * poster and Lumovio's mark, and an add by its hash's magnet saves it without fetching the .torrent again.
+     */
+    async claim(hash: string, title: string, data: Record<string, unknown>, poster?: string | null) {
+      const named = { title, poster: poster ?? "", data: JSON.stringify({ lumovio: data }) };
+      await post("/torrents", { action: "set", hash, ...named });
+      return post<TsTorrent>("/torrents", { action: "add", link: `magnet:?xt=urn:btih:${hash}`, ...named, save_to_db: true });
     },
     async remove(hash: string) {
       await post("/torrents", { action: "rem", hash });

@@ -156,7 +156,9 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
       else n.add(hash);
       return n;
     });
-  const allShown = rows.length > 0 && rows.every((x) => selected.has(x.hash));
+  // Picking many at once takes only what Lumovio added: the person's own releases are picked one by one (finding 29).
+  const ours = rows.filter((x) => x.fromLumovio);
+  const allShown = ours.length > 0 && ours.every((x) => selected.has(x.hash));
   const refresh = () => void data.refetch();
   const reconciled = data.data?.reconciled ?? [];
   const forgotten = reconciled.filter((r) => r.status === "removed");
@@ -281,8 +283,8 @@ export function TorrentManager({ connectionId }: { connectionId: string }) {
               label={t("selectAll")}
               checked={allShown}
               indeterminate={!allShown && shownSelected.length > 0}
-              disabled={rows.length === 0}
-              onCheckedChange={() => setSelected(allShown ? new Set([...selected].filter((h) => !rows.some((x) => x.hash === h))) : new Set([...selected, ...rows.map((x) => x.hash)]))}
+              disabled={ours.length === 0}
+              onCheckedChange={() => setSelected(allShown ? new Set([...selected].filter((h) => !ours.some((x) => x.hash === h))) : new Set([...selected, ...ours.map((x) => x.hash)]))}
             />
             <span className="tabular-nums">
               {rows.length === all.length ? t("count", { count: all.length }) : t("shown", { shown: rows.length, total: all.length })} ·{" "}
@@ -383,7 +385,7 @@ function TorrentRow({
   // The release as its quality marks and words (ReleaseLine, 7.15), or in words when its name gives no marks.
   const quality = releaseMarks(info).length ? <ReleaseLine info={info} rest={[audio]} /> : [info.resolution !== null || info.source !== null ? text.picture(info) : null, audio].filter(Boolean).join(" · ") || null;
   const name = links[0]?.title ?? x.name;
-  const origin = links.length > 0 ? null : x.fromLumovio ? (x.addedFor ? t("addedForUnlinked", { title: x.addedFor }) : t("addedUnlinked")) : t("notLinkedOutside");
+  const origin = links.length > 0 ? (x.fromLumovio ? null : t("notFromLumovio")) : x.fromLumovio ? (x.addedFor ? t("addedForUnlinked", { title: x.addedFor }) : t("addedUnlinked")) : t("notLinkedOutside");
   const facts = [formatSize(x.sizeBytes, locale) && t("size", { size: formatSize(x.sizeBytes, locale)! }), x.addedAt ? t("addedAt", { date: formatDate(new Date(x.addedAt * 1000).toISOString(), locale) ?? "" }) : null].filter(Boolean).join(" · ");
   return (
     <li className="flex items-start gap-3 p-4 data-selected:bg-accent-soft" data-selected={selected || undefined}>

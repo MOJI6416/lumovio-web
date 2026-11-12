@@ -97,6 +97,8 @@ export function RemoveTorrentsDialog({
   const size = torrents.reduce((s, x) => s + (x.sizeBytes ?? 0), 0);
   const packs = torrents.some((x) => removalScope(x).episodes > 1);
   const active = torrents.filter((x) => x.active).length;
+  // The person's own releases (no mark of Lumovio's): removing them is their call, said as a risk (finding 29).
+  const outside = torrents.filter((x) => !x.fromLumovio).length;
   const users = (me?.profiles ?? []).filter((p) => (connection.profileIds.length === 0 ? !p.isKids : connection.profileIds.includes(p.id)));
   const others = users.filter((p) => p.id !== me?.activeProfile?.id);
 
@@ -153,6 +155,7 @@ export function RemoveTorrentsDialog({
                 ))}
                 {lines.length > 0 && <p className="mt-0.5 break-words text-body-s text-text-3">{x.name}</p>}
                 {lines.length === 0 && <p className="mt-0.5 text-body-s text-text-2">{t("notLinked")}</p>}
+                {!x.fromLumovio && <p className="mt-0.5 text-body-s text-text-2">{t("notFromLumovio")}</p>}
                 {!r && (
                   <p className="mt-1 text-body-s text-text-2">
                     {[formatBytes(x.sizeBytes) && t("size", { size: formatBytes(x.sizeBytes)! }), x.active && t("active")].filter(Boolean).join(" · ")}
@@ -185,6 +188,12 @@ export function RemoveTorrentsDialog({
             <p className="flex gap-2 text-text-1">
               <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
               {t("confirmActive", { count: active })}
+            </p>
+          )}
+          {outside > 0 && (
+            <p className="flex gap-2 text-text-1">
+              <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+              {t("confirmOutside", { count: outside })}
             </p>
           )}
           {others.length > 0 && <p>{t("confirmShared", { profiles: connection.profileIds.length === 0 ? `${t("allAdults")} (${users.map((p) => p.name).join(", ")})` : users.map((p) => p.name).join(", ") })}</p>}
