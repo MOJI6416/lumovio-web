@@ -548,6 +548,8 @@ export interface ReleasePrefs {
    * not known, which changes nothing); decodes AV1 (left out: not known).
    */
   device: { hevc: boolean; hdr: boolean; uhd: boolean; dolbyVision: boolean; uhdSmooth?: boolean | null; av1?: boolean };
+  /** Trackers whose torrents this device's TorrServer couldn't add lately (`tracker-adds`): their releases come after. */
+  failingTrackers?: ReadonlySet<string>;
 }
 
 /** Dynamic range as the name states it: HDR (HDR10/HLG-style, Dolby Vision with such a base too), Dolby Vision alone, or SDR. */
@@ -599,6 +601,8 @@ export interface RankedRelease {
    * a picture the name doesn't state, 0 — this device can't play it. A studio further down the order wins only by this.
    */
   floor: 0 | 1 | 2;
+  /** Every tracker it is on failed to add a torrent here lately (`ReleasePrefs.failingTrackers`): it likely won't add. */
+  unreachable: boolean;
   /**
    * How well its picture suits this device and the quality mode, higher better: it surely plays here (`fit`), then the
    * mode's resolution order (`resolutionOrder`: 1080p before 4K where 4K doesn't fit) and the dynamic range the screen
@@ -733,6 +737,9 @@ export function rankReleases(
       const fit = fitOf(info, prefs.device);
       const floor = floorOf(info, fit, prefs);
       const dead = result.seeders === 0;
+      // Every tracker it is on gave TorrServer no torrent lately: after the others, as an almost dead one is.
+      const failing = prefs.failingTrackers;
+      const unreachable = Boolean(failing?.size) && (result.origins?.map((o) => o.tracker) ?? [result.tracker]).every((t) => t !== null && failing!.has(t));
       const holds = season !== null ? holdsSeason(info.pack, season, episode) : null;
       // A pack before a single episode (the next ones are there too); how big a pack is decides nothing.
       const e = info.pack.episodes;
@@ -742,6 +749,7 @@ export function rankReleases(
         i >= 0 ? prefs.languages.length - i : 0,
         info.cam ? 0 : 1,
         swarmOf(result.seeders) === 0 ? 0 : 1,
+        unreachable ? 0 : 1,
         floor,
         j >= 0 ? prefs.studios.length - j : 0,
         kind ? VOICE_SCORE[kind] : 0,
@@ -750,7 +758,7 @@ export function rankReleases(
         held,
         result.seeders ?? -1,
       ];
-      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, suits: suitsOf(info, fit, prefs), fit, dead, holds, rank };
+      return { result, info, language: i >= 0 ? prefs.languages[i]! : null, studio: j >= 0 ? prefs.studios[j]! : null, picture: pictureKey(info), floor, unreachable, suits: suitsOf(info, fit, prefs), fit, dead, holds, rank };
     })
     .sort((a, b) => compareRank(a.rank, b.rank));
 }

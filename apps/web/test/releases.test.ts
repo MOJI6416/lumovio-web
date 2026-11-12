@@ -876,3 +876,30 @@ describe("a film's releases, not broadcasts", () => {
     expect(isSameTitle("F1 [2025, WEB-DL 2160p, HDR10, Dolby Vision] Dub (Red Head Sound)", names, 2025, "movie")).toBe(true);
   });
 });
+
+describe("releases on trackers that gave the server no torrent lately", () => {
+  const dune = { title: "Дюна", originalTitle: "Dune", kind: "movie" as const, year: 2021, originalLanguage: "en" };
+  const r = (tracker: string, seeders: number, origins?: string[]) => ({
+    title: `Дюна / Dune (2021) WEB-DL 1080p Dub [${tracker}]`,
+    link: `https://jackett.test/${tracker}/${seeders}`,
+    hash: null,
+    size: 10e9,
+    seeders,
+    peers: 1,
+    tracker,
+    published: null,
+    ...(origins ? { origins: origins.map((t) => ({ tracker: t, link: `https://jackett.test/${t}`, seeders, peers: 1, published: null })) } : {}),
+  });
+
+  it("come after the others of the same audio and picture, however seeded", () => {
+    const failing = new Set(["Kinozal"]);
+    const ranked = rankReleases([r("Kinozal", 300), r("RuTracker", 20)], dune, { ...prefsOf({}), failingTrackers: failing });
+    expect(ranked.map((x) => [x.result.tracker, x.unreachable])).toEqual([["RuTracker", false], ["Kinozal", true]]);
+  });
+
+  it("not when another tracker has the same torrent", () => {
+    const ranked = rankReleases([r("Kinozal", 300, ["Kinozal", "RuTracker"]), r("NoNaMe", 20)], dune, { ...prefsOf({}), failingTrackers: new Set(["Kinozal"]) });
+    expect(ranked[0]!.result.tracker).toBe("Kinozal");
+    expect(ranked[0]!.unreachable).toBe(false);
+  });
+});

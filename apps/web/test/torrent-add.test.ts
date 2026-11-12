@@ -22,7 +22,8 @@ vi.mock("../src/lib/api", () => ({
 vi.mock("../src/lib/media/clients", () => ({ getCredentials: async () => ({ id: "c1", baseUrl: "http://ts.test", auth: { kind: "torrserver" } }) }));
 vi.mock("../src/lib/media/torrserver", async (original) => ({ ...(await original<object>()), torrServerClient: () => server }));
 
-const { addTorrentSource, takeBack } = await import("../src/lib/media/torrent-source");
+const { addFirstWorking, addTorrentSource, takeBack } = await import("../src/lib/media/torrent-source");
+const { failingTrackers } = await import("../src/lib/media/tracker-adds");
 
 const NEW = "a".repeat(40);
 const OWN = "b".repeat(40);
@@ -131,5 +132,37 @@ describe("adding a search result to a TorrServer", () => {
     await takeBack("c1", NEW);
     expect(server.remove).toHaveBeenCalledWith(NEW);
     expect(apiCalls).toEqual([{ path: "/api/connections/c1/index/forget", json: { hashes: [NEW] } }]);
+  });
+});
+
+// A tracker whose torrents the server can't fetch (TorrServer answers an add with an error): the next release, and the
+// tracker remembered as failing on this device.
+describe("adding the first release that adds", () => {
+  const store = new Map<string, string>();
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) });
+  });
+
+  it("passes a release whose torrent the server can't fetch, adds the next, and remembers the tracker", async () => {
+    server.quietAdd.mockRejectedValueOnce(new MediaNetError("http", "Server responded with 400", 400)).mockResolvedValueOnce({ hash: NEW });
+    const out = await addFirstWorking("c1", film, null, [result({ tracker: "Kinozal", link: "https://jackett.test/dl/k" }), result({ tracker: "RuTracker", link: "https://jackett.test/dl/r" })]);
+    expect(out?.result.tracker).toBe("RuTracker");
+    expect([...failingTrackers()]).toEqual(["Kinozal"]);
+  });
+
+  it("stops at once when the server itself is out of reach: no tracker is blamed", async () => {
+    server.quietAdd.mockRejectedValue(new MediaNetError("unreachable", "Failed to fetch"));
+    await expect(addFirstWorking("c1", film, null, [result({ tracker: "RuTracker" }), result({ tracker: "NoNaMe" })])).rejects.toMatchObject({ code: "unreachable" });
+    expect(server.quietAdd).toHaveBeenCalledTimes(1);
+    expect(failingTrackers().size).toBe(0);
+  });
+
+  it("clears a tracker once an add from it goes through again", async () => {
+    server.quietAdd.mockRejectedValueOnce(new MediaNetError("http", "Server responded with 400", 400)).mockResolvedValueOnce({ hash: NEW });
+    await addFirstWorking("c1", film, null, [result({ tracker: "Kinozal", link: "https://jackett.test/dl/k1" }), result({ tracker: "RuTracker", link: "https://jackett.test/dl/r" })]);
+    server.quietAdd.mockResolvedValueOnce({ hash: "c".repeat(40) });
+    await addFirstWorking("c1", film, null, [result({ tracker: "Kinozal", link: "https://jackett.test/dl/k2" })]);
+    expect(failingTrackers().size).toBe(0);
   });
 });

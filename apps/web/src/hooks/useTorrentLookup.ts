@@ -9,6 +9,7 @@ import { detectCapabilities, onUhdSmooth, uhdSmoothNow } from "@/lib/media/capab
 import { namesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { copyFileTracks, type RankedRelease, type ReleasePrefs, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
+import { failingTrackers as failingTrackers_, noFailingTrackers, subscribeTrackers } from "@/lib/media/tracker-adds";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
 /**
@@ -20,6 +21,8 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
   const p = me?.activeProfile;
   // MediaCapabilities' word on 4K HEVC (lib/media/capabilities): kept on the device after the first answer.
   const uhdSmooth = useSyncExternalStore(onUhdSmooth, uhdSmoothNow, () => null);
+  // Trackers whose torrents this device's TorrServer couldn't add lately: their releases go after the others.
+  const failingTrackers = useSyncExternalStore(subscribeTrackers, failingTrackers_, noFailingTrackers);
   return useMemo(() => {
     const own = p?.audioLanguages ?? [];
     const caps = typeof window !== "undefined" ? detectCapabilities() : null;
@@ -29,8 +32,9 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
       studios: p?.voiceStudios ?? [],
       quality: p?.releaseQuality ?? "auto",
       device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth, av1: caps ? caps.video.av1 : undefined },
+      failingTrackers,
     };
-  }, [p, locale, uhdSmooth]);
+  }, [p, locale, uhdSmooth, failingTrackers]);
 }
 
 /** The TorrServer this device may search on its own for the profile, if any; never for kids profiles. */

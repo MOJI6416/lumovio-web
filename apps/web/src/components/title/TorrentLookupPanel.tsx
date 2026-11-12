@@ -18,10 +18,10 @@ import { Menu, MenuCheckboxItem, MenuSeparator } from "@/components/ui/Menu";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { isOut, useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { Link, useRouter } from "@/i18n/navigation";
-import { type Edition, NO_CHOICE, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
+import { type Edition, NO_CHOICE, pickAlternatives, pickRelease, type ReleaseChoice } from "@/lib/media/release-pick";
 import { isDubbing, pictureReasons, type RankedRelease, voiceWish, wishNameTrack } from "@/lib/media/releases";
 import { background } from "@/lib/optional";
-import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
+import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
@@ -116,7 +116,9 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       </>
     );
 
-  const play = async (x: RankedRelease, voice: string | null) => {
+  // `alternatives`: what the card falls back on when the release won't add (its tracker gives no torrent), for the card's
+  // own pick; a release chosen in its details plays alone.
+  const play = async (x: RankedRelease, voice: string | null, alternatives: RankedRelease[] = []) => {
     setAdding(true);
     setError(null);
     // The launch's scene from the press: the add is its first step, the player's page goes on with it;
@@ -134,7 +136,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
       true,
     );
     try {
-      const added = await addTorrentSource(source.id, d, start?.season ?? null, x.result);
+      const added = await addFirstWorking(source.id, d, start?.season ?? null, [x.result, ...alternatives.map((a) => a.result)]);
       if (!added) throw new Error(tpl("addFailed"));
       await qc.invalidateQueries({ queryKey: ["availability", d.id] });
       if (dropped) {
@@ -202,7 +204,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
         }
         actions={
           <>
-            <Button size="lg" variant={lead ? "primary" : "secondary"} loading={adding} onClick={() => void play(chosen, voice)}>
+            <Button size="lg" variant={lead ? "primary" : "secondary"} loading={adding} onClick={() => void play(chosen, voice, pickAlternatives(pick))}>
               <Play aria-hidden className="fill-current" />
               {t("tsWatch")}
             </Button>

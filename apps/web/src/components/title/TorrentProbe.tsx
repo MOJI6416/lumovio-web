@@ -12,9 +12,9 @@ import { toast } from "@/components/ui/Toast";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useReleasePrefs, useTorrentLookup } from "@/hooks/useTorrentLookup";
 import { useRouter } from "@/i18n/navigation";
-import { pickRelease } from "@/lib/media/release-pick";
+import { pickAlternatives, pickRelease } from "@/lib/media/release-pick";
 import { bestOf, voiceWish, wishNameTrack } from "@/lib/media/releases";
-import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
+import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { useChosenSeason } from "./chosen-season";
@@ -50,7 +50,8 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const ranked = lookup.data?.ranked;
   // What "Where to watch" recommends with nothing chosen: the profile's first audio option, its best release's cut,
   // the mode's picture (lib/media/release-pick, the same function).
-  const { option, chosen } = useMemo(() => pickRelease(ranked ?? [], prefs), [ranked, prefs]);
+  const pick = useMemo(() => pickRelease(ranked ?? [], prefs), [ranked, prefs]);
+  const { option, chosen } = pick;
   // A studio's option or a language's alone ("Ukrainian · MVO"): the player starts that track, not the file's default.
   const voice = option && (option.studio || option.language) ? option.key : null;
 
@@ -103,7 +104,8 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
           true,
         );
         try {
-          const added = await addTorrentSource(source.id, d, start?.season ?? null, chosen.result);
+          // The next releases of the same audio and picture, when this one's tracker gives the server no torrent.
+          const added = await addFirstWorking(source.id, d, start?.season ?? null, [chosen.result, ...pickAlternatives(pick).map((a) => a.result)]);
           if (!added) throw new Error(tp("addFailed"));
           await qc.invalidateQueries({ queryKey: ["availability", d.id] });
           if (dropped) {

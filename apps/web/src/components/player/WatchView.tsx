@@ -48,7 +48,7 @@ import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
 import { orderedSources, sourceRank } from "@/lib/media/source-order";
 import { forgetTorrents, invalidateAvailability, torrentPresence } from "@/lib/media/torrent-manage";
-import { addTorrentSource, takeBack } from "@/lib/media/torrent-source";
+import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
@@ -646,7 +646,8 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         const prep: Prep = { stages: stagesFor({ provider: "torrserver", bound: false }, { added: true, episode: d.kind === "tv" }), at: "add", facts: {} };
         setPhase({ kind: "preparing", candidate: null, label: `${pick.version} — ${server}`, prep, fromScreen: true });
         try {
-          const added = await addTorrentSource(pick.connectionId, d, season, pick.result);
+          // A release picked here plays alone; a failed add teaches the ranking about its tracker (tracker-adds).
+          const added = await addFirstWorking(pick.connectionId, d, season, [pick.result]);
           if (attempt.current !== my) return;
           if (!added) throw new ShownError(t("addFailed"));
           ({ hash, label } = added);

@@ -4,6 +4,7 @@ import { tmdbImage } from "@/lib/images";
 import { getCredentials } from "./clients";
 import { MediaNetError } from "./net";
 import { type TsSearchResult, torrServerClient } from "./torrserver";
+import { noteAdd } from "./tracker-adds";
 
 /** A TorrServer client for a connection the active profile may use (credentials stay in memory). */
 export async function torrServerFor(connectionId: string) {
@@ -80,6 +81,34 @@ export async function addTorrentSource(connectionId: string, d: Pick<TitleSummar
     }
   }
   return { hash, label, existed };
+}
+
+/**
+ * The first of `results` that the server adds (`addTorrentSource`), in their order: a release whose torrent TorrServer
+ * couldn't fetch through its indexer — the server answered with an error, or took too long and brought nothing — is
+ * passed for the next one, and its trackers are remembered as failing on this device (`tracker-adds`); one that adds
+ * clears them. A failure of the server itself (out of reach, a refused password, a blocked address) ends it at once:
+ * the tracker isn't to blame. Null when the last one gave no torrent either; the last such error is thrown.
+ */
+export async function addFirstWorking(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, results: readonly TsSearchResult[]) {
+  let failure: unknown = null;
+  for (const r of results) {
+    const trackers = r.origins?.map((o) => o.tracker) ?? [r.tracker];
+    try {
+      const added = await addTorrentSource(connectionId, d, season, r);
+      if (added) {
+        noteAdd(trackers, true);
+        return { ...added, result: r };
+      }
+      noteAdd(trackers, false);
+    } catch (e) {
+      if (!(e instanceof MediaNetError && (e.code === "http" || e.code === "timeout"))) throw e;
+      noteAdd(trackers, false);
+      failure = e;
+    }
+  }
+  if (failure) throw failure;
+  return null;
 }
 
 /**

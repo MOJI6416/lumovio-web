@@ -63,7 +63,8 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
   };
   const hd = (o: VoiceOption) => 2 - o.best.floor;
   // An option whose releases are all almost dead (one or two seeders) comes after the live ones, whatever its studio.
-  const dying = (o: VoiceOption) => (swarmOf(o.best.result.seeders) === 0 ? 1 : 0);
+  // So does one whose best release is on trackers that gave this device's TorrServer no torrent lately.
+  const dying = (o: VoiceOption) => (swarmOf(o.best.result.seeders) === 0 || o.best.unreachable ? 1 : 0);
   // A studio typed in by hand ("HDRezka") is the known one it names ("HDrezka Studio"), as the ranking reads it.
   const studio = (o: VoiceOption) => {
     const i = prefs.studios.findIndex((s) => optionIsStudio(o, s));
@@ -150,4 +151,15 @@ export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "
   const chosen = asTitle ?? (anyCut && !choice.picture ? lead : (version?.best ?? inCut[0]));
   // Every cut: the one shown is the chosen release's own (a release without a cut in its name is the theatrical one).
   return { options, option, editions: many ? editions : [], edition: (anyCut || asTitle) && chosen && many ? cutOf(chosen, true) : edition, versions, version, pool: inCut, chosen };
+}
+
+/**
+ * What a pick falls back on when its release won't add (its tracker gives the server no torrent): the next releases of
+ * the same audio, cut and picture, in rank order — alive, not a cinema recording, holding the wanted season, on a tracker
+ * that adds. `max` of them.
+ */
+export function pickAlternatives(pick: Pick<ReleasePick, "pool" | "chosen">, max = 2): RankedRelease[] {
+  const c = pick.chosen;
+  if (!c) return [];
+  return pick.pool.filter((x) => x !== c && x.picture === c.picture && !x.dead && !x.info.cam && !x.unreachable && x.holds !== false).slice(0, max);
 }
