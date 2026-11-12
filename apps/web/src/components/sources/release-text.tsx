@@ -95,10 +95,13 @@ export function useReleaseText() {
     }
     return [...by.entries()].map(([l, words]) => `${l ? cap(language(l)) : t("tsLanguageUnknown")}: ${words.join(", ")}`);
   };
-  /** "4K · HDR10 · Dolby Vision · HEVC · WEB-DL": what the name says about the picture, nothing guessed. */
+  /**
+   * "4K · HDR10 · Dolby Vision · HEVC · WEB-DL": what the name says about the picture, nothing guessed; "quality not stated"
+   * only when it says nothing else of it (docs/torrserver-2026-11.md, 12).
+   */
   const picture = (info: ReleaseInfo) =>
     [
-      info.resolution ? RESOLUTION[info.resolution] : t("tsNoResolution"),
+      info.resolution ? RESOLUTION[info.resolution] : info.hdrFormats.length || info.codec || info.source ? null : t("tsNoResolution"),
       ...info.hdrFormats.map((f) => HDR_LABEL[f]),
       info.sdr && info.hdrFormats.length === 0 ? "SDR" : null,
       info.codec ? (info.codec === "hevc" ? "HEVC" : info.codec === "avc" ? "AVC" : "AV1") : null,
@@ -107,16 +110,25 @@ export function useReleaseText() {
       .filter(Boolean)
       .join(" · ");
   /**
-   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution only where they
-   * can't tell it ("720p" under HD, "SD", "quality not stated"), then the source ("Blu-ray"). Null when nothing is left.
+   * The picture in words beside its marks (QualityBadges, 7.15), never what they say: the resolution where they can't tell
+   * it — "1080p" and "720p" under HD, which is both (docs/torrserver-2026-11.md, 11), "SD" — then the source ("Blu-ray");
+   * "quality not stated" only when nothing else is known (12). Null when nothing is left.
    */
   const besideMarks = (info: ReleaseInfo) =>
-    [info.resolution === 2160 || info.resolution === 1080 ? null : info.resolution ? RESOLUTION[info.resolution] : t("tsNoResolution"), info.source ? SOURCE_LABEL[info.source] : null]
+    [
+      info.resolution === 2160 ? null : info.resolution ? RESOLUTION[info.resolution] : info.source || info.hdrFormats.length ? null : t("tsNoResolution"),
+      info.source ? SOURCE_LABEL[info.source] : null,
+    ]
       .filter(Boolean)
       .join(" · ") || null;
-  /** A picture version's chip: "1080p", "4K SDR", "4K HDR", "4K" when the name says nothing about the range. */
+  /** A picture version's chip: "1080p", "4K SDR", "4K HDR", "4K" when the name says nothing about the range; "HDR" alone without a resolution. */
   const version = (resolution: ReleaseInfo["resolution"], range: Range | null) =>
-    [resolution ? RESOLUTION[resolution] : t("tsNoResolution"), range && !(range === "sdr" && resolution !== 2160) ? RANGE_LABEL[range] : null].filter(Boolean).join(" ");
+    [resolution ? RESOLUTION[resolution] : range && range !== "sdr" ? null : t("tsNoResolution"), range && !(range === "sdr" && resolution !== 2160) ? RANGE_LABEL[range] : null].filter(Boolean).join(" ");
+  /** Resolutions as an option's line lists them, highest first: "4K, 1080p" — "quality not stated" only when it is all there is (12). */
+  const resolutions = (list: readonly ReleaseInfo["resolution"][]) => {
+    const known = [...new Set(list.filter((r) => r !== null))].sort((a, b) => b! - a!);
+    return known.length ? known.map((r) => RESOLUTION[r!]).join(", ") : t("tsNoResolution");
+  };
   const option = (o: Pick<VoiceOption, "studio" | "voice" | "language">) => o.studio ?? (o.voice ? cap(t(`voice_${o.voice}`)) : o.language ? cap(language(o.language)) : t("tsVoiceUnnamed"));
   return {
     cap,
@@ -127,6 +139,7 @@ export function useReleaseText() {
     picture,
     besideMarks,
     version,
+    resolutions,
     option,
     describe: (x: RankedRelease, withSeeders = true) =>
       [
@@ -152,6 +165,17 @@ export const releaseMarks = (info: Pick<ReleaseInfo, "resolution" | "hdrFormats"
 export function ReleaseLine({ info, rest = [] }: { info: ReleaseInfo; rest?: readonly (string | null | undefined)[] }) {
   const text = useReleaseText();
   return <QualityLine marks={releaseMarks(info)} words={[text.besideMarks(info), ...rest]} />;
+}
+
+/**
+ * A picture version for a choice (the "Quality" menu, the sources screen's filter; docs/torrserver-2026-11.md, 13): its
+ * marks — 4K or HD, HDR or Dolby Vision — and in words what they don't say ("1080p", "SDR"), as everywhere else (7.15).
+ */
+export function VersionLine({ resolution, range }: { resolution: ReleaseInfo["resolution"]; range: Range | null }) {
+  const t = useTranslations("title");
+  const marks = qualityMarks({ resolution, hdrFormats: range === "dv" ? ["dv"] : range === "hdr" ? ["hdr"] : [] });
+  const words = [resolution && resolution !== 2160 ? RESOLUTION[resolution] : null, range === "sdr" && resolution === 2160 ? "SDR" : null];
+  return <QualityLine marks={marks} words={words} fallback={t("tsNoResolution")} />;
 }
 
 /** A studio of the profile as it is shown: the profile's "Dubbing" (`DUBBING`) in the interface language. `t`: "title". */

@@ -55,8 +55,8 @@ export function qualityMarks(q: {
 export const copyMarks = (q: NonNullable<LibraryIndexEntry["quality"]>) =>
   qualityMarks({ resolution: q.resolution, hdr: q.hdr, atmos: q.audioCodecs?.includes("atmos"), cc: (q.subtitleTracks ?? 0) > 0 });
 
-/** A server's resolution in words where no mark says it ("720p", "576p"); 1080p and 4K have theirs (HD, 4K). */
-export const resolutionBesideMarks = (resolution: string | null | undefined) => (resolution && !/^(1080|2160)|4k/i.test(resolution) ? resolution : null);
+/** A server's resolution in words where no mark says it ("1080p" and "720p" under HD, which is both; "576p"); 4K has its own. */
+export const resolutionBesideMarks = (resolution: string | null | undefined) => (resolution && !/^2160|4k/i.test(resolution) ? resolution : null);
 
 /**
  * The marks as Apple TV's row of them (owner, 2026-11-06): its own files, one colour — the text's, through a mask —

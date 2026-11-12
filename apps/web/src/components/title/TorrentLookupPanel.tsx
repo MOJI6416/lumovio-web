@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endLaunch, startLaunch } from "@/components/player/launch";
 import { ReleaseDetails } from "@/components/sources/Details";
 import { useMediaErrorText } from "@/components/sources/media-error";
-import { formatSize, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, studioShown, useReleaseText } from "@/components/sources/release-text";
+import { formatSize, packWords, QUALITY_MODES, ReleaseLine, studioShown, useReleaseText, VersionLine } from "@/components/sources/release-text";
 import { Tag } from "@/components/ui/Badge";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -153,12 +153,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
   };
 
   const choose = (next: Partial<ReleaseChoice>) => setChoice((c) => ({ ...c, ...next }));
-  // "4K, 1080p, 720p": highest first, "quality not stated" last.
-  const resolutions = (list: RankedRelease["info"]["resolution"][]) =>
-    [...new Set(list)]
-      .sort((a, b) => (b ?? -1) - (a ?? -1))
-      .map((r) => (r ? RESOLUTION[r] : t("tsNoResolution")))
-      .join(", ");
+  const resolutions = text.resolutions;
   const editionName = (e: Edition) => t(`edition_${e}`);
   // The mode's reasons explain its own pick; a version the person picked needs none.
   const reasons = choice.picture === null ? pictureReasons(chosen, pick.pool, { ...prefs, quality: mode }) : [];
@@ -270,7 +265,7 @@ export function TorrentLookupPanel({ title: d, source, lead = true }: { title: T
                     <MenuSeparator />
                     {[...pick.versions].reverse().sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1)).map((v) => (
                       <MenuCheckboxItem key={v.key} checked={choice.picture === v.key} onCheckedChange={() => choose({ picture: v.key })}>
-                        <PickItem name={text.version(v.resolution, v.range)} sub={formatSize(v.best.result.size, locale)} />
+                        <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
                       </MenuCheckboxItem>
                     ))}
                   </>

@@ -132,7 +132,7 @@ export const PickPill = forwardRef<HTMLButtonElement, { name: string; value: str
 });
 
 /** A menu item's two lines: the option, then what it comes in. */
-export function PickItem({ name, sub }: { name: string; sub?: string | null }) {
+export function PickItem({ name, sub }: { name: ReactNode; sub?: string | null }) {
   return (
     <>
       <span className="block">{name}</span>

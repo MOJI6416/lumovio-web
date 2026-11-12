@@ -22,7 +22,7 @@ import { isDubbing, type RankedRelease } from "@/lib/media/releases";
 import { type TsSearchResult, trackersOf } from "@/lib/media/torrserver";
 import { ReleaseDetails } from "./Details";
 import { useMediaErrorText } from "./media-error";
-import { formatSize, isPack, packWords, QUALITY_MODES, RESOLUTION, ReleaseLine, studioShown, useReleaseText } from "./release-text";
+import { formatSize, isPack, packWords, QUALITY_MODES, ReleaseLine, studioShown, useReleaseText, VersionLine } from "./release-text";
 
 const CARD = "finder-card-h";
 
@@ -238,11 +238,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
   const option = c.option;
   const found = f.found!;
   const editionName = (e: Edition) => tt(`edition_${e}`);
-  const resolutions = (list: RankedRelease["info"]["resolution"][]) =>
-    [...new Set(list)]
-      .sort((a, b) => (b ?? -1) - (a ?? -1))
-      .map((r) => (r ? RESOLUTION[r] : tt("tsNoResolution")))
-      .join(", ");
+  const resolutions = text.resolutions;
   // "Any" audio: what "Watch" plays of the release (the profile's studio), not every track it lists.
   const heard = (option ? text.audio({ info: chosen.info, language: option.language ?? chosen.language }, option.studio) : f.heard(chosen)) || text.option({ studio: null, voice: null, language: null });
   const size = formatSize(chosen.result.size, locale);
@@ -349,7 +345,7 @@ function PickCard({ f, lead, tv, form, editQuery }: { f: Finder; lead: boolean; 
                       .sort((a, b) => (b.resolution ?? -1) - (a.resolution ?? -1))
                       .map((v) => (
                         <MenuCheckboxItem key={v.key} checked={f.picture === v.key} onCheckedChange={() => f.choose({ picture: v.key })}>
-                          <PickItem name={text.version(v.resolution, v.range)} sub={formatSize(v.best.result.size, locale)} />
+                          <PickItem name={<VersionLine resolution={v.resolution} range={v.range} />} sub={formatSize(v.best.result.size, locale)} />
                         </MenuCheckboxItem>
                       ))}
                   </>

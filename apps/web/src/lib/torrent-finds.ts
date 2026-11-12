@@ -58,6 +58,12 @@ export function findMarks(b: TorrentFindBest): QualityMark[] {
   return qualityMarks({ resolution: top, hdrFormats: ranges.includes("dv") ? ["dv"] : ranges.includes("hdr") ? ["hdr"] : [] });
 }
 
+/** The best version's resolution in words beside its HD mark — "1080p", "720p" (HD is both, docs/torrserver-2026-11.md 11). */
+export function findResolutionWord(b: TorrentFindBest): string | null {
+  const top = Math.max(0, ...(b.pictures?.length ? b.pictures : b.resolution ? [{ resolution: b.resolution, range: null }] : []).map((p) => p.resolution ?? 0));
+  return top && top < 2160 ? (RESOLUTION_LABEL[top] ?? null) : null;
+}
+
 /** Finds this browser kept itself before they moved to Lumovio (2026-10-24): removed on sight. */
 export function dropLocalFinds(profileId: string) {
   try {

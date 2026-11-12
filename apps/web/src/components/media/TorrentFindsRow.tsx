@@ -14,7 +14,7 @@ import { bestOf, rankReleases, torrentQuery } from "@/lib/media/releases";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty } from "@/lib/media/torrserver";
 import { optional } from "@/lib/optional";
-import { dropLocalFinds, fetchFinds, findMarks, findPictureText, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
+import { dropLocalFinds, fetchFinds, findMarks, findPictureText, findResolutionWord, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { PosterCard } from "./PosterCard";
 import { Row } from "./Row";
 
@@ -100,7 +100,7 @@ export function TorrentFindsRow() {
   // Shown: what is heard, then its best version as marks (QualityBadges, 7.15): "Dub [4K] [HDR]".
   const shownFact = (b: TorrentFindBest) => {
     const marks = findMarks(b);
-    return marks.length ? <QualityLine marks={marks} words={[audio(b).filter(Boolean).join(" · ")]} /> : undefined;
+    return marks.length ? <QualityLine marks={marks} words={[findResolutionWord(b), audio(b).filter(Boolean).join(" · ")]} /> : undefined;
   };
   return (
     <Row id="torrent_finds" min={3} title={t("torrentFinds")} note={t("torrentFindsNote")}>
