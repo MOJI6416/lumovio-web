@@ -178,6 +178,14 @@ export function preopen(src: FileSource) {
   }, 60_000);
 }
 
+/**
+ * Where the clock of these tracks starts: 0 in most files, seconds or hours in MPEG-TS and Blu-ray streams. A run from
+ * the start is moved to 0 by Mediabunny itself; a run from the middle has to ask for its place on the file's clock, or
+ * every seek and resume lands that much early — and one to before the clock's start never gets its picture.
+ */
+export const fileStart = async (input: Input, tracks: (InputVideoTrack | InputAudioTrack | null)[]) =>
+  Math.max(0, await optional(input.getFirstTimestamp(tracks.filter((t) => t !== null)), 0));
+
 /** Mediabunny reading the file by ranges: the video copied, the audio copied or converted. */
 async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<RebuildSource> {
   const href = new URL(opts.url, location.href).href;
@@ -191,6 +199,7 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
     input.dispose();
     throw e;
   }
+  const starts = new Map<InputAudioTrack | null, Promise<number>>();
   return {
     duration,
     audioCount: audioTracks.length,
@@ -198,6 +207,12 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
     async run({ from, audioPosition, isCurrent, newOutput }) {
       const track = audioTracks[audioPosition] ?? audioTracks[0] ?? null;
       const codec = (track?.codec as string | null | undefined) ?? null;
+      // Read alongside the coders: a run from the middle is asked for on the file's own clock.
+      let start = from > 0 ? starts.get(track) : undefined;
+      if (from > 0 && !start) {
+        start = fileStart(input, [videoTrack, track]);
+        starts.set(track, start);
+      }
       const route = track ? await remuxAudioRoute(detectCapabilities(), codec) : "copy";
       if (!route) throw new Error(`can't rebuild audio ${codec ?? "unknown"} in this browser`);
       if (!isCurrent()) return null;
@@ -222,7 +237,7 @@ async function mediabunnySource(mb: Mediabunny, opts: RemuxOptions): Promise<Reb
             : route === "copy"
               ? {}
               : { codec: route, numberOfChannels: channels, quality: mb.QUALITY_HIGH, ...(route === "opus" ? { sampleRate: 48000 } : {}) },
-        trim: from > 0 ? { start: from } : undefined,
+        trim: start ? { start: (await start) + from } : undefined,
       });
       if (!isCurrent()) {
         await optional(c.cancel(), undefined);
@@ -286,6 +301,8 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   let closed = false;
   // The run whose media is in the buffer now: removals before its first append are the engine's own.
   let appended = -1;
+  // Where the fragments in the buffer begin (key frames), oldest first: what `evictBehind` may remove up to.
+  let cuts: number[] = [];
   // Writers waiting for room are woken by playback progress, seeks and restarts.
   let wake: (() => void)[] = [];
   const nudge = () => {
@@ -304,11 +321,21 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     for (let i = 0; i < b.length; i++) if (t >= b.start(i) - 0.25 && t < b.end(i)) return b.end(i);
     return null;
   };
-  const evictBehind = async (keep: number) => {
-    const b = sb?.buffered;
-    if (!sb || !b?.length || b.start(0) >= video.currentTime - keep) return;
+  /**
+   * Drops what was played, all but `keep` seconds — only up to where a fragment begins, a key frame. A removal that ends
+   * inside a group of pictures takes the rest of the group with it: with key frames 10 s apart, "all but the last 2 s"
+   * removed the frames under the playhead too.
+   */
+  const evictBehind = async (keep: number, mine: number) => {
+    const limit = video.currentTime - keep;
+    let cut = -1;
+    for (const c of cuts) if (c <= limit && c > cut) cut = c;
+    if (cut < 0) return;
+    cuts = cuts.filter((c) => c > cut);
+    if (!sb?.buffered.length || sb.buffered.start(0) >= cut) return;
     await idle();
-    sb.remove(0, Math.max(0.1, video.currentTime - keep));
+    if (mine !== gen || !sb) return;
+    sb.remove(0, cut);
     await idle();
   };
 
@@ -320,7 +347,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
   const appendSlice = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
     // Tries that had nothing to wait for: only they end in an error.
     for (let stuck = 0; ; ) {
-      await evictBehind(BEHIND);
+      await evictBehind(BEHIND, mine);
       if (mine !== gen || !sb) return;
       try {
         sb.appendBuffer(data);
@@ -331,7 +358,7 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
         // (a pause, steps back and forth inside what's buffered). With nothing to play, nothing moves on: a moment,
         // then the next try, and an error in the end rather than loading for ever.
         if (!(e instanceof DOMException && e.name === "QuotaExceededError") || stuck > 20) throw e;
-        await evictBehind(2);
+        await evictBehind(2, mine);
         const waits = playable();
         if (!waits) stuck++;
         await new Promise<void>((r) => {
@@ -342,6 +369,9 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     }
   };
   const append = async (data: Uint8Array<ArrayBuffer>, mine: number) => {
+    // A chunk that starts with "moof" is a fragment: where the buffer ends before it is where the fragment begins.
+    const before = sb?.buffered;
+    if (before?.length && data[4] === 0x6d && data[5] === 0x6f && data[6] === 0x6f && data[7] === 0x66) cuts.push(before.end(before.length - 1));
     for (let at = 0; at < data.byteLength; at += SLICE) {
       await appendSlice(data.subarray(at, at + SLICE), mine);
       if (mine !== gen || !sb) return;
@@ -360,11 +390,19 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
 
   const writer = (mine: number, from: number, output: { getMimeType(): Promise<string> }, route: AudioRoute, codec: string | null) => {
     let first = true;
+    let placed = false;
+    // Resolved when this run is replaced or the engine goes: the output's type is known only with a first packet of
+    // every track, and a run stopped before that would wait for it for ever — and keep its own stopping waiting.
+    const replaced = new Promise<null>((resolve) => {
+      const check = () => (mine !== gen ? resolve(null) : void wake.push(check));
+      check();
+    });
     return new WritableStream<StreamTargetChunk>({
       write: async (chunk) => {
         if (mine !== gen) return;
-        const type = compatibleMime(await output.getMimeType(), (t) => MS.isTypeSupported(t));
-        if (mine !== gen) return;
+        const named = await Promise.race([output.getMimeType(), replaced]);
+        if (named === null || mine !== gen) return;
+        const type = compatibleMime(named, (t) => MS.isTypeSupported(t));
         if (!sb) {
           sb = ms.addSourceBuffer(type);
           mime = type;
@@ -379,21 +417,26 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
           opts.onRoute?.({ audio: route, codec, mediaSource: managed ? "managed" : "standard", mime: type });
         } else if (type !== mime && typeof sb.changeType === "function") {
           await idle();
+          if (mine !== gen) return;
           sb.changeType(type);
           mime = type;
           opts.onRoute?.({ audio: route, codec, mediaSource: managed ? "managed" : "standard", mime: type });
         }
         if (first) {
-          first = false;
           await idle();
+          if (mine !== gen) return;
+          first = false;
           sb.timestampOffset = from;
         }
         await waitForRoom(mine, from);
         await append(chunk.data, mine);
         if (mine === gen) appended = mine;
-        // Start position: only once there's media there, or the seek would restart the conversion.
-        if (mine === gen && video.currentTime < from - 0.5 && bufferedEnd(from) !== null)
-          video.currentTime = from;
+        // Start position: only once there's media there, or the seek would restart the conversion. Once: a step back
+        // from there while the run still fills is the viewer's, not to be undone by the next fragment.
+        if (mine === gen && !placed && bufferedEnd(from) !== null) {
+          placed = true;
+          if (video.currentTime < from - 0.5) video.currentTime = from;
+        }
       },
     });
   };
@@ -408,7 +451,10 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     if (mine !== gen || closed) return;
     if (sb) {
       await idle();
+      // Only the newest run touches the buffer: two that woke on one event would abort each other's removal.
+      if (mine !== gen || closed) return;
       if (ms.readyState === "open") sb.abort();
+      cuts = [];
       if (sb.buffered.length) {
         sb.remove(0, Number.POSITIVE_INFINITY);
         await idle();
@@ -439,11 +485,14 @@ export async function startEngine(video: HTMLVideoElement, opts: RemuxOptions, o
     if (ms.readyState === "open") ms.endOfStream();
   };
 
-  const run = (from: number) =>
-    restart(from).catch((e) => {
-      if (closed || e instanceof mb.ConversionCanceledError) return;
+  const run = (from: number) => {
+    const mine = gen + 1;
+    return restart(from).catch((e) => {
+      // A run already replaced fails for itself: its read was cut off, or it never got to start.
+      if (closed || mine !== gen || e instanceof mb.ConversionCanceledError) return;
       opts.onError((e as Error).message || String(e));
     });
+  };
 
   const onSeeking = () => {
     nudge();
