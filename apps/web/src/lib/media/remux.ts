@@ -12,6 +12,7 @@ import { detectCapabilities, mediaSourceClass } from "./capabilities";
 import { KNOWN_LAYOUTS, nameTrueHdTracks, enableWasmDecoders, remixed } from "./codecs/audio";
 import { cutWithinGroups, startsAtKeyFrame } from "./codecs/fragments";
 import { keyAtRecoveryPoints } from "./codecs/h264";
+import { keyLookupFromCues } from "./codecs/matroska";
 import { type AudioRoute, remuxAudioRoute, webCodecs } from "./playback-choice";
 
 /**
@@ -171,8 +172,12 @@ async function openFile(mb: Mediabunny, src: FileSource): Promise<Opened> {
   });
   try {
     const videoTrack = await input.getPrimaryVideoTrack();
-    // A Blu-ray's H.264 is cut and started at its every-second I-frames, not only at IDR frames half a minute apart.
-    if (videoTrack) keyAtRecoveryPoints(videoTrack);
+    if (videoTrack) {
+      // A Blu-ray's H.264 is cut and started at its every-second I-frames, not only at IDR frames half a minute apart.
+      keyAtRecoveryPoints(videoTrack);
+      // A second run inside the group of pictures another began in finds its key frame as the first did, by the index.
+      keyLookupFromCues(videoTrack);
+    }
     const audioTracks = await input.getAudioTracks();
     // TrueHD / MLP tracks get their codec's name, so they can be decoded (codecs/audio.ts).
     nameTrueHdTracks(audioTracks);
