@@ -2,7 +2,7 @@
   "common": {
     "open": "Apri",
     "appName": "Lumovio",
-    "tagline": "Ogni film, serie e anime – la tua cronologia, i tuoi server, in un solo posto.",
+    "tagline": "Tutto il tuo cinema in un solo posto",
     "loading": "Caricamento…",
     "retry": "Riprova",
     "undo": "Annulla",
@@ -52,7 +52,8 @@
     "today": "Oggi",
     "yesterday": "Ieri",
     "justNow": "proprio ora",
-    "shownOf": "Mostrati {shown} di {total}"
+    "shownOf": "Mostrati {shown} di {total}",
+    "description": "Film, serie e anime: un catalogo con i voti, le tue liste e la tua cronologia su telefono, computer e TV, e la riproduzione dal tuo Jellyfin, Plex o TorrServer. Gratis."
   },
   "nav": {
     "home": "Home",
@@ -279,13 +280,16 @@
     "heroPlay": "Guarda",
     "heroDetails": "Altre info",
     "guestTitle": "Tutto il tuo cinema in un solo posto",
-    "guestText": "Trova qualsiasi titolo, tieni la lista Da guardare su tutti i dispositivi, porta la tua cronologia da Trakt, IMDb o Letterboxd e guarda dai tuoi server Jellyfin, Plex o TorrServer.",
     "featured": "In evidenza",
     "moreInfo": "Altre info",
     "pauseRotation": "Metti in pausa la presentazione",
     "slide": "Slide {n} di {total}: {title}",
     "continue": "Riprendi",
-    "slides": "Slide"
+    "slides": "Slide",
+    "guestFact1": "Film, serie e anime, con voti, selezioni e ricerca con parole tue",
+    "guestFact2": "Le tue liste e la tua cronologia, su telefono, computer e TV",
+    "guestFact3": "Guarda dal tuo Jellyfin, Plex o TorrServer",
+    "guestAbout": "Cos’è Lumovio?"
   },
   "browse": {
     "titleMovies": "Film",
@@ -781,6 +785,26 @@
     "pinRemovedDone": "PIN di «{name}» rimosso",
     "pinRemoveDetail": "Il profilo si aprirà senza PIN.",
     "photoRemoved": "Foto rimossa"
+  },
+  "setup": {
+    "title": "Configuriamo Lumovio",
+    "lead": "Puoi saltare tutto e cambiarlo più tardi nelle Impostazioni.",
+    "audioDetail": "In che lingua avviare film e serie",
+    "subtitlesDetail": "In che lingua mostrare i sottotitoli",
+    "server": "Il tuo server",
+    "serverDetail": "Jellyfin, Plex o TorrServer. Senza non c’è niente da riprodurre, ma liste e cronologia funzionano.",
+    "serverNone": "Non collegato",
+    "serverWhat": "Cos’è?",
+    "history": "Cronologia",
+    "historyDetail": "Portala da Trakt, Simkl, IMDb o Letterboxd",
+    "historyDone": "Importata",
+    "historySources": "Trakt, Simkl, IMDb, Letterboxd",
+    "languages": "Audio e sottotitoli",
+    "done": "Fine",
+    "later": "Più tardi",
+    "shelfTitle": "Completa la configurazione",
+    "shelfHide": "Nascondi",
+    "shelfHidden": "Fila nascosta"
   },
   "library": {
     "title": "Libreria",
@@ -1851,6 +1875,31 @@
     "errUrlsTooMany": "Fino a {max} indirizzi in una segnalazione",
     "errStatement": "Scrivi la dichiarazione – almeno 10 caratteri"
   },
+  "about": {
+    "title": "Cos’è Lumovio?",
+    "lead": "Lumovio è un servizio gratuito che raccoglie tutto il tuo cinema in un solo posto: un catalogo di film, serie e anime, e le tue liste e la tua cronologia su ogni schermo. Guardi dai tuoi server: Jellyfin, Plex o TorrServer.",
+    "shotDesktop": "La pagina di Sintel su un computer",
+    "shotPhone": "La pagina di Sintel su un telefono",
+    "shotPlayer": "Il player",
+    "shotTv": "La pagina di Sintel su una TV",
+    "catalogTitle": "Catalogo e ricerca",
+    "catalogText": "Film, serie e anime in dieci lingue. Voti di IMDb, della critica e del pubblico uno accanto all’altro, selezioni che dicono perché un titolo c’è, una ricerca che perdona i refusi e, dopo l’accesso, trovare un film descrivendolo.",
+    "historyTitle": "Una sola cronologia su ogni schermo",
+    "historyText": "Da guardare, Preferiti, voti, liste e avanzamento sono gli stessi su telefono, computer e TV. Un calendario dei nuovi episodi, statistiche e profili per tutta la famiglia, anche per bambini. Porta la tua cronologia da Trakt, Simkl, IMDb o Letterboxd e tieni Trakt e Simkl sincronizzati.",
+    "serversTitle": "I tuoi server",
+    "serversLead": "Lumovio riproduce i video dai server che hai già:",
+    "server_jellyfin": "Un software gratuito per la tua collezione di film e serie, su computer o NAS.",
+    "server_plex": "Un’app per la tua collezione, con accesso remoto.",
+    "server_torrserver": "Riproduce le release dei tracker in streaming, senza aspettare il download.",
+    "serversDirect": "Il browser parla direttamente con il tuo server: il video non passa mai da Lumovio.",
+    "serversPlayer": "Il player riproduce ciò che i browser di solito non sanno: MKV e AVI, audio AC-3, DTS e TrueHD, sottotitoli incorporati compresi gli ASS, oppure passa il file a VLC, Infuse o MX Player.",
+    "screensTitle": "Su ogni schermo",
+    "screensText": "Il sito si installa su telefono e computer come un’app. Sulla TV c’è un’interfaccia per il telecomando e un’app per Android TV; accedi con un codice QR e il telefono diventa il telecomando.",
+    "videoTitle": "Lumovio non ha video suoi",
+    "videoText": "Non ospitiamo né condividiamo film. Dove un titolo è disponibile legalmente, «Dove guardarlo» mostra i servizi del tuo paese: abbonamento, gratis, noleggio o acquisto (dati JustWatch tramite TMDB).",
+    "freeTitle": "Gratis e aperto",
+    "freeText": "Lumovio è gratis. Il codice del sito, del player e dell’app per Android TV è aperto su GitHub."
+  },
   "errors": {
     "loadTitle": "Impossibile caricare",
     "loadText": "Probabilmente è temporaneo. Riprova.",
@@ -2352,7 +2401,8 @@
     "openCalendar": "Apri il calendario",
     "copyPick": "Copia",
     "copyOf": "{n} di {count}",
-    "backToCopy": "Torna alla copia"
+    "backToCopy": "Torna alla copia",
+    "guestWhat": "Cos’è?"
   },
   "personPage": {
     "noCreditsKids": "Nessun titolo disponibile in un profilo bambini",

@@ -1,6 +1,6 @@
 "use client";
 
-import type { LeaveCodeSent, Me, PinHintState, Profile } from "@lumovio/contracts";
+import type { LeaveCodeSent, Me, PinHintState, Profile, SetupOffer } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { Lock, LogOut, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -122,7 +122,7 @@ function viewHref(next: string, query: Record<string, string>) {
  * without a profile and an account of one profile without a PIN skip the question. Manage profiles and a profile's page
  * are views of this page (`ProfileManager`, `ProfileEditor`).
  */
-export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState | null }) {
+export function ProfilePicker({ me, pinHint, setup = null }: { me: Me; pinHint: PinHintState | null; setup?: SetupOffer }) {
   const t = useTranslations("profiles");
   const tc = useTranslations("common");
   // The code field and "Send again" say what the sign-in's code steps say.
@@ -160,10 +160,11 @@ export function ProfilePicker({ me, pinHint }: { me: Me; pinHint: PinHintState |
   const full = profiles.length >= limit;
 
   const to = (path: string, lang = locale) => (lang === "en" ? path : `/${lang}${path === "/" ? "" : path}`);
-  // The profile's own interface language, when it has one, is the site's language from here on.
+  // The profile's own interface language, when it has one, is the site's language from here on. A new account on its
+  // way home goes through the first run's screen once; one going to a page of its own (a title, an invitation) gets there.
   const go = (p: Profile) => {
     const lang = p.uiLocale && (LOCALE_CODES as readonly string[]).includes(p.uiLocale) ? p.uiLocale : locale;
-    window.location.href = to(next, lang);
+    window.location.href = to(setup === "screen" && !p.isKids && next === "/" ? "/setup" : next, lang);
   };
   const manageHref = viewHref(next, { manage: "1" });
   const editHref = (id: string) => viewHref(next, { manage: "1", edit: id });

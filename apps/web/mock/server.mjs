@@ -913,6 +913,26 @@ on("GET", "/api/library/shelves", async ({ c }) => {
 });
 // "More by …" on a title's More like this: the mock has no credits.
 on("GET", "/api/catalog/title/:kind/:id/more-by", async () => null);
+// The first run (setup screen and its home shelf): every mock account is new, so it is offered until "Done" or "Hide".
+on("GET", "/api/setup", async ({ c }) => {
+  const u = needUser(c);
+  if (c.profile?.isKids || u.setupDoneAt) return { offer: null, servers: [], imported: false };
+  return { offer: u.setupSeenAt ? "shelf" : "screen", servers: connections.map((x) => x.summary.name), imported: false };
+});
+on("POST", "/api/setup/seen", async ({ c }) => {
+  needUser(c).setupSeenAt = now();
+  return { ok: true };
+});
+on("POST", "/api/setup/done", async ({ c }) => {
+  const u = needUser(c);
+  u.setupSeenAt ??= now();
+  u.setupDoneAt = now();
+  return { ok: true };
+});
+on("DELETE", "/api/setup/done", async ({ c }) => {
+  needUser(c).setupDoneAt = null;
+  return { ok: true };
+});
 on("GET", "/api/connections", async ({ c }) => {
   needUser(c);
   return { connections: connections.map((x) => x.summary) };

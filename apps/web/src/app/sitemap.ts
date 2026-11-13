@@ -12,6 +12,7 @@ const PAGES: { path: string; changeFrequency: "daily" | "monthly" }[] = [
   { path: "/browse/movie", changeFrequency: "daily" },
   { path: "/browse/tv", changeFrequency: "daily" },
   { path: "/anime", changeFrequency: "daily" },
+  { path: "/about", changeFrequency: "monthly" },
   ...["terms", "privacy", "credits", "copyright"].map((doc) => ({ path: `/legal/${doc}`, changeFrequency: "monthly" as const })),
 ];
 

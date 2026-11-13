@@ -2,7 +2,7 @@
   "common": {
     "open": "Öffnen",
     "appName": "Lumovio",
-    "tagline": "Alle Filme, Serien und Anime – dein Verlauf, deine Server, ein Ort.",
+    "tagline": "Dein ganzes Kino an einem Ort",
     "loading": "Wird geladen…",
     "retry": "Erneut versuchen",
     "undo": "Rückgängig",
@@ -52,7 +52,8 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "justNow": "gerade eben",
-    "shownOf": "{shown} von {total} angezeigt"
+    "shownOf": "{shown} von {total} angezeigt",
+    "description": "Filme, Serien und Anime: ein Katalog mit Bewertungen, deine Listen und dein Verlauf auf Handy, Computer und TV – und abgespielt wird von deinem eigenen Jellyfin, Plex oder TorrServer. Kostenlos."
   },
   "nav": {
     "home": "Startseite",
@@ -279,13 +280,16 @@
     "heroPlay": "Ansehen",
     "heroDetails": "Weitere Infos",
     "guestTitle": "Dein Filmleben an einem Ort",
-    "guestText": "Finde alles, führe eine Merkliste auf all deinen Geräten, bring deinen Verlauf von Trakt, IMDb oder Letterboxd mit und schau über deinen eigenen Jellyfin, Plex oder TorrServer.",
     "featured": "Kollektion",
     "moreInfo": "Weitere Infos",
     "pauseRotation": "Diashow anhalten",
     "slide": "Folie {n} von {total}: {title}",
     "continue": "Fortsetzen",
-    "slides": "Folien"
+    "slides": "Folien",
+    "guestFact1": "Filme, Serien und Anime – mit Bewertungen, Auswahlen und Suche in deinen Worten",
+    "guestFact2": "Deine Listen und dein Verlauf – auf Handy, Computer und TV",
+    "guestFact3": "Schau von deinem eigenen Jellyfin, Plex oder TorrServer",
+    "guestAbout": "Was ist Lumovio?"
   },
   "browse": {
     "titleMovies": "Filme",
@@ -781,6 +785,26 @@
     "pinRemovedDone": "PIN von „{name}“ entfernt",
     "pinRemoveDetail": "Das Profil öffnet sich dann ohne PIN.",
     "photoRemoved": "Foto entfernt"
+  },
+  "setup": {
+    "title": "Lumovio einrichten",
+    "lead": "Du kannst alles überspringen und später in den Einstellungen ändern.",
+    "audioDetail": "In welcher Sprache Filme und Serien laufen",
+    "subtitlesDetail": "In welcher Sprache Untertitel erscheinen",
+    "server": "Eigener Server",
+    "serverDetail": "Jellyfin, Plex oder TorrServer. Ohne ihn gibt es nichts abzuspielen, Listen und Verlauf funktionieren aber.",
+    "serverNone": "Nicht verbunden",
+    "serverWhat": "Was ist das?",
+    "history": "Wiedergabeverlauf",
+    "historyDetail": "Von Trakt, Simkl, IMDb oder Letterboxd mitbringen",
+    "historyDone": "Übernommen",
+    "historySources": "Trakt, Simkl, IMDb, Letterboxd",
+    "languages": "Audio und Untertitel",
+    "done": "Fertig",
+    "later": "Später",
+    "shelfTitle": "Einrichtung abschließen",
+    "shelfHide": "Ausblenden",
+    "shelfHidden": "Reihe ausgeblendet"
   },
   "library": {
     "title": "Mediathek",
@@ -1851,6 +1875,31 @@
     "errUrlsTooMany": "Höchstens {max} Adressen pro Meldung",
     "errStatement": "Schreib die Erklärung – mindestens 10 Zeichen"
   },
+  "about": {
+    "title": "Was ist Lumovio?",
+    "lead": "Lumovio ist ein kostenloser Dienst, der dein ganzes Kino an einem Ort sammelt: einen Katalog mit Filmen, Serien und Anime sowie deine Listen und deinen Verlauf auf jedem Bildschirm. Geschaut wird von deinen eigenen Servern – Jellyfin, Plex oder TorrServer.",
+    "shotDesktop": "Die Seite von „Sintel“ auf einem Computer",
+    "shotPhone": "Die Seite von „Sintel“ auf einem Handy",
+    "shotPlayer": "Der Player",
+    "shotTv": "Die Seite von „Sintel“ auf einem Fernseher",
+    "catalogTitle": "Katalog und Suche",
+    "catalogText": "Filme, Serien und Anime in zehn Sprachen. Bewertungen von IMDb, Kritik und Publikum nebeneinander, Auswahlen, die sagen, warum ein Titel darin ist, eine Suche, die Tippfehler verzeiht – und angemeldet findest du einen Film, indem du ihn beschreibst.",
+    "historyTitle": "Ein Verlauf auf allen Bildschirmen",
+    "historyText": "Merkliste, Favoriten, Bewertungen, Listen und Fortschritt sind auf Handy, Computer und Fernseher dieselben. Ein Kalender neuer Folgen, Statistiken und Profile für die ganze Familie, auch für Kinder. Deinen Verlauf bringst du von Trakt, Simkl, IMDb oder Letterboxd mit, und Trakt und Simkl bleiben synchron.",
+    "serversTitle": "Deine Server",
+    "serversLead": "Lumovio spielt Videos von den Servern ab, die du schon hast:",
+    "server_jellyfin": "Kostenlose Software für deine eigene Sammlung an Filmen und Serien – auf dem Computer oder NAS.",
+    "server_plex": "Eine App für deine eigene Sammlung, mit Fernzugriff.",
+    "server_torrserver": "Spielt Releases von Trackern als Stream ab, ohne auf den Download zu warten.",
+    "serversDirect": "Dein Browser spricht direkt mit deinem Server – das Video läuft nie über Lumovio.",
+    "serversPlayer": "Der Player spielt, was Browser meist nicht können: MKV und AVI, AC-3-, DTS- und TrueHD-Ton, eingebettete Untertitel einschließlich ASS – oder gibt die Datei an VLC, Infuse oder MX Player weiter.",
+    "screensTitle": "Auf jedem Bildschirm",
+    "screensText": "Die Website lässt sich auf Handy und Computer wie eine App installieren. Auf dem Fernseher gibt es eine Oberfläche für die Fernbedienung und eine App für Android TV; anmelden kannst du dich per QR-Code, und dein Handy wird zur Fernbedienung.",
+    "videoTitle": "Lumovio hat keine eigenen Videos",
+    "videoText": "Wir speichern und verbreiten keine Filme. Wo ein Titel legal verfügbar ist, zeigt „Wo es läuft“ die Dienste in deinem Land – im Abo, kostenlos, zum Leihen oder Kaufen (Daten von JustWatch über TMDB).",
+    "freeTitle": "Kostenlos und offen",
+    "freeText": "Lumovio ist kostenlos. Der Code der Website, des Players und der Android-TV-App ist auf GitHub offen."
+  },
   "errors": {
     "loadTitle": "Laden fehlgeschlagen",
     "loadText": "Vermutlich nur vorübergehend. Versuche es erneut.",
@@ -2352,7 +2401,8 @@
     "openCalendar": "Kalender öffnen",
     "copyPick": "Kopie",
     "copyOf": "{n} von {count}",
-    "backToCopy": "Zurück zur Kopie"
+    "backToCopy": "Zurück zur Kopie",
+    "guestWhat": "Was ist das?"
   },
   "personPage": {
     "noCreditsKids": "Keine Titel im Kinderprofil verfügbar",

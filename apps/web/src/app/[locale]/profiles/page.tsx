@@ -1,4 +1,4 @@
-import type { PinHintState } from "@lumovio/contracts";
+import type { PinHintState, SetupOffer, SetupState } from "@lumovio/contracts";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { ProfilePicker } from "@/components/profiles/ProfilePicker";
@@ -25,9 +25,18 @@ async function pinHintState(): Promise<PinHintState | null> {
   }
 }
 
+/** Whether a new account goes on to the first run's screen after choosing (null when it can't be read). */
+async function setupOffer(): Promise<SetupOffer> {
+  try {
+    return (await serverApi<SetupState>("/api/setup")).offer;
+  } catch {
+    return null;
+  }
+}
+
 export default async function ProfilesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Side by side: the hint's state doesn't wait for the session's.
-  const [me, pinHint] = await Promise.all([getMeState(), pinHintState()]);
+  const [me, pinHint, setup] = await Promise.all([getMeState(), pinHintState(), setupOffer()]);
   if (!me) {
     // Signed out: sign-in comes back through this choice anyway, so it keeps only where that was to lead.
     const { next } = await searchParams;
@@ -54,7 +63,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Pro
           </div>
         ) : (
           <Suspense>
-            <ProfilePicker me={me!} pinHint={pinHint} />
+            <ProfilePicker me={me!} pinHint={pinHint} setup={setup} />
           </Suspense>
         )}
       </main>

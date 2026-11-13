@@ -2,9 +2,14 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 245078,
+      "jsGzip": 246448,
       "cssGzip": 22620,
-      "jsChunks": 17
+      "jsChunks": 18
+    },
+    "/[locale]/about": {
+      "jsGzip": 190522,
+      "cssGzip": 27259,
+      "jsChunks": 14
     },
     "/[locale]/android-tv": {
       "jsGzip": 185313,
@@ -170,6 +175,11 @@
       "jsGzip": 204417,
       "cssGzip": 20624,
       "jsChunks": 15
+    },
+    "/[locale]/setup": {
+      "jsGzip": 195708,
+      "cssGzip": 27259,
+      "jsChunks": 14
     },
     "/[locale]/stats": {
       "jsGzip": 210056,

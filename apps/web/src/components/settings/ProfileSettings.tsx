@@ -13,11 +13,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Switch } from "@/components/ui/Switch";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
-import { languageName } from "@/lib/format";
-import { studioWord } from "@/lib/media/dubbing";
 import { SUBTITLE_DEFAULTS } from "@/lib/media/subs/view";
 import { useSettingsSave } from "@/lib/use-action";
-import { AUTO, capital, useLocaleOptions } from "./locale-options";
+import { AUTO, useLocaleOptions } from "./locale-options";
+import { useAudioValue, useLanguageList } from "./profile-values";
 import { publicPageQuery } from "./queries";
 
 // The sub-screens load when one is opened (bundle budget): the ordered choice, the studios, the preview, the form.
@@ -49,20 +48,14 @@ const pick = (p: Profile): ProfilePrefs => ({
 type Open = "audio" | "subtitles" | "style" | "public" | null;
 
 /**
- * Settings → Profile: the active profile's own choices as
- * a short page that says what is chosen — Language and region (the interface language here is the profile's, the one
- * the site switches to), Audio and subtitles (rows with their values: audio, subtitles and their look open sub-screens;
- * the release quality is chosen in the row), Catalog, Spoilers, the public page and the way to every profile. Every choice
- * applies at once with "Saved" by its group's title or in its sub-screen; a refusal puts it back with "Retry". A kids
- * profile keeps its languages, audio, subtitles and spoilers — not the region or anime (an adult sets them in Manage
- * profiles), studios, quality or a public page.
+ * The active profile's choices as shown, and `change` for the groups and sub-screens: PATCH the profile, put the
+ * session's copy up to date, and the optimistic change with its way back. Settings → Profile and the setup screen.
  */
-export function ProfileSettings() {
+export function useProfilePrefs() {
   const { me } = useSession();
   const p = me?.activeProfile;
   const router = useRouter();
   const [value, setValue] = useState<ProfilePrefs | null>(p ? pick(p) : null);
-  const [open, setOpen] = useState<Open>(null);
   const latest = useRef(value);
   useLayoutEffect(() => {
     latest.current = value;
@@ -72,11 +65,9 @@ export function ProfileSettings() {
   useEffect(() => {
     if (p) setValue(pick(p));
   }, [p?.id]);
-  if (!p || !value) return null;
-
   const change: ProfileChange = (patch) => ({
     request: async () => {
-      await api(`/api/profiles/${p.id}`, { method: "PATCH", json: patch });
+      await api(`/api/profiles/${p!.id}`, { method: "PATCH", json: patch });
       // The rest of the site reads the profile from the session: bring it up to date.
       router.refresh();
     },
@@ -87,6 +78,23 @@ export function ProfileSettings() {
       return () => setValue((v) => v && { ...v, ...before });
     },
   });
+  return { profile: p, value, change };
+}
+
+/**
+ * Settings → Profile: the active profile's own choices as
+ * a short page that says what is chosen — Language and region (the interface language here is the profile's, the one
+ * the site switches to), Audio and subtitles (rows with their values: audio, subtitles and their look open sub-screens;
+ * the release quality is chosen in the row), Catalog, Spoilers, the public page and the way to every profile. Every choice
+ * applies at once with "Saved" by its group's title or in its sub-screen; a refusal puts it back with "Retry". A kids
+ * profile keeps its languages, audio, subtitles and spoilers — not the region or anime (an adult sets them in Manage
+ * profiles), studios, quality or a public page.
+ */
+export function ProfileSettings() {
+  const { profile: p, value, change } = useProfilePrefs();
+  const [open, setOpen] = useState<Open>(null);
+  if (!p || !value) return null;
+
   const section = { value, change, kids: p.isKids };
   const close = () => setOpen(null);
 
@@ -169,12 +177,6 @@ function LanguageSection({ value, change, kids }: SectionProps) {
   );
 }
 
-/** "Ukrainian, English" — the chosen languages in their order, or "Not chosen". */
-function useLanguageList() {
-  const ts = useTranslations("settings");
-  const locale = useLocale();
-  return (codes: string[]) => (codes.length ? codes.map((c) => capital(languageName(c, locale) ?? c, locale)).join(", ") : ts("notChosen"));
-}
 
 /**
  * What the profile hears and reads: audio and subtitles — the languages in order, the studios —
@@ -185,20 +187,16 @@ function WatchSection({ value, change, kids, onOpen }: SectionProps & { onOpen: 
   const t = useTranslations("profiles");
   const ts = useTranslations("settings");
   const tsub = useTranslations("subtitles");
-  const tt = useTranslations("title");
-  const locale = useLocale();
   const { state, save } = useSettingsSave();
   const list = useLanguageList();
+  const audioValue = useAudioValue();
   const ids = useId();
   const style = value.subtitleStyle;
-  const audio = list(value.audioLanguages);
-  // The profile's "Dubbing" by its name in the interface, as its studios dialog lists it; the other studios as written.
-  const studios = value.voiceStudios.map((s) => studioWord(s, capital(tt("voice_dub"), locale))).join(", ");
   return (
     <SettingsSection title={ts("sectionAudio")} save={state}>
       <SettingsLink
         label={ts("audioRow")}
-        value={<span className="truncate">{kids || value.voiceStudios.length === 0 ? audio : `${audio} · ${studios}`}</span>}
+        value={<span className="truncate">{audioValue(value, kids)}</span>}
         description={t("audioLanguagesOrder")}
         opens
         onClick={() => onOpen("audio")}

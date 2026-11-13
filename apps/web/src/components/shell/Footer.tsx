@@ -49,6 +49,8 @@ export function Footer() {
         <Links
           label={t("shell.support")}
           links={[
+            // What Lumovio is, for someone who came for the first time.
+            { href: "/about", label: t("about.title") },
             { href: "/link", label: t("nav.linkDevice") },
             // The Android TV app's page: its APK and how a TV gets it.
             { href: "/android-tv", label: t("nav.tvApp") },

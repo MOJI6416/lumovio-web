@@ -2,7 +2,7 @@
   "common": {
     "open": "Aç",
     "appName": "Lumovio",
-    "tagline": "Her film, dizi ve anime – geçmişiniz, sunucularınız, tek bir yerde.",
+    "tagline": "Tüm sinemanız tek bir yerde",
     "loading": "Yükleniyor…",
     "retry": "Tekrar dene",
     "undo": "Geri al",
@@ -52,7 +52,8 @@
     "today": "Bugün",
     "yesterday": "Dün",
     "justNow": "az önce",
-    "shownOf": "Gösterilen: {shown}/{total}"
+    "shownOf": "Gösterilen: {shown}/{total}",
+    "description": "Filmler, diziler ve animeler: puanlı bir katalog, telefonda, bilgisayarda ve TV’de listeleriniz ve geçmişiniz, oynatma da kendi Jellyfin, Plex veya TorrServer’ınızdan. Ücretsiz."
   },
   "nav": {
     "home": "Ana sayfa",
@@ -279,13 +280,16 @@
     "heroPlay": "İzle",
     "heroDetails": "Daha fazla bilgi",
     "guestTitle": "Film hayatınız tek bir yerde",
-    "guestText": "Her şeyi bulun, İzlenecekler listenizi tüm cihazlarınızda tutun, Trakt, IMDb veya Letterboxd geçmişinizi getirin ve kendi Jellyfin, Plex veya TorrServer sunucunuzdan oynatın.",
     "featured": "Öne çıkanlar",
     "moreInfo": "Daha fazla bilgi",
     "pauseRotation": "Slayt gösterisini duraklat",
     "slide": "Slayt {n}/{total}: {title}",
     "continue": "Devam et",
-    "slides": "Slaytlar"
+    "slides": "Slaytlar",
+    "guestFact1": "Filmler, diziler ve animeler — puanlar, seçkiler ve kendi sözlerinizle arama",
+    "guestFact2": "Listeleriniz ve geçmişiniz — telefonda, bilgisayarda ve TV’de",
+    "guestFact3": "Kendi Jellyfin, Plex veya TorrServer’ınızdan izleyin",
+    "guestAbout": "Lumovio nedir?"
   },
   "browse": {
     "titleMovies": "Filmler",
@@ -781,6 +785,26 @@
     "pinRemovedDone": "“{name}” profilinin PIN’i kaldırıldı",
     "pinRemoveDetail": "Profil PIN olmadan açılır.",
     "photoRemoved": "Fotoğraf kaldırıldı"
+  },
+  "setup": {
+    "title": "Lumovio’yu kuralım",
+    "lead": "Hepsini atlayıp daha sonra Ayarlar’dan değiştirebilirsiniz.",
+    "audioDetail": "Filmler ve diziler hangi dilde açılsın",
+    "subtitlesDetail": "Altyazılar hangi dilde gösterilsin",
+    "server": "Kendi sunucunuz",
+    "serverDetail": "Jellyfin, Plex veya TorrServer. O olmadan oynatılacak bir şey yok, ama listeler ve geçmiş çalışır.",
+    "serverNone": "Bağlı değil",
+    "serverWhat": "Bu nedir?",
+    "history": "İzleme geçmişi",
+    "historyDetail": "Trakt, Simkl, IMDb veya Letterboxd’dan getirin",
+    "historyDone": "Aktarıldı",
+    "historySources": "Trakt, Simkl, IMDb, Letterboxd",
+    "languages": "Ses ve altyazılar",
+    "done": "Bitti",
+    "later": "Sonra",
+    "shelfTitle": "Kurulumu tamamla",
+    "shelfHide": "Gizle",
+    "shelfHidden": "Raf gizlendi"
   },
   "library": {
     "title": "Kitaplık",
@@ -1851,6 +1875,31 @@
     "errUrlsTooMany": "Bir bildirimde en fazla {max} adres",
     "errStatement": "Beyanı yazın – en az 10 karakter"
   },
+  "about": {
+    "title": "Lumovio nedir?",
+    "lead": "Lumovio, tüm sinemanızı tek bir yerde toplayan ücretsiz bir hizmettir: film, dizi ve anime kataloğu, her ekranda listeleriniz ve geçmişiniz. Kendi sunucularınızdan izlersiniz: Jellyfin, Plex veya TorrServer.",
+    "shotDesktop": "Sintel’in sayfası bilgisayarda",
+    "shotPhone": "Sintel’in sayfası telefonda",
+    "shotPlayer": "Oynatıcı",
+    "shotTv": "Sintel’in sayfası TV’de",
+    "catalogTitle": "Katalog ve arama",
+    "catalogText": "On dilde filmler, diziler ve animeler. IMDb, eleştirmen ve izleyici puanları yan yana, bir başlığın neden orada olduğunu söyleyen seçkiler, yazım hatalarını affeden arama ve oturum açınca bir filmi anlatarak bulma.",
+    "historyTitle": "Her ekranda tek bir geçmiş",
+    "historyText": "İzlenecekler, Favoriler, puanlar, listeler ve ilerleme telefonda, bilgisayarda ve TV’de aynıdır. Yeni bölümler takvimi, istatistikler ve çocuk profilleri dahil tüm aile için profiller. Geçmişinizi Trakt, Simkl, IMDb veya Letterboxd’dan getirin, Trakt ve Simkl’i senkronize tutun.",
+    "serversTitle": "Sunucularınız",
+    "serversLead": "Lumovio, zaten sahip olduğunuz sunuculardan video oynatır:",
+    "server_jellyfin": "Bilgisayarınızda veya NAS’ınızda kendi film ve dizi koleksiyonunuz için ücretsiz bir yazılım.",
+    "server_plex": "Kendi koleksiyonunuz için uzaktan erişimli bir uygulama.",
+    "server_torrserver": "Tracker’lardaki sürümleri indirmeyi beklemeden akış olarak oynatır.",
+    "serversDirect": "Tarayıcınız sunucunuzla doğrudan konuşur; video asla Lumovio’dan geçmez.",
+    "serversPlayer": "Oynatıcı, tarayıcıların genelde oynatamadıklarını oynatır: MKV ve AVI, AC-3, DTS ve TrueHD ses, ASS dahil gömülü altyazılar; ya da dosyayı VLC, Infuse veya MX Player’a verir.",
+    "screensTitle": "Her ekranda",
+    "screensText": "Site, telefona ve bilgisayara bir uygulama gibi kurulur. TV’de kumanda için bir arayüz ve Android TV uygulaması var; QR koduyla oturum açın, telefonunuz kumanda olsun.",
+    "videoTitle": "Lumovio’nun kendi videosu yok",
+    "videoText": "Film barındırmıyor ve paylaşmıyoruz. Bir başlık yasal olarak izlenebiliyorsa, “Nerede izlenir” ülkenizdeki hizmetleri gösterir: abonelik, ücretsiz, kiralama veya satın alma (veriler TMDB üzerinden JustWatch’tan).",
+    "freeTitle": "Ücretsiz ve açık",
+    "freeText": "Lumovio ücretsizdir. Sitenin, oynatıcının ve Android TV uygulamasının kodu GitHub’da açık."
+  },
   "errors": {
     "loadTitle": "Yüklenemedi",
     "loadText": "Muhtemelen geçici bir durum. Lütfen tekrar deneyin.",
@@ -2352,7 +2401,8 @@
     "openCalendar": "Takvimi aç",
     "copyPick": "Kopya",
     "copyOf": "{n}/{count}",
-    "backToCopy": "Kopyaya dön"
+    "backToCopy": "Kopyaya dön",
+    "guestWhat": "Bu nedir?"
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",

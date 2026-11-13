@@ -36,8 +36,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale, namespace: "common" });
   return {
     metadataBase: new URL(SITE_URL),
+    // The tagline names the home page; the description says in a sentence what Lumovio is (a search result's snippet).
     title: { default: `${t("appName")} — ${t("tagline")}`, template: `%s · ${t("appName")}` },
-    description: t("tagline"),
+    description: t("description"),
     applicationName: "Lumovio",
     // The manifest in the page's language: app/manifest.ts for English, app/[locale]/manifest.webmanifest else.
     manifest: locale === "en" ? "/manifest.webmanifest" : `/${locale}/manifest.webmanifest`,

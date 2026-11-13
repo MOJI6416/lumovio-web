@@ -201,6 +201,19 @@ export interface PinHintState {
   snoozedUntil: string | null;
 }
 
+/** The first run for a new account: the setup screen not opened yet, its home shelf, or nothing. */
+export type SetupOffer = "screen" | "shelf" | null;
+
+/**
+ * `/api/setup`: whether the account is offered the first run, and what it says about the account — its servers by
+ * name and whether a history came in (an import or a Trakt/Simkl link). Not offered — empty.
+ */
+export interface SetupState {
+  offer: SetupOffer;
+  servers: string[];
+  imported: boolean;
+}
+
 export const PublicProfileSettings = z.object({
   handle: z
     .string()

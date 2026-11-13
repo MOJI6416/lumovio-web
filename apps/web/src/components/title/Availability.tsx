@@ -173,15 +173,21 @@ export function Availability({ title: d }: { title: TitleCore }) {
         mark={<ServerMarks />}
         heading={tp("guest")}
         actions={
-          // The one sign-in sheet, back to this tab afterwards.
-          <GuestGate
-            reason="watch"
-            trigger={
-              <Button variant="secondary" size="lg">
-                {t("signInToWatch")}
-              </Button>
-            }
-          />
+          <>
+            {/* The one sign-in sheet, back to this tab afterwards. */}
+            <GuestGate
+              reason="watch"
+              trigger={
+                <Button variant="secondary" size="lg">
+                  {t("signInToWatch")}
+                </Button>
+              }
+            />
+            {/* The three marks say nothing to someone new: what these servers are. */}
+            <ActionLink variant="action" arrow href="/about#servers">
+              {tp("guestWhat")}
+            </ActionLink>
+          </>
         }
       />
     );

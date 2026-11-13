@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <strong>Your film life in one place.</strong><br>
   Films, series and anime: one watch history, watchlists and lists on every device,<br>
   and your own Jellyfin, Plex or TorrServer in the built-in player — on a phone, a computer or a TV.
 </p>

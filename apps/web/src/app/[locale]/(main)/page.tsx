@@ -1,5 +1,7 @@
-import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, TitleSummary } from "@lumovio/contracts";
+import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, SetupState, TitleSummary } from "@lumovio/contracts";
 import { clsx } from "clsx";
+import { Clapperboard, MonitorSmartphone, Server } from "lucide-react";
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import { userAgent } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -17,6 +19,7 @@ import { Top10Card } from "@/components/media/Top10Card";
 import { TorrentFindsRow } from "@/components/media/TorrentFindsRow";
 import { GuestGateLinks } from "@/components/shell/GuestGate";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
+import { Link } from "@/components/ui/Link";
 import { meFailure } from "@/lib/me-state";
 import { ON_MY_SERVERS_HREF } from "@/lib/on-my-servers";
 import { optional } from "@/lib/optional";
@@ -28,12 +31,16 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return pageSeo((await params).locale, "/");
 }
 
+// Only a new account sees "Finish setting up": a chunk of its own, not in every visitor's first load.
+const SetupShelf = dynamic(() => import("@/components/setup/SetupShelf").then((m) => m.SetupShelf));
+
 /** Shelves shown as 16:9 artwork instead of posters, for rhythm (as streaming homes do). */
 const LANDSCAPE_ROWS = new Set(["popular_tv", "on_air", "miniseries"]);
 
 /**
  * The home page. The billboard, then for a guest what Lumovio is, on the same stage in the
- * first screen; then the profile's own shelves — "Continue watching", one shelf of what is on its servers
+ * first screen; then the profile's own shelves — "Continue watching", a new account's "Finish setting up" (instead of
+ * the starter while it is there), one shelf of what is on its servers
  * (from its lists first), finds on its TorrServer, "For you" or, with nothing to start from, the starter
  * (never both) — the Top 10 (the page's only one) and the curated shelves (no editorial block such as
  * "Lumovio's pick"), with the other personal shelves ("Because you watched", a person's
@@ -41,8 +48,8 @@ const LANDSCAPE_ROWS = new Set(["popular_tv", "on_air", "miniseries"]);
  * Shelves with fewer than three cards are not shown (Row); no filter chips inside shelves.
  *
  * The first screen: the billboard and, in either theme, the first shelf under it — "Continue watching"
- * when there is something to continue — on a phone, a desktop and a wide screen. No explanatory lines: a guest's welcome
- * is its heading and the way in.
+ * when there is something to continue — on a phone, a desktop and a wide screen. No explanatory lines, except for someone
+ * new: a guest's welcome says in three short lines what Lumovio is, and links to the page that says more.
  */
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -60,7 +67,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   // A search engine gets the error page's 5xx instead (whole pages for robots, BootBoundary): a 200 saying "unavailable"
   // at the home's address reads as a soft 404 there, a 5xx as "come back later".
   const bot = userAgent({ headers: await headers() }).isBot;
-  const [home, movieGenres, tvGenres, cont, onServers, recs, library] = await Promise.all([
+  const [home, movieGenres, tvGenres, cont, onServers, recs, library, setup] = await Promise.all([
     // A guest has no session to tell an outage by (getMeState): the home's own data not coming is the same screen.
     serverApi<CatalogPage>("/api/catalog/home").catch((e) => {
       if (!bot && meFailure(e) === "unavailable") return null;
@@ -75,6 +82,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     profile ? optional(serverApi<Recommendations>("/api/recommendations"), null) : Promise.resolve(null),
     // Shelves of the profile's own Watchlist (short films, finished series).
     profile ? optional(serverApi<{ rows: CatalogRow[] }>("/api/library/shelves"), { rows: [] }) : Promise.resolve({ rows: [] as CatalogRow[] }),
+    // A new account's first run (its "Finish setting up" shelf); a kids profile isn't offered it.
+    profile && !profile.isKids ? optional(serverApi<SetupState>("/api/setup"), null) : Promise.resolve(null),
   ]);
   if (!home) {
     return (
@@ -98,7 +107,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const personal = { lead: shelves.lead.map(cardShelf), later: shelves.later.map(cardShelf) };
   const forYou = personal.lead.some((s) => s.kind === "for_you");
   // "For you" is a shelf only with three picks (Row); the starter stands in for it until then, never beside it.
-  const starter = Boolean(recs && !forYou && !recs.startDismissed && recs.seeds.length < 3);
+  // One introduction at a time: while "Finish setting up" is on the page, the starter waits.
+  const setupShelf = setup?.offer ? setup : null;
+  const starter = Boolean(recs && !forYou && !recs.startDismissed && recs.seeds.length < 3 && !setupShelf);
   // The Watchlist's shelves go first among the ones placed between the catalog shelves.
   const rest = interleave(withoutPersonal(catalogRows, [...personal.lead, ...personal.later]), [...library.rows.map(cardRow), ...personal.later]);
   const genres = [...movieGenres.genres, ...tvGenres.genres];
@@ -129,26 +140,40 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <h1 className="sr-only">{t("shell.homeHeading")}</h1>
       {featured && <Billboard items={home.featured} genres={[...movieGenres.genres, ...tvGenres.genres]} />}
       {guest && (
-        // What Lumovio is, on the billboard's stage in the first screen: its heading and the way in, the same as
-        // everywhere (GuestGate); what it does in a sentence is the section's description for a screen reader (no
-        // explanatory lines).
+        // What Lumovio is, on the billboard's stage in the first screen: the tagline and the way in (GuestGate), and —
+        // for someone who came for the first time — three short lines of what it does and a link to the page that says
+        // more. On a phone the buttons come right under the tagline, so the way in stays in the first screen above the
+        // bottom bar; from sm they stand beside it.
         <section
           aria-labelledby="welcome-h"
-          aria-describedby="welcome-text"
           className={clsx(
-            "stage page-x relative z-10 flex flex-col gap-4 border-t border-line bg-stage py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 md:py-6",
+            "stage page-x relative z-10 flex flex-col gap-4 border-t border-line bg-stage py-6 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-8 md:py-8",
             featured && "art-over:in-data-[theme=dark]:-mt-32",
           )}
         >
           <h2 id="welcome-h" className="min-w-0 text-h2 text-text-1">
             {t("home.guestTitle")}
           </h2>
-          <p id="welcome-text" className="sr-only">
-            {t("home.guestText")}
-          </p>
           <div className="flex shrink-0 flex-wrap gap-3">
             <GuestGateLinks lead="signUp" />
           </div>
+          <ul className="grid gap-3 sm:col-span-2 md:grid-cols-3 md:gap-8">
+            {(
+              [
+                [Clapperboard, "home.guestFact1"],
+                [MonitorSmartphone, "home.guestFact2"],
+                [Server, "home.guestFact3"],
+              ] as const
+            ).map(([Icon, key]) => (
+              <li key={key} className="flex items-start gap-3 text-body-s text-text-2">
+                <Icon aria-hidden className="mt-px size-5 shrink-0 text-text-1" />
+                {t(key)}
+              </li>
+            ))}
+          </ul>
+          <Link variant="action" arrow href="/about" className="w-fit sm:col-span-2">
+            {t("home.guestAbout")}
+          </Link>
         </section>
       )}
       <div
@@ -163,6 +188,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         )}
       >
         {cont.items.length > 0 && <ContinueRow items={cont.items} />}
+        {setupShelf && <SetupShelf state={setupShelf} />}
         {servers.length > 0 && (
           <Row
             id="on_servers"
