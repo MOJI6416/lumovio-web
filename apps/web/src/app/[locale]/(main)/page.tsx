@@ -1,7 +1,6 @@
 import type { CatalogPage, CatalogRow, ContinueWatchingItem, Genre, Recommendations, SetupState, TitleSummary } from "@lumovio/contracts";
 import { clsx } from "clsx";
 import { Clapperboard, MonitorSmartphone, Server } from "lucide-react";
-import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import { userAgent } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -17,6 +16,7 @@ import { shelfHref, shelfInfo } from "@/components/media/shelf-copy";
 import { StarterRow } from "@/components/media/StarterRow";
 import { Top10Card } from "@/components/media/Top10Card";
 import { TorrentFindsRow } from "@/components/media/TorrentFindsRow";
+import { SetupShelfLazy } from "@/components/setup/SetupShelfLazy";
 import { GuestGateLinks } from "@/components/shell/GuestGate";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
 import { Link } from "@/components/ui/Link";
@@ -30,9 +30,6 @@ import { getMeState, serverApi } from "@/lib/server-api";
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   return pageSeo((await params).locale, "/");
 }
-
-// Only a new account sees "Finish setting up": a chunk of its own, not in every visitor's first load.
-const SetupShelf = dynamic(() => import("@/components/setup/SetupShelf").then((m) => m.SetupShelf));
 
 /** Shelves shown as 16:9 artwork instead of posters, for rhythm (as streaming homes do). */
 const LANDSCAPE_ROWS = new Set(["popular_tv", "on_air", "miniseries"]);
@@ -188,7 +185,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         )}
       >
         {cont.items.length > 0 && <ContinueRow items={cont.items} />}
-        {setupShelf && <SetupShelf state={setupShelf} />}
+        {setupShelf && <SetupShelfLazy state={setupShelf} />}
         {servers.length > 0 && (
           <Row
             id="on_servers"

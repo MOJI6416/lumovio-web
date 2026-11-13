@@ -2,9 +2,9 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 246448,
+      "jsGzip": 245078,
       "cssGzip": 22620,
-      "jsChunks": 18
+      "jsChunks": 17
     },
     "/[locale]/about": {
       "jsGzip": 190522,
