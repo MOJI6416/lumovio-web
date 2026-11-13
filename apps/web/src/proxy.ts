@@ -3,6 +3,7 @@ import createMiddleware from "next-intl/middleware";
 import { interfaceAcceptLanguage, LOCALE_CODES, pickInterfaceLocale, removedLocaleRedirect } from "./i18n/locales";
 import { routing } from "./i18n/routing";
 import { ON_MY_SERVERS_HREF } from "./lib/on-my-servers";
+import { scriptedBrowser } from "./lib/scripted-browser";
 import { isTvMode, TV_COOKIE, TV_PATH_HEADER, TV_SHELL_HEADER, tvShellPath } from "./lib/tv";
 
 const intl = createMiddleware(routing);
@@ -107,6 +108,14 @@ function secure(req: NextRequest, res: NextResponse): NextResponse {
 }
 
 export default async function proxy(req: NextRequest) {
+  // A program posing as a browser is refused before anything else runs (lib/scripted-browser.ts).
+  const scripted = scriptedBrowser({
+    userAgent: req.headers.get("user-agent"),
+    fetchMode: req.headers.get("sec-fetch-mode"),
+    forwardedProto: req.headers.get("x-forwarded-proto"),
+    signedIn: req.cookies.getAll().some((c) => c.name.endsWith("session_token")),
+  });
+  if (scripted) return new NextResponse(null, { status: 403, headers: { "cache-control": "no-store" } });
   return secure(req, await route(req));
 }
 
