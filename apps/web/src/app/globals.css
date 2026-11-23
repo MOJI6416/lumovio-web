@@ -11,6 +11,10 @@
 @custom-variant art-over (@media (min-width: 48rem) and (min-aspect-ratio: 5/4));
 @custom-variant art-band (@media not all and (min-width: 48rem) and (min-aspect-ratio: 5/4));
 
+/* Room in height: a phone held sideways is as wide as a tablet, but too short for the player's large sizes
+   (`md:tall:`); `not-tall:` is that short screen. */
+@custom-variant tall (@media (min-height: 34rem));
+
 /* ───────────── Lumovio design tokens ─────────────
  * Components use role names only (bg-surface-1,
  * text-text-2, z-dialog, rounded-sm …); hex and rgb() stay in this file.

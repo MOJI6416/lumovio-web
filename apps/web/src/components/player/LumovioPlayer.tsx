@@ -416,6 +416,10 @@ const EDITABLE = /INPUT|TEXTAREA|SELECT/;
 /** The next episode's countdown on the site: from the credits (or the last 15 s), 10 s; 5 s once the file has ended. */
 const NEXT_IN = 10;
 const NEXT_AFTER_END = 5;
+/** Away from the page this long (another app, a locked phone), the stream may be gone when playback goes on. */
+const AWAY_LONG = 30_000;
+/** After such a return, playback that should go on and stands still this long reopens its source. */
+const STALL_AFTER_AWAY = 10_000;
 
 /**
  * The player's controls. The state and the keys are one for the site and the TV; the TV shell draws
@@ -579,6 +583,49 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
       props.onFatal("no metadata from the plain stream", 4);
     }
   }, [torrent, started, error, hidden, container, props]);
+
+  // Back on the page after a while away: meanwhile the server may have let the torrent go, or the phone closed the
+  // connection, and the element doesn't always say so — Play would wait for ever. For the first minute of playback
+  // after such a return, playback that should go on and stands still for 10 s counts as a stream that broke off (a
+  // network failure): the viewing opens the same source again from where it stopped.
+  const backFromAway = useRef(false);
+  useEffect(() => {
+    let awayAt: number | null = null;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") awayAt = Date.now();
+      else if (awayAt !== null) {
+        if (Date.now() - awayAt >= AWAY_LONG) backFromAway.current = true;
+        awayAt = null;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+  const onFatal = useRef(props.onFatal);
+  onFatal.current = props.onFatal;
+  useEffect(() => {
+    const v = container?.querySelector("video");
+    if (!v || !started || hidden || error) return;
+    let at = v.currentTime;
+    let since = Date.now();
+    let played = 0;
+    const id = window.setInterval(() => {
+      if (!backFromAway.current) return;
+      const moved = v.currentTime - at;
+      if (v.paused || v.ended || Math.abs(moved) > 0.25) {
+        // Seconds played, not a seek's jump.
+        if (!v.paused && moved > 0 && moved < 3) played += moved;
+        at = v.currentTime;
+        since = Date.now();
+        if (played >= 60) backFromAway.current = false;
+        return;
+      }
+      if (Date.now() - since < STALL_AFTER_AWAY) return;
+      backFromAway.current = false;
+      onFatal.current("playback stalled after the page was away", 2, v.currentTime);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [container, started, hidden, error]);
 
   // Remember volume / mute between sessions (per browser).
   const volumeLoaded = useRef(false);
@@ -822,7 +869,11 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     return () => window.clearTimeout(id);
   }, [restingNow]);
 
-  const togglePlay = () => (paused || ended ? store.play() : store.pause());
+  // A play that never started because the player went (its source opened again) isn't a failure.
+  const togglePlay = () =>
+    Promise.resolve(paused || ended ? store.play() : store.pause()).catch((e: unknown) => {
+      if (!(e instanceof DOMException && e.name === "AbortError")) throw e;
+    });
   // "Watch on TV": the phone's remote of this viewing on the TV — play/pause and ±10 s, shown on
   // the TV as its own remote's (the controls and the seek's hint). Stopping is the viewing's (WatchView).
   const castControl = useRef<(c: { action: string; delta?: number }) => void>(() => {});
@@ -986,8 +1037,12 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
     const r = buffered.find(([s, e]) => currentTime >= s - 0.5 && currentTime <= e + 0.5);
     return r ? Math.max(0, r[1] - currentTime) : 0;
   })();
+  // On a short screen of the site (a phone held sideways) the next episode's card takes the screen while it counts:
+  // there is no height for it over the controls. "Watch the credits" gives the controls back.
+  const short = useShortScreen();
+  const cardOwns = !tvNav && short && Boolean(props.next) && nextCountdown !== null && !hidden && !layerOpen;
   // An open menu stands over its button in the bar (on a TV too): the bar stays while it is open.
-  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown;
+  const showChrome = (controlsVisible || paused || !started || layerOpen) && !endShown && !cardOwns;
   // Text subtitles move up above the controls while they show, and back down when they fade (readable either way) —
   // to the bottom, or two lines higher when the profile puts them "Higher". On the site the block of controls is taller
   // (the title, the timeline, the buttons; the pause's logo): the cues stand as many lines up as it takes.
@@ -1197,7 +1252,8 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
             </Controls.Group>
           )}
 
-          <Controls.Group data-player-bar className={clsx(hit, "absolute inset-x-0 bottom-0 flex flex-col gap-1 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:gap-2 md:px-10 md:pb-6")}>
+          {/* Only its rows of controls take taps: the block's free space and its words pass them to what is under them. */}
+          <Controls.Group data-player-bar className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-1 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-10 md:tall:gap-2 md:tall:pb-6">
             {props.footerNote}
             <TitleLine
               title={props.title}
@@ -1207,7 +1263,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
               left={known && resting ? t("pauseLeft", { left: formatRuntime(Math.max(1, Math.ceil(leftSec / 60)), (k, v) => tc(k.replace("common.", "") as "minutes", v)) ?? "", at: new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(Date.now() + (leftSec * 1000) / (rate || 1)) }) : null}
             />
             {started && (
-              <div className="flex items-center gap-3 md:gap-4">
+              <div className={clsx(hit, "flex items-center gap-3 md:gap-4")}>
                 <span className="min-w-10 text-body-s font-semibold text-text-1 tabular-nums">{known ? formatClock(currentTime) : "--:--"}</span>
                 <TimeSlider.Root
                   className="group/ts relative flex h-8 min-w-0 flex-1 cursor-pointer touch-none items-center rounded-full focus-visible:outline-none"
@@ -1242,7 +1298,7 @@ function Chrome(props: PlayerProps & { subtitleMeta: SubtitleMeta; look: Subtitl
               </div>
             )}
             {started && (
-              <div className="flex items-center gap-1 md:gap-2">
+              <div className={clsx(hit, "flex items-center gap-1 md:gap-2")}>
                 <span className="contents pointer-coarse:hidden">
                   <Control icon={paused ? Play : Pause} filled label={paused ? t("play") : t("pause")} onClick={togglePlay} />
                   <Control icon={RotateCcw} label={t("back10")} onClick={() => store.seek(Math.max(0, currentTime - 10))} />
@@ -1370,17 +1426,18 @@ function fullscreen(request: () => Promise<void>) {
  * name, larger), the episode, and how long is left with the time it ends.
  */
 function TitleLine({ title, subtitle, logo, resting, left }: { title: string; subtitle: string | null; logo: TitleLogoArt | null; resting: boolean; left: string | null }) {
+  // A short touch screen keeps the words before the middle's −10 · Play · +10 (half their 264 px, and a gap).
   return (
-    <div className="mb-1 flex min-w-0 flex-col items-start gap-1 md:mb-2">
+    <div className="mb-1 flex min-w-0 flex-col items-start gap-1 pointer-coarse:not-tall:max-w-[calc(50%-9.25rem)] md:tall:mb-2">
       {resting && logo ? (
-        <TitleLogo logo={logo} alt={title} className="mb-1 max-w-[min(70vw,24rem)] animate-fade-up [--logo-h:3.5rem] md:[--logo-h:6rem]">
-          <p className="max-w-full truncate text-h2 md:text-h1">{title}</p>
+        <TitleLogo logo={logo} alt={title} className="mb-1 max-w-[min(70vw,24rem,100%)] animate-fade-up [--logo-h:3.5rem] md:tall:[--logo-h:6rem]">
+          <p className="max-w-full truncate text-h2 md:tall:text-h1">{title}</p>
         </TitleLogo>
       ) : (
-        <p className={cn("max-w-full truncate text-text-1 transition-[font-size] duration-base", resting ? "text-h2 md:text-h1" : "text-title md:text-h3")}>{title}</p>
+        <p className={cn("max-w-full truncate text-text-1 transition-[font-size] duration-base", resting ? "text-h2 md:tall:text-h1" : "text-title md:tall:text-h3")}>{title}</p>
       )}
-      {subtitle && <p className={cn("max-w-full truncate font-medium text-text-2", resting ? "text-body md:text-title" : "text-body-s md:text-body")}>{subtitle}</p>}
-      {left && <p className="animate-fade-up text-body-s text-text-2 tabular-nums md:text-body">{left}</p>}
+      {subtitle && <p className={cn("max-w-full truncate font-medium text-text-2", resting ? "text-body md:tall:text-title" : "text-body-s md:tall:text-body")}>{subtitle}</p>}
+      {left && <p className="animate-fade-up text-body-s text-text-2 tabular-nums md:tall:text-body">{left}</p>}
     </div>
   );
 }
@@ -1403,8 +1460,9 @@ function NextCard({ next, seconds, total, ended, onDismiss, style }: { next: Non
       className="pointer-events-auto absolute end-4 z-10 w-80 max-w-[calc(100%-2rem)] animate-fade-up overflow-hidden rounded-lg border border-line bg-surface-1/95 shadow-float transition-[bottom] duration-slow ease-slow md:end-10 md:w-88"
       style={style}
     >
+      {/* A short screen (a phone held sideways) has no height for the still: the card is its words and buttons. */}
       {next.still && (
-        <div className="relative aspect-video overflow-hidden bg-surface-2">
+        <div className="relative aspect-video overflow-hidden bg-surface-2 not-tall:hidden">
           <img src={next.still} alt="" className={cn("size-full object-cover", next.blur && "scale-110 blur-lg")} />
         </div>
       )}
@@ -1450,6 +1508,19 @@ function Control({ icon, label, onClick, filled, pressed, ref }: { icon: LucideI
       className={filled ? "[&_svg]:fill-current" : undefined}
     />
   );
+}
+
+/** A screen too short for the player's large sizes, as the `tall` variant (globals.css) has it: a phone held sideways. */
+function useShortScreen() {
+  const [short, setShort] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-height: 34rem)");
+    const update = () => setShort(!mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return short;
 }
 
 /**

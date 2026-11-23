@@ -262,9 +262,9 @@
       "jsChunks": 13
     },
     "/[locale]/tvui/watch/[kind]/[id]": {
-      "jsGzip": 519904,
+      "jsGzip": 535963,
       "cssGzip": 22279,
-      "jsChunks": 21
+      "jsChunks": 23
     },
     "/[locale]/u/[handle]": {
       "jsGzip": 204154,
@@ -272,9 +272,9 @@
       "jsChunks": 14
     },
     "/[locale]/watch/[kind]/[id]": {
-      "jsGzip": 509864,
+      "jsGzip": 525603,
       "cssGzip": 20624,
-      "jsChunks": 20
+      "jsChunks": 22
     }
   }
 }
