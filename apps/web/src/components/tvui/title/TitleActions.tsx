@@ -26,7 +26,7 @@ import type { TitleLibraryState } from "@lumovio/contracts";
 import { useEditableLists, usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
-import { type TitleCore, resumable, sourcesHref, startEpisode, watchHref } from "@/components/title/core";
+import { type TitleCore, resumable, showWatched, sourcesHref, startEpisode, watchHref } from "@/components/title/core";
 import { heroPlan, type Summary, type TorrentState } from "@/components/title/hero-plan";
 import { serviceOf } from "@/components/title/services";
 import type { ProbeResult } from "@/components/title/TorrentProbe";
@@ -414,18 +414,20 @@ function MoreLayer({
   const next = useRef<"rate" | "lists" | "phone" | null>(null);
   const setState = useSetLibraryState();
   const movie = d.kind === "movie";
-  // A whole series at once, taken back exactly with "Undo", as the site's "More" does.
+  // A whole series at once, taken back exactly with "Undo", as the site's "More" does; once every aired episode is
+  // watched, the same row takes the mark off.
+  const allWatched = !movie && showWatched(d, a.state?.watchedEpisodes ?? []);
   const markShow = useAction({
-    run: async (undoKey: string) => {
+    run: async (watched: boolean, undoKey: string) => {
       const s = await api<TitleLibraryState>("/api/history/mark", {
         method: "POST",
-        json: { titleId: d.id, scope: "show", watched: true, undoKey },
+        json: { titleId: d.id, scope: "show", watched, undoKey },
       });
       setState(s);
       return s;
     },
-    success: () => t("showMarked"),
-    undo: async (_s, undoKey) =>
+    success: (_s, watched) => t(watched ? "showMarked" : "showUnmarked"),
+    undo: async (_s, _watched, undoKey) =>
       setState(await api<TitleLibraryState>("/api/history/mark/undo", { method: "POST", json: { undoKey } })),
   });
   const mark = (on: boolean, Icon: typeof Heart) =>
@@ -466,10 +468,10 @@ function MoreLayer({
               <TvButton
                 look="row"
                 loading={markShow.pending}
-                onClick={() => void markShow.run(randomId())}
+                onClick={() => void markShow.run(!allWatched, randomId())}
               >
-                <CircleCheck aria-hidden />
-                {t("markShow")}
+                {mark(allWatched, CircleCheck)}
+                {allWatched ? t("unmarkShow") : t("markShow")}
               </TvButton>
             )}
             <TvButton look="row" aria-pressed={a.hidden} onClick={() => void a.setHidden(!a.hidden)}>

@@ -2318,6 +2318,8 @@
     "rateTitle": "Valorar «{title}»",
     "showMarked": "Serie marcada como vista",
     "markShow": "Marcar toda la serie como vista",
+    "unmarkShow": "Marcar toda la serie como no vista",
+    "showUnmarked": "Serie marcada como no vista",
     "follow": "Avisarme de nuevos episodios",
     "followWhere": "En notificaciones y en el calendario; por correo si está activado",
     "followOn": "Te avisaremos de los nuevos episodios de «{title}» en notificaciones y en el calendario",

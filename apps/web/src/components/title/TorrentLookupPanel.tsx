@@ -47,7 +47,7 @@ export function TorrentLookupPanel({ title: d, source, dismiss: back }: { title:
   const mediaError = useMediaErrorText();
   const router = useRouter();
   const qc = useQueryClient();
-  const prefs = useReleasePrefs();
+  const prefs = useReleasePrefs(d.id);
   // The profile's quality mode: the card offers its picture versions, not the other modes (the sources screen has them).
   const mode = prefs.quality;
   const { data: state } = useLibraryState(d.id);

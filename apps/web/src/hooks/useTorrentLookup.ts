@@ -12,15 +12,19 @@ import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
 import { filesVersion, subscribeFiles, withSharedFiles } from "@/lib/media/shared-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { failingTrackers as failingTrackers_, noFailingTrackers, subscribeTrackers } from "@/lib/media/tracker-adds";
+import { loadVoice, subscribeVoice, voiceMemoryKey } from "@/lib/media/voice-memory";
 import { keepThroughEmpty, type SearchAnswer } from "@/lib/media/torrserver";
 
 /**
  * What release search ranks by: the profile's audio languages (the interface language when it set
  * none, said so where it shows), its studios and quality mode, and what this device and screen play.
  */
-export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolean } {
+export function useReleasePrefs(titleId?: string): ReleasePrefs & { languagesFromProfile: boolean } {
   const { me, locale } = useSession();
   const p = me?.activeProfile;
+  // The audio picked for this title on this device (lib/media/voice-memory): its option first.
+  const memory = titleId ? voiceMemoryKey(p?.id, titleId) : null;
+  const voice = useSyncExternalStore(subscribeVoice, () => (memory ? loadVoice(memory) : null), () => null);
   // MediaCapabilities' word on 4K HEVC (lib/media/capabilities): kept on the device after the first answer.
   const uhdSmooth = useSyncExternalStore(onUhdSmooth, uhdSmoothNow, () => null);
   const uhdDecodes = useSyncExternalStore(onUhdSmooth, uhdDecodesNow, () => null);
@@ -36,8 +40,9 @@ export function useReleasePrefs(): ReleasePrefs & { languagesFromProfile: boolea
       quality: p?.releaseQuality ?? "auto",
       device: { hevc: Boolean(caps?.video.hevc), hdr: Boolean(caps?.hdr), uhd: (caps?.maxHeight ?? 0) >= 2160, dolbyVision: Boolean(caps?.dolbyVision), uhdSmooth, av1: caps ? caps.video.av1 : undefined, hevc10: caps?.video.hevc10, uhdDecodes },
       failingTrackers,
+      voice,
     };
-  }, [p, locale, uhdSmooth, uhdDecodes, failingTrackers]);
+  }, [p, locale, uhdSmooth, uhdDecodes, failingTrackers, voice]);
 }
 
 /** The TorrServer this device may search on its own for the profile, if any; never for kids profiles. */

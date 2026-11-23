@@ -7,7 +7,7 @@ import type { TitleDetails, TitleLibraryState, TitleSummary, Video } from "@lumo
  */
 
 export type TitleCore = TitleSummary &
-  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode" | "upcoming"> & {
+  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode" | "lastEpisode" | "upcoming"> & {
     /** The trailer the hero's "Trailer" plays. */
     trailer: Video | null;
   };
@@ -37,6 +37,7 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
     status: d.status,
     watchProviders: d.watchProviders,
     nextEpisode: d.nextEpisode,
+    lastEpisode: d.lastEpisode,
     upcoming: d.upcoming ?? null,
     trailer: pickTrailer(d.videos, lang),
   };
@@ -45,6 +46,22 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
 /** A series that still gets new episodes: following it can say something. */
 export const isOngoing = (t: Pick<TitleDetails, "kind" | "status" | "nextEpisode">) =>
   t.kind === "tv" && (Boolean(t.nextEpisode) || (t.status !== null && OUT_STATUSES.has(t.status)));
+
+/**
+ * Every aired episode of a series' regular seasons watched: what "Mark the whole series watched" leaves, so the same
+ * place offers to take it back. Aired: the seasons before the last aired episode whole, its season up to it.
+ */
+export function showWatched(t: Pick<TitleDetails, "seasons" | "lastEpisode">, watchedEpisodes: readonly string[]): boolean {
+  const seen = new Set(watchedEpisodes);
+  const last = t.lastEpisode;
+  let aired = 0;
+  for (const s of t.seasons) {
+    if (s.seasonNumber <= 0) continue;
+    const n = !last || s.seasonNumber < last.seasonNumber ? s.episodeCount : s.seasonNumber === last.seasonNumber ? last.episodeNumber : 0;
+    for (let e = 1; e <= n; e++, aired++) if (!seen.has(`s${s.seasonNumber}e${e}`)) return false;
+  }
+  return aired > 0;
+}
 
 /** Today in UTC (YYYY-MM-DD): the day TMDB's dates are compared with, on the server as well. */
 export const utcToday = () => new Date().toISOString().slice(0, 10);

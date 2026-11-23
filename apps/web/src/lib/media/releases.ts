@@ -544,6 +544,11 @@ export interface ReleasePrefs {
    * release whose bitrate it doesn't carry comes after one it does, as 4K does on a screen without it.
    */
   lineBps?: number | null;
+  /**
+   * The audio this profile picked for this title on this device (`voice-memory`, a `voiceKeys` key): its option comes
+   * first wherever an option is offered with nothing chosen. Null or left out: none was picked.
+   */
+  voice?: string | null;
 }
 
 /**
@@ -1007,11 +1012,11 @@ const credits = (t: FileTrack, studio: string) => t.title !== null && creditsStu
  * there is, else the default, else the first. A file with a single track is that track. Null when no track can be
  * told to be it — nothing is guessed then.
  */
-export function voiceTrack(tracks: FileTrack[], wish: VoiceWish, studios: string[] = []): number | null {
+export function voiceTrack(tracks: FileTrack[], wish: VoiceWish, studios: string[] = [], name: string | null = null): number | null {
   const studio = wish.studio;
   if (tracks.length === 0) return null;
   // A language alone, or its dub ("Russian · dub"): a dub track there first when the dub was chosen.
-  if (!studio) return wish.language && tracks.some((t) => speaks(t, wish.language!)) ? profileTrack(tracks, { languages: [wish.language], studios: wish.dub ? [DUBBING, ...studios] : studios }) : null;
+  if (!studio) return wish.language && tracks.some((t) => speaks(t, wish.language!)) ? profileTrack(tracks, { languages: [wish.language], studios: wish.dub ? [DUBBING, ...studios] : studios }, name) : null;
   if (tracks.length === 1) return tracks[0]!.index;
   let hits = tracks.filter((t) => credits(t, studio));
   if (hits.length > 1 && wish.language) {
@@ -1027,20 +1032,47 @@ export function voiceTrack(tracks: FileTrack[], wish: VoiceWish, studios: string
 }
 
 /**
+ * The dub track of a file that names its tracks by studio alone ("Невафильм", "LostFilm", "HDRezka Studio"), told by
+ * the release's name: the name credits one dub in this language — by its studio ("Dub (Red Head Sound)"), or beside
+ * other studios' tracks ("Dub + 4 x MVO (HDrezka Studio, AlexFilm, TVShows, LostFilm)"), where the one track in the
+ * language that credits none of them is the dub. Null when the name doesn't tell.
+ */
+function dubByName(inLanguage: FileTrack[], language: string, name: string | null): number | null {
+  if (!name) return null;
+  const named = parseRelease(name).tracks.filter((t) => !t.original && (t.language === null || t.language === language));
+  const dubs = named.filter((t) => t.voice === "dub");
+  if (dubs.length !== 1) return null;
+  const dub = dubs[0]!;
+  if (dub.studio) {
+    const hits = inLanguage.filter((t) => credits(t, dub.studio!));
+    return hits.length > 0 ? firstOf(hits) : null;
+  }
+  const others = named.flatMap((t) => (t !== dub && t.studio ? [t.studio] : []));
+  if (others.length === 0) return null;
+  const left = inLanguage.filter((t) => !others.some((o) => credits(t, o)));
+  return left.length === 1 ? left[0]!.index : null;
+}
+
+/**
  * The track a profile hears first when no audio was chosen for this file (a copy already on the server, the next
  * episode, a viewing sent to a TV): the order "Where to watch" offers audio in (`forProfile`) — the first of the
  * profile's languages a track is in, and in it the track of the profile's first studio there is, else that language's
  * default or first track; with no track in its languages, the track of its first studio there is. Null when neither
  * finds a track: the file's default plays. A file that lists "MVO [HDrezka Studio]" first and "MVO [LostFilm]" fifth
- * plays LostFilm for "1 — LostFilm, 2 — HDRezka".
+ * plays LostFilm for "1 — LostFilm, 2 — HDRezka". "Dubbing" is a track that says so, else the one the release's `name`
+ * tells to be the dub (`dubByName`).
  */
-export function profileTrack(tracks: FileTrack[], prefs: Pick<ReleasePrefs, "languages" | "studios">): number | null {
+export function profileTrack(tracks: FileTrack[], prefs: Pick<ReleasePrefs, "languages" | "studios">, name: string | null = null): number | null {
   for (const language of prefs.languages) {
     const inLanguage = tracks.filter((t) => speaks(t, language));
     if (inLanguage.length === 0) continue;
     for (const studio of prefs.studios) {
       const hits = inLanguage.filter((t) => credits(t, studio));
       if (hits.length > 0) return firstOf(hits);
+      if (isDubbing(studio)) {
+        const dub = dubByName(inLanguage, language, name);
+        if (dub !== null) return dub;
+      }
     }
     return firstOf(inLanguage);
   }
@@ -1077,6 +1109,25 @@ export function fileTracks(list: readonly string[], originalLanguage: string | n
 }
 
 /** A release's name as its file's tracks tell it, when they were read (`fileTracks`): its studios and languages too. */
+/** What a track's title says about its sound, not its voice: "AC3 2.0 192 Kbps", "DTS @ 5.1 @ 1.5Mbps". */
+const SOUND_WORDS = /\b(?:e-?ac-?3|ac-?3|dts(?:-hd)?(?:\s*ma)?|aac|truehd|atmos|flac|opus|mp3|l?pcm|stereo|mono|\d+(?:[.,]\d+)?\s*(?:kbps|mbps|ch)|\d\.\d)\b|@/giu;
+
+/**
+ * The audio option a file's track is (`voiceKeys`' "<language>|<studio or kind>"): what picking it in the player means
+ * for the title's next episodes. A studio no list knows is the title itself, its sound words aside ("Невафильм",
+ * "FoxCrime AC3 2.0 192 Kbps" → FoxCrime), so the next file's track of that name is found. The original is its
+ * language alone.
+ */
+export function trackVoiceKey(lang: string | null, title: string | null, originalLanguage: string | null = null): string {
+  const t = fileTracks([`${lang ?? ""}|${title ?? ""}`], originalLanguage)[0];
+  if (!t) return `${lang ?? ""}|`;
+  if (t.original) return `${t.language ?? ""}|`;
+  const bare = (title ?? "").replace(/\(?\s*18\+\s*\)?/g, " ").replace(SOUND_WORDS, " ").replace(/\s+/g, " ").trim();
+  const named =
+    !t.studio && !t.credit && !t.voice && bare.length >= 2 && bare.length <= 40 && /\p{L}{2}/u.test(bare) && !LANG_ONLY.test(bare) && !NOT_A_CREDIT.test(bare) ? bare : null;
+  return `${t.language ?? ""}|${t.studio ?? t.credit ?? named ?? kindKey(t.voice)}`;
+}
+
 export function withFileTracks(info: ReleaseInfo, list: readonly string[] | null | undefined, originalLanguage: string | null = null): ReleaseInfo {
   if (!list?.length) return info;
   const tracks = fileTracks(list, originalLanguage);
@@ -1089,14 +1140,20 @@ export function withFileTracks(info: ReleaseInfo, list: readonly string[] | null
  * The track of a release's name the profile hears first (`profileTrack` over the name's tracks, its first listed as
  * the file's default — names list tracks in the file's order): what a copy already on the server says it plays.
  */
-export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<ReleasePrefs, "languages" | "studios">): ReleaseTrack | null {
-  const i = profileTrack(
-    // A dub says so in its title, as a file's track does ("Dub, Movie Dubbing"): the profile's "Dubbing" finds it.
-    info.tracks.map((t, index) => ({ index, title: [t.voice === "dub" ? "Dub" : null, t.studio ?? t.credit].filter(Boolean).join(", ") || null, language: t.language, default: index === 0 })),
-    prefs,
-  );
+export function profileNameTrack(info: Pick<ReleaseInfo, "tracks">, prefs: Pick<ReleasePrefs, "languages" | "studios">, name: string | null = null): ReleaseTrack | null {
+  const i = profileTrack(asFileTracks(info), prefs, name);
   return i === null ? null : (info.tracks[i] ?? null);
 }
+
+/** The track of a release's name the player starts for an audio picked before (`voiceTrack` over the name's tracks). */
+export function pickedNameTrack(info: Pick<ReleaseInfo, "tracks">, wish: VoiceWish, studios: readonly string[], name: string | null = null): ReleaseTrack | null {
+  const i = voiceTrack(asFileTracks(info), wish, [...studios], name);
+  return i === null ? null : (info.tracks[i] ?? null);
+}
+
+// A dub says so in its title, as a file's track does ("Dub, Movie Dubbing"): the profile's "Dubbing" finds it.
+const asFileTracks = (info: Pick<ReleaseInfo, "tracks">): FileTrack[] =>
+  info.tracks.map((t, index) => ({ index, title: [t.voice === "dub" ? "Dub" : null, t.studio ?? t.credit].filter(Boolean).join(", ") || null, language: t.language, default: index === 0 }));
 
 /**
  * The track of a release's name an audio choice starts, when the choice names no studio — a language alone, or its dub —

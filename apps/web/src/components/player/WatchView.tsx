@@ -43,7 +43,8 @@ import { clientFor } from "@/lib/media/clients";
 import { MediaNetError } from "@/lib/media/net";
 import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence";
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
-import { voiceWish } from "@/lib/media/releases";
+import { trackVoiceKey, voiceWish } from "@/lib/media/releases";
+import { loadVoice, saveVoice, voiceMemoryKey } from "@/lib/media/voice-memory";
 import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
 import { otherAppDefault } from "@/lib/media/other-app";
@@ -238,7 +239,11 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // Where to continue after switching source within this session (same title, same episode, same position).
   const resumeOverride = useRef<number | null>(null);
   // The dubbing chosen with a TorrServer release ("?voice=ru|HDrezka Studio"): its track plays once the file is read.
-  const wishedVoice = useRef(voiceWish(params.get("voice")));
+  // Without one in the address, the audio picked for this title before on this device (lib/media/voice-memory).
+  const voiceKey = voiceMemoryKey(me?.activeProfile?.id, d.id);
+  // This viewing's audio as a key: it goes on to the next episodes (the address isn't read again after a pick).
+  const voiceNow = useRef<string | null>(params.get("voice") ?? loadVoice(voiceKey));
+  const wishedVoice = useRef(voiceWish(voiceNow.current));
   // With no dubbing chosen, a TorrServer file plays the track of the profile's languages and studios, in their order.
   const heard = useRef<{ languages: string[]; studios: string[] } | null>(null);
   heard.current = me?.activeProfile ? { languages: me.activeProfile.audioLanguages, studios: me.activeProfile.voiceStudios } : null;
@@ -660,10 +665,12 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       // Another source: a torrent this launch brought and that never played goes back.
       takeBackBrought(c.provider === "torrserver" ? `${c.server.connectionId}:${hashOf(c.server.externalId).toLowerCase()}` : undefined);
       wishedVoice.current = voiceWish(voice);
+      voiceNow.current = voice;
+      if (voice) saveVoice(voiceKey, voice);
       setUrl({ source: c.key, pick: null, voice });
       void prepare(c, { auto: false, added, touch: true, fromScreen: true });
     },
-    [prepare, setUrl, takeBackBrought],
+    [prepare, setUrl, takeBackBrought, voiceKey],
   );
 
   /**
@@ -869,8 +876,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const subtitle = episodeLabel ? [episodeLabel, episodeName].filter(Boolean).join(" · ") : d.year ? String(d.year) : null;
   const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
   // The dubbing chosen for this viewing goes on to the series' other episodes (their files have the same tracks).
-  const voiceParam = params.get("voice");
-  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceParam ? `&voice=${encodeURIComponent(voiceParam)}` : ""}`;
+  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceNow.current ? `&voice=${encodeURIComponent(voiceNow.current)}` : ""}`;
   // Why there is nothing to play, in the same words as the title page.
   const ws = avail.state;
   const whyNothing =
@@ -1111,6 +1117,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
             }
           : undefined
       }
+      // The track picked is the title's audio from now on: the next episode, a reload and the title page start it.
+      onAudioPicked={(track) => {
+        const voice = trackVoiceKey(track.lang, track.label, d.originalLanguage);
+        wishedVoice.current = voiceWish(voice);
+        voiceNow.current = voice;
+        saveVoice(voiceKey, voice);
+        setUrl({ voice });
+      }}
       next={
         nextEp
           ? {

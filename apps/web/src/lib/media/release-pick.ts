@@ -54,9 +54,10 @@ export interface ReleasePick {
  * then the ones with a live release before those whose releases are all almost dead (`swarmOf`); then by the floor of their best release (`RankedRelease.floor`: plays here, then HD); then its studios, in their
  * order; else as their best releases rank. A release lists its tracks in its own order ("7 x MVO (HDrezka Studio,
  * NewStudio, …, LostFilm)"), so the first option of the best release may not be the profile's: "1 — LostFilm,
- * 2 — HDRezka" offers LostFilm first.
+ * 2 — HDRezka" offers LostFilm first. Before all of that, the audio picked for this title (`ReleasePrefs.voice`) while a
+ * live release has it: one dub chosen in the first episode is the series' audio, whatever the profile's order.
  */
-export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "languages" | "studios">): VoiceOption[] {
+export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "languages" | "studios" | "voice">): VoiceOption[] {
   const lang = (o: VoiceOption) => {
     const i = o.language ? prefs.languages.indexOf(o.language) : -1;
     return i < 0 ? prefs.languages.length : i;
@@ -70,9 +71,10 @@ export function forProfile(options: VoiceOption[], prefs: Pick<ReleasePrefs, "la
     const i = prefs.studios.findIndex((s) => optionIsStudio(o, s));
     return i < 0 ? prefs.studios.length : i;
   };
+  const picked = (o: VoiceOption) => (prefs.voice && o.key === prefs.voice && !dying(o) ? 0 : 1);
   return options
     .map((o, i) => ({ o, i }))
-    .sort((a, b) => lang(a.o) - lang(b.o) || dying(a.o) - dying(b.o) || hd(a.o) - hd(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
+    .sort((a, b) => picked(a.o) - picked(b.o) || lang(a.o) - lang(b.o) || dying(a.o) - dying(b.o) || hd(a.o) - hd(b.o) || studio(a.o) - studio(b.o) || a.i - b.i)
     .map((x) => x.o);
 }
 
@@ -109,7 +111,7 @@ function defaultCut(editions: EditionOption[], pool: RankedRelease[]): Edition {
  * `ANY` as the voice keeps every audio (no option is chosen), as the cut every cut: the sources screen's list. `max`:
  * how many audio options to offer (the sources screen offers more than "Where to watch").
  */
-export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "languages" | "studios">, choice: ReleaseChoice = NO_CHOICE, max = 12): ReleasePick {
+export function pickRelease(ranked: RankedRelease[], prefs: Pick<ReleasePrefs, "languages" | "studios" | "voice">, choice: ReleaseChoice = NO_CHOICE, max = 12): ReleasePick {
   const alive = ranked.filter((x) => x.holds !== false);
   const options = forProfile(voiceOptions(alive, max), prefs);
   const anyVoice = choice.voice === ANY;

@@ -2,9 +2,9 @@
   "margin": 0.03,
   "routes": {
     "/[locale]": {
-      "jsGzip": 245078,
+      "jsGzip": 252602,
       "cssGzip": 22620,
-      "jsChunks": 17
+      "jsChunks": 19
     },
     "/[locale]/about": {
       "jsGzip": 190522,
@@ -137,9 +137,9 @@
       "jsChunks": 15
     },
     "/[locale]/settings/connections/[id]/torrents": {
-      "jsGzip": 239255,
+      "jsGzip": 246706,
       "cssGzip": 22539,
-      "jsChunks": 16
+      "jsChunks": 19
     },
     "/[locale]/settings/devices": {
       "jsGzip": 211652,

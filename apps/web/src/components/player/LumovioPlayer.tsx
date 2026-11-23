@@ -48,7 +48,7 @@ import type { SubtitleFormat } from "@/lib/media/subs/engine";
 import { OFFSET_STEP, SUBTITLE_DEFAULTS, setSubtitleView, shiftTrack, stepOffset, subtitleView } from "@/lib/media/subs/view";
 import { background } from "@/lib/optional";
 import type { RemuxHandle } from "@/lib/media/remux";
-import type { MediaSegment, PreparedPlayback, TrickplayInfo } from "@/lib/media/types";
+import type { AudioOption, MediaSegment, PreparedPlayback, TrickplayInfo } from "@/lib/media/types";
 import { EndScreen, type EndInfo } from "./EndScreen";
 import { PlayerMenus } from "./PlayerMenus";
 import { type EpisodesInfo, type PlayerPanel, type SourcesInfo, useSignedSeconds } from "./player-parts";
@@ -88,6 +88,8 @@ export interface PlayerProps extends PlayerEvents {
   onBack: () => void;
   /** Another audio track, from this position. */
   onAudioChange?: (index: number, positionSec: number) => void;
+  /** The person picked this audio track in the menu (whichever way it is then switched to): the title's audio from now on. */
+  onAudioPicked?: (track: AudioOption) => void;
   /** "Season 1, episode 5 · Pilot", its still (blurred when the profile hides unwatched ones) and the way there. */
   next: { label: string; go: () => void; still?: string | null; blur?: boolean } | null;
   /** Every season's episodes, for the in-player list. */
@@ -122,6 +124,15 @@ export function LumovioPlayer(props: PlayerProps) {
   const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const remux = useRemux(videoRef, prepared, props.startAt, props.onFatal, props.onAudioChange);
+  // A track picked in the menu is told first, whether the rebuild switches to it in place or the source is prepared anew.
+  const switchAudio = remux?.onAudioChange ?? props.onAudioChange;
+  const picked = switchAudio
+    ? (index: number, positionSec: number) => {
+        const track = prepared.audio.find((a) => a.index === index);
+        if (track) props.onAudioPicked?.(track);
+        switchAudio(index, positionSec);
+      }
+    : undefined;
   const subtitleMeta = useSubtitles(videoRef, prepared, props.titleId ?? null);
   const look = useSubtitleLook(videoRef, props.titleId ?? null);
   const caps = detectCapabilities();
@@ -165,7 +176,7 @@ export function LumovioPlayer(props: PlayerProps) {
               {tracks}
             </Video>
           )}
-          <Chrome {...props} {...(remux ?? {})} subtitleMeta={subtitleMeta} look={look} />
+          <Chrome {...props} {...(remux ?? {})} onAudioChange={picked} subtitleMeta={subtitleMeta} look={look} />
         </Container>
       </VideoPlayer>
     </I18nProvider>

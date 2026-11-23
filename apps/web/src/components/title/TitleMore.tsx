@@ -16,7 +16,7 @@ import { api } from "@/lib/api";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
 import type { TitleLibraryState } from "@lumovio/contracts";
-import { isOngoing, type TitleCore } from "./core";
+import { isOngoing, showWatched, type TitleCore } from "./core";
 
 // The picture chooser loads when it is opened, not with the title page (bundle budget).
 const ArtChooser = lazy(() => import("./ArtChooser").then((m) => ({ default: m.ArtChooser })));
@@ -73,18 +73,20 @@ export function TitleMore({
     undo: () => followRequest(false),
   });
 
-  // A whole series at once, taken back exactly: only what this mark added goes again.
+  // A whole series at once, taken back exactly: only what this mark added goes again (or what this unmark removed comes
+  // back). Once every aired episode is watched, the same item takes the mark off, as a season's does.
   const markShow = useAction({
-    run: async (undoKey: string) => {
-      const s = await api<TitleLibraryState>("/api/history/mark", { method: "POST", json: { titleId: d.id, scope: "show", watched: true, undoKey } });
+    run: async (watched: boolean, undoKey: string) => {
+      const s = await api<TitleLibraryState>("/api/history/mark", { method: "POST", json: { titleId: d.id, scope: "show", watched, undoKey } });
       setState(s);
       return s;
     },
-    success: () => t("showMarked"),
-    undo: async (_s, undoKey) => setState(await api<TitleLibraryState>("/api/history/mark/undo", { method: "POST", json: { undoKey } })),
+    success: (_s, watched) => t(watched ? "showMarked" : "showUnmarked"),
+    undo: async (_s, _watched, undoKey) => setState(await api<TitleLibraryState>("/api/history/mark/undo", { method: "POST", json: { undoKey } })),
   });
 
   const movie = d.kind === "movie";
+  const allWatched = !movie && showWatched(d, a.state?.watchedEpisodes ?? []);
   // A circle on every width, beside "Watch" and "Watchlist".
   const triggerEl = <IconButton ref={trigger} icon={Ellipsis} variant="secondary" size="lg" label={label} />;
 
@@ -99,8 +101,8 @@ export function TitleMore({
             {tc("watched")}
           </MenuCheckboxItem>
         ) : (
-          <MenuItem icon={CircleCheck} disabled={markShow.pending} onSelect={() => (a.signedIn ? void markShow.run(randomId()) : a.requireAuth("watched"))}>
-            {t("markShow")}
+          <MenuItem icon={CircleCheck} disabled={markShow.pending} onSelect={() => (a.signedIn ? void markShow.run(!allWatched, randomId()) : a.requireAuth("watched"))}>
+            {allWatched ? t("unmarkShow") : t("markShow")}
           </MenuItem>
         )}
         {/* Guests have no recommendations to keep a title out of. Marking asks why (optional), as on a card; taking it back doesn't. */}

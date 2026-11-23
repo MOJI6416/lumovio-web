@@ -107,7 +107,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details; the same words as the sources screen (sources/copy-text).
-  const copyText = useCopyText();
+  const copyText = useCopyText(d.id);
   const all = raw?.servers ?? [];
   // Servers out of reach or still indexing: said once, quietly when another way is shown, as the card when none is.
   const down = state.kind === "unreachable" ? t("serversDown", { names: state.names.join(", ") }) : state.kind === "indexing" ? t("serversIndexing", { names: state.names.join(", ") }) : null;

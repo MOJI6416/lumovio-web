@@ -233,7 +233,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       {(d.upcoming?.kind === "season" || d.upcoming?.kind === "episode") && <UpcomingLine title={d} upcoming={d.upcoming} today={today} className={plan.summary ? "mt-2" : undefined} />}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
       {copies?.servers.some((s) => s.kind === "torrserver") && avail.state.kind === "playable" && (
-        <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} onChange={onCopyFace} />
+        <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} titleId={d.id} onChange={onCopyFace} />
       )}
       <GuestGate {...actions.gate} />
       {d.trailer && <TrailerDialog video={trailerOpen ? d.trailer : null} title={d.title} onClose={() => setTrailerOpen(false)} />}

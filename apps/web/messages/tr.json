@@ -2318,6 +2318,8 @@
     "rateTitle": "Puan verin: “{title}”",
     "showMarked": "Dizi izlendi olarak işaretlendi",
     "markShow": "Dizinin tamamını izlendi olarak işaretle",
+    "unmarkShow": "Dizinin tamamını izlenmedi olarak işaretle",
+    "showUnmarked": "Dizi izlenmedi olarak işaretlendi",
     "follow": "Yeni bölümleri bildir",
     "followWhere": "Bildirimlerde ve takvimde; açıksa e-postayla da",
     "followOn": "“{title}” dizisinin yeni bölümlerini bildirimlerde ve takvimde haber vereceğiz",

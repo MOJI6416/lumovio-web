@@ -2673,6 +2673,8 @@
     "rateTitle": "Rate “{title}”",
     "showMarked": "Series marked as watched",
     "markShow": "Mark the whole series watched",
+    "unmarkShow": "Mark the whole series unwatched",
+    "showUnmarked": "Series marked as unwatched",
     "follow": "Notify me about new episodes",
     "followWhere": "In notifications and the calendar; by email if that's on",
     "followOn": "We'll tell you about new episodes of “{title}” in notifications and the calendar",

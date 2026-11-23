@@ -505,9 +505,10 @@ export function torrServerClient(base: string, auth: TsAuth, opts: { connectionI
       const bitDepth = vs?.pix_fmt?.includes("10") ? 10 : vs?.bits_per_raw_sample ? Number(vs.bits_per_raw_sample) : 8;
       const wish = choice.audioIndex === undefined && (choice.voice?.studio || choice.voice?.language) ? choice.voice! : null;
       const tracks = as.map((s) => ({ index: s.index, title: s.tags?.title ?? null, language: s.tags?.language ?? null, default: s === defaultAudio }));
-      const wished = wish ? voiceTrack(tracks, wish, choice.profile?.studios) : null;
+      // The release's name tells a dub that the file names by its studio alone (`profileTrack`).
+      const wished = wish ? voiceTrack(tracks, wish, choice.profile?.studios, t.title ?? null) : null;
       // Nothing chosen (a copy already here, the next episode): the profile's order, as "Where to watch" offers audio.
-      const preferred = choice.audioIndex === undefined && !wish && choice.profile ? profileTrack(tracks, choice.profile) : null;
+      const preferred = choice.audioIndex === undefined && !wish && choice.profile ? profileTrack(tracks, choice.profile, t.title ?? null) : null;
       const pickedIndex = choice.audioIndex ?? wished ?? preferred ?? undefined;
       const picked = pickedIndex === undefined ? undefined : as.find((s) => s.index === pickedIndex);
       const chosenAudio = picked ?? defaultAudio;

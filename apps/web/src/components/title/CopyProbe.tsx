@@ -26,6 +26,7 @@ export function CopyProbe({
   languages,
   studios,
   originalLanguage,
+  titleId,
   onChange,
 }: {
   copies: TitleAvailability;
@@ -33,9 +34,11 @@ export function CopyProbe({
   languages: readonly string[];
   studios: readonly string[];
   originalLanguage: string | null;
+  /** The title: the audio picked for it before is the one its copy says it starts. */
+  titleId: string;
   onChange: (face: CopyFace) => void;
 }) {
-  const copyText = useCopyText();
+  const copyText = useCopyText(titleId);
   const copy = orderedSources(copies, undefined, languages, studios, copyAudio)[0]?.server;
   const marks = copy ? copyText.quality(copy, all, originalLanguage).marks : [];
   const heard = copy ? copyText.sound(copy, all, originalLanguage) : null;

@@ -2318,6 +2318,8 @@
     "rateTitle": "Oceń „{title}”",
     "showMarked": "Serial oznaczony jako obejrzany",
     "markShow": "Oznacz cały serial jako obejrzany",
+    "unmarkShow": "Oznacz cały serial jako nieobejrzany",
+    "showUnmarked": "Serial oznaczony jako nieobejrzany",
     "follow": "Powiadamiaj o nowych odcinkach",
     "followWhere": "W powiadomieniach i kalendarzu; e-mailem, jeśli to jest włączone",
     "followOn": "Powiadomimy cię o nowych odcinkach serialu „{title}” w powiadomieniach i kalendarzu",

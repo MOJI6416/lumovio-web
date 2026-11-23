@@ -57,7 +57,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
   const text = useReleaseText();
   const f = useTorrentFinder(props);
   const { details: d, season, connections } = props;
-  const prefs = useReleasePrefs();
+  const prefs = useReleasePrefs(d.id);
   const locale = useLocale();
   const [picking, setPicking] = useState<Picking>(null);
   const [draft, setDraft] = useState(f.query);

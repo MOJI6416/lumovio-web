@@ -129,7 +129,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   const [editing, setEditing] = useState(false);
   const [found, setFound] = useState<Found | null>(() => cachedFor(connId));
   const [status, setStatus] = useState<Status>(() => (found ? { kind: "done" } : { kind: "idle" }));
-  const base = useReleasePrefs();
+  const base = useReleasePrefs(d.id);
   const [sort, setSort] = useState<Sort>("recommended");
   // The quality mode for this viewing (the "Quality" choice); the profile's until one is chosen.
   const [ownMode, setMode] = useState<ReleaseQuality | null>(start?.quality ?? null);

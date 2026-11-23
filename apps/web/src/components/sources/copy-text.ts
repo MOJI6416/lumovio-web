@@ -2,8 +2,10 @@
 
 import type { Availability } from "@lumovio/contracts";
 import { useLocale, useTranslations } from "next-intl";
+import { useSyncExternalStore } from "react";
 import { useSession } from "@/components/providers/Providers";
-import { creditsStudio, parseRelease, profileNameTrack, withFileTracks } from "@/lib/media/releases";
+import { creditsStudio, parseRelease, pickedNameTrack, profileNameTrack, voiceWish, withFileTracks } from "@/lib/media/releases";
+import { loadVoice, subscribeVoice, voiceMemoryKey } from "@/lib/media/voice-memory";
 import { copyMarks, type QualityMark, resolutionBesideMarks } from "./QualityBadges";
 import { formatSize, releaseMarks, useReleaseText } from "./release-text";
 
@@ -16,13 +18,16 @@ const KIND_LABEL: Record<Availability["kind"], string> = { jellyfin: "Jellyfin",
  * label doesn't tell (`all`: every copy of the title, the torrent's own entry among them). The same words the title
  * page uses for its copies (components/title/Availability: copyTitle, copyMeta).
  */
-export function useCopyText() {
+export function useCopyText(titleId?: string) {
   const t = useTranslations("titlePage");
   const locale = useLocale();
   const text = useReleaseText();
   const profile = useSession().me?.activeProfile;
   const langs = profile?.audioLanguages ?? [];
   const studios = profile?.voiceStudios ?? [];
+  // The audio picked for this title on this device (lib/media/voice-memory): a copy says the track it starts.
+  const memory = titleId ? voiceMemoryKey(profile?.id, titleId) : null;
+  const picked = voiceWish(useSyncExternalStore(subscribeVoice, () => (memory ? loadVoice(memory) : null), () => null));
 
   const releaseName = (s: Availability, all: Availability[]): string | null => {
     if (s.kind !== "torrserver") return null;
@@ -97,7 +102,7 @@ export function useCopyText() {
     if (!name) return null;
     const info = withFileTracks(parseRelease(name, null, originalLanguage), fileOf(s, all), originalLanguage);
     // None of the profile's: the file's default plays — a name lists the tracks in the file's order, its first.
-    const heard = profileNameTrack(info, { languages: langs, studios }) ?? info.tracks[0] ?? null;
+    const heard = (picked ? pickedNameTrack(info, picked, studios, name) : null) ?? profileNameTrack(info, { languages: langs, studios }, name) ?? info.tracks[0] ?? null;
     return text.audio({ info, language: heard?.language ?? null }, heard) || null;
   };
 

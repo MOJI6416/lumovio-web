@@ -2318,6 +2318,8 @@
     "rateTitle": "„{title}“ bewerten",
     "showMarked": "Serie als gesehen markiert",
     "markShow": "Ganze Serie als gesehen markieren",
+    "unmarkShow": "Ganze Serie als ungesehen markieren",
+    "showUnmarked": "Serie als ungesehen markiert",
     "follow": "Über neue Folgen benachrichtigen",
     "followWhere": "In Benachrichtigungen und im Kalender; per E-Mail, wenn das aktiviert ist",
     "followOn": "Wir melden neue Folgen von „{title}“ in Benachrichtigungen und im Kalender",
