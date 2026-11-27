@@ -1,6 +1,6 @@
 "use client";
 
-import type { Availability, SeasonDetails } from "@lumovio/contracts";
+import type { Availability } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { type KeyboardEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -13,12 +13,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useSpoilerPrefs } from "@/hooks/useSpoilers";
 import { Link } from "@/i18n/navigation";
-import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
 import { audioTrackFacts } from "@/lib/media/explain";
 import type { SubtitleFormat } from "@/lib/media/subs/engine";
 import { OFFSET_STEP } from "@/lib/media/subs/view";
 import type { PreparedPlayback } from "@/lib/media/types";
+import { seasonQuery } from "@/lib/season-query";
 import { episodesOpen } from "@/lib/spoilers";
 import { useWhy } from "./use-why";
 
@@ -140,11 +140,7 @@ export function EpisodesBody({ episodes: e, onPick }: { episodes: EpisodesInfo; 
   const prefs = useSpoilerPrefs();
   const open = episodesOpen(useLibraryState(e.titleId).data?.watchedEpisodes);
   // The same query as the title page's season browser, so it's usually already cached.
-  const q = useQuery({
-    queryKey: ["season", e.tmdbId, season, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${e.tmdbId}/season/${season}`),
-    staleTime: 30 * 60_000,
-  });
+  const q = useQuery(seasonQuery(e.tmdbId, season, locale));
   return (
     <div className="flex flex-col gap-4">
       {e.seasons.length > 1 && (

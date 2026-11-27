@@ -1,7 +1,7 @@
 "use client";
 
-import type { EpisodeSummary, SeasonDetails, TitleLibraryState } from "@lumovio/contracts";
-import { useQuery } from "@tanstack/react-query";
+import type { EpisodeSummary, TitleLibraryState } from "@lumovio/contracts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CircleCheck, Eye, SkipForward } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Fragment, type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
@@ -22,6 +22,7 @@ import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
+import { episodesComing, seasonQuery } from "@/lib/season-query";
 import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
@@ -86,12 +87,8 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   // A picked season lives while the page does.
   useEffect(() => () => chooseSeason(d.id, null), [d.id]);
 
-  const seasonQ = useQuery({
-    queryKey: ["season", d.tmdbId, season, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
-    enabled: season !== null,
-    staleTime: 30 * 60_000,
-  });
+  const seasonQ = useQuery({ ...seasonQuery(d.tmdbId, season, locale), enabled: season !== null });
+  const asked = useQueryClient().getQueryState(seasonQuery(d.tmdbId, season, locale).queryKey)?.dataUpdateCount ?? 0;
   const { data } = seasonQ;
   const watchedSet = new Set(state?.watchedEpisodes ?? []);
   const today = new Date().toISOString().slice(0, 10);
@@ -193,6 +190,19 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   // Long-running shows have dozens of seasons: the row scrolls and opens on the chosen one (ui/PillTabs).
   const tabs = ordered.map((s) => ({ value: String(s.seasonNumber), label: s.seasonNumber === 0 ? t("specials") : t("seasonPill", { n: s.seasonNumber }) }));
   const current = d.seasons.find((s) => s.seasonNumber === season);
+  // The catalog is loading the season's episodes: the strip's place keeps its skeleton while it asks again.
+  const coming = episodesComing(data, current?.episodeCount, asked);
+  const skeleton = (
+    <div className="flex gap-4 overflow-hidden">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className={cn(CARD_W, "space-y-2")}>
+          <Skeleton className="aspect-video w-full" />
+          <Skeleton shape="xs" className="h-3 w-1/3" />
+          <Skeleton shape="xs" className="h-4 w-2/3" />
+        </div>
+      ))}
+    </div>
+  );
   const facts = current ? [tc("episodes", { count: current.episodeCount }), current.airDate?.slice(0, 4)].filter(Boolean).join(" · ") : null;
   return (
     <section id="episodes" aria-labelledby="episodes-h" className="page-x scroll-mt-24">
@@ -257,19 +267,9 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
       <div>
         <QueryState variant="inline"
         query={seasonQ}
-        loading={
-          <div className="flex gap-4 overflow-hidden">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={cn(CARD_W, "space-y-2")}>
-                <Skeleton className="aspect-video w-full" />
-                <Skeleton shape="xs" className="h-3 w-1/3" />
-                <Skeleton shape="xs" className="h-4 w-2/3" />
-              </div>
-            ))}
-          </div>
-        }
+        loading={skeleton}
       >
-        {(data) => (
+        {(data) => coming ? skeleton : (
           <EpisodeStrip listRef={list}>
             {data.episodes.map((e) => (
               <EpisodeRow

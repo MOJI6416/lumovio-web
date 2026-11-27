@@ -1,6 +1,6 @@
 "use client";
 
-import type { EpisodeSummary, SeasonDetails } from "@lumovio/contracts";
+import type { EpisodeSummary } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, EyeOff } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,9 +11,9 @@ import { TvButton } from "@/components/ui/tv/TvButton";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useSpoilerPrefs } from "@/hooks/useSpoilers";
 import { Link } from "@/i18n/navigation";
-import { api } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
+import { seasonQuery } from "@/lib/season-query";
 import { episodesOpen } from "@/lib/spoilers";
 import { TvArt } from "../media/TvCard";
 import { watchHref } from "@/lib/slug";
@@ -53,9 +53,7 @@ export function Episodes({ title: d, zoneDown }: { title: TitleCore; zoneDown?: 
   }, [state?.progress?.season, d.seasons]);
 
   const q = useQuery({
-    queryKey: ["season", d.tmdbId, season, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
-    staleTime: 30 * 60_000,
+    ...seasonQuery(d.tmdbId, season, locale),
     // The row keeps the season it shows until the next one arrives: it is never empty under the remote.
     placeholderData: (prev) => prev,
   });

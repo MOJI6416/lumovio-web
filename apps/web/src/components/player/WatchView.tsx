@@ -1,6 +1,6 @@
 "use client";
 
-import type { Availability, CastFailure, ConnectionSummary, PlaybackProgress, ReleaseQuality, SeasonDetails, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
+import type { Availability, CastFailure, ConnectionSummary, PlaybackProgress, ReleaseQuality, TitleDetails, TorrentBindResult } from "@lumovio/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink, FileVideo, Link2Off, Play, RefreshCw, Settings2 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -56,6 +56,7 @@ import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
+import { seasonQuery } from "@/lib/season-query";
 import { titleHref, watchHref } from "@/lib/slug";
 import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
@@ -834,12 +835,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
     return ns ? { season: season + 1, episode: 1 } : null;
   }, [d, season, episode]);
   // The next episode's name for its card: the same query as the title page's season browser and the episodes panel.
-  const nextSeason = useQuery({
-    queryKey: ["season", d.tmdbId, nextEp?.season ?? 0, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${nextEp!.season}`),
-    enabled: nextEp !== null,
-    staleTime: 30 * 60_000,
-  });
+  const nextSeason = useQuery({ ...seasonQuery(d.tmdbId, nextEp?.season ?? 0, locale), enabled: nextEp !== null });
   // A profile that hides the names (or stills) of unwatched episodes gets the number only (the still blurred).
   const spoilers = useSpoilerPrefs();
   const watched = useLibraryState(d.id).data?.watchedEpisodes;
@@ -847,12 +843,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const nextData = nextEp ? nextSeason.data?.episodes.find((e) => e.episodeNumber === nextEp.episode) : undefined;
   const nextName = nextEp && !(spoilers.names && !nextOpen) ? nextData?.name : undefined;
   // The episode playing, named under the title (the same season query, usually cached by the title page).
-  const thisSeason = useQuery({
-    queryKey: ["season", d.tmdbId, season ?? 0, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
-    enabled: season !== null,
-    staleTime: 30 * 60_000,
-  });
+  const thisSeason = useQuery({ ...seasonQuery(d.tmdbId, season ?? 0, locale), enabled: season !== null });
   const episodeName = season !== null ? thisSeason.data?.episodes.find((e) => e.episodeNumber === episode)?.name : undefined;
   /** A progress report in the background: the next beat carries the position again. */
   const send = (...args: Parameters<typeof report>) => {

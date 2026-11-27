@@ -13,6 +13,7 @@ import { Bio } from "@/components/person/Bio";
 import { age, character, countGroups, GROUPS, type Group, knownFor, mainGroup, type RowCredit } from "@/components/person/credits";
 import { Filmography } from "@/components/person/Filmography";
 import { PersonMuteSlot } from "@/components/person/PersonMuteSlot";
+import { RefreshWhilePending } from "@/components/shell/RefreshWhilePending";
 import { MaturityBlocked } from "@/components/title/MaturityBlocked";
 import { ApiRequestError } from "@/lib/api";
 import { OG_IMAGE } from "@/lib/brand";
@@ -144,6 +145,8 @@ export default async function PersonPage({ params }: { params: Params }) {
     <div className="flex flex-col gap-10 pt-20 md:gap-12 md:pt-28">
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      {/* The catalog is loading the person's details: the page asks again and shows them as they come. */}
+      {p.pending && <RefreshWhilePending />}
       {/* Who: the circle and the name side by side, the biography under them on a phone and beside the circle from md. */}
       <header className="page-x mx-auto grid w-full max-w-media grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-5 md:grid-cols-[10rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-8 xl:grid-cols-[12rem_minmax(0,1fr)] xl:gap-x-10">
         <Artwork

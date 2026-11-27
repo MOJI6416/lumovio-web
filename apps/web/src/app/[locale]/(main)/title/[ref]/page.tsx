@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { cache } from "react";
+import { RefreshWhilePending } from "@/components/shell/RefreshWhilePending";
 import { ServiceUnavailable } from "@/components/shell/ServiceUnavailable";
 import { collectionName, notOutYet, titleCore, utcToday } from "@/components/title/core";
 import { MaturityBlocked } from "@/components/title/MaturityBlocked";
@@ -143,6 +144,8 @@ export default async function TitlePage({ params, searchParams }: { params: Para
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <TitleHero details={d} core={core} />
       <OpenedSignal titleId={d.id} />
+      {/* The catalog is loading the title's details: the page asks again and shows them as they come. */}
+      {d.pending && <RefreshWhilePending />}
       <SectionArrival />
       <div className="mx-auto flex max-w-media flex-col gap-8 pt-8 pb-10 md:gap-12 md:pt-10">
         {d.kind === "tv" && d.seasons.length > 0 && <SeasonBrowser title={core} />}

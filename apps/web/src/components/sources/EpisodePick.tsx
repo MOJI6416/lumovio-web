@@ -1,6 +1,6 @@
 "use client";
 
-import type { SeasonDetails, TitleDetails } from "@lumovio/contracts";
+import type { TitleDetails } from "@lumovio/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { PickItem, PickPill } from "@/components/title/WatchCard";
@@ -8,7 +8,7 @@ import { Menu, MenuCheckboxItem } from "@/components/ui/Menu";
 import { useLibraryState } from "@/hooks/useLibraryState";
 import { useSpoilerPrefs } from "@/hooks/useSpoilers";
 import { useRouter } from "@/i18n/navigation";
-import { api } from "@/lib/api";
+import { seasonQuery } from "@/lib/season-query";
 import { episodesOpen } from "@/lib/spoilers";
 
 /**
@@ -28,11 +28,7 @@ export function EpisodePick({ details: d, season, episode, href }: { details: Ti
   const seasons = d.seasons.filter((s) => s.episodeCount > 0).sort((a, b) => (a.seasonNumber === 0 ? 1 : b.seasonNumber === 0 ? -1 : a.seasonNumber - b.seasonNumber));
   const current = seasons.find((s) => s.seasonNumber === season);
   // The same query as the title's season browser and the player's episodes panel (usually cached).
-  const names = useQuery({
-    queryKey: ["season", d.tmdbId, season, locale],
-    queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
-    staleTime: 30 * 60_000,
-  });
+  const names = useQuery(seasonQuery(d.tmdbId, season, locale));
   const nameOf = (e: number) => (spoilers.names && !open(season, e) ? null : (names.data?.episodes.find((x) => x.episodeNumber === e)?.name ?? null));
   const seasonName = (n: number) => (n === 0 ? (seasons.find((s) => s.seasonNumber === 0)?.name ?? tt("season", { n })) : tt("season", { n }));
   const go = (s: number, e: number) => router.replace(href(s, e), { scroll: false });
