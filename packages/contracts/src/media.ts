@@ -4,8 +4,14 @@ import { z } from "zod";
 export const MediaKind = z.enum(["movie", "tv"]);
 export type MediaKind = z.infer<typeof MediaKind>;
 
-/** Stable public identifier of a catalog title: `movie:550`, `tv:1399`. */
-export const TitleId = z.string().regex(/^(movie|tv):\d+$/);
+/** A title's public code: 8 symbols of Crockford's base32 in lower case (no i, l, o, u), the first one a letter. */
+export const TITLE_CODE = /^[a-hjkmnp-tv-z][0-9a-hjkmnp-tv-z]{7}$/;
+
+/**
+ * Stable public identifier of a catalog title: its code (`ewzsjd5z`), or the older key of TMDB's kind and id
+ * (`movie:550`, `tv:1399`), which stays accepted for good.
+ */
+export const TitleId = z.string().regex(/^(?:(?:movie|tv):\d+|[a-hjkmnp-tv-z][0-9a-hjkmnp-tv-z]{7})$/);
 export type TitleId = z.infer<typeof TitleId>;
 
 export function titleId(kind: MediaKind, tmdbId: number): TitleId {

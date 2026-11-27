@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TitleSummary } from "./media";
+import { TitleId, type TitleSummary } from "./media";
 
 export const ImportSource = z.enum([
   "trakt",
@@ -102,10 +102,7 @@ export interface ImportRow {
 export const ImportRowResolve = z.object({
   rowIds: z.array(z.string().uuid()).min(1).max(500),
   action: z.enum(["accept", "skip", "choose"]),
-  titleId: z
-    .string()
-    .regex(/^(movie|tv):\d+$/)
-    .optional(),
+  titleId: TitleId.optional(),
   /** Also apply to every other open row of the same title in this import (e.g. all its episodes). */
   group: z.boolean().optional(),
 });

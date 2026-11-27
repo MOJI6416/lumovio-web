@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TitleId } from "./media";
+import { MediaKind, TitleId } from "./media";
 
 /**
  * Personal media servers are reached DIRECTLY from the user's device (browser/TV/PWA).
@@ -106,6 +106,18 @@ export const ConnectionCheckReport = z.object({
   latencyMs: z.number().int().min(0).max(120_000).nullable().optional(),
 });
 
+/**
+ * What a media server knows of an item, sent as it is (`LibraryIndexEntry.ids`): the API finds the title by these ids
+ * itself — TMDB's of the kind first, then IMDb's, then TheTVDB's series id.
+ */
+export const ServerItemIds = z.object({
+  kind: MediaKind,
+  tmdb: z.number().int().positive().nullable().optional(),
+  imdb: z.string().regex(/^tt\d+$/).nullable().optional(),
+  tvdb: z.number().int().positive().nullable().optional(),
+});
+export type ServerItemIds = z.infer<typeof ServerItemIds>;
+
 /** One availability record uploaded by the client after scanning a library. */
 export const LibraryIndexEntry = z.object({
   titleId: TitleId,
@@ -144,10 +156,20 @@ export const LibraryIndexEntry = z.object({
 });
 export type LibraryIndexEntry = z.infer<typeof LibraryIndexEntry>;
 
+/**
+ * An upload's record: the title by its key (`titleId`), or by the ids the server knows of the item (`ids`) when the
+ * client doesn't know the key. One whose title the catalog doesn't know is left out.
+ */
+export const LibraryIndexUploadEntry = LibraryIndexEntry.extend({ titleId: TitleId.optional(), ids: ServerItemIds.optional() }).refine((e) => e.titleId || e.ids, {
+  message: "A title's key or its ids are required",
+  path: ["titleId"],
+});
+export type LibraryIndexUploadEntry = z.infer<typeof LibraryIndexUploadEntry>;
+
 export const LibraryIndexUpload = z.object({
   /** "replace" swaps the whole index after a full scan; "merge" adds/updates entries. */
   mode: z.enum(["replace", "merge"]),
-  entries: z.array(LibraryIndexEntry).max(5000),
+  entries: z.array(LibraryIndexUploadEntry).max(5000),
   /** Present when uploading a replace scan in several chunks. */
   scanId: z.string().max(64).optional(),
   final: z.boolean().default(true),
