@@ -1,3 +1,5 @@
+import { titleHref } from "./slug";
+
 /*
  * The site's older addresses, on TMDB's ids — `/title/movie/603-the-matrix`, `/person/6384`, `/watch/tv/1396?s=1&e=2`,
  * the same under `/tvui` — kept in bookmarks, search engines, shared links and QR codes. Each answers for good with
@@ -8,8 +10,13 @@
 export interface LegacyAddress {
   /** The older key `/api/v2/codes` takes: `movie:603`, `tv:1396`, `person:6384`. */
   key: string;
-  /** The same address on the code (without the locale, `/tvui` and the query). */
-  to: (code: string) => string;
+  /** A title's page: its canonical address carries its name in the page's language. */
+  named: boolean;
+  /**
+   * The same address on the code (without the locale, `/tvui` and the query); a title's with `name` — the one its page
+   * shows (its canonical address), else with the older address's slug.
+   */
+  to: (code: string, name?: string | null) => string;
 }
 
 const TITLE = /^\/title\/(movie|tv)\/(\d+)(-[^/]*)?\/?$/;
@@ -21,12 +28,13 @@ export function legacyAddress(path: string): LegacyAddress | null {
   let m = TITLE.exec(path);
   if (m) {
     const slug = m[3] ?? "";
-    return { key: `${m[1]}:${m[2]}`, to: (code) => `/title/${code}${slug}` };
+    const kind = m[1] as "movie" | "tv";
+    return { key: `${kind}:${m[2]}`, named: true, to: (code, name) => (name ? titleHref({ code, kind, tmdbId: 0 }, name) : `/title/${code}${slug}`) };
   }
   m = PERSON.exec(path);
-  if (m) return { key: `person:${m[1]}`, to: (code) => `/person/${code}` };
+  if (m) return { key: `person:${m[1]}`, named: false, to: (code) => `/person/${code}` };
   m = WATCH.exec(path);
-  if (m) return { key: `${m[1]}:${m[2]}`, to: (code) => `/watch/${code}` };
+  if (m) return { key: `${m[1]}:${m[2]}`, named: false, to: (code) => `/watch/${code}` };
   return null;
 }
 

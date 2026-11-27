@@ -67,10 +67,32 @@ async function codeOf(key: string): Promise<string | null | undefined> {
   }
 }
 
+/** A title's name as its page shows it in a language (`code|lang` → name): the slug of its canonical address. */
+const names = new Map<string, string>();
+
+/** The name a title's page shows in the language; undefined when the API didn't answer (or the title is closed to a guest). */
+async function titleNameOf(code: string, lang: string): Promise<string | undefined> {
+  const key = `${code}|${lang}`;
+  const known = names.get(key);
+  if (known) return known;
+  try {
+    const res = await fetch(`${INTERNAL}/api/catalog/title/${code}`, { headers: { "x-lumovio-locale": lang }, signal: AbortSignal.timeout(1500) });
+    if (!res.ok) return undefined;
+    const name = ((await res.json()) as { title?: string }).title;
+    if (!name) return undefined;
+    if (names.size >= CODES_KEPT) names.delete(names.keys().next().value!);
+    names.set(key, name);
+    return name;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * An older address on TMDB's ids (lib/legacy-address.ts) — the site's or the TV interface's, in any language — moves
- * for good (301) to the one on the code, with its query. An id the catalog doesn't know, or an API that didn't answer,
- * goes on to the page, which answers 404 or moves it itself.
+ * for good (301) to the one on the code, with its query: a title's straight to its canonical address, with its name in
+ * the page's language (as the page shows it; without an answer — the older slug, and the page moves it on). An id the
+ * catalog doesn't know, or an API that didn't answer, goes on to the page, which answers 404 or moves it itself.
  */
 async function legacyRedirect(req: NextRequest): Promise<NextResponse | null> {
   const path = req.nextUrl.pathname;
@@ -83,8 +105,11 @@ async function legacyRedirect(req: NextRequest): Promise<NextResponse | null> {
   if (!legacy) return null;
   const code = await codeOf(legacy.key);
   if (!code) return null;
+  // Unprefixed is English (localePrefix "as-needed").
+  const name = legacy.named ? await titleNameOf(code, locale.slice(1) || routing.defaultLocale) : undefined;
   const url = req.nextUrl.clone();
-  url.pathname = `${locale}${tvui}${legacy.to(code)}`;
+  // A name may be Cyrillic: the path takes it percent-encoded (the older slug already is).
+  url.pathname = `${locale}${tvui}${name ? encodeURI(legacy.to(code, name)) : legacy.to(code)}`;
   return NextResponse.redirect(url, 301);
 }
 

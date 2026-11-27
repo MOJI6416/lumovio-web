@@ -62,6 +62,16 @@ describe("older addresses", () => {
     expect(legacyAddress("/watch/tv/1396/")!.to("q2w3e4r5")).toBe("/watch/q2w3e4r5");
   });
 
+  it("moves a title straight to its canonical address, with its name in the page's language", () => {
+    const t = legacyAddress("/title/tv/61222-bojack-horseman")!;
+    expect(t.named).toBe(true);
+    expect(t.to("ezjc8mpj", "Конь БоДжек")).toBe("/title/ezjc8mpj-конь-боджек");
+    expect(legacyAddress("/title/tv/61222")!.to("ezjc8mpj", "BoJack Horseman")).toBe("/title/ezjc8mpj-bojack-horseman");
+    // Without the name (the API didn't answer): the older slug, and the page moves it on.
+    expect(t.to("ezjc8mpj")).toBe("/title/ezjc8mpj-bojack-horseman");
+    expect(legacyAddress("/person/287")!.named).toBe(false);
+  });
+
   it("leaves the new addresses and the others alone", () => {
     expect(legacyAddress("/title/ewzsjd5z-the-matrix")).toBeNull();
     expect(legacyAddress("/person/k2m4n6p8")).toBeNull();
