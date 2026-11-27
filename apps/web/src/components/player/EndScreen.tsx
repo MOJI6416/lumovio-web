@@ -107,7 +107,7 @@ export function EndScreen({ end, title, logo, backdrop, onReplay, onBack }: { en
 /** A poster of the end screen's shelf: the name over its foot on hover and focus only, and always for the reader. */
 function Poster({ title: r }: { title: TitleSummary }): ReactNode {
   return (
-    <Link href={titleHref(r.kind, r.tmdbId, r.title)} aria-label={r.title} className="group relative block overflow-hidden rounded-sm">
+    <Link href={titleHref(r)} aria-label={r.title} className="group relative block overflow-hidden rounded-sm">
       <img src={tmdbImage(r.posterPath, "w185") ?? undefined} alt="" loading="lazy" className="aspect-2/3 w-full bg-surface-2 object-cover transition-transform duration-base ease-base group-hover:scale-103" />
       <span aria-hidden className="absolute inset-x-0 bottom-0 bg-linear-to-t from-stage/90 to-transparent px-2 pt-6 pb-2 text-body-s font-semibold text-text-1 opacity-0 transition-opacity duration-fast ease-fast group-hover:opacity-100 group-focus-visible:opacity-100">
         <span className="line-clamp-2">{r.title}</span>

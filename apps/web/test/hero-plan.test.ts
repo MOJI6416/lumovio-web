@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notOutYet, titleCore, untilDay, watchHref } from "../src/components/title/core";
+import { notOutYet, titleCore, untilDay, startHref } from "../src/components/title/core";
 import { heroPlan, type PlanInput } from "../src/components/title/hero-plan";
 
 const base: PlanInput = {
@@ -97,11 +97,11 @@ describe("a title not out yet", () => {
 describe("where Watch goes", () => {
   const show = { kind: "tv" as const, tmdbId: 1396, seasons: [0, 1, 2].map((n) => ({ seasonNumber: n, name: "", episodeCount: 7, airDate: null, posterPath: null, overview: null })) };
   it("starts a series at its first regular episode, the next one after a finished episode, or where it stopped", () => {
-    expect(watchHref(show, null)).toBe("/watch/tv/1396?s=1&e=1");
+    expect(startHref(show, null)).toBe("/watch/tv/1396?s=1&e=1");
     const p = { titleId: "tv:1396", season: 2, episode: 3, positionSec: 600, durationSec: 2900, fraction: 0.2, completed: false, updatedAt: "", source: "" };
-    expect(watchHref(show, p)).toBe("/watch/tv/1396?s=2&e=3");
-    expect(watchHref(show, { ...p, completed: true })).toBe("/watch/tv/1396?s=2&e=4");
-    expect(watchHref({ kind: "movie", tmdbId: 5, seasons: [] }, p)).toBe("/watch/movie/5");
+    expect(startHref(show, p)).toBe("/watch/tv/1396?s=2&e=3");
+    expect(startHref(show, { ...p, completed: true })).toBe("/watch/tv/1396?s=2&e=4");
+    expect(startHref({ kind: "movie", tmdbId: 5, seasons: [] }, p)).toBe("/watch/movie/5");
   });
   it("sends the client a cut of the details", () => {
     const core = titleCore(

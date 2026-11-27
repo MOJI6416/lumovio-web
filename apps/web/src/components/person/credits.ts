@@ -10,7 +10,7 @@ export type Credit = PersonDetails["credits"][number];
 /** What the filmography's rows need of a credit (the page sends no more to the browser: no overviews, no backdrops). */
 export type RowCredit = Pick<
   Credit,
-  "id" | "kind" | "tmdbId" | "title" | "year" | "releaseDate" | "posterPath" | "isAnime" | "imdbRating" | "tmdbRating" | "lumovioScore" | "role" | "as" | "jobs" | "departments" | "characters" | "episodes"
+  "id" | "kind" | "tmdbId" | "code" | "title" | "year" | "releaseDate" | "posterPath" | "isAnime" | "imdbRating" | "tmdbRating" | "lumovioScore" | "role" | "as" | "jobs" | "departments" | "characters" | "episodes"
 >;
 type Roles = Pick<Credit, "role" | "as" | "jobs" | "departments">;
 export type Group = "acting" | "directing" | "writing" | "production" | "crew" | "self";

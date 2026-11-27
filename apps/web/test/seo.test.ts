@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { pageEntries, personEntries, sitemapFiles, sitemapIndex, titleEntries, urlset } from "../src/lib/sitemap";
 import robots from "../src/app/robots";
-import sitemap from "../src/app/sitemap";
-import { languageAlternates, localizedPath, ogBase, seoAlternates } from "../src/lib/seo";
+import { languageAlternates, localizedPath, ogBase, SITE_URL, seoAlternates } from "../src/lib/seo";
 
 describe("addresses for search and previews", () => {
   it("prefixes every language but English", () => {
@@ -79,10 +79,32 @@ describe("robots.txt and sitemap.xml", () => {
   });
 
   it("lists each public page once per finished language, with alternates", () => {
-    const urls = sitemap();
+    const urls = pageEntries();
     const home = urls.filter((u) => /^https?:\/\/[^/]+(\/(ru|uk|de|fr|it|pl|tr|es|pt-BR))?$/.test(u.url));
     expect(home).toHaveLength(10);
-    expect(urls.every((u) => Object.keys(u.alternates?.languages ?? {}).sort().join() === "de,en,es,fr,it,pl,pt-BR,ru,tr,uk,x-default")).toBe(true);
+    expect(urls.every((u) => Object.keys(u.alternates ?? {}).sort().join() === "de,en,es,fr,it,pl,pt-BR,ru,tr,uk,x-default")).toBe(true);
     expect(urls.some((u) => u.url.includes("/library") || u.url.includes("/ja/"))).toBe(false);
+  });
+
+  it("lists a title in every finished language at the address with its name there, a person at the code", () => {
+    const titles = titleEntries([{ code: "ewzsjd5z", names: { en: "The Matrix", ru: "Матрица", uk: "Матриця" }, updated: "2026-11-27" }]);
+    expect(titles).toHaveLength(10);
+    expect(titles.map((t) => t.url)).toContain(`${SITE_URL}/title/ewzsjd5z-the-matrix`);
+    expect(titles.map((t) => t.url)).toContain(`${SITE_URL}/ru/title/ewzsjd5z-%D0%BC%D0%B0%D1%82%D1%80%D0%B8%D1%86%D0%B0`);
+    // A language without its own name: the English one.
+    expect(titles.map((t) => t.url)).toContain(`${SITE_URL}/de/title/ewzsjd5z-the-matrix`);
+    expect(titles.every((t) => t.lastModified === "2026-11-27")).toBe(true);
+    const people = personEntries([{ code: "hdaeys4q", updated: "2026-11-27" }]);
+    expect(people.map((p) => p.url)).toEqual(expect.arrayContaining([`${SITE_URL}/person/hdaeys4q`, `${SITE_URL}/pt-BR/person/hdaeys4q`]));
+  });
+
+  it("writes the index and the files as sitemap XML", () => {
+    expect(sitemapFiles({ titles: 2, people: 1 })).toEqual(["pages.xml", "titles-1.xml", "titles-2.xml", "people-1.xml"]);
+    expect(sitemapFiles(null)).toEqual(["pages.xml"]);
+    expect(sitemapIndex(["pages.xml"])).toContain(`<sitemap><loc>${SITE_URL}/sitemaps/pages.xml</loc></sitemap>`);
+    const set = urlset([{ url: "https://x.test/a?b=1&c=2", lastModified: "2026-11-27", alternates: { ru: "https://x.test/ru/a" } }]);
+    expect(set).toContain("<loc>https://x.test/a?b=1&amp;c=2</loc>");
+    expect(set).toContain('<xhtml:link rel="alternate" hreflang="ru" href="https://x.test/ru/a"/>');
+    expect(set).toContain("<lastmod>2026-11-27</lastmod>");
   });
 });

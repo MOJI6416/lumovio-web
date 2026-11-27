@@ -95,7 +95,7 @@ export const TvCard = memo(function TvCard({
   const card = (
     <Link
       prefetch={false}
-      href={href ?? titleHref(title.kind, title.tmdbId, title.title)}
+      href={href ?? titleHref(title)}
       data-key={title.id}
       data-index={index}
       data-tv-initial={initial || undefined}

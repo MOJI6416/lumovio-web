@@ -28,6 +28,7 @@ import { randomId } from "@/lib/random-id";
 import { chooseSeason } from "./chosen-season";
 import type { TitleCore } from "./core";
 import { useHydrated } from "./hydrated";
+import { watchHref } from "@/lib/slug";
 
 type Ep = { season: number; episode: number };
 const key = (e: Ep) => `s${e.season}e${e.episode}`;
@@ -276,6 +277,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
                 episode={e}
                 titleId={d.id}
                 tmdbId={d.tmdbId}
+                code={d.code}
                 aired={aired(e)}
                 watched={watchedSet.has(key({ season: e.seasonNumber, episode: e.episodeNumber }))}
                 progress={state?.progress && !state.progress.completed && state.progress.season === e.seasonNumber && state.progress.episode === e.episodeNumber ? state.progress.fraction : null}
@@ -358,6 +360,7 @@ function EpisodeStrip({ listRef, children }: { listRef: RefObject<HTMLOListEleme
 function EpisodeRow({
   episode: e,
   tmdbId,
+  code,
   aired,
   watched,
   progress,
@@ -371,6 +374,7 @@ function EpisodeRow({
   episode: EpisodeSummary;
   titleId: string;
   tmdbId: number;
+  code: string | undefined;
   aired: boolean;
   watched: boolean;
   progress: number | null;
@@ -397,7 +401,7 @@ function EpisodeRow({
       <Spoiler variant="image" hidden={spoilers.still === true} onReveal={() => onShow("still")} label={ts("showStill", { episode: label })} className="w-full">
         {aired && canPlay ? (
           <Link
-            href={`/watch/tv/${tmdbId}?s=${e.seasonNumber}&e=${e.episodeNumber}`}
+            href={watchHref({ code, kind: "tv", tmdbId }, { s: e.seasonNumber, e: e.episodeNumber })}
             className="group/link block rounded-sm focus-visible:outline-none"
             aria-label={[tp("playEpisode", { episode: tk("episode", { season: e.seasonNumber, episode: e.episodeNumber }) }), spoilers.name ? null : e.name].filter(Boolean).join(" — ")}
           >

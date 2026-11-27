@@ -24,7 +24,7 @@ import { seasonCopies } from "@/lib/media/packs";
 import { titleCopies } from "@/lib/watch-state";
 import { useChosenSeason } from "./chosen-season";
 import { AddToCalendar } from "./AddToCalendar";
-import { isOngoing, notOutYet, resumable, sourcesHref, startEpisode, type TitleCore, utcToday, watchHref } from "./core";
+import { isOngoing, notOutYet, resumable, sourcesHref, startEpisode, type TitleCore, utcToday, startHref } from "./core";
 import { heroPlan, type Primary, type Summary, type TorrentState } from "./hero-plan";
 import { setRateOpen } from "./rate-open";
 import { scrollToSection } from "./section-link";
@@ -159,7 +159,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     notOut,
   });
 
-  const playHref = watchHref(d, p, chosen);
+  const playHref = startHref(d, p, chosen);
   // Under "Continue": the episode and the time left; under a series' "Watch": the episode it starts.
   const left = p?.durationSec ? Math.max(0, p.durationSec - p.positionSec) : null;
   const leftText = left === null ? null : left < 60 ? tc("leftUnderMinute") : tr("timeLeft", { time: tm("minutes", { count: Math.round(left / 60) }) });

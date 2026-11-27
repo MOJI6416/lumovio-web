@@ -697,6 +697,10 @@ on("GET", "/api/catalog/search", async ({ c, q }) => search(c, q));
 on("GET", "/api/catalog/title/:kind/:id", async ({ c, params }) =>
   details(allowed(c, byId(`${params.kind}:${params.id}`))),
 );
+// The site's pages ask by the title's code (`/title/<code>-<name>`), in the same shape.
+on("GET", "/api/catalog/title/:ref", async ({ c, params }) =>
+  details(allowed(c, byId(db.codes.get(params.ref) ?? fail(404, "not_found", "Title not found")))),
+);
 on("GET", "/api/catalog/tv/:id/season/:season", async ({ c, params }) => {
   const t = allowed(c, byId(`tv:${params.id}`));
   const s =
@@ -712,7 +716,26 @@ on("GET", "/api/catalog/title/:kind/:id/external", async ({ params }) => ({
   credits: [],
   updatedAt: null,
 }));
-on("GET", "/api/catalog/person/:id", async ({ c, params }) => person(c, Number(params.id)));
+on("GET", "/api/catalog/person/:id", async ({ c, params }) =>
+  person(c, /^\d+$/.test(params.id) ? Number(params.id) : (db.personCodes.get(params.id) ?? fail(404, "not_found", "Person not found"))),
+);
+// Codes of older keys (`movie:9761`, `person:8000001`): the site moves its older addresses to the codes' with them.
+on("GET", "/api/v2/codes", async ({ q }) => {
+  const codes = {};
+  for (const key of (q.get("ids") ?? "").split(",")) {
+    const code = key.startsWith("person:") ? db.people.get(Number(key.slice(7)))?.code : db.titles.get(key)?.code;
+    if (code) codes[key] = code;
+  }
+  return { codes };
+});
+// The sitemap's lists: every made-up title and person in one file each.
+on("GET", "/api/v2/sitemap", async () => ({ titles: 1, people: 1 }));
+on("GET", "/api/v2/sitemap/:list/:page", async ({ params }) => {
+  if (params.page !== "1") return params.list === "titles" ? { titles: [] } : { people: [] };
+  return params.list === "titles"
+    ? { titles: all().map((t) => ({ code: t.code, names: { en: t.title }, updated: "2026-01-01" })) }
+    : { people: [...db.people.values()].map((p) => ({ code: p.code, updated: "2026-01-01" })) };
+});
 on("GET", "/api/catalog/genres/:kind", async ({ params }) => ({
   genres: GENRES[params.kind] ?? fail(400, "bad_request", "Unknown kind"),
 }));

@@ -199,7 +199,7 @@ export function usePersonalActions(t: ActionTitle) {
 
   /** The system share sheet on a touch device, Lumovio's own on a computer (components/share). */
   const share = () =>
-    sharePage({ title: t.title, url: new URL(getPathname({ href: titleHref(t.kind, t.tmdbId, t.title), locale }), window.location.origin).toString() });
+    sharePage({ title: t.title, url: new URL(getPathname({ href: titleHref(t), locale }), window.location.origin).toString() });
 
   /**
    * What a guest pressed before signing in, done once they are back (GuestGate), with the usual toast and Undo.

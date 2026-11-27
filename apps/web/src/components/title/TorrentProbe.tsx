@@ -21,7 +21,7 @@ import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { background } from "@/lib/optional";
 import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { useChosenSeason } from "./chosen-season";
-import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, startHref } from "./core";
 import type { TorrentState } from "./hero-plan";
 
 export interface ProbeResult {
@@ -115,7 +115,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
       onChange({ state: { state: status, name: source.name } as TorrentState });
       return;
     }
-    const href = watchHref(d, lib?.progress, season);
+    const href = startHref(d, lib?.progress, season);
     onChange({
       state: { state: "found", name: source.name, summary, marks },
       play: async () => {

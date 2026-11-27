@@ -17,18 +17,20 @@ import { OG_IMAGE } from "@/lib/brand";
 import { tmdbImage } from "@/lib/images";
 import { meFailure } from "@/lib/me-state";
 import { optional } from "@/lib/optional";
+import { titleJsonLd } from "@/lib/json-ld";
 import { canonicalLocale, localizedPath, ogBase, seoAlternatesIn } from "@/lib/seo";
 import { getMeState, serverApi } from "@/lib/server-api";
-import { parseSlugId, titleHref } from "@/lib/slug";
+import { parseCodeSlug } from "@/lib/address-read";
+import { titleHref } from "@/lib/slug";
 
-type Params = Promise<{ locale: string; kind: string; slug: string }>;
+type Params = Promise<{ locale: string; ref: string }>;
 
 /**
- * A title's address in a language: its name there in the slug (links and the
- * canonical are the same address). The page's own language uses the name it shows; the others TMDB's name there.
+ * A title's address in a language: its code, and its name there in the slug (links and the canonical are the same
+ * address). The page's own language uses the name it shows; the others the title's name there.
  */
-const titlePath = (d: TitleDetails, own: string, l: string) => titleHref(d.kind, d.tmdbId, l === own ? d.title : (d.localTitles?.[l as "en"] ?? d.title));
-type Search = Promise<{ tab?: string | string[] }>;
+const titlePath = (d: TitleDetails, own: string, l: string) => titleHref(d, l === own ? d.title : (d.localTitles?.[l as "en"] ?? d.title));
+type Search = Promise<Record<string, string | string[] | undefined>>;
 
 /** A section's place under the sticky header when a link brings it up. */
 const SECTION = "scroll-mt-24";
@@ -42,25 +44,25 @@ const safeDecode = (s: string) => {
 };
 
 // One request per render for the metadata and the page (a tab switch renders the page again).
-const load = cache(async (kind: string, slug: string): Promise<TitleDetails | "blocked" | "unavailable" | null> => {
-  const id = parseSlugId(slug);
-  if ((kind !== "movie" && kind !== "tv") || !id) return null;
+const load = cache(async (ref: string): Promise<TitleDetails | "blocked" | "unavailable" | null> => {
+  const code = parseCodeSlug(ref);
+  if (!code) return null;
   try {
-    return await serverApi<TitleDetails>(`/api/catalog/title/${kind}/${id}`);
+    return await serverApi<TitleDetails>(`/api/catalog/title/${code}`);
   } catch (e) {
     if (e instanceof ApiRequestError && e.code === "maturity_blocked") return "blocked";
     // Hidden at a rights holder's request (Admin → Catalog): the same for everyone.
     if (e instanceof ApiRequestError && e.code === "title_unavailable") return "unavailable";
-    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary".
+    // A code never issued (404) is a 404 page, not "probably temporary".
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) return null;
     throw e;
   }
 });
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { locale, kind, slug } = await params;
+  const { locale, ref } = await params;
   // Metadata only: a page that fails to load says so itself.
-  const d = await optional(load(kind, slug), null);
+  const d = await optional(load(ref), null);
   if (!d) return {};
   // A title closed to this profile isn't named in the tab either.
   if (d === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
@@ -93,16 +95,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  * soundtrack. Sections without anything to show aren't there.
  */
 export default async function TitlePage({ params, searchParams }: { params: Params; searchParams: Search }) {
-  const { locale, kind, slug } = await params;
-  const { tab: tabParam } = await searchParams;
+  const { locale, ref } = await params;
+  const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("title");
-  // "More by …" (the director's or creator's other titles) is asked for beside the title itself, from a cache.
-  const tmdbId = parseSlugId(slug);
-  const moreByLoad = (kind === "movie" || kind === "tv") && tmdbId ? optional(serverApi<MoreBy | null>(`/api/catalog/title/${kind}/${tmdbId}/more-by`), null) : Promise.resolve(null);
   let d: Awaited<ReturnType<typeof load>>;
   try {
-    d = await load(kind, slug);
+    d = await load(ref);
   } catch (e) {
     // The API not answering a signed-in person is "temporarily unavailable" with Retry, not the error page.
     if (meFailure(e) === "unavailable" && (await getMeState()) === "unavailable") {
@@ -113,29 +112,20 @@ export default async function TitlePage({ params, searchParams }: { params: Para
     throw e;
   }
   if (d === null) notFound();
-  if (d === "blocked") return <MaturityBlocked from={`/title/${kind}/${slug}`} />;
+  if (d === "blocked") return <MaturityBlocked from={`/title/${ref}`} />;
   if (d === "unavailable") return <TitleUnavailable />;
-  // One address per title and language: an old or foreign slug (or none) goes to the one with its name, for good.
-  const canonical = titleHref(d.kind, d.tmdbId, d.title);
-  if (`/title/${kind}/${safeDecode(slug)}` !== canonical) {
-    const q = typeof tabParam === "string" ? `?tab=${encodeURIComponent(tabParam)}` : "";
+  // "More by …" (the director's or creator's other titles), from a cache.
+  const moreByLoad = optional(serverApi<MoreBy | null>(`/api/catalog/title/${d.kind}/${d.tmdbId}/more-by`), null);
+  // One address per title and language: a merged code, an old or foreign slug (or none) goes to the one with its own
+  // code and name, for good, with the whole query (a section to open).
+  const canonical = titleHref(d);
+  if (`/title/${safeDecode(ref)}` !== canonical) {
+    const q = new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (v === undefined ? [] : (Array.isArray(v) ? v : [v]).map((x) => [k, x])))).toString();
     // The name may be Cyrillic: the Location header takes it percent-encoded.
-    permanentRedirect(`${encodeURI(localizedPath(locale, canonical))}${q}`);
+    permanentRedirect(`${encodeURI(localizedPath(locale, canonical))}${q ? `?${q}` : ""}`);
   }
 
-  const directors = d.crew.filter((c) => c.job === "Director");
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": d.kind === "movie" ? "Movie" : "TVSeries",
-    name: d.title,
-    alternateName: d.originalTitle ?? undefined,
-    datePublished: d.releaseDate ?? undefined,
-    description: d.overview ?? undefined,
-    image: tmdbImage(d.posterPath, "w500") ?? undefined,
-    genre: d.genres.map((g) => g.name),
-    director: directors.map((p) => ({ "@type": "Person", name: p.name })),
-    actor: d.cast.slice(0, 8).map((p) => ({ "@type": "Person", name: p.name })),
-  };
+  const jsonLd = titleJsonLd(d, localizedPath(canonicalLocale(locale), canonical));
   const core = titleCore(d, locale.slice(0, 2));
 
   // The collection without TMDB's "(Collection)" and without this title.

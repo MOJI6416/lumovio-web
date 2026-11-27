@@ -3,6 +3,7 @@ import { genreNames, reasonLine, shelfTitle } from "@/components/media/recommend
 import { shelfHref } from "@/components/media/shelf-copy";
 import { formatRuntime } from "@/lib/format";
 import { trimOverview, type TvShelfData } from "./types";
+import { watchHref } from "@/lib/slug";
 
 /*
  * The site's shelves as TV shelves (server side): the same data and headings as the site, the
@@ -42,7 +43,7 @@ export function continueShelf(items: ContinueWatchingItem[], t: T, title?: strin
       return {
         title: trimOverview(x),
         note,
-        href: `/watch/${x.kind}/${x.tmdbId}${s !== null && e !== null ? `?s=${s}&e=${e}` : ""}`,
+        href: watchHref(x, s !== null && e !== null ? { s, e } : {}),
         label: t("tvui.continueLabel", { title: x.title, where: note }),
         progress: next ? 0 : (progress.fraction ?? 0),
       };

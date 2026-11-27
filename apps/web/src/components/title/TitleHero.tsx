@@ -73,7 +73,7 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
     people.map((p, i) => (
       <span key={p.id} className={clsx("inline-flex items-center whitespace-nowrap", i >= phone && "max-sm:hidden")}>
         {/* A name TMDB has only in Latin letters on a ru/uk page is marked with its language. */}
-        <Link href={personHref(p.id, p.name)} className={CREDIT} lang={latinLang(p.name, locale)}>
+        <Link href={personHref(p)} className={CREDIT} lang={latinLang(p.name, locale)}>
           {p.name}
         </Link>
         {i < people.length - 1 && <span className={clsx(i === phone - 1 && "max-sm:hidden")}>,</span>}

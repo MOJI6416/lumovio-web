@@ -222,7 +222,7 @@ export function Billboard({ items, genres, under = "header" }: { items: Featured
   if (!item) return null;
   const hero = under === "header";
   const section = under === "section";
-  const href = titleHref(item.kind, item.tmdbId, item.title);
+  const href = titleHref(item);
 
   // The first slide's art is the page's largest paint: fetched from the head, not when its <img> is reached.
   preloadBackdrop(items[0]?.backdropPath);

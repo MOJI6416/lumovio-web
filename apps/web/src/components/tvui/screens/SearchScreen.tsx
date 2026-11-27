@@ -338,7 +338,7 @@ function TvPerson({
   return (
     <Link
       prefetch={false}
-      href={personHref(p.id, p.name)}
+      href={personHref(p)}
       data-key={`p:${p.id}`}
       aria-label={[p.name, role].filter(Boolean).join(", ")}
       className={cn("tv-focus flex shrink-0 items-center rounded-md p-2", wide ? "gap-8 pe-8" : "w-40 flex-col gap-3")}

@@ -117,7 +117,7 @@ function Person({ person: p, locale }: { person: CastMember; locale: string }) {
   return (
     <Link
       prefetch={false}
-      href={personHref(p.id, p.name)}
+      href={personHref(p)}
       data-key={String(p.id)}
       aria-label={[p.name, p.character].filter(Boolean).join(" — ")}
       className="tv-focus group/p flex w-40 shrink-0 flex-col items-center gap-3 rounded-md p-2"

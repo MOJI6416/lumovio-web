@@ -72,7 +72,7 @@ export function BestMatchBlock({ best, genres }: { best: BestMatch; genres: Reco
       <section aria-labelledby="best-h">
         {heading}
         <Link
-          href={personHref(p.id, p.name)}
+          href={personHref(p)}
           aria-label={[p.name, dept(p)].filter(Boolean).join(", ")}
           className="group/link group/card flex items-center gap-5 rounded-md focus-visible:outline-none md:gap-8"
         >
@@ -110,7 +110,7 @@ function BestTitle({ title, genres, heading }: { title: TitleSummary; genres: Re
     <section aria-labelledby="best-h">
       {heading}
       <Link
-        href={titleHref(title.kind, title.tmdbId, title.title)}
+        href={titleHref(title)}
         data-title-id={title.id}
         aria-label={label}
         className={cn(

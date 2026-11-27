@@ -16,6 +16,7 @@ import { formatDate } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { episodesOpen } from "@/lib/spoilers";
 import { TvArt } from "../media/TvCard";
+import { watchHref } from "@/lib/slug";
 
 const key = (s: number, e: number) => `s${s}e${e}`;
 
@@ -187,7 +188,7 @@ export function Episodes({ title: d, zoneDown }: { title: TitleCore; zoneDown?: 
               <Link
                 prefetch={false}
                 key={k}
-                href={`/watch/tv/${d.tmdbId}?s=${e.seasonNumber}&e=${e.episodeNumber}`}
+                href={watchHref(d, { s: e.seasonNumber, e: e.episodeNumber })}
                 data-key={k}
                 aria-label={tp("playEpisode", { episode: name })}
                 onFocus={() => setFocused(e)}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { interfaceAcceptLanguage, LOCALE_CODES, pickInterfaceLocale, removedLocaleRedirect } from "./i18n/locales";
 import { routing } from "./i18n/routing";
+import { legacyAddress } from "./lib/legacy-address";
 import { ON_MY_SERVERS_HREF } from "./lib/on-my-servers";
 import { scriptedBrowser } from "./lib/scripted-browser";
 import { isTvMode, TV_COOKIE, TV_PATH_HEADER, TV_SHELL_HEADER, tvShellPath } from "./lib/tv";
@@ -43,6 +44,49 @@ async function inMaintenance() {
 }
 
 const isLocale = (s: string | undefined): s is (typeof LOCALE_CODES)[number] => Boolean(s) && (LOCALE_CODES as readonly string[]).includes(s!);
+
+/** Codes of older keys already asked (`movie:603` → its code): search engines ask the same addresses again and again. */
+const codes = new Map<string, string>();
+const CODES_KEPT = 20_000;
+
+/** The code of an older key; null when the catalog doesn't know it, undefined when the API didn't answer in time. */
+async function codeOf(key: string): Promise<string | null | undefined> {
+  const known = codes.get(key);
+  if (known) return known;
+  try {
+    const res = await fetch(`${INTERNAL}/api/v2/codes?ids=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(1500) });
+    if (!res.ok) return undefined;
+    const code = ((await res.json()) as { codes?: Record<string, string> }).codes?.[key] ?? null;
+    if (code) {
+      if (codes.size >= CODES_KEPT) codes.delete(codes.keys().next().value!);
+      codes.set(key, code);
+    }
+    return code;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * An older address on TMDB's ids (lib/legacy-address.ts) — the site's or the TV interface's, in any language — moves
+ * for good (301) to the one on the code, with its query. An id the catalog doesn't know, or an API that didn't answer,
+ * goes on to the page, which answers 404 or moves it itself.
+ */
+async function legacyRedirect(req: NextRequest): Promise<NextResponse | null> {
+  const path = req.nextUrl.pathname;
+  const prefix = path.split("/")[1];
+  const locale = isLocale(prefix) ? `/${prefix}` : "";
+  let rest = path.slice(locale.length) || "/";
+  const tvui = rest === "/tvui" || rest.startsWith("/tvui/") ? "/tvui" : "";
+  rest = rest.slice(tvui.length) || "/";
+  const legacy = legacyAddress(rest);
+  if (!legacy) return null;
+  const code = await codeOf(legacy.key);
+  if (!code) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = `${locale}${tvui}${legacy.to(code)}`;
+  return NextResponse.redirect(url, 301);
+}
 
 /**
  * Next answers 400 to a path whose segments don't survive decoding twice ("/ru/u/%25"). Such an address
@@ -162,6 +206,8 @@ async function route(req: NextRequest) {
     if (removed.pinEnglish) res.cookies.set("lumovio_locale", "en", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
   }
+  const legacy = await legacyRedirect(req);
+  if (legacy) return legacy;
   // "Watch now" lives in the library now: people's bookmarks of its old pages lead there for good.
   const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
   if (old) {

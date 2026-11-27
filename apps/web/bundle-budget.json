@@ -102,7 +102,7 @@
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 203520,
+      "jsGzip": 203612,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -196,8 +196,8 @@
       "cssGzip": 22194,
       "jsChunks": 14
     },
-    "/[locale]/title/[kind]/[slug]": {
-      "jsGzip": 220287,
+    "/[locale]/title/[ref]": {
+      "jsGzip": 220364,
       "cssGzip": 20624,
       "jsChunks": 16
     },
@@ -251,8 +251,8 @@
       "cssGzip": 22279,
       "jsChunks": 15
     },
-    "/[locale]/tvui/title/[kind]/[slug]": {
-      "jsGzip": 218624,
+    "/[locale]/tvui/title/[ref]": {
+      "jsGzip": 218712,
       "cssGzip": 22279,
       "jsChunks": 16
     },
@@ -261,7 +261,7 @@
       "cssGzip": 22279,
       "jsChunks": 13
     },
-    "/[locale]/tvui/watch/[kind]/[id]": {
+    "/[locale]/tvui/watch/[ref]": {
       "jsGzip": 535963,
       "cssGzip": 22279,
       "jsChunks": 23
@@ -271,7 +271,7 @@
       "cssGzip": 22620,
       "jsChunks": 14
     },
-    "/[locale]/watch/[kind]/[id]": {
+    "/[locale]/watch/[ref]": {
       "jsGzip": 525603,
       "cssGzip": 20624,
       "jsChunks": 22

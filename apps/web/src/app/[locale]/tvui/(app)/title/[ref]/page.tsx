@@ -11,15 +11,15 @@ import { ApiRequestError } from "@/lib/api";
 import { formatRuntime } from "@/lib/format";
 import { optional } from "@/lib/optional";
 import { serverApi } from "@/lib/server-api";
-import { parseSlugId } from "@/lib/slug";
+import { parseCodeSlug } from "@/lib/address-read";
 
-type Params = Promise<{ locale: string; kind: string; slug: string }>;
+type Params = Promise<{ locale: string; ref: string }>;
 
-async function load(kind: string, slug: string): Promise<TitleDetails | "blocked" | "unavailable" | null> {
-  const id = parseSlugId(slug);
-  if ((kind !== "movie" && kind !== "tv") || !id) return null;
+async function load(ref: string): Promise<TitleDetails | "blocked" | "unavailable" | null> {
+  const code = parseCodeSlug(ref);
+  if (!code) return null;
   try {
-    return await serverApi<TitleDetails>(`/api/catalog/title/${kind}/${id}`);
+    return await serverApi<TitleDetails>(`/api/catalog/title/${code}`);
   } catch (e) {
     if (e instanceof ApiRequestError && e.code === "maturity_blocked") return "blocked";
     if (e instanceof ApiRequestError && e.code === "title_unavailable") return "unavailable";
@@ -29,17 +29,17 @@ async function load(kind: string, slug: string): Promise<TitleDetails | "blocked
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { kind, slug } = await params;
-  const d = await optional(load(kind, slug), null);
+  const { ref } = await params;
+  const d = await optional(load(ref), null);
   return { robots: { index: false }, ...(d && typeof d !== "string" ? { title: d.title } : {}) };
 }
 
 /** A title on a TV: the same details as the site's title page. */
 export default async function TvTitlePage({ params }: { params: Params }) {
-  const { locale, kind, slug } = await params;
+  const { locale, ref } = await params;
   setRequestLocale(locale);
   const t = await getTranslations();
-  const d = await load(kind, slug);
+  const d = await load(ref);
   if (d === null || typeof d === "string") {
     const state =
       d === "blocked"

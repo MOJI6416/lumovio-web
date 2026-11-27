@@ -30,7 +30,7 @@ import { titleCopies } from "@/lib/watch-state";
 import { AddToCalendar } from "./AddToCalendar";
 import { CopyActions, CopyRemovalDialog, FIND_SOURCE_ID, type RemovalTarget } from "./CopyActions";
 import { useChosenSeason } from "./chosen-season";
-import { notOutYet, sourcesHref, startEpisode, type TitleCore, utcToday, watchHref } from "./core";
+import { notOutYet, sourcesHref, startEpisode, type TitleCore, utcToday, startHref } from "./core";
 import { useHydrated } from "./hydrated";
 import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
@@ -103,7 +103,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   // The TorrServer this device searches by itself; else one that answers but leaves the search to the person.
   const search = manage ? autoSearchSource(raw?.sources, kids) : null;
   const manual = search ? undefined : torrServers.find(reachable);
-  const resume = watchHref(d, lib?.progress, chosen);
+  const resume = startHref(d, lib?.progress, chosen);
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details; the same words as the sources screen (sources/copy-text).

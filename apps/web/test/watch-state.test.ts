@@ -1,6 +1,6 @@
 import type { Availability, SourceState, TitleAvailability } from "@lumovio/contracts";
 import { describe, expect, it } from "vitest";
-import { startEpisode, watchHref } from "../src/components/title/core";
+import { startEpisode, startHref } from "../src/components/title/core";
 import { seasonCopies } from "../src/lib/media/packs";
 import { titleCopies, watchState } from "../src/lib/watch-state";
 
@@ -62,7 +62,7 @@ describe("the episode a series' Watch starts", () => {
     expect(startEpisode(show, undefined, 3)).toEqual({ season: 3, episode: 1 });
     // A season the series doesn't have changes nothing.
     expect(startEpisode(show, undefined, 9)).toEqual({ season: 1, episode: 1 });
-    expect(watchHref(show, progress(1, 5), 2)).toBe("/watch/tv/1?s=2&e=1");
+    expect(startHref(show, progress(1, 5), 2)).toBe("/watch/tv/1?s=2&e=1");
   });
   it("goes on to the next season after a season's last episode, not to an episode that doesn't exist", () => {
     expect(startEpisode(show, progress(1, 10, { completed: true }))).toEqual({ season: 2, episode: 1 });

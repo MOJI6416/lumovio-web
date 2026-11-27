@@ -22,7 +22,7 @@ import { isDubbing, pictureReasons, type RankedRelease, voiceWish, wishNameTrack
 import { background } from "@/lib/optional";
 import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { useChosenSeason } from "./chosen-season";
-import { sourcesHref, startEpisode, type TitleCore, watchHref } from "./core";
+import { sourcesHref, startEpisode, type TitleCore, startHref } from "./core";
 import { hasStudioMark, StudioMark, StudioSlot } from "@/components/sources/StudioMark";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
 
@@ -78,7 +78,7 @@ export function TorrentLookupPanel({ title: d, source, dismiss: back }: { title:
       }
     : undefined;
 
-  const playHref = watchHref(d, state?.progress, season);
+  const playHref = startHref(d, state?.progress, season);
   const join = playHref.includes("?") ? "&" : "?";
   const via = tp("viaTorrServer", { name: source.name });
   const { option, edition, version, chosen } = pick;

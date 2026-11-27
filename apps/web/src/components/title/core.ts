@@ -1,4 +1,5 @@
 import type { TitleDetails, TitleLibraryState, TitleSummary, Video } from "@lumovio/contracts";
+import { watchHref } from "@/lib/slug";
 
 /*
  * What the title page's client parts need of a title, cut from TitleDetails on the server (a plain module, so both
@@ -122,11 +123,10 @@ export function startEpisode(t: Pick<TitleDetails, "seasons">, p: TitleLibrarySt
 }
 
 /** Where "Watch" and "Continue" go: resume, else the next episode, else the start (`chosen`: see `startEpisode`). */
-export function watchHref(t: Pick<TitleDetails, "kind" | "tmdbId" | "seasons">, p: TitleLibraryState["progress"] | undefined, chosen: number | null = null): string {
-  const base = `/watch/${t.kind}/${t.tmdbId}`;
-  if (t.kind === "movie") return base;
+export function startHref(t: Pick<TitleDetails, "code" | "kind" | "tmdbId" | "seasons">, p: TitleLibraryState["progress"] | undefined, chosen: number | null = null): string {
+  if (t.kind === "movie") return watchHref(t);
   const { season, episode } = startEpisode(t, p, chosen);
-  return `${base}?s=${season}&e=${episode}`;
+  return watchHref(t, { s: season, e: episode });
 }
 
 /** The sources screen for the same viewing: other copies, a new search (never an empty player). */

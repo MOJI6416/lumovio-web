@@ -56,5 +56,5 @@ export function useWhat() {
   };
 }
 
-export const href = (f: CalendarEvent) => `${titleHref(f.title.kind, f.title.tmdbId, f.title.title)}${f.kind === "episode" ? "?tab=episodes" : ""}`;
+export const href = (f: CalendarEvent) => `${titleHref(f.title)}${f.kind === "episode" ? "?tab=episodes" : ""}`;
 

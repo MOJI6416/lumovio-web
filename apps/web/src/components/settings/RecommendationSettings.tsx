@@ -196,7 +196,7 @@ function SignalsSection({ taste, onChange }: { taste: TasteQuery; onChange: () =
                   return (
                     <li key={s.title.id} className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 py-2">
                       {/* The row's text is the title's link: a target as tall as the row. */}
-                      <Link href={titleHref(s.title.kind, s.title.tmdbId, s.title.title)} className="group/l block min-w-0 flex-1 basis-56 rounded-sm py-1">
+                      <Link href={titleHref(s.title)} className="group/l block min-w-0 flex-1 basis-56 rounded-sm py-1">
                         <span className="block text-title text-text-1 group-hover/l:underline">{s.title.title}</span>
                         <span className="block text-body-s text-text-2">
                           {words(s)} · {influence(t, s)}
@@ -467,7 +467,7 @@ function MutedSection({ taste, onChange }: { taste: TasteQuery; onChange: () => 
                   .filter((x) => !gone.has(x.id))
                   .map((title) => (
                     <li key={title.id} className="flex min-h-14 items-center justify-between gap-3 py-2">
-                      <Link href={titleHref(title.kind, title.tmdbId, title.title)} className="group/l block min-w-0 rounded-sm py-1">
+                      <Link href={titleHref(title)} className="group/l block min-w-0 rounded-sm py-1">
                         <span className="block truncate text-title text-text-1 group-hover/l:underline">
                           {title.title}
                           {title.year ? <span className="ms-2 text-body-s font-normal text-text-2">{title.year}</span> : null}
@@ -583,7 +583,7 @@ function OpenedSection({ taste, onChange }: { taste: TasteQuery; onChange: () =>
                 <ul className="divide-y divide-line">
                   {shown.map((s) => (
                     <li key={s.title.id} className="flex min-h-14 items-center gap-3 py-2">
-                      <Link href={titleHref(s.title.kind, s.title.tmdbId, s.title.title)} className="group/l block min-w-0 flex-1 rounded-sm py-1">
+                      <Link href={titleHref(s.title)} className="group/l block min-w-0 flex-1 rounded-sm py-1">
                         <span className="block text-title text-text-1 group-hover/l:underline">{s.title.title}</span>
                         <span className="block text-body-s text-text-2">
                           {t("sig_opened")} · {influence(t, s)}

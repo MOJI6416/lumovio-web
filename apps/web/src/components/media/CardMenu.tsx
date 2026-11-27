@@ -57,7 +57,7 @@ export function CardMenu({
   const [newList, setNewList] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [why, setWhy] = useState(false);
-  const href = titleHref(title.kind, title.tmdbId, title.title);
+  const href = titleHref(title);
 
   // A long press after the menu arrived.
   const signal = useRef(openSignal);

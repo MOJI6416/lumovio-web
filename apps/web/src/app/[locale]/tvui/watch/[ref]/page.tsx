@@ -9,14 +9,14 @@ import { redirect } from "@/i18n/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { optional } from "@/lib/optional";
 import { serverApi } from "@/lib/server-api";
+import { isCode } from "@/lib/address-read";
 import { requireTvProfile } from "@/lib/tv-server";
 
-type Params = Promise<{ locale: string; kind: string; id: string }>;
+type Params = Promise<{ locale: string; ref: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { kind, id } = await params;
-  const valid = (kind === "movie" || kind === "tv") && /^\d+$/.test(id);
-  const d = valid ? await optional(serverApi<TitleDetails>(`/api/catalog/title/${kind}/${id}`), null) : null;
+  const { ref } = await params;
+  const d = isCode(ref) ? await optional(serverApi<TitleDetails>(`/api/catalog/title/${ref}`), null) : null;
   return { robots: { index: false }, ...(d ? { title: d.title } : {}) };
 }
 
@@ -26,16 +26,16 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  * navigation for the sources screen.
  */
 export default async function TvWatchPage({ params }: { params: Params }) {
-  const { locale, kind, id } = await params;
+  const { locale, ref } = await params;
   setRequestLocale(locale);
-  if ((kind !== "movie" && kind !== "tv") || !/^\d+$/.test(id)) notFound();
+  if (!isCode(ref)) notFound();
   const me = await requireTvProfile();
   if (me === "unavailable") return <TvUnavailable />;
   let details: TitleDetails;
   try {
-    details = await serverApi<TitleDetails>(`/api/catalog/title/${kind}/${id}`);
+    details = await serverApi<TitleDetails>(`/api/catalog/title/${ref}`);
   } catch (e) {
-    if (e instanceof ApiRequestError && (e.code === "maturity_blocked" || e.code === "title_unavailable")) redirect({ href: `/title/${kind}/${id}`, locale });
+    if (e instanceof ApiRequestError && (e.code === "maturity_blocked" || e.code === "title_unavailable")) redirect({ href: `/title/${ref}`, locale });
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) notFound();
     throw e;
   }

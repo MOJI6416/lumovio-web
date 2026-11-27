@@ -26,7 +26,7 @@ import type { TitleLibraryState } from "@lumovio/contracts";
 import { useEditableLists, usePersonalActions } from "@/components/media/usePersonalActions";
 import { useSession } from "@/components/providers/Providers";
 import { copyMarks, QualityBadges, QualityLine, resolutionBesideMarks, SLOT, Slotted } from "@/components/sources/QualityBadges";
-import { type TitleCore, resumable, showWatched, sourcesHref, startEpisode, watchHref } from "@/components/title/core";
+import { type TitleCore, resumable, showWatched, sourcesHref, startEpisode, startHref } from "@/components/title/core";
 import { heroPlan, type Summary, type TorrentState } from "@/components/title/hero-plan";
 import { serviceOf } from "@/components/title/services";
 import type { ProbeResult } from "@/components/title/TorrentProbe";
@@ -125,7 +125,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     trailer: Boolean(d.trailer),
     offers: offerNames,
   });
-  const playHref = watchHref(d, p);
+  const playHref = startHref(d, p);
   const left = p?.durationSec ? Math.max(0, p.durationSec - p.positionSec) : null;
   const leftText =
     left === null
@@ -241,7 +241,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         <TvLayer look="dialog" className="max-w-240" label={tv("openOnPhone")} onClose={() => setLayer(null)}>
           {() => (
             <ContinueOnPhone
-              path={titleHref(d.kind, d.tmdbId, d.title)}
+              path={titleHref(d)}
               title={tv("openOnPhone")}
               text={tv("openOnPhoneText")}
             />

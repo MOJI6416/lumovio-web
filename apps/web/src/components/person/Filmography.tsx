@@ -147,7 +147,7 @@ function CreditRow({ credit: c, group }: { credit: RowCredit; group: Group }) {
   return (
     <li className="border-b border-line">
       <Link
-        href={titleHref(c.kind, c.tmdbId, c.title)}
+        href={titleHref(c)}
         aria-label={[
           `${c.title}${c.year ? ` (${c.year})` : ""}`,
           facts,

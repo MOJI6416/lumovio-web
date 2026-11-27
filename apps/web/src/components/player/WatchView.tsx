@@ -56,7 +56,7 @@ import { addFirstWorking, takeBack } from "@/lib/media/torrent-source";
 import { type EpisodeFile, episodeFiles, isVideoFile, matchEpisode, pickMovieFile, TorrentFileMissing, type TsFile, type torrServerClient } from "@/lib/media/torrserver";
 import type { PreparedPlayback } from "@/lib/media/types";
 import { background, optional } from "@/lib/optional";
-import { titleHref } from "@/lib/slug";
+import { titleHref, watchHref } from "@/lib/slug";
 import { episodesOpen } from "@/lib/spoilers";
 import { useAction } from "@/lib/use-action";
 import { randomId } from "@/lib/random-id";
@@ -863,7 +863,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   // To the title; on a TV back to the screen the viewing was opened from (the title, the home's Continue), so Back
   // from there never starts the player again.
   // Back to the title it came from, not a new entry (useGoUp): the title's and the app's Back mustn't lead here again.
-  const toTitle = () => (tvNav ? tvNav.leave(titleHref(d.kind, d.tmdbId, d.title)) : goUp(titleHref(d.kind, d.tmdbId, d.title)));
+  const toTitle = () => (tvNav ? tvNav.leave(titleHref(d)) : goUp(titleHref(d)));
   // Picking a file: why it is asked — the episode's file was unlinked, is ambiguous, or isn't in the torrents.
   const fileTitle = (torrents: TorrentFiles[]) =>
     d.kind === "tv"
@@ -874,9 +874,9 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       : t("pickMovieFile");
   const episodeLabel = d.kind === "tv" && season !== null && episode !== null ? t("episodeLabel", { season, episode }) : null;
   const subtitle = episodeLabel ? [episodeLabel, episodeName].filter(Boolean).join(" · ") : d.year ? String(d.year) : null;
-  const here = `/watch/${d.kind}/${d.tmdbId}${season !== null ? `?s=${season}&e=${episode}` : ""}`;
+  const here = watchHref(d, season !== null ? { s: season, e: episode } : {});
   // The dubbing chosen for this viewing goes on to the series' other episodes (their files have the same tracks).
-  const epHref = (s: number, e: number) => `/watch/tv/${d.tmdbId}?s=${s}&e=${e}${voiceNow.current ? `&voice=${encodeURIComponent(voiceNow.current)}` : ""}`;
+  const epHref = (s: number, e: number) => watchHref(d, { s, e, voice: voiceNow.current });
   // Why there is nothing to play, in the same words as the title page.
   const ws = avail.state;
   const whyNothing =
@@ -1149,7 +1149,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
         nextEp
           ? null
           : {
-              titleHref: titleHref(d.kind, d.tmdbId, d.title),
+              titleHref: titleHref(d),
               kind: d.kind,
               related: d.related,
               marked: signedIn ? marked : null,
@@ -1463,7 +1463,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
                     };
                   }),
                   all: avail.data?.servers ?? [],
-                  managePath: signedIn && !isKids ? `${titleHref(d.kind, d.tmdbId, d.title)}?tab=watch` : null,
+                  managePath: signedIn && !isKids ? `${titleHref(d)}?tab=watch` : null,
                   empty:
                     phase.kind !== "choose" || candidates.length > 0 || !signedIn
                       ? null

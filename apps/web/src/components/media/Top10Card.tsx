@@ -53,7 +53,7 @@ export function Top10Card({ title, rank, priority }: { title: TitleSummary; rank
       </svg>
       <div className="relative min-w-0">
         <Link
-          href={titleHref(title.kind, title.tmdbId, title.title)}
+          href={titleHref(title)}
           className="group/link block rounded-sm [-webkit-touch-callout:none] focus-visible:outline-none"
           data-title-id={title.id}
           data-on-server={title.onServer ? "" : undefined}

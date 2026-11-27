@@ -305,7 +305,7 @@ function TvEndScreen({ end, title, onReplay }: { end: EndInfo; title: string; on
             <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">
               {related.map((r) => (
                 <li key={r.id}>
-                  <Link href={titleHref(r.kind, r.tmdbId, r.title)} className="group flex flex-col gap-2 rounded-sm">
+                  <Link href={titleHref(r)} className="group flex flex-col gap-2 rounded-sm">
                     <img src={tmdbImage(r.posterPath, "w185") ?? undefined} alt="" loading="lazy" className="aspect-2/3 w-full rounded-sm bg-surface-2 object-cover" />
                     <span className="line-clamp-2 text-body-s text-text-1">{r.title}</span>
                   </Link>

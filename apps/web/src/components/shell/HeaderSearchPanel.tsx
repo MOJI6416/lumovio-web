@@ -165,7 +165,7 @@ export function HeaderSearchPanel({ onClose }: { onClose: () => void }) {
 
   const optionId = (i: number) => `${listId}-${i}`;
   const href = (o: Option) =>
-    o.kind === "title" ? titleHref(o.title.kind, o.title.tmdbId, o.title.title) : o.kind === "person" ? personHref(o.person.id, o.person.name) : o.kind === "recent" ? null : o.href;
+    o.kind === "title" ? titleHref(o.title) : o.kind === "person" ? personHref(o.person) : o.kind === "recent" ? null : o.href;
   const choose = (o: Option) => {
     if (o.kind === "recent") {
       setQ(o.text);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseSlugId, slugify, titleHref } from "../src/lib/slug";
+import { parseSlugId } from "../src/lib/address-read";
+import { slugify, titleHref } from "../src/lib/slug";
 
 
 import { safeNext } from "../src/lib/safe-next";
@@ -10,7 +11,7 @@ describe("slugs", () => {
     expect(slugify("Amélie & Co.")).toBe("amelie-co");
   });
   it("builds and parses title URLs", () => {
-    expect(titleHref("movie", 550, "Fight Club")).toBe("/title/movie/550-fight-club");
+    expect(titleHref({ code: "ewzsjd5z", kind: "movie", tmdbId: 550 }, "Fight Club")).toBe("/title/ewzsjd5z-fight-club");
     expect(parseSlugId("550-fight-club")).toBe(550);
     expect(parseSlugId("abc")).toBeNull();
   });

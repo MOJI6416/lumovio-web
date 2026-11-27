@@ -79,7 +79,7 @@ export function ShelvesScreen({
     const item = shelves.find((s) => s.removable)?.items[index];
     if (!item) return;
     const x = item.title;
-    setMore({ kind: "continue", title: x, details: titleHref(x.kind, x.tmdbId, x.title), refresh: true });
+    setMore({ kind: "continue", title: x, details: titleHref(x), refresh: true });
   });
 
   const spotItem = spot.item;

@@ -9,6 +9,7 @@ import { formatRuntime } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
 import { LandscapeCard } from "./LandscapeCard";
 import { Row } from "./Row";
+import { watchHref } from "@/lib/slug";
 
 /**
  * "Continue watching" (and "Next episode" in the library): landscape cards straight to the player, with ▶, the episode
@@ -49,7 +50,7 @@ export function ContinueRow({ items: initial, title: heading, id = "continue" }:
         const { title, progress, next } = item;
         const s = next?.season ?? progress.season;
         const e = next?.episode ?? progress.episode;
-        const href = `/watch/${title.kind}/${title.tmdbId}${s !== null && e !== null ? `?s=${s}&e=${e}` : ""}`;
+        const href = watchHref(title, s !== null && e !== null ? { s, e } : {});
         const left = progress.durationSec ? Math.max(0, progress.durationSec - progress.positionSec) : null;
         const meta = next
           ? [t("card.nextEpisode", { season: next.season, episode: next.episode })]

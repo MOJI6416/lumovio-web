@@ -44,7 +44,7 @@ export function useLinks() {
       const info = titles[id];
       const name = info ? `${info.title}${info.year ? ` (${info.year})` : ""}` : id;
       const ref = TITLE_ID.exec(id);
-      const href = ref && info ? titleHref(ref[1] as "movie" | "tv", Number(ref[2]), info.title) : null;
+      const href = ref && info ? titleHref({ kind: ref[1] as "movie" | "tv", tmdbId: Number(ref[2]) }, info.title) : null;
       if (id.startsWith("movie:")) return { titleId: id, title: name, href, scope: t("film") };
       const eps = torrent.links.filter((l) => l.titleId === id && l.season !== null && l.episode !== null);
       if (eps.length === 0) return { titleId: id, title: name, href, scope: null };

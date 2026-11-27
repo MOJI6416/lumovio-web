@@ -7,7 +7,7 @@ import { buttonClass } from "@/components/ui/Button";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/IconButton";
 import { Link } from "@/i18n/navigation";
-import { titleHref } from "@/lib/slug";
+import { titleHref, watchHref } from "@/lib/slug";
 import { type ActionTitle, usePersonalActions } from "./usePersonalActions";
 
 /**
@@ -22,11 +22,11 @@ export function HeroActions({ title, playable, size = "lg", className }: { title
   const p = a.state?.progress;
   const resume = p && !p.completed && p.positionSec > 30 ? p : null;
   const watch = resume
-    ? `/watch/${title.kind}/${title.tmdbId}${resume.season !== null ? `?s=${resume.season}&e=${resume.episode ?? 1}` : ""}`
+    ? watchHref(title, resume.season !== null ? { s: resume.season, e: resume.episode ?? 1 } : {})
     : playable
-      ? `/watch/${title.kind}/${title.tmdbId}`
+      ? watchHref(title)
       : null;
-  const details = titleHref(title.kind, title.tmdbId, title.title);
+  const details = titleHref(title);
   // The primary takes the width the circles leave on a phone; from a tablet it keeps its own.
   return (
     <div className={cn("flex w-full items-center gap-3 md:w-auto", className)}>

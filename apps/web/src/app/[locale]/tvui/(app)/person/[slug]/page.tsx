@@ -6,7 +6,7 @@ import { TvBackButton } from "@/components/tvui/shell/TvBackButton";
 import { TvState } from "@/components/tvui/shell/TvState";
 import { optional } from "@/lib/optional";
 import { serverApi } from "@/lib/server-api";
-import { parseSlugId } from "@/lib/slug";
+import { parseCodeSlug, parseSlugId } from "@/lib/address-read";
 
 export async function generateMetadata() {
   return { robots: { index: false } };
@@ -14,8 +14,10 @@ export async function generateMetadata() {
 
 /** A person on a TV. */
 export default async function TvPersonPage({ params }: { params: Promise<{ slug: string }> }) {
-  const id = parseSlugId((await params).slug);
-  const p = id ? await optional(serverApi<PersonDetails>(`/api/catalog/person/${id}`), null) : null;
+  const { slug } = await params;
+  // The code; an older address's TMDB id is read too (a TV needs no canonical address).
+  const ref = parseCodeSlug(slug) ?? parseSlugId(slug);
+  const p = ref ? await optional(serverApi<PersonDetails>(`/api/catalog/person/${ref}`), null) : null;
   if (!p) {
     const t = await getTranslations("errors");
     return (

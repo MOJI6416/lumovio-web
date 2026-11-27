@@ -42,7 +42,7 @@ export function HeroActions({
     <div data-zone="hero" data-zone-axis="x" data-zone-down="shelf:0" className="flex flex-wrap gap-4 pt-2">
       <Link
         prefetch={false}
-        href={titleHref(title.kind, title.tmdbId, title.title)}
+        href={titleHref(title)}
         data-tv-initial
         className={tvButtonClass()}
       >

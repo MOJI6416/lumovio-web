@@ -19,20 +19,23 @@ import { OG_IMAGE } from "@/lib/brand";
 import { formatDate, latinLang } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
 import { optional } from "@/lib/optional";
-import { localizedPath, ogBase, seoAlternates } from "@/lib/seo";
+import { personJsonLd } from "@/lib/json-ld";
+import { canonicalLocale, localizedPath, ogBase, seoAlternates } from "@/lib/seo";
 import { serverApi } from "@/lib/server-api";
-import { parseSlugId, personHref } from "@/lib/slug";
+import { parseCodeSlug, parseSlugId } from "@/lib/address-read";
+import { personHref } from "@/lib/slug";
 
 type Params = Promise<{ locale: string; slug: string }>;
 
+/** A person by their code; an older address's TMDB id is read too, and the page moves to the code's address. */
 const load = cache(async (slug: string): Promise<PersonDetails | "blocked" | null> => {
-  const id = parseSlugId(slug);
-  if (!id) return null;
+  const ref = parseCodeSlug(slug) ?? parseSlugId(slug);
+  if (!ref) return null;
   try {
-    return await serverApi<PersonDetails>(`/api/catalog/person/${id}`);
+    return await serverApi<PersonDetails>(`/api/catalog/person/${ref}`);
   } catch (e) {
     if (e instanceof ApiRequestError && e.code === "maturity_blocked") return "blocked";
-    // An id TMDB never had (404) or one out of range (400) is a 404 page, not "probably temporary".
+    // A code never issued or an id TMDB never had (404), one out of range (400): a 404 page, not "probably temporary".
     if (e instanceof ApiRequestError && (e.status === 404 || e.status === 400)) return null;
     throw e;
   }
@@ -60,7 +63,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   // A link preview is landscape: a frame from what they are known for, else the brand image — not the
   // portrait photo, which a preview crops to a strip of face.
   const frame = tmdbImage(known(p).find((c) => c.backdropPath)?.backdropPath, "w1280");
-  const path = personHref(p.id);
+  const path = personHref(p);
   return {
     title: p.name,
     description: p.biography?.replace(EMOJI, "").trim().slice(0, 200) || undefined,
@@ -84,8 +87,8 @@ export default async function PersonPage({ params }: { params: Params }) {
   const t = await getTranslations();
   const p = await load(slug);
   if (p === null) notFound();
-  // One address per person (lib/slug.ts personHref): an older one with a name goes there, for good.
-  if (p !== "blocked" && slug !== String(p.id)) permanentRedirect(localizedPath(locale, personHref(p.id)));
+  // One address per person (lib/slug.ts personHref): an older one (TMDB's id, with a name, a merged code) goes there, for good.
+  if (p !== "blocked" && `/person/${slug}` !== personHref(p)) permanentRedirect(localizedPath(locale, personHref(p)));
   if (p === "blocked") return <MaturityBlocked from={`/person/${slug}`} person />;
 
   const gender = p.gender ?? null;
@@ -113,6 +116,7 @@ export default async function PersonPage({ params }: { params: Params }) {
     id: c.id,
     kind: c.kind,
     tmdbId: c.tmdbId,
+    code: c.code,
     title: c.title,
     year: c.year,
     releaseDate: c.releaseDate,
@@ -134,9 +138,12 @@ export default async function PersonPage({ params }: { params: Params }) {
     return r?.name ? (r.voice ? t("person.voiceRole", { name: r.name }) : r.name) : undefined;
   };
   const links = p.links ?? [];
+  const jsonLd = personJsonLd(p, localizedPath(canonicalLocale(locale), personHref(p)), bio);
 
   return (
     <div className="flex flex-col gap-10 pt-20 md:gap-12 md:pt-28">
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {/* Who: the circle and the name side by side, the biography under them on a phone and beside the circle from md. */}
       <header className="page-x mx-auto grid w-full max-w-media grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-5 md:grid-cols-[10rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-8 xl:grid-cols-[12rem_minmax(0,1fr)] xl:gap-x-10">
         <Artwork

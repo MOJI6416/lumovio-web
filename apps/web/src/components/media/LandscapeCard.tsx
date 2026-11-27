@@ -76,7 +76,7 @@ export function LandscapeCard({
   return (
     <div className={cn("group/card relative w-full min-w-0 select-none", className)} {...press.handlers}>
       <Link
-        href={href ?? titleHref(title.kind, title.tmdbId, title.title)}
+        href={href ?? titleHref(title)}
         className="group/link block rounded-sm [-webkit-touch-callout:none] focus-visible:outline-none"
         data-title-id={title.id}
         data-on-server={title.onServer ? "" : undefined}

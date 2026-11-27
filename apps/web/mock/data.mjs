@@ -127,6 +127,24 @@ export const GENRES = {
 };
 const KIDS_GENRES = new Set([16, 10751, 10762]);
 
+/**
+ * A made-up code in the form of Lumovio's own (8 symbols of Crockford's base32, a letter first), the same for the
+ * same key on every run. TMDB's ids stay where the answers name them as TMDB's (`tmdbId`, `id: "movie:…"`).
+ */
+function hash(s) {
+  let h = 0;
+  for (const c of s) h = (Math.imul(h, 31) + c.charCodeAt(0)) | 0;
+  return h >>> 0;
+}
+
+const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
+export function codeFor(key) {
+  const r = rng(hash(key));
+  let s = ALPHABET[10 + Math.floor(r() * 22)];
+  for (let i = 1; i < 8; i++) s += ALPHABET[Math.floor(r() * 32)];
+  return s;
+}
+
 function summary(kind, tmdbId, title, year, r, extra = {}) {
   const pool = GENRES[kind];
   const genreIds = [
@@ -137,6 +155,7 @@ function summary(kind, tmdbId, title, year, r, extra = {}) {
     id: `${kind}:${tmdbId}`,
     kind,
     tmdbId,
+    code: codeFor(`${kind}:${tmdbId}`),
     title,
     originalTitle: null,
     year,
@@ -219,23 +238,21 @@ function build() {
     const id = 8_000_001 + i;
     people.set(id, {
       id,
+      code: codeFor(`person:${id}`),
       name: `${FIRST[i % FIRST.length]} ${LAST[(i * 3) % LAST.length]}`,
       profilePath: null,
       knownFor: i % 5 === 0 ? "Directing" : "Acting",
     });
   }
-  return { titles, runtime, people, r };
+  const codes = new Map([...titles.values()].map((t) => [t.code, t.id]));
+  const personCodes = new Map([...people.values()].map((p) => [p.code, p.id]));
+  return { titles, runtime, people, codes, personCodes, r };
 }
 
 export const db = build();
 export const all = () => [...db.titles.values()];
 export const isKidsSafe = (t) => t.genreIds.some((g) => KIDS_GENRES.has(g));
 
-function hash(s) {
-  let h = 0;
-  for (const c of s) h = (Math.imul(h, 31) + c.charCodeAt(0)) | 0;
-  return h >>> 0;
-}
 
 /** Seasons are derived from the id so every request returns the same show. */
 export function seasonsOf(t) {

@@ -168,7 +168,7 @@ export function LibraryOverview() {
                 <LandscapeCard
                   key={e.title.id}
                   title={e.title}
-                  href={`${titleHref(e.title.kind, e.title.tmdbId, e.title.title)}#episodes`}
+                  href={`${titleHref(e.title)}#episodes`}
                   meta={meta}
                   label={[e.title.title, ...meta].filter(Boolean).join(", ")}
                 />

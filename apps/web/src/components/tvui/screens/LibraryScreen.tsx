@@ -12,7 +12,7 @@ import { TvButton } from "@/components/ui/tv/TvButton";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { tmdbImage } from "@/lib/images";
-import { titleHref } from "@/lib/slug";
+import { titleHref, watchHref } from "@/lib/slug";
 import { CardMoreLayer, type CardTarget, HoldHint, useHidden, useStable } from "../media/hold";
 import { TvCard } from "../media/TvCard";
 import { useTvNav } from "../nav/TvNav";
@@ -153,7 +153,7 @@ function ContinueTab({ onFocusTitle }: { onFocusTitle: (t: TitleSummary | null) 
   const items = (q.data?.items ?? []).filter((i) => !hidden.has(i.title.id));
   const onMore = useStable((i: number) => {
     const x = items[i]?.title;
-    if (x) setMore({ kind: "continue", title: x, details: titleHref(x.kind, x.tmdbId, x.title) });
+    if (x) setMore({ kind: "continue", title: x, details: titleHref(x) });
   });
   const onFocus = (e: FocusEvent<HTMLDivElement>) => onFocusTitle(items[Number((e.target as HTMLElement).dataset.index)]?.title ?? null);
   return (
@@ -171,7 +171,7 @@ function ContinueTab({ onFocusTitle }: { onFocusTitle: (t: TitleSummary | null) 
                 shape="wide"
                 index={i}
                 fluid
-                href={`/watch/${x.kind}/${x.tmdbId}${s !== null && e !== null ? `?s=${s}&e=${e}` : ""}`}
+                href={watchHref(x, s !== null && e !== null ? { s, e } : {})}
                 label={tv("continueLabel", { title: x.title, where })}
                 progress={next ? 0 : (progress.fraction ?? 0)}
                 onMore={onMore}

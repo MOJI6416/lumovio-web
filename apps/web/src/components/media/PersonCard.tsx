@@ -13,7 +13,7 @@ import { CardMeta } from "./CardMeta";
 export function PersonCard({ person, subtitle, subtitleLang }: { person: PersonSummary; subtitle?: string | null; subtitleLang?: string }) {
   return (
     <div className="group/card w-full min-w-0">
-      <Link href={personHref(person.id, person.name)} className="group/link block focus-visible:outline-none">
+      <Link href={personHref(person)} className="group/link block focus-visible:outline-none">
         {/* The name under it names the link. */}
         <Artwork shape="person" src={tmdbImage(person.profilePath, "w185")} placeholder="person" sizes="136px" />
         <CardMeta title={person.name} meta={[subtitle && subtitleLang ? <span key="role" lang={subtitleLang}>{subtitle}</span> : subtitle]} align="center" />
