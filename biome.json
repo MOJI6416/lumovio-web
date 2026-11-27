@@ -13,5 +13,27 @@
       "style": { "noNonNullAssertion": "off" }
     }
   },
-  "css": { "parser": { "tailwindDirectives": true } }
+  "css": { "parser": { "tailwindDirectives": true } },
+  "overrides": [
+    {
+      "includes": ["apps/web/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/sources", "**/sources/**", "**/tmdb", "**/fanart", "**/wikidata", "**/tvmaze", "**/anilist", "**/mdblist", "**/omdb"],
+                    "message": "The site reads Lumovio's own API: the catalog's sources are asked by its import alone."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

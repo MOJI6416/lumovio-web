@@ -34,6 +34,8 @@ export interface TitleSummary {
   id: TitleId;
   kind: MediaKind;
   tmdbId: number;
+  /** Lumovio's own code of the title (`/api/v2/title/:code`), where the catalog has it. */
+  code?: string;
   title: string;
   originalTitle: string | null;
   year: number | null;
@@ -113,6 +115,8 @@ export interface PersonSummary {
   name: string;
   profilePath: string | null;
   knownFor: string | null;
+  /** Lumovio's own code of the person (`/api/v2/person/:code`), where the catalog has it. */
+  code?: string;
 }
 
 export interface CastMember extends PersonSummary {
@@ -209,6 +213,8 @@ export interface TitleDetails extends TitleSummary {
   logo: TitleLogoArt | null;
   /** A textless Fanart.tv background, only when TMDB has no backdrop for the title. */
   altBackdrop: ArtImage | null;
+  /** The catalog is loading the title's details now: the page shows what there is, and has more when asked again. */
+  pending?: boolean;
 }
 
 /**
@@ -342,6 +348,8 @@ export interface TitleScore {
 export interface SeasonDetails extends SeasonSummary {
   titleId: TitleId;
   episodes: EpisodeSummary[];
+  /** The catalog is loading the season's episodes now. */
+  pending?: boolean;
 }
 
 /** A person's page on another site (TMDB's external ids, their own site). */
@@ -372,6 +380,8 @@ export interface PersonDetails extends PersonSummary {
     /** A film's cast: the place in its billing, 0 first (TMDB's `order`), to tell a lead from a bit part. */
     billing?: number | null;
   })[];
+  /** The catalog is loading the person's details now. */
+  pending?: boolean;
 }
 
 /** "More by …" on a title page's More like this: the film's director or the series' creator and their other titles. */
