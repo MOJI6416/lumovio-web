@@ -47,12 +47,12 @@
       "jsChunks": 13
     },
     "/[locale]/browse/[kind]": {
-      "jsGzip": 230803,
+      "jsGzip": 231117,
       "cssGzip": 20624,
       "jsChunks": 17
     },
     "/[locale]/calendar": {
-      "jsGzip": 197397,
+      "jsGzip": 197710,
       "cssGzip": 20624,
       "jsChunks": 14
     },
@@ -102,7 +102,7 @@
       "jsChunks": 12
     },
     "/[locale]/person/[slug]": {
-      "jsGzip": 203215,
+      "jsGzip": 203520,
       "cssGzip": 20624,
       "jsChunks": 14
     },

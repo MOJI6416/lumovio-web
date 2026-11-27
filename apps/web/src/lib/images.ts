@@ -1,37 +1,51 @@
 import type { ArtImage } from "@lumovio/contracts";
+import { imageUrl, parseImageRef, sourceUrl } from "@lumovio/contracts/images";
 import { preload } from "react-dom";
 
 /**
- * TMDB image CDN helpers. Images load straight from image.tmdb.org in the size each slot needs,
- * so the Lumovio VPS never proxies artwork.
+ * Image addresses. A picture in an API answer is TMDB's file path, or another source's path after its name
+ * ("fanart:/…"); its address is built from that source's host and the size each slot needs
+ * (@lumovio/contracts/images, the one place that names the hosts). Images load straight from the sources' CDNs, so the
+ * Lumovio VPS never proxies artwork.
  */
-const BASE = "https://image.tmdb.org/t/p";
 
 export type PosterSize = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 export type BackdropSize = "w300" | "w780" | "w1280" | "original";
 export type ProfileSize = "w45" | "w185" | "h632" | "original";
 export type StillSize = "w92" | "w185" | "w300" | "original";
 
+/** A picture in the given size (TMDB's size names; another source gives its nearest copy). */
 export function tmdbImage(path: string | null | undefined, size: string): string | null {
-  return path ? `${BASE}/${size}${path}` : null;
+  return imageUrl(path, size);
 }
 
+/** srcSet of a picture whose source has only its ≤400 px copy and the original. */
+const previewAndOriginal = (ref: string, fullWidth: number) => `${imageUrl(ref, "preview")} 400w, ${imageUrl(ref, "original")} ${fullWidth}w`;
+
+/** A logo's or a background's file: from its path, else the full addresses the answer gave (Fanart.tv). */
+const artUrls = (a: ArtImage) =>
+  a.path ? { url: sourceUrl(a.source, a.path, "original"), previewUrl: sourceUrl(a.source, a.path, "preview") } : { url: a.url, previewUrl: a.previewUrl };
+
 /**
- * TMDB art in the given size; Fanart.tv art (full URLs on its CDN) as its ≤400 px copy for small
- * slots and the original otherwise.
+ * TMDB art in the given size; Fanart.tv art as its ≤400 px copy for small slots and the original otherwise.
  */
 export function artImage(a: ArtImage, size: string, small = false): string | null {
-  return a.source === "tmdb" ? tmdbImage(a.path, size) : small ? a.previewUrl : a.url;
+  if (a.source === "tmdb") return tmdbImage(a.path, size);
+  const u = artUrls(a);
+  return small ? u.previewUrl : u.url;
 }
 
 /** srcSet for a Fanart.tv image: its 400 px copy and the original at its own width. */
 export function fanartSrcSet(a: ArtImage, fullWidth: number): string | undefined {
-  return a.source === "fanart" && a.url && a.previewUrl ? `${a.previewUrl} 400w, ${a.url} ${fullWidth}w` : undefined;
+  if (a.source !== "fanart") return undefined;
+  const u = artUrls(a);
+  return u.url && u.previewUrl ? `${u.previewUrl} 400w, ${u.url} ${fullWidth}w` : undefined;
 }
 
 export function posterSrcSet(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
-  return (["w185", "w342", "w500", "w780"] as const).map((s) => `${BASE}/${s}${path} ${s.slice(1)}w`).join(", ");
+  if (parseImageRef(path).source !== "tmdb") return previewAndOriginal(path, 1000);
+  return (["w185", "w342", "w500", "w780"] as const).map((s) => `${tmdbImage(path, s)} ${s.slice(1)}w`).join(", ");
 }
 
 /**
@@ -41,8 +55,9 @@ export function posterSrcSet(path: string | null | undefined): string | undefine
  */
 export function backdropSrcSet(path: string | null | undefined): string | undefined {
   if (!path) return undefined;
+  if (parseImageRef(path).source !== "tmdb") return previewAndOriginal(path, 1920);
   return (["w780", "w1280", "w1920", "original"] as const)
-    .map((s) => `${BASE}/${s}${path} ${s === "original" ? "3840" : s.slice(1)}w`)
+    .map((s) => `${tmdbImage(path, s)} ${s === "original" ? "3840" : s.slice(1)}w`)
     .join(", ");
 }
 
