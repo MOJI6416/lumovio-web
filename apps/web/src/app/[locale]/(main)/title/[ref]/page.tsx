@@ -65,7 +65,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const d = await optional(load(ref), null);
   if (!d) return {};
   // A title closed to this profile isn't named in the tab either.
-  if (d === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
+  // A guest is closed out only of what is marked for adults: its words.
+  if (d === "blocked") return { title: (await getMeState()) === null ? (await getTranslations("titlePage"))("blockedGuestTitle") : (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
   if (d === "unavailable") return { title: (await getTranslations("titlePage"))("unavailableTitle"), robots: { index: false } };
   // A link preview is landscape: the backdrop, else the brand image — a poster would be cropped to a strip.
   const image = tmdbImage(d.backdropPath, "w1280");

@@ -8,11 +8,32 @@ import { getMeState } from "@/lib/server-api";
 /**
  * A title closed to this profile by its age limit: said plainly in the page state
  * — the limit is its one visible line — with the way out: "Switch profile" — "Leave the kids profile" in a kids one (the picker, PIN or password) — and "Home". Shared by the title page, /watch and the person page (`person` words it for a person).
+ * A guest has no age limit; what it can't open is a title or person marked for adults: "Adult profiles only" and "Sign in",
+ * back to this page.
  */
 export async function MaturityBlocked({ from, person = false }: { from: string; person?: boolean }) {
   const t = await getTranslations();
   const me = await getMeState();
   const kids = me !== "unavailable" && Boolean(me?.activeProfile?.isKids);
+  if (me === null)
+    return (
+      <EmptyState
+        variant="page"
+        icon={ShieldAlert}
+        title={t("titlePage.blockedGuestTitle")}
+        note={t("titlePage.blockedGuestText")}
+        action={
+          <Link href={`/auth/sign-in?next=${encodeURIComponent(from)}`} className={buttonClass("primary", "lg")}>
+            {t("common.signIn")}
+          </Link>
+        }
+        secondaryAction={
+          <Link href="/" className={buttonClass("tertiary", "lg")}>
+            {t("profiles.toHome")}
+          </Link>
+        }
+      />
+    );
   return (
     <EmptyState
       variant="page"

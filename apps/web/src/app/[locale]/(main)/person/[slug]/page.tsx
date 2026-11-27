@@ -23,7 +23,7 @@ import { tmdbImage } from "@/lib/images";
 import { optional } from "@/lib/optional";
 import { personJsonLd } from "@/lib/json-ld";
 import { canonicalLocale, localizedPath, ogBase, seoAlternates } from "@/lib/seo";
-import { serverApi } from "@/lib/server-api";
+import { getMeState, serverApi } from "@/lib/server-api";
 import { parseCodeSlug, parseSlugId } from "@/lib/address-read";
 import { personHref } from "@/lib/slug";
 
@@ -61,7 +61,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const p = await optional(load(slug), null);
   if (!p) return {};
   // Closed to this profile (an adult performer for a guest): the same screen at every such address, not to be indexed — as a title's.
-  if (p === "blocked") return { title: (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
+  // A guest is closed out only of what is marked for adults: its words.
+  if (p === "blocked") return { title: (await getMeState()) === null ? (await getTranslations("titlePage"))("blockedGuestTitle") : (await getTranslations("title"))("maturityBlocked"), robots: { index: false } };
   // A link preview is landscape: a frame from what they are known for, else the brand image — not the
   // portrait photo, which a preview crops to a strip of face.
   const frame = tmdbImage(known(p).find((c) => c.backdropPath)?.backdropPath, "w1280");

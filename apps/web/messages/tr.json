@@ -2406,7 +2406,9 @@
     "backToCopy": "Kopyaya dön",
     "guestWhat": "Bu nedir?",
     "detailsLoading": "Ayrıntılar yükleniyor",
-    "detailsNotLoaded": "Ayrıntılar henüz yüklenmedi"
+    "detailsNotLoaded": "Ayrıntılar henüz yüklenmedi",
+    "blockedGuestTitle": "Yalnızca yetişkin profilleri için",
+    "blockedGuestText": "Bu sayfayı açmak için yetişkin profiliyle oturum açın."
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",

@@ -2763,7 +2763,9 @@
     "backToCopy": "Back to the copy",
     "guestWhat": "What is this?",
     "detailsLoading": "Loading the details",
-    "detailsNotLoaded": "The details haven't loaded yet"
+    "detailsNotLoaded": "The details haven't loaded yet",
+    "blockedGuestTitle": "Adult profiles only",
+    "blockedGuestText": "Sign in with an adult profile to open this page."
   },
   "personPage": {
     "noCreditsKids": "No titles available in a kids profile",

@@ -2406,7 +2406,9 @@
     "backToCopy": "Revenir à la copie",
     "guestWhat": "Qu’est-ce que c’est ?",
     "detailsLoading": "Chargement des détails",
-    "detailsNotLoaded": "Les détails ne sont pas encore chargés"
+    "detailsNotLoaded": "Les détails ne sont pas encore chargés",
+    "blockedGuestTitle": "Réservé aux profils adultes",
+    "blockedGuestText": "Connectez-vous avec un profil adulte pour ouvrir cette page."
   },
   "personPage": {
     "noCreditsKids": "Aucun titre disponible sur un profil enfant",
