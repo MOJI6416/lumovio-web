@@ -291,10 +291,7 @@ export type TvPlaybackState = "preparing" | "playing" | "paused" | "ended" | "fa
 export type CastFailure = "blocked" | "unreachable" | "auth" | "missing" | "none" | "unsupported" | "external" | "other";
 
 export interface TvPlayback {
-  /**
-   * The title's code, whichever way the TV named it; the older key "movie:603" while the site's pages name titles
-   * without codes.
-   */
+  /** The title's code, whichever way the TV named it (the older key "movie:603" of a title without a code). */
   titleId: string;
   /** The title in the TV's language. */
   title: string;
