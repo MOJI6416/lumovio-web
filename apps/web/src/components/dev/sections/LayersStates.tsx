@@ -13,7 +13,9 @@ import { Artwork } from "@/components/media/Artwork";
 import { Progress, type Step, Steps } from "@/components/ui/Progress";
 import { type QueryLike, QueryState } from "@/components/ui/QueryState";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { PhotoCredit, TextCredit, TvdbCredit } from "@/components/ui/SourceCredit";
 import { Spoiler } from "@/components/ui/Spoiler";
+import { PendingDetails } from "@/components/ui/PendingDetails";
 import { toast } from "@/components/ui/Toast";
 import { Link } from "@/i18n/navigation";
 import { ApiRequestError } from "@/lib/api";
@@ -430,6 +432,33 @@ export function LayersStates() {
       </ShowcaseSection>
       <ShowcaseSection id="spoiler" title={t("spoiler")} source="ui/Spoiler.tsx, media/Artwork.tsx">
         <SpoilerDemo />
+      </ShowcaseSection>
+      <ShowcaseSection id="source-credit" title={t("sourceCredit")} source="ui/SourceCredit.tsx">
+        <Demo title={t("sourceCredit")} className="flex-col items-start gap-4">
+          <Cell label="Wikipedia">
+            <TextCredit credit={{ source: "wikipedia", url: "https://en.wikipedia.org/wiki/The_Matrix" }} />
+          </Cell>
+          <Cell label="Shikimori · Kinopoisk">
+            <TextCredit credit={{ source: "shikimori", url: "https://shikimori.io/animes/1" }} />
+            <TextCredit credit={{ source: "kinopoisk", url: "https://www.kinopoisk.ru/film/301/" }} />
+          </Cell>
+          <Cell label="Wikimedia Commons">
+            <PhotoCredit photo={{ path: "/f/fb/Joel_Silver_in_New_York_City_2008.jpg", author: "David Shankbone", license: "CC BY-SA 3.0" }} />
+            <PhotoCredit photo={{ path: "/a/ab/Example.jpg", author: null, license: "CC0" }} />
+          </Cell>
+          <Cell label="TheTVDB">
+            <TvdbCredit url="https://thetvdb.com/dereferrer/series/81189" />
+          </Cell>
+          <Cell label="TV">
+            <TextCredit credit={{ source: "wikipedia", url: null }} tv />
+          </Cell>
+        </Demo>
+      </ShowcaseSection>
+      <ShowcaseSection id="pending-details" title={t("pendingDetails")} source="ui/PendingDetails.tsx">
+        <Demo title={t("pendingDetails")} className="flex-col items-start gap-4">
+          <PendingDetails demo="loading" />
+          <PendingDetails demo="stopped" />
+        </Demo>
       </ShowcaseSection>
     </>
   );

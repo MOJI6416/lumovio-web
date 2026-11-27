@@ -13,7 +13,8 @@ import { Bio } from "@/components/person/Bio";
 import { age, character, countGroups, GROUPS, type Group, knownFor, mainGroup, type RowCredit } from "@/components/person/credits";
 import { Filmography } from "@/components/person/Filmography";
 import { PersonMuteSlot } from "@/components/person/PersonMuteSlot";
-import { RefreshWhilePending } from "@/components/shell/RefreshWhilePending";
+import { PendingDetails } from "@/components/ui/PendingDetails";
+import { commonsFile, PhotoCredit, TextCredit } from "@/components/ui/SourceCredit";
 import { MaturityBlocked } from "@/components/title/MaturityBlocked";
 import { ApiRequestError } from "@/lib/api";
 import { OG_IMAGE } from "@/lib/brand";
@@ -140,19 +141,26 @@ export default async function PersonPage({ params }: { params: Params }) {
   };
   const links = p.links ?? [];
   const jsonLd = personJsonLd(p, localizedPath(canonicalLocale(locale), personHref(p)), bio);
+  // A Wikimedia Commons photo where TMDB has none: Commons' own thumbnails, shown only with its credit (below).
+  const commons = !p.profilePath && p.photo ? { ...p.photo, file: commonsFile(p.photo.path) } : null;
 
   return (
     <div className="flex flex-col gap-10 pt-20 md:gap-12 md:pt-28">
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {/* The catalog is loading the person's details: the page asks again and shows them as they come. */}
-      {p.pending && <RefreshWhilePending />}
       {/* Who: the circle and the name side by side, the biography under them on a phone and beside the circle from md. */}
       <header className="page-x mx-auto grid w-full max-w-media grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-5 md:grid-cols-[10rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:items-start md:gap-x-8 xl:grid-cols-[12rem_minmax(0,1fr)] xl:gap-x-10">
         <Artwork
           shape="person"
-          src={tmdbImage(p.profilePath, "w185")}
-          srcSet={p.profilePath ? `${tmdbImage(p.profilePath, "w185")} 185w, ${tmdbImage(p.profilePath, "h632")} 421w` : undefined}
+          src={commons ? commons.file.thumb(250) : tmdbImage(p.profilePath, "w185")}
+          srcSet={
+            p.profilePath
+              ? `${tmdbImage(p.profilePath, "w185")} 185w, ${tmdbImage(p.profilePath, "h632")} 421w`
+              : commons
+                ? `${commons.file.thumb(250)} 250w, ${commons.file.thumb(500)} 500w`
+                : undefined
+          }
           sizes="(min-width: 1280px) 192px, (min-width: 768px) 160px, 112px"
           alt={p.name}
           placeholder="person"
@@ -201,7 +209,16 @@ export default async function PersonPage({ params }: { params: Params }) {
         {bio && (
           <div className="col-span-2 mt-4 min-w-0 md:col-span-1 md:col-start-2">
             <Bio text={bio} />
+            {/* A source that asks to be named beside its text (Wikipedia). */}
+            {p.biographyCredit && <TextCredit credit={p.biographyCredit} className="mt-1 md:mt-2" />}
             <PersonMuteSlot id={p.id} name={p.name} />
+          </div>
+        )}
+        {(p.pending || commons) && (
+          <div className={clsx("col-span-2 min-w-0 md:col-span-1 md:col-start-2", bio ? "mt-2" : "mt-4")}>
+            {/* The catalog is loading the rest: the page asks again by itself. */}
+            {p.pending && <PendingDetails />}
+            {commons && <PhotoCredit photo={commons} className={p.pending ? "mt-2" : undefined} />}
           </div>
         )}
       </header>

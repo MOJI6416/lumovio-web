@@ -2565,7 +2565,9 @@
     "spoilerSample": "Walter learns who is behind the lab's sale and decides what to do next, while Jesse tries to pay back a debt.",
     "variantInline": "inline — one line in place of a part",
     "pageStateLink": "A page state: the 404",
-    "errorInline": "part of a page · next page"
+    "errorInline": "part of a page · next page",
+    "sourceCredit": "Source credit",
+    "pendingDetails": "Details loading"
   },
   "ui": {
     "notifications": "Notifications",
@@ -2759,7 +2761,9 @@
     "copyPick": "Copy",
     "copyOf": "{n} of {count}",
     "backToCopy": "Back to the copy",
-    "guestWhat": "What is this?"
+    "guestWhat": "What is this?",
+    "detailsLoading": "Loading the details",
+    "detailsNotLoaded": "The details haven't loaded yet"
   },
   "personPage": {
     "noCreditsKids": "No titles available in a kids profile",
@@ -3145,5 +3149,12 @@
     "emptyOwner": "Show your Favourites, Ratings or Lists here.",
     "notFoundTitle": "No such profile",
     "notFoundText": "It may have been closed, or the address has a typo."
+  },
+  "credit": {
+    "text": "Text: <link>{source}</link>",
+    "photo": "Photo: <link>{source}</link>",
+    "tvdb": "Metadata provided by <link>TheTVDB</link>",
+    "wikipedia": "Wikipedia",
+    "kinopoisk": "Kinopoisk"
   }
 }

@@ -5,7 +5,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { collectionName, titleCore } from "@/components/title/core";
 import { TvBackButton } from "@/components/tvui/shell/TvBackButton";
 import { TvState } from "@/components/tvui/shell/TvState";
+import { PendingDetails } from "@/components/ui/PendingDetails";
 import { TitleScreen } from "@/components/tvui/title/TitleScreen";
+import { TextCredit } from "@/components/ui/SourceCredit";
 import { trimOverview } from "@/components/tvui/media/types";
 import { ApiRequestError } from "@/lib/api";
 import { formatRuntime } from "@/lib/format";
@@ -74,5 +76,11 @@ export default async function TvTitlePage({ params }: { params: Params }) {
   ].filter((x): x is string => Boolean(x));
   // The screen gets what it shows: the first of the cast, not the whole credits, videos and recommendations again.
   const slim: TitleDetails = { ...d, cast: d.cast.slice(0, 20), crew: [], creators: [], related: [], relatedOther: [], videos: [], keywords: [], collection: null };
-  return <TitleScreen details={slim} core={core} related={related} facts={facts} />;
+  return (
+    <>
+      <TitleScreen details={slim} core={core} related={related} facts={facts} credit={d.overviewCredit ? <TextCredit credit={d.overviewCredit} tv /> : null} />
+      {/* The catalog is loading the rest: the screen asks again by itself. */}
+      {d.pending && <PendingDetails quiet />}
+    </>
+  );
 }

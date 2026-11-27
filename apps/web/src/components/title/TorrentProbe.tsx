@@ -23,6 +23,7 @@ import { findsKey, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, startHref } from "./core";
 import type { TorrentState } from "./hero-plan";
+import { memoryId } from "@/lib/title-memory";
 
 export interface ProbeResult {
   state: TorrentState;
@@ -49,7 +50,7 @@ export function TorrentProbe({ title: d, source, onChange }: { title: TitleCore;
   const season = useChosenSeason(d.id);
   const start = d.kind === "tv" ? startEpisode(d, lib?.progress, season) : null;
   const lookup = useTorrentLookup(d, source, true, undefined, start?.season ?? null, start?.episode ?? null);
-  const prefs = useReleasePrefs(d.id);
+  const prefs = useReleasePrefs(memoryId(d));
   const ranked = lookup.data?.ranked;
   // What "Where to watch" recommends with nothing chosen: the profile's first audio option, its best release's cut,
   // the mode's picture (lib/media/release-pick, the same function).

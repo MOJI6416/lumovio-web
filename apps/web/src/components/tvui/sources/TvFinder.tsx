@@ -35,6 +35,7 @@ import { useTvNav } from "../nav/TvNav";
 import { ChoiceLayer } from "../shell/ChoiceLayer";
 import { TvKeyboard } from "../shell/TvKeyboard";
 import { TvState } from "../shell/TvState";
+import { memoryId } from "@/lib/title-memory";
 
 /*
  * "Through TorrServer" on the TV's sources screen: the same
@@ -57,7 +58,7 @@ export function TvFinder({ first, ...props }: FinderProps & { first: boolean }) 
   const text = useReleaseText();
   const f = useTorrentFinder(props);
   const { details: d, season, connections } = props;
-  const prefs = useReleasePrefs(d.id);
+  const prefs = useReleasePrefs(memoryId(d));
   const locale = useLocale();
   const [picking, setPicking] = useState<Picking>(null);
   const [draft, setDraft] = useState(f.query);

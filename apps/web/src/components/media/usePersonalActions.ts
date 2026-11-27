@@ -14,6 +14,7 @@ import { trackOutcome } from "@/lib/discovery-metrics";
 import { titleHref } from "@/lib/slug";
 import { useAction } from "@/lib/use-action";
 import { sharePage } from "@/components/share/share";
+import { memoryId } from "@/lib/title-memory";
 
 /*
  * The personal actions on a title — one set of requests, on-screen changes, toasts and "Undo" for
@@ -83,7 +84,7 @@ export function usePersonalActions(t: ActionTitle) {
 
   // A guest's personal action opens the sign-in sheet named after it, and is done after signing in.
   const [gate, setGate] = useState<{ open: boolean; reason: GateReason; intent?: GuestIntent }>({ open: false, reason: "watchlist" });
-  const requireAuth = (reason: GateReason, action?: GuestIntent["action"]) => setGate({ open: true, reason, intent: action && { titleId: t.id, action } });
+  const requireAuth = (reason: GateReason, action?: GuestIntent["action"]) => setGate({ open: true, reason, intent: action && { titleId: memoryId(t), action } });
 
   // Every personal action: the control changes at once, a failure puts it back with a toast in words, and the
   // reversible ones (Favourites, Watched, Not interested) offer "Undo".

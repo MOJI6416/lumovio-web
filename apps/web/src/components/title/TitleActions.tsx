@@ -33,6 +33,7 @@ import type { CopyFace } from "./CopyProbe";
 import type { ProbeResult } from "./TorrentProbe";
 import { TrailerDialog } from "./TrailerDialog";
 import { useUpcomingCopy } from "./upcoming-copy";
+import { memoryId } from "@/lib/title-memory";
 
 // The rarely opened parts load when they are approached (ui/lazy-swap) or opened; the search for a release only where
 // it runs.
@@ -79,7 +80,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
   useEffect(() => {
     if (!signedIn || state === undefined || replayed.current) return;
     replayed.current = true;
-    const action = takeGuestIntent(d.id);
+    const action = takeGuestIntent(memoryId(d));
     if (!action || actions.replay(action)) return;
     if (action === "rate") setRateOpen(d.id);
     else if (action === "follow" && isOngoing(d)) {
@@ -250,7 +251,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       {(d.upcoming?.kind === "season" || d.upcoming?.kind === "episode") && <UpcomingLine title={d} upcoming={d.upcoming} today={today} className={plan.summary ? "mt-2" : undefined} />}
       {probing && auto && <TorrentProbe title={d} source={auto} onChange={onProbe} />}
       {copies?.servers.some((s) => s.kind === "torrserver") && avail.state.kind === "playable" && (
-        <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} titleId={d.id} onChange={onCopyFace} />
+        <CopyProbe copies={copies} all={avail.data?.servers ?? []} languages={languages} studios={studios} originalLanguage={d.originalLanguage} titleId={memoryId(d)} onChange={onCopyFace} />
       )}
       <GuestGate {...actions.gate} />
       {d.trailer && <TrailerDialog video={trailerOpen ? d.trailer : null} title={d.title} onClose={() => setTrailerOpen(false)} />}

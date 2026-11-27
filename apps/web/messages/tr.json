@@ -2404,7 +2404,9 @@
     "copyPick": "Kopya",
     "copyOf": "{n}/{count}",
     "backToCopy": "Kopyaya dön",
-    "guestWhat": "Bu nedir?"
+    "guestWhat": "Bu nedir?",
+    "detailsLoading": "Ayrıntılar yükleniyor",
+    "detailsNotLoaded": "Ayrıntılar henüz yüklenmedi"
   },
   "personPage": {
     "noCreditsKids": "Çocuk profilinde kullanılabilen içerik yok",
@@ -2790,5 +2792,12 @@
     "emptyOwner": "Favorilerinizi, Puanlarınızı veya Listelerinizi burada gösterin.",
     "notFoundTitle": "Böyle bir profil yok",
     "notFoundText": "Kapatılmış olabilir ya da adreste bir hata var."
+  },
+  "credit": {
+    "text": "Metin: <link>{source}</link>",
+    "photo": "Fotoğraf: <link>{source}</link>",
+    "tvdb": "Meta veriler: <link>TheTVDB</link>",
+    "wikipedia": "Vikipedi",
+    "kinopoisk": "Kinopoisk"
   }
 }

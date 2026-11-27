@@ -1,7 +1,9 @@
 import type { PersonDetails } from "@lumovio/contracts";
 import { SearchX } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { PendingDetails } from "@/components/ui/PendingDetails";
 import { PersonScreen } from "@/components/tvui/screens/PersonScreen";
+import { TextCredit } from "@/components/ui/SourceCredit";
 import { TvBackButton } from "@/components/tvui/shell/TvBackButton";
 import { TvState } from "@/components/tvui/shell/TvState";
 import { optional } from "@/lib/optional";
@@ -35,5 +37,10 @@ export default async function TvPersonPage({ params }: { params: Promise<{ slug:
     .sort((a, b) => (b.tmdbVotes ?? 0) - (a.tmdbVotes ?? 0))
     .slice(0, 60)
     .map(({ role: _r, as: _a, jobs: _j, characters: _c, overview: _o, ...x }) => ({ ...x, overview: null }));
-  return <PersonScreen person={{ ...p, credits: [] }} credits={credits} />;
+  return (
+    <>
+      <PersonScreen person={{ ...p, credits: [] }} credits={credits} credit={p.biographyCredit ? <TextCredit credit={p.biographyCredit} tv /> : null} />
+      {p.pending && <PendingDetails quiet />}
+    </>
+  );
 }

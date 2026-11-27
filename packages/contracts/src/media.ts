@@ -215,6 +215,24 @@ export interface TitleDetails extends TitleSummary {
   altBackdrop: ArtImage | null;
   /** The catalog is loading the title's details now: the page shows what there is, and has more when asked again. */
   pending?: boolean;
+  /** The overview's and the tagline's source, when its terms ask the page to name it beside the text. */
+  overviewCredit?: TextCredit | null;
+  taglineCredit?: TextCredit | null;
+  /** TheTVDB's data is among the title's (names, overviews, episodes' dates and order): «Metadata provided by TheTVDB». */
+  tvdb?: boolean;
+}
+
+/** A text's source that its page names beside it, as the source's terms ask: the source and the text's page there. */
+export interface TextCredit {
+  source: "wikipedia" | "shikimori" | "kinopoisk" | "tvdb";
+  url: string | null;
+}
+
+/** A photo from Wikimedia Commons, shown only with its author and licence: its path in Commons' store (`/f/fb/Name.jpg`). */
+export interface CommonsPhoto {
+  path: string;
+  author: string | null;
+  license: string | null;
 }
 
 /**
@@ -382,6 +400,10 @@ export interface PersonDetails extends PersonSummary {
   })[];
   /** The catalog is loading the person's details now. */
   pending?: boolean;
+  /** The biography's source, when its terms ask the page to name it beside the text. */
+  biographyCredit?: TextCredit | null;
+  /** The photo when it is Wikimedia Commons' (`profilePath` is then null): shown only with its author and licence. */
+  photo?: CommonsPhoto | null;
 }
 
 /** "More by …" on a title page's More like this: the film's director or the series' creator and their other titles. */

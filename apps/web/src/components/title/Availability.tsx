@@ -36,6 +36,8 @@ import { serviceOffers } from "./services";
 import { TorrentLookupPanel } from "./TorrentLookupPanel";
 import { useUpcomingCopy } from "./upcoming-copy";
 import { CardMark, ServerMarks, WatchCard, WatchCardLoading } from "./WatchCard";
+import { memoryId } from "@/lib/title-memory";
+import { useTitleMemoryMove } from "@/lib/use-title-memory-move";
 
 const OFFER_LABEL = { flatrate: "offerFlatrate", free: "offerFree", ads: "offerAds", rent: "offerRent", buy: "offerBuy" } as const;
 /** Streaming by what it costs, as JustWatch groups it: in a subscription, free, for money. */
@@ -56,6 +58,7 @@ const copyKey = (s: Copy) => `${s.connectionId}:${s.externalId}`;
  * without servers. No sentence explains it: the card's heading says the state, its one button the way on.
  */
 export function Availability({ title: d }: { title: TitleCore }) {
+  useTitleMemoryMove();
   const t = useTranslations("title");
   const tp = useTranslations("titlePage");
   const tpl = useTranslations("player");
@@ -107,7 +110,7 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const playOf = (s: Copy) => `${resume}${resume.includes("?") ? "&" : "?"}source=${s.connectionId}:${encodeURIComponent(s.externalId)}`;
   // What the copy is, in words: the server's quality data, or what its release's name says — never the raw name, which
   // goes to the details; the same words as the sources screen (sources/copy-text).
-  const copyText = useCopyText(d.id);
+  const copyText = useCopyText(memoryId(d));
   const all = raw?.servers ?? [];
   // Servers out of reach or still indexing: said once, quietly when another way is shown, as the card when none is.
   const down = state.kind === "unreachable" ? t("serversDown", { names: state.names.join(", ") }) : state.kind === "indexing" ? t("serversIndexing", { names: state.names.join(", ") }) : null;

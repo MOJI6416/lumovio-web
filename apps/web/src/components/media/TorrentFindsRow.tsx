@@ -18,6 +18,7 @@ import { optional } from "@/lib/optional";
 import { dropLocalFinds, fetchFinds, findMarks, findPictureText, findResolutionWord, findsKey, RECHECK_MS, reportFind, type TorrentFinds } from "@/lib/torrent-finds";
 import { PosterCard } from "./PosterCard";
 import { Row } from "./Row";
+import { memoryId } from "@/lib/title-memory";
 
 /** Watchlist titles searched per visit to the home page, one after another. */
 const PER_VISIT = 4;
@@ -90,7 +91,7 @@ export function TorrentFindsRow() {
     if (!profile || !source || !known || !playable.data || document.visibilityState === "hidden") return;
     const tried = triedOf(profile.id);
     const due = titles
-      .filter((x) => !playable.data[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS && Date.now() - (tried[x.id] ?? 0) > RECHECK_MS)
+      .filter((x) => !playable.data[x.id] && Date.now() - Date.parse(known[x.id]?.checkedAt ?? "1970-01-01") > RECHECK_MS && Date.now() - (tried[memoryId(x)] ?? 0) > RECHECK_MS)
       .slice(0, PER_VISIT);
     if (due.length === 0) return;
     const ctrl = new AbortController();
@@ -100,7 +101,7 @@ export function TorrentFindsRow() {
       const ts = await optional(torrServerFor(source.id), null);
       for (const x of due) {
         if (!ts || ctrl.signal.aborted) return;
-        markTried(profile.id, x.id);
+        markTried(profile.id, memoryId(x));
         const found = await optional(ts.search(torrentQuery(x), ctrl.signal), null);
         if (!found || ctrl.signal.aborted) continue;
         if (x.kind === "tv") reportNumbering(x.id, "names", namesNumbering(found.results, x));

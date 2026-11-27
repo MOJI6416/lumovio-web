@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Link } from "@/components/ui/Link";
 import { capitalize, formatDate, languageName, regionName } from "@/lib/format";
 import { tmdbImage } from "@/lib/images";
+import { TvdbCredit } from "@/components/ui/SourceCredit";
 import { ExternalLinks, FactsInfo } from "./parts";
 
 // TMDB's statuses, said in the interface language.
@@ -137,6 +138,8 @@ export async function TitleFacts({ details: d, locale }: { details: TitleDetails
           </dd>
         </div>
       </dl>
+      {/* TheTVDB's data among the title's (names, overviews, episodes' dates and order): its credit, as it asks. */}
+      {d.tvdb && <TvdbCredit url={d.externalIds.tvdb ? `https://thetvdb.com/dereferrer/${d.kind === "tv" ? "series" : "movie"}/${d.externalIds.tvdb}` : null} className="mt-5" />}
     </section>
   );
 }

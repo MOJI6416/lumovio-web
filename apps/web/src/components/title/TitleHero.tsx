@@ -5,6 +5,7 @@ import { Fragment } from "react";
 import { TitleLogo } from "@/components/media/TitleLogo";
 import { FanartBackdrop } from "@/components/title/FanartBackdrop";
 import { AgeRating } from "@/components/ui/Badge";
+import { TextCredit } from "@/components/ui/SourceCredit";
 import { Link } from "@/i18n/navigation";
 import { capitalize, formatRuntime, latinLang } from "@/lib/format";
 import { BACKDROP_SIZES, backdropSrcSet, preloadBackdrop, tmdbImage } from "@/lib/images";
@@ -12,6 +13,7 @@ import { personHref } from "@/lib/slug";
 import { notOutYet, type TitleCore, utcToday } from "./core";
 import { ExpandableText } from "./ExpandableText";
 import { HeroRatings } from "./HeroRatings";
+import { PendingDetails } from "@/components/ui/PendingDetails";
 import { TitleActions } from "./TitleActions";
 import { YourRating } from "./YourRating";
 
@@ -201,6 +203,14 @@ export async function TitleHero({ details: d, core }: { details: TitleDetails; c
             {d.overview && (
               <div className="mt-4 max-md:order-4">
                 <ExpandableText text={d.overview} lines={3} label={t("titlePage.readOverview")} className="text-body-l text-text-1" />
+                {/* A source that asks to be named beside its text (Wikipedia, Shikimori, Kinopoisk, TheTVDB). */}
+                {d.overviewCredit && <TextCredit credit={d.overviewCredit} className="mt-1 md:mt-2" />}
+              </div>
+            )}
+            {/* The catalog is loading the rest: said where the overview goes, and the page asks again by itself. */}
+            {d.pending && (
+              <div className="mt-4 max-md:order-4">
+                <PendingDetails />
               </div>
             )}
             <div className="mt-6 max-md:order-3 max-md:mt-5">

@@ -3,7 +3,7 @@
 import type { PersonDetails, TitleSummary } from "@lumovio/contracts";
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type FocusEvent, useState } from "react";
+import { type FocusEvent, type ReactNode, useState } from "react";
 import { CardRating } from "@/components/media/CardRating";
 import { tmdbImage } from "@/lib/images";
 import { TvCard } from "../media/TvCard";
@@ -12,7 +12,7 @@ import { TvCard } from "../media/TvCard";
  * A person on a TV: the photo, the name, a few lines of the biography, then the films and series as one grid,
  * most known first — the same data as the site's page.
  */
-export function PersonScreen({ person: p, credits }: { person: PersonDetails; credits: TitleSummary[] }) {
+export function PersonScreen({ person: p, credits, credit }: { person: PersonDetails; credits: TitleSummary[]; /** The biography's source credit, made on the server. */ credit?: ReactNode }) {
   const t = useTranslations("personPage");
   const [focused, setFocused] = useState<TitleSummary | null>(null);
   const photo = tmdbImage(p.profilePath, "h632");
@@ -28,6 +28,7 @@ export function PersonScreen({ person: p, credits }: { person: PersonDetails; cr
             <div className="flex min-w-0 flex-col gap-3">
               <h1 className="text-h1 text-text-1">{p.name}</h1>
               {p.biography && <p className="line-clamp-4 max-w-measure text-body-l text-text-2">{p.biography}</p>}
+              {p.biography && credit}
               <div className="flex h-9 items-center gap-4 text-body-l text-text-2" aria-live="polite">
                 {focused && (
                   <>

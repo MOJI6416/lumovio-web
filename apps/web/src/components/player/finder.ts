@@ -14,6 +14,7 @@ import { lineSpeed, subscribeLine } from "@/lib/media/line-speed";
 import { filesVersion, sharedFileOf, subscribeFiles, withSharedFiles } from "@/lib/media/release-files";
 import { torrServerFor } from "@/lib/media/torrent-source";
 import { keepThroughEmpty, type SearchAnswer, type TsSearchResult } from "@/lib/media/torrserver";
+import { memoryId } from "@/lib/title-memory";
 
 /*
  * The TorrServer search of the sources screen without its look: the server, the query and
@@ -129,7 +130,7 @@ export function useTorrentFinder({ details: d, season, episode, connections, def
   const [editing, setEditing] = useState(false);
   const [found, setFound] = useState<Found | null>(() => cachedFor(connId));
   const [status, setStatus] = useState<Status>(() => (found ? { kind: "done" } : { kind: "idle" }));
-  const base = useReleasePrefs(d.id);
+  const base = useReleasePrefs(memoryId(d));
   const [sort, setSort] = useState<Sort>("recommended");
   // The quality mode for this viewing (the "Quality" choice); the profile's until one is chosen.
   const [ownMode, setMode] = useState<ReleaseQuality | null>(start?.quality ?? null);

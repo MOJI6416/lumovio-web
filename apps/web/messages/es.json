@@ -2404,7 +2404,9 @@
     "copyPick": "Copia",
     "copyOf": "{n} de {count}",
     "backToCopy": "Volver a la copia",
-    "guestWhat": "¿Qué es esto?"
+    "guestWhat": "¿Qué es esto?",
+    "detailsLoading": "Cargando los detalles",
+    "detailsNotLoaded": "Los detalles aún no se han cargado"
   },
   "personPage": {
     "noCreditsKids": "No hay títulos disponibles en un perfil infantil",
@@ -2790,5 +2792,12 @@
     "emptyOwner": "Muestra aquí tus Favoritos, Valoraciones o Listas.",
     "notFoundTitle": "Este perfil no existe",
     "notFoundText": "Puede que lo hayan cerrado o que la dirección tenga un error."
+  },
+  "credit": {
+    "text": "Texto: <link>{source}</link>",
+    "photo": "Foto: <link>{source}</link>",
+    "tvdb": "Metadatos de <link>TheTVDB</link>",
+    "wikipedia": "Wikipedia",
+    "kinopoisk": "Kinopoisk"
   }
 }

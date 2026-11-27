@@ -10,6 +10,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { lazyControl, OPEN_KEYS, useLazySwap } from "@/components/ui/lazy-swap";
 import type { CardMenuExtra } from "./CardMenu";
 import type { ActionTitle } from "./usePersonalActions";
+import { memoryId } from "@/lib/title-memory";
 
 const full = lazyControl(() => import("./CardMenu"));
 
@@ -63,7 +64,7 @@ export function CardMore({
   // biome-ignore lint/correctness/useExhaustiveDependencies: once per card, after signing in
   useEffect(() => {
     if (!signedIn) return;
-    const action = takeGuestIntent(title.id);
+    const action = takeGuestIntent(memoryId(title));
     if (action) {
       setReplay(action);
       activate(false);

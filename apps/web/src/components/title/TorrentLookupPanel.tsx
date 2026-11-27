@@ -25,6 +25,7 @@ import { useChosenSeason } from "./chosen-season";
 import { sourcesHref, startEpisode, type TitleCore, startHref } from "./core";
 import { hasStudioMark, StudioMark, StudioSlot } from "@/components/sources/StudioMark";
 import { CardMark, PickItem, PickPill, WatchCard, WatchCardLoading } from "./WatchCard";
+import { memoryId } from "@/lib/title-memory";
 
 const ID = "torrserver-h";
 
@@ -47,7 +48,7 @@ export function TorrentLookupPanel({ title: d, source, dismiss: back }: { title:
   const mediaError = useMediaErrorText();
   const router = useRouter();
   const qc = useQueryClient();
-  const prefs = useReleasePrefs(d.id);
+  const prefs = useReleasePrefs(memoryId(d));
   // The profile's quality mode: the card offers its picture versions, not the other modes (the sources screen has them).
   const mode = prefs.quality;
   const { data: state } = useLibraryState(d.id);

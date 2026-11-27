@@ -3,6 +3,7 @@
 import type { CastMember, TitleDetails, TitleSummary } from "@lumovio/contracts";
 import { User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { TitleLogo } from "@/components/media/TitleLogo";
 import type { TitleCore } from "@/components/title/core";
 import { Link } from "@/i18n/navigation";
@@ -25,11 +26,14 @@ export function TitleScreen({
   core,
   related,
   facts,
+  credit,
 }: {
   details: TitleDetails;
   core: TitleCore;
   related: TitleSummary[];
   facts: string[];
+  /** The overview's source credit, made on the server (it asks to be named beside the text). */
+  credit?: ReactNode;
 }) {
   const t = useTranslations("title");
   const locale = useLocale();
@@ -87,6 +91,7 @@ export function TitleScreen({
               ))}
             </p>
             {d.overview && <p className="line-clamp-4 max-w-measure text-body-l text-text-2">{d.overview}</p>}
+            {d.overview && credit}
             <div className="pt-2">
               <TitleActions title={core} />
             </div>

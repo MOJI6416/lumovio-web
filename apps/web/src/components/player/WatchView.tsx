@@ -45,6 +45,8 @@ import { filesNumbering, reportNumbering } from "@/lib/media/numbering-evidence"
 import { type Prep, type PrepStage, stageState, stagesFor } from "@/lib/media/prepare-stages";
 import { trackVoiceKey, voiceWish } from "@/lib/media/releases";
 import { loadVoice, saveVoice, voiceMemoryKey } from "@/lib/media/voice-memory";
+import { memoryId } from "@/lib/title-memory";
+import { useTitleMemoryMove } from "@/lib/use-title-memory-move";
 import { holdsByName, holdsSeason, packOf } from "@/lib/media/packs";
 import { copyAudio } from "@/lib/media/copy-audio";
 import { otherAppDefault } from "@/lib/media/other-app";
@@ -149,6 +151,7 @@ const sameCopy = (a: Candidate | null | undefined, b: Candidate) =>
 
 /** Another episode is another playback: fresh state, its own file, its own progress session. */
 export function WatchView({ details }: { details: TitleDetails }) {
+  useTitleMemoryMove();
   const params = useSearchParams();
   // A viewing sent from a phone ("Watch on TV") is a new one too, even of the same episode.
   return <WatchSession key={`${params.get("s") ?? ""}:${params.get("e") ?? ""}:${params.get("cast") ?? ""}`} details={details} />;
@@ -241,7 +244,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   const resumeOverride = useRef<number | null>(null);
   // The dubbing chosen with a TorrServer release ("?voice=ru|HDrezka Studio"): its track plays once the file is read.
   // Without one in the address, the audio picked for this title before on this device (lib/media/voice-memory).
-  const voiceKey = voiceMemoryKey(me?.activeProfile?.id, d.id);
+  const voiceKey = voiceMemoryKey(me?.activeProfile?.id, memoryId(d));
   // This viewing's audio as a key: it goes on to the next episodes (the address isn't read again after a pick).
   const voiceNow = useRef<string | null>(params.get("voice") ?? loadVoice(voiceKey));
   const wishedVoice = useRef(voiceWish(voiceNow.current));
@@ -1097,7 +1100,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
       onBack={toTitle}
       originalLanguage={d.originalLanguage}
       logo={d.logo}
-      titleId={d.id}
+      titleId={memoryId(d)}
       onAudioChange={
         active.prepared.selectAudio
           ? (i, pos) => {
