@@ -22,6 +22,11 @@ export interface PlanInput {
   signedIn: boolean;
   kids: boolean;
   watch: WatchState;
+  /**
+   * A TorrServer search is in its first seconds: the main button keeps "Checking…" and then says the search's result
+   * at once, instead of showing "Continue" or "Watch" that turns into "Trailer" when nothing is found.
+   */
+  searchHeld?: boolean;
   /** Part-way through it (more than 30 s, not finished). */
   resume: boolean;
   /**
@@ -82,6 +87,7 @@ export function heroPlan(i: PlanInput): Plan {
   if (i.notOut && w.kind !== "playable") return { primary: i.trailer ? { kind: "trailer" } : null, summary: { kind: "upcoming" } };
   if (w.kind === "loading") return { primary: { kind: "loading" }, summary: null };
   const t = i.torrent;
+  if (t.state === "searching" && i.searchHeld) return { primary: { kind: "loading" }, summary: { kind: "searching", name: t.name } };
   const releaseAhead = t.state === "found" || t.state === "searching" || t.state === "manual";
 
   // The main button: progress, a copy, a release, the trailer — in that order; "Watch" never opens an empty

@@ -30,6 +30,12 @@ describe("the title's main button", () => {
     expect(plan({ torrent: { state: "found", name: "torr", summary: "1080p" } }).primary).toEqual({ kind: "watchRelease" });
     // While the search runs, "Watch" opens the sources screen (it searches itself).
     expect(plan({ torrent: { state: "searching", name: "torr" } }).primary).toEqual({ kind: "sources", label: "watch" });
+    // In its first seconds the button keeps "Checking…" and the line says the search, so "Continue" or "Watch" never
+    // turns into "Trailer" a moment later.
+    expect(plan({ torrent: { state: "searching", name: "torr" }, searchHeld: true, resume: true })).toEqual({
+      primary: { kind: "loading" },
+      summary: { kind: "searching", name: "torr" },
+    });
     // Nothing found: the trailer, and the line says so instead of suggesting the TorrServer.
     const none = plan({ torrent: { state: "nothing", name: "torr" }, offers: ["Kinopoisk"] });
     expect(none.primary).toEqual({ kind: "trailer" });

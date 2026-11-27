@@ -105,6 +105,15 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       ? { state: "manual", name: manual.name }
       : { state: "none" };
   const onProbe = useCallback((r: ProbeResult) => setProbe(r), []);
+  // A search's first seconds hold the main button as "Checking…" (./hero-plan): most searches answer by then.
+  const searching = torrent.state === "searching";
+  const [searchHeld, setSearchHeld] = useState(true);
+  useEffect(() => {
+    if (!searching) return;
+    setSearchHeld(true);
+    const timer = setTimeout(() => setSearchHeld(false), SEARCH_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [searching]);
 
   // The copy the hero starts. TorrServer copies are ordered by their release names only in ./CopyProbe's chunk (the release
   // names' reading stays out of the first load): until it answers, the light order of the servers' own data.
@@ -144,6 +153,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
             }
         : null,
     torrent,
+    searchHeld,
     trailer: Boolean(d.trailer),
     offers: offerNames,
     notOut,
@@ -216,7 +226,7 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         )}
       </div>
       {/* While availability loads, the line it brings is held, so the hero doesn't grow when it arrives. */}
-      {plan.primary?.kind === "loading" && (
+      {plan.primary?.kind === "loading" && !plan.summary && (
         <div aria-hidden className="mt-4 flex h-8 items-center max-sm:h-11">
           <Skeleton shape="xs" className="h-4 w-72 max-w-full" />
         </div>
@@ -240,6 +250,9 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
     </div>
   );
 }
+
+/** How long a TorrServer search may run before the main button stops waiting for it and opens the sources screen. */
+const SEARCH_HOLD_MS = 3000;
 
 /** The main button: a link where it goes somewhere, a button where it acts. */
 function PrimaryButton({ primary, href, busy, onTrailer, onRelease }: { primary: NonNullable<Primary>; href: string; busy: boolean; onTrailer: () => void; onRelease: () => void }) {

@@ -41,7 +41,8 @@ type Spoilers = Record<SpoilerPart, boolean | null>;
  * series of one season has nothing to choose), "7 episodes · 2008" and the season's actions at the end (on a phone
  * they scroll in a line of their own) — and the episodes as one horizontal strip of cards: the 16:9 still, its number,
  * date and length, the name, two lines of overview, "Watched" (IconButton pressed: changes at once, pressing again
- * takes it back). It opens on the profile's season. Marking an episode while
+ * takes it back). It opens on the profile's season: a signed-in profile's strip waits for its state rather than showing
+ * the first season and switching to its own a moment later. Marking an episode while
  * earlier ones are unwatched offers "Mark the earlier ones too" (the series' "up to this episode"). "Mark season
  * watched" / "Unmark season" say what they did with "Undo", which puts back exactly what was there — the old dates
  * included. "Next episode" goes to the first unwatched aired one. Spoilers: after the last
@@ -58,8 +59,10 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   const hydrated = useHydrated();
   const signedIn = Boolean(me?.activeProfile);
   // What the hero already fetched waits for the end of hydration (./hydrated).
-  const { data: cached } = useLibraryState(d.id);
-  const state = hydrated ? cached : undefined;
+  const lib = useLibraryState(d.id);
+  const state = hydrated ? lib.data : undefined;
+  // A profile's season is known once its state is (a failed load opens on the first one).
+  const waiting = signedIn && (!hydrated || (lib.data === undefined && !lib.isError));
   const setState = useSetLibraryState();
   const avail = useTitleAvailability(d.id);
   // An episode opens the player where it can play: an own copy, or the TorrServer the sources screen searches.
@@ -67,7 +70,12 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   const regular = d.seasons.filter((s) => s.seasonNumber > 0);
   // Specials (season 0) go last, as streaming services list them.
   const ordered = [...regular, ...d.seasons.filter((s) => s.seasonNumber === 0)];
-  const [season, setSeason] = useState(regular[0]?.seasonNumber ?? d.seasons[0]?.seasonNumber ?? 1);
+  const first = regular[0]?.seasonNumber ?? d.seasons[0]?.seasonNumber ?? 1;
+  // The season picked here, else the one the profile is in, else the first.
+  const [picked, setPicked] = useState<number | null>(null);
+  const own = state?.progress?.season;
+  const profileSeason = own !== null && own !== undefined && d.seasons.some((x) => x.seasonNumber === own) ? own : null;
+  const season: number | null = picked ?? (waiting ? null : (profileSeason ?? first));
   const [jump, setJump] = useState(false);
   const list = useRef<HTMLOListElement>(null);
   const prefs = useSpoilerPrefs();
@@ -77,15 +85,10 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   // A picked season lives while the page does.
   useEffect(() => () => chooseSeason(d.id, null), [d.id]);
 
-  useEffect(() => {
-    // Open on the season the profile is in.
-    const s = state?.progress?.season;
-    if (s !== null && s !== undefined && d.seasons.some((x) => x.seasonNumber === s)) setSeason(s);
-  }, [state?.progress?.season, d.seasons]);
-
   const seasonQ = useQuery({
     queryKey: ["season", d.tmdbId, season, locale],
     queryFn: () => api<SeasonDetails>(`/api/catalog/tv/${d.tmdbId}/season/${season}`),
+    enabled: season !== null,
     staleTime: 30 * 60_000,
   });
   const { data } = seasonQ;
@@ -108,7 +111,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
 
   // "Next episode": the first aired, unwatched one of this season, else the next season's.
   const nextHere = (data?.episodes ?? []).find((e) => aired(e) && !watchedSet.has(key({ season: e.seasonNumber, episode: e.episodeNumber })));
-  const laterSeason = regular.find((s) => s.seasonNumber > season);
+  const laterSeason = season === null ? undefined : regular.find((s) => s.seasonNumber > season);
   useEffect(() => {
     if (!jump || !data || data.seasonNumber !== season) return;
     setJump(false);
@@ -122,7 +125,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
     row.querySelector<HTMLElement>("a,button")?.focus({ preventScroll: true });
   }, [jump, data, season, nextHere, tp]);
   const goNext = () => {
-    if (!nextHere && laterSeason) setSeason(laterSeason.seasonNumber);
+    if (!nextHere && laterSeason) setPicked(laterSeason.seasonNumber);
     setJump(true);
   };
 
@@ -160,7 +163,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
       const prev = state;
       if (!prev) return;
       // The season's own episodes change on screen at once; "up to" waits for the server's answer.
-      if (body.scope === "season" && body.season === season) {
+      if (body.scope === "season" && season !== null && body.season === season) {
         const keys = new Set(airedEps.map(key));
         setState({ ...prev, watchedEpisodes: body.watched ? [...new Set([...prev.watchedEpisodes, ...keys])] : prev.watchedEpisodes.filter((k) => !keys.has(k)) });
       }
@@ -198,20 +201,24 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
         </h2>
         {/* The season is one control showing its value; a series of one season has nothing to
             choose: its facts and actions only. */}
-        {tabs.length > 1 && (
-          <Select
-            size="sm"
-            value={String(season)}
-            onValueChange={(v) => {
-              // The hero's "Watch" and "Where to watch" follow a season picked here (./chosen-season).
-              setSeason(Number(v));
-              chooseSeason(d.id, Number(v));
-            }}
-            options={tabs}
-            aria-label={t("seasons")}
-            className="w-auto min-w-32"
-          />
-        )}
+        {tabs.length > 1 &&
+          (season === null ? (
+            // The select's place while the profile's season is not known yet.
+            <Skeleton shape="full" className="h-8 w-32 max-sm:h-11" />
+          ) : (
+            <Select
+              size="sm"
+              value={String(season)}
+              onValueChange={(v) => {
+                // The hero's "Watch" and "Where to watch" follow a season picked here (./chosen-season).
+                setPicked(Number(v));
+                chooseSeason(d.id, Number(v));
+              }}
+              options={tabs}
+              aria-label={t("seasons")}
+              className="w-auto min-w-32"
+            />
+          ))}
         {facts && <p className="text-body-s text-text-2 tabular-nums">{facts}</p>}
         {/* On a phone the season's actions are a line of their own that scrolls, never three lines over the strip. */}
         <div className="scroll-row flex items-center gap-x-1 max-sm:-mx-(--gutter) max-sm:basis-full max-sm:overflow-x-auto max-sm:px-(--gutter) sm:ms-auto sm:flex-wrap">
@@ -239,7 +246,7 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
               size="sm"
               icon={CircleCheck}
               loading={markMany.pending}
-              onClick={() => void markMany.run({ scope: "season", season, watched: !allWatched }, randomId())}
+              onClick={() => season !== null && void markMany.run({ scope: "season", season, watched: !allWatched }, randomId())}
             >
               {allWatched ? t("unmarkSeason") : t("markSeason")}
             </Button>
