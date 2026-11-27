@@ -225,10 +225,17 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
           <IconButton ref={moreLight} icon={Ellipsis} variant="secondary" size="lg" label={moreLabel} aria-haspopup="menu" aria-expanded={false} {...moreIn.handlers} />
         )}
       </div>
-      {/* While availability loads, the line it brings is held, so the hero doesn't grow when it arrives. */}
+      {/* While availability loads, its line is held in the shape it most often takes — the reason (two lines on a
+          phone), then "Where to watch" — so the hero doesn't grow when it arrives. */}
       {plan.primary?.kind === "loading" && !plan.summary && (
-        <div aria-hidden className="mt-4 flex h-8 items-center max-sm:h-11">
-          <Skeleton shape="xs" className="h-4 w-72 max-w-full" />
+        <div aria-hidden className="mt-4 flex max-w-160 flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="flex flex-col max-sm:w-full">
+            <Skeleton shape="xs" className="my-0.5 h-4 w-72 max-w-full" />
+            <Skeleton shape="xs" className="my-0.5 h-4 w-44 sm:hidden" />
+          </div>
+          <div className="flex min-h-8 items-center max-sm:min-h-11">
+            <Skeleton shape="xs" className="h-4 w-28" />
+          </div>
         </div>
       )}
       {plan.summary?.kind === "upcoming" && d.upcoming ? (
