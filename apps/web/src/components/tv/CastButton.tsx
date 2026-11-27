@@ -26,7 +26,7 @@ export function CastButton({
   onSent,
 }: {
   target: () => CastTarget;
-  /** "movie:603": the TV playing it is said by the dot. */
+  /** The title's code (the older key of a page without it): the TV playing it is said by the dot. */
   titleId: string;
   /** A press while a TV plays this title opens its remote (the hero); else it always sends (a copy, the player). */
   resume?: boolean;

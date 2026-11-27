@@ -1027,7 +1027,7 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
   useCastReport({
     on: Boolean(tvNav) && signedIn,
     castId,
-    title: { titleId: d.id, kind: d.kind, tmdbId: d.tmdbId, title: d.title, season, episode },
+    title: { titleId: d.code ?? d.id, title: d.title, season, episode },
     status:
       phase.kind === "error"
         ? { failure: phase.cause ?? "other" }
@@ -1064,15 +1064,14 @@ function WatchSession({ details: d }: { details: TitleDetails }) {
           const original = active.prepared.audio.find((a) => a.isDefault)?.index ?? null;
           return (
             <CastButton
-              titleId={d.id}
+              titleId={d.code ?? d.id}
               variant="stage"
               onSent={now.pause}
               target={() => {
                 const url = new URL(window.location.href).searchParams;
                 const q = url.get("quality");
                 return {
-                  kind: d.kind,
-                  tmdbId: d.tmdbId,
+                  titleId: d.code ?? d.id,
                   season,
                   episode,
                   source: castCopy.key,

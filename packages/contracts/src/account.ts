@@ -291,10 +291,11 @@ export type TvPlaybackState = "preparing" | "playing" | "paused" | "ended" | "fa
 export type CastFailure = "blocked" | "unreachable" | "auth" | "missing" | "none" | "unsupported" | "external" | "other";
 
 export interface TvPlayback {
-  /** "movie:603". */
+  /**
+   * The title's code, whichever way the TV named it; the older key "movie:603" while the site's pages name titles
+   * without codes.
+   */
   titleId: string;
-  kind: "movie" | "tv";
-  tmdbId: number;
   /** The title in the TV's language. */
   title: string;
   season: number | null;
@@ -330,8 +331,8 @@ export interface TvDevice {
 
 /** What a phone sends to a TV (POST /api/devices/:id/cast): the viewing as the phone has it. */
 export interface CastRequest {
-  kind: "movie" | "tv";
-  tmdbId: number;
+  /** The title's code, or the older key "movie:603" of a page without it. */
+  titleId: string;
   season?: number | null;
   episode?: number | null;
   /** The copy: "connectionId:externalId", as the player's `?source=`. */

@@ -213,9 +213,9 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
         {/* "Watch on TV": what "Continue" / "Watch" would start, on a TV of the account with Lumovio open. */}
         {(plan.primary?.kind === "resume" || plan.primary?.kind === "watch") && (
           <CastButton
-            titleId={d.id}
+            titleId={d.code ?? d.id}
             resume
-            target={() => ({ kind: d.kind, tmdbId: d.tmdbId, season: ep?.season ?? null, episode: ep?.episode ?? null, title: d.title, subtitle: ep ? tc("episode", ep) : d.year ? String(d.year) : null })}
+            target={() => ({ titleId: d.code ?? d.id, season: ep?.season ?? null, episode: ep?.episode ?? null, title: d.title, subtitle: ep ? tc("episode", ep) : d.year ? String(d.year) : null })}
           />
         )}
         {watchlist}

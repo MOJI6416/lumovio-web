@@ -31,7 +31,8 @@ export function useCastReport({
 }: {
   on: boolean;
   castId: string | null;
-  title: { titleId: string; kind: "movie" | "tv"; tmdbId: number; title: string; season: number | null; episode: number | null };
+  /** `titleId`: the code, or the older key of a page without it. */
+  title: { titleId: string; title: string; season: number | null; episode: number | null };
   status: CastStatus;
   /** The stream playing (another source or track is another element). */
   media: string | null;

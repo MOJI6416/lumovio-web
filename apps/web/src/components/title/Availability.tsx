@@ -141,9 +141,9 @@ export function Availability({ title: d }: { title: TitleCore }) {
   const tcard = useTranslations("card");
   const cast = (s: Copy, size: "md" | "lg") => (
     <CastButton
-      titleId={d.id}
+      titleId={d.code ?? d.id}
       size={size}
-      target={() => ({ kind: d.kind, tmdbId: d.tmdbId, season: ep?.season ?? null, episode: ep?.episode ?? null, source: `${s.connectionId}:${s.externalId}`, title: d.title, subtitle: ep ? tcard("episode", ep) : d.year ? String(d.year) : null })}
+      target={() => ({ titleId: d.code ?? d.id, season: ep?.season ?? null, episode: ep?.episode ?? null, source: `${s.connectionId}:${s.externalId}`, title: d.title, subtitle: ep ? tcard("episode", ep) : d.year ? String(d.year) : null })}
     />
   );
   const more = (s: Copy, size: "md" | "lg") => (

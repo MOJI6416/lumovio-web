@@ -19,6 +19,7 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
     id: d.id,
     kind: d.kind,
     tmdbId: d.tmdbId,
+    code: d.code,
     title: d.title,
     originalTitle: d.originalTitle,
     year: d.year,
