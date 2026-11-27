@@ -230,8 +230,8 @@ export function TitleActions({ title: d }: { title: TitleCore }) {
       {plan.primary?.kind === "loading" && !plan.summary && (
         <div aria-hidden className="mt-4 flex max-w-160 flex-wrap items-center gap-x-3 gap-y-1">
           <div className="flex flex-col max-sm:w-full">
-            <Skeleton shape="xs" className="my-0.5 h-4 w-72 max-w-full" />
-            <Skeleton shape="xs" className="my-0.5 h-4 w-44 sm:hidden" />
+            <Skeleton shape="xs" className="my-px h-4 w-72 max-w-full" />
+            <Skeleton shape="xs" className="my-px h-4 w-44 sm:hidden" />
           </div>
           <div className="flex min-h-8 items-center max-sm:min-h-11">
             <Skeleton shape="xs" className="h-4 w-28" />
@@ -453,7 +453,9 @@ function AvailabilityLine({
   }
   return (
     <div className="mt-4 flex max-w-160 flex-wrap items-center gap-x-3 gap-y-1 text-body-s text-text-2" aria-live="polite">
-      <p className="flex items-start gap-2">
+      {/* A search in progress keeps the shape its answer most often takes on a phone — two lines, then "Where to watch"
+          — so the line doesn't shrink and grow back when it ends. */}
+      <p className={cn("flex items-start gap-2", s.kind === "searching" && "max-sm:min-h-9 max-sm:w-full")}>
         <span className="mt-0.5">{icon}</span>
         <span>{text}</span>
       </p>
