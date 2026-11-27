@@ -439,21 +439,12 @@ export interface CatalogSearch {
 }
 
 /**
- * Mood shelves of the Movies landing and their grid (`mood=`): TMDB's tone keywords (any of
- * them), held to genres that fit the mood (any of them) and away from ones that don't, with TMDB's score and votes.
- * Keywords alone are too loose (Shawshank is "amused" on TMDB) and genres alone say nothing about tone.
- * A filter the grid sets itself replaces the mood's own of the same kind.
+ * Mood shelves of the Movies landing and their grid (`mood=`): rules the catalog keeps over its own tags and genres
+ * (a tone tag, a genre that fits the mood, none that doesn't, a score and votes). A filter the grid sets itself replaces
+ * the mood's own of the same kind.
  */
-export const MOODS = {
-  /** hopeful, joyful, feelgood, lighthearted, comforting; comedy, family or romance; no horror, thriller, war, crime, documentary. */
-  feel_good: { keywords: "325824|325832|275276|288816|325784", genres: "35|10751|10749", withoutGenres: "27,53,10752,80,99", ratingMin: 6.8, votesMin: 500 },
-  /** nonlinear timeline, time loop, twist ending, surprise ending, mind-blowing, dream, philosophical; sci-fi, mystery or thriller; no animation or family. */
-  mind_bending: { keywords: "157171|10854|326438|331114|323808|346773|212737", genres: "878|9648|53", withoutGenres: "16,10751", ratingMin: 7, votesMin: 1000 },
-  /** suspenseful, intense; thriller, crime or mystery; no animation, family or horror. */
-  edge_of_seat: { keywords: "314730|321464", genres: "53|80|9648", withoutGenres: "16,10751,27", ratingMin: 7, votesMin: 1000 },
-} as const;
-export type Mood = keyof typeof MOODS;
-export const MOOD_KEYS = Object.keys(MOODS) as [Mood, ...Mood[]];
+export const MOOD_KEYS = ["feel_good", "mind_bending", "edge_of_seat"] as const;
+export type Mood = (typeof MOOD_KEYS)[number];
 
 export const DiscoverQuery = z.object({
   kind: MediaKind.default("movie"),
@@ -467,7 +458,11 @@ export const DiscoverQuery = z.object({
   sort: z
     .enum(["popularity", "rating", "release_desc", "release_asc", "title", "votes", "imdb", "imdb_votes", "lumovio", "rt", "metacritic"])
     .default("popularity"),
-  genres: z.string().optional(), // comma separated TMDB genre ids (AND)
+  /**
+   * Genres, all of them (`,`) or any of them (`|`): the catalog's own genre keys ("action", "science_fiction"), or TMDB's
+   * genre ids as their synonyms ("28"; a series' "10759" is action or adventure).
+   */
+  genres: z.string().optional(),
   withoutGenres: z.string().optional(),
   yearFrom: z.coerce.number().int().min(1870).max(2100).optional(),
   yearTo: z.coerce.number().int().min(1870).max(2100).optional(),
@@ -482,14 +477,15 @@ export const DiscoverQuery = z.object({
    * part at least 20 points lower ("Critics loved it, audiences didn't").
    */
   opinions: z.enum(["critics_higher"]).optional(),
-  /** Films: one of MOODS — its keywords, genres and thresholds, under the query's own (TMDB only). */
+  /** Films: one of MOOD_KEYS — its tags, genres and thresholds, under the query's own. */
   mood: z.enum(MOOD_KEYS).optional(),
   language: z.string().length(2).optional(), // original language
   country: z.string().length(2).optional(), // origin country
   anime: z.coerce.boolean().optional(),
+  /** Tags, all (`,`) or any (`|`): the catalog's own tag keys ("time_travel"), or TMDB's keyword ids as their synonyms. */
   keywords: z.string().optional(),
-  /** Comma separated TMDB keyword ids to leave out (e.g. 264598 "tv special"). */
-  withoutKeywords: z.string().regex(/^\d+(,\d+)*$/).optional(),
+  /** Tags to leave out, comma separated: own keys ("tv_special") or TMDB keyword ids (264598). */
+  withoutKeywords: z.string().regex(/^[a-z0-9_-]+(,[a-z0-9_-]+)*$/).optional(),
   runtimeMax: z.coerce.number().int().min(1).optional(),
   /** Set to 1 to drop titles whose runtime is unknown (implied by runtimeMax). */
   runtimeMin: z.coerce.number().int().min(1).optional(),
@@ -499,6 +495,7 @@ export const DiscoverQuery = z.object({
   tvStatus: z.enum(["ended", "returning"]).optional(),
   /** Series only: at most this many episodes in all, every one already aired (no next episode announced). */
   episodesMax: z.coerce.number().int().min(1).optional(),
+  /** Streaming services in the region, any of them: the catalog's own keys ("netflix") or TMDB's provider ids ("8"). */
   providers: z.string().optional(),
 });
 export type DiscoverQuery = z.infer<typeof DiscoverQuery>;
