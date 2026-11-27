@@ -19,6 +19,8 @@ export const seasonQuery = (tmdbId: number, season: number | null, locale: strin
     refetchInterval: (q) => (q.state.data?.pending && q.state.dataUpdateCount < TRIES ? AGAIN_MS : false),
   });
 
-/** The season's episodes are still coming: asked again, and fewer here than the season has. */
-export const episodesComing = (d: SeasonDetails | undefined, expected: number | undefined, updates: number) =>
-  Boolean(d?.pending) && updates < TRIES && (d?.episodes.length ?? 0) < Math.max(1, expected ?? 0);
+/**
+ * The season is still coming (its episodes, or their names in the page's language) and asked again: what came so far
+ * isn't shown as the answer.
+ */
+export const episodesComing = (d: SeasonDetails | undefined, updates: number) => Boolean(d?.pending) && updates < TRIES;

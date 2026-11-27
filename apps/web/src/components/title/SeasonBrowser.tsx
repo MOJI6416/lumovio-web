@@ -190,8 +190,9 @@ export function SeasonBrowser({ title: d }: { title: TitleCore }) {
   // Long-running shows have dozens of seasons: the row scrolls and opens on the chosen one (ui/PillTabs).
   const tabs = ordered.map((s) => ({ value: String(s.seasonNumber), label: s.seasonNumber === 0 ? t("specials") : t("seasonPill", { n: s.seasonNumber }) }));
   const current = d.seasons.find((s) => s.seasonNumber === season);
-  // The catalog is loading the season's episodes: the strip's place keeps its skeleton while it asks again.
-  const coming = episodesComing(data, current?.episodeCount, asked);
+  // The catalog is loading the season's episodes or their names in this language: the strip keeps its skeleton while
+  // it asks again.
+  const coming = episodesComing(data, asked);
   const skeleton = (
     <div className="flex gap-4 overflow-hidden">
       {[0, 1, 2, 3].map((i) => (
