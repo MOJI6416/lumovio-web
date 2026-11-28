@@ -8,7 +8,7 @@ import { watchHref } from "@/lib/slug";
  */
 
 export type TitleCore = TitleSummary &
-  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode" | "lastEpisode" | "upcoming"> & {
+  Pick<TitleDetails, "seasons" | "status" | "watchProviders" | "nextEpisode" | "lastEpisode" | "upcoming" | "localTitles"> & {
     /** The trailer the hero's "Trailer" plays. */
     trailer: Video | null;
   };
@@ -41,6 +41,8 @@ export function titleCore(d: TitleDetails, lang: string): TitleCore {
     nextEpisode: d.nextEpisode,
     lastEpisode: d.lastEpisode,
     upcoming: d.upcoming ?? null,
+    // The title's name in every site language: a release named in any of them is this title.
+    localTitles: d.localTitles,
     trailer: pickTrailer(d.videos, lang),
   };
 }

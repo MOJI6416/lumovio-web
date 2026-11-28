@@ -175,6 +175,13 @@ describe("isSameTitle", () => {
     expect(arcane).toHaveLength(2);
     expect(endedIn({ kind: "tv", status: "Returning Series", seasons: [{ seasonNumber: 1, airDate: "2019-07-26" }] })).toBeNull();
   });
+  it("knows a release named in another site language by the title's names there", () => {
+    const film = { title: "Мальчик и цапля", originalTitle: "君たちはどう生きるか", kind: "movie" as const, year: 2023 };
+    const results = ["The Boy and the Heron (2023) 1080p", "Хлопчик і чапля / 2023 / WEB-DL", "Le Garçon et le Héron (2023) 2160p", "The Boy (2016) 1080p"].map((title) => ({ title }));
+    expect(sameTitleResults(results, film).map((r) => r.title)).toEqual([]);
+    const named = { ...film, localTitles: { en: "The Boy and the Heron", uk: "Хлопчик і чапля", ru: "Мальчик и цапля", fr: "Le Garçon et le Héron" } };
+    expect(sameTitleResults(results, named).map((r) => r.title)).toEqual(["The Boy and the Heron (2023) 1080p", "Хлопчик і чапля / 2023 / WEB-DL", "Le Garçon et le Héron (2023) 2160p"]);
+  });
 });
 
 describe("torrentQuery", () => {

@@ -494,9 +494,10 @@ function titleStem(release: string, wanted: string[]): string | null {
  */
 export function sameTitleResults<T extends { title: string }>(
   results: T[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year"> & Partial<Pick<TitleDetails, "status" | "seasons">>,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year"> & Partial<Pick<TitleDetails, "status" | "seasons" | "localTitles">>,
 ): T[] {
-  const names = [d.originalTitle ?? "", d.title];
+  // The original, the page's name and the title's name in every site language: trackers name releases in any of them.
+  const names = [d.originalTitle ?? "", d.title, ...Object.values(d.localTitles ?? {})];
   const ended = endedIn(d);
   const judged = results.map((r) => ({ r, ok: isSameTitle(r.title, names, d.year, d.kind, ended), dated: yearsIn(r.title).length > 0 }));
   if (d.kind !== "tv") return judged.filter((j) => j.ok).map((j) => j.r);
@@ -729,7 +730,7 @@ function compareRank(a: number[], b: number[]): number {
  */
 export function rankReleases(
   results: TsSearchResult[],
-  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "status" | "seasons" | "runtime">>,
+  d: Pick<TitleSummary, "title" | "originalTitle" | "kind" | "year" | "originalLanguage"> & Partial<Pick<TitleDetails, "status" | "seasons" | "runtime" | "localTitles">>,
   prefs: ReleasePrefs,
   season: number | null = null,
   episode: number | null = null,
