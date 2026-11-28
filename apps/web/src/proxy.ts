@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { interfaceAcceptLanguage, LOCALE_CODES, pickInterfaceLocale, removedLocaleRedirect } from "./i18n/locales";
 import { routing } from "./i18n/routing";
+import { isCode } from "./lib/address-read";
 import { legacyAddress } from "./lib/legacy-address";
 import { ON_MY_SERVERS_HREF } from "./lib/on-my-servers";
 import { scriptedBrowser } from "./lib/scripted-browser";
+import { titleHref } from "./lib/slug";
 import { isTvMode, TV_COOKIE, TV_PATH_HEADER, TV_SHELL_HEADER, tvShellPath } from "./lib/tv";
 
 const intl = createMiddleware(routing);
@@ -45,16 +47,30 @@ async function inMaintenance() {
 
 const isLocale = (s: string | undefined): s is (typeof LOCALE_CODES)[number] => Boolean(s) && (LOCALE_CODES as readonly string[]).includes(s!);
 
+/**
+ * The visitor's headers the API limits and counts requests by (as server-api.ts passes them on): the proxy's questions
+ * are the visitor's, not the site's own address's.
+ */
+function visitorHeaders(req: NextRequest, lang?: string): Headers {
+  const h = new Headers();
+  for (const k of ["cf-ipcountry", "cf-connecting-ip", "x-forwarded-for", "user-agent", "x-lumovio-asn"]) {
+    const v = req.headers.get(k);
+    if (v) h.set(k, v);
+  }
+  if (lang) h.set("x-lumovio-locale", lang);
+  return h;
+}
+
 /** Codes of older keys already asked (`movie:603` → its code): search engines ask the same addresses again and again. */
 const codes = new Map<string, string>();
 const CODES_KEPT = 20_000;
 
 /** The code of an older key; null when the catalog doesn't know it, undefined when the API didn't answer in time. */
-async function codeOf(key: string): Promise<string | null | undefined> {
+async function codeOf(req: NextRequest, key: string): Promise<string | null | undefined> {
   const known = codes.get(key);
   if (known) return known;
   try {
-    const res = await fetch(`${INTERNAL}/api/v2/codes?ids=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${INTERNAL}/api/v2/codes?ids=${encodeURIComponent(key)}`, { headers: visitorHeaders(req), signal: AbortSignal.timeout(1500) });
     if (!res.ok) return undefined;
     const code = ((await res.json()) as { codes?: Record<string, string> }).codes?.[key] ?? null;
     if (code) {
@@ -67,22 +83,36 @@ async function codeOf(key: string): Promise<string | null | undefined> {
   }
 }
 
-/** A title's name as its page shows it in a language (`code|lang` → name): the slug of its canonical address. */
-const names = new Map<string, string>();
+/**
+ * A title's or person's own code and a title's name as its page shows them to a guest in a language (`kind|code|lang`):
+ * what its canonical address is made of. Kept 10 minutes: a name the catalog changes reaches the addresses soon.
+ */
+interface Canon {
+  code: string;
+  name: string | null;
+  at: number;
+}
+const canons = new Map<string, Canon>();
+const CANON_MS = 10 * 60_000;
 
-/** The name a title's page shows in the language; undefined when the API didn't answer (or the title is closed to a guest). */
-async function titleNameOf(code: string, lang: string): Promise<string | undefined> {
-  const key = `${code}|${lang}`;
-  const known = names.get(key);
-  if (known) return known;
+/**
+ * The canonical parts of a title or person by its code, as the API answers a guest (the page's own request); `fresh`
+ * asks again past the kept one. Undefined when the API didn't answer, doesn't know the code, or closes it to a guest.
+ */
+async function canonOf(req: NextRequest, kind: "title" | "person", code: string, lang: string, fresh = false): Promise<Canon | undefined> {
+  const key = `${kind}|${code}|${lang}`;
+  const known = canons.get(key);
+  if (known && !fresh && Date.now() - known.at < CANON_MS) return known;
   try {
-    const res = await fetch(`${INTERNAL}/api/catalog/title/${code}`, { headers: { "x-lumovio-locale": lang }, signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${INTERNAL}/api/catalog/${kind}/${code}`, { headers: visitorHeaders(req, lang), signal: AbortSignal.timeout(1500) });
     if (!res.ok) return undefined;
-    const name = ((await res.json()) as { title?: string }).title;
-    if (!name) return undefined;
-    if (names.size >= CODES_KEPT) names.delete(names.keys().next().value!);
-    names.set(key, name);
-    return name;
+    const a = (await res.json()) as { code?: string; title?: string };
+    if (!a.code) return undefined;
+    const c = { code: a.code, name: kind === "title" ? a.title || null : null, at: Date.now() };
+    canons.delete(key);
+    if (canons.size >= CODES_KEPT) canons.delete(canons.keys().next().value!);
+    canons.set(key, c);
+    return c;
   } catch {
     return undefined;
   }
@@ -103,14 +133,62 @@ async function legacyRedirect(req: NextRequest): Promise<NextResponse | null> {
   rest = rest.slice(tvui.length) || "/";
   const legacy = legacyAddress(rest);
   if (!legacy) return null;
-  const code = await codeOf(legacy.key);
+  const code = await codeOf(req, legacy.key);
   if (!code) return null;
   // Unprefixed is English (localePrefix "as-needed").
-  const name = legacy.named ? await titleNameOf(code, locale.slice(1) || routing.defaultLocale) : undefined;
+  const name = legacy.named ? (await canonOf(req, "title", code, locale.slice(1) || routing.defaultLocale))?.name : undefined;
   const url = req.nextUrl.clone();
   // A name may be Cyrillic: the path takes it percent-encoded (the older slug already is).
   url.pathname = `${locale}${tvui}${name ? encodeURI(legacy.to(code, name)) : legacy.to(code)}`;
   return NextResponse.redirect(url, 301);
+}
+
+/** An address on a code: a title's (`/title/<code>-<name>`), a person's, the player's. */
+const ON_CODE = /^\/(title|person|watch)\/([0-9a-z]{8})(?:-[^/]*)?\/?$/;
+
+/**
+ * An address on a code that isn't the canonical one — a code merged into another title or person, a title's name not
+ * the one its page shows in that language (an older name, another language's, none) — moves for good (301), in one
+ * step, to the canonical address with its query, as the page would (its own move is a 308; a client navigation
+ * follows either). Only for a visitor without a session, a guest or a robot: a signed-in profile's page may name the
+ * title in the profile's own language. An unprefixed address a visitor's language would move elsewhere (next-intl) is
+ * left to that move. When the kept answer says the address isn't canonical, the API is asked again before moving, and
+ * a browser keeps the move an hour, not for ever: a name changed since never sends anyone in a circle.
+ */
+async function canonicalRedirect(req: NextRequest): Promise<NextResponse | null> {
+  if (req.method !== "GET" && req.method !== "HEAD") return null;
+  if (req.cookies.getAll().some((c) => c.name.endsWith("session_token"))) return null;
+  const path = req.nextUrl.pathname;
+  const prefix = path.split("/")[1];
+  const locale = isLocale(prefix) ? prefix : null;
+  if (!locale) {
+    const saved = req.cookies.get("lumovio_locale")?.value;
+    if ((isLocale(saved) ? saved : pickInterfaceLocale(req.headers.get("accept-language"))) !== routing.defaultLocale) return null;
+  }
+  const rest = locale ? path.slice(locale.length + 1) : path;
+  const m = ON_CODE.exec(rest);
+  if (!m || !isCode(m[2]!)) return null;
+  let asked: string;
+  try {
+    asked = decodeURIComponent(rest).replace(/\/$/, "");
+  } catch {
+    return null;
+  }
+  const kind = m[1] as "title" | "person" | "watch";
+  // The player's address is its code alone: anything after it is no address of the player.
+  if (kind === "watch" && asked !== `/watch/${m[2]}`) return null;
+  const lang = locale ?? routing.defaultLocale;
+  const target = (c: Canon) => (kind === "title" ? titleHref({ code: c.code, kind: "movie", tmdbId: 0 }, c.name) : `/${kind}/${c.code}`);
+  const of = kind === "person" ? "person" : "title";
+  const kept = await canonOf(req, of, m[2]!, lang);
+  if (!kept || target(kept) === asked) return null;
+  const now = await canonOf(req, of, m[2]!, lang, true);
+  if (!now || target(now) === asked) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = `${locale ? `/${locale}` : ""}${encodeURI(target(now))}`;
+  const res = NextResponse.redirect(url, 301);
+  res.headers.set("cache-control", "max-age=3600");
+  return res;
 }
 
 /**
@@ -231,7 +309,7 @@ async function route(req: NextRequest) {
     if (removed.pinEnglish) res.cookies.set("lumovio_locale", "en", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return res;
   }
-  const legacy = await legacyRedirect(req);
+  const legacy = (await legacyRedirect(req)) ?? (await canonicalRedirect(req));
   if (legacy) return legacy;
   // "Watch now" lives in the library now: people's bookmarks of its old pages lead there for good.
   const old = req.nextUrl.searchParams.get("watch") === "now" ? WATCH_NOW_PAGE.exec(req.nextUrl.pathname) : null;
