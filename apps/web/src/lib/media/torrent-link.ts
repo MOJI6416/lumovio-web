@@ -1,4 +1,5 @@
 import type { TitleSummary } from "@lumovio/contracts";
+import { isCode } from "@/lib/address-read";
 import { api } from "@/lib/api";
 import { isSameTitle, packOf } from "./releases";
 
@@ -68,8 +69,9 @@ export function releaseTitle(name: string): ReleaseTitle {
 }
 
 /**
- * The title a torrent's own data names: Lumovio's mark (`{ lumovio: { titleId } }`, kept when the torrent was added
- * from Lumovio) or Lampa's (`{ lampa: true, movie: { id, name | title } }`, TMDB's id). Null otherwise.
+ * The title a torrent's own data names: Lumovio's mark (`{ lumovio: { titleId, tmdb } }`, kept when the torrent was
+ * added from Lumovio — the title's code, or TMDB's key `movie:603` in older marks, with that key beside the code in
+ * `tmdb`) or Lampa's (`{ lampa: true, movie: { id, name | title } }`, TMDB's id). Null otherwise.
  */
 export function markedTitle(data: string | undefined): string | null {
   let parsed: unknown;
@@ -79,8 +81,8 @@ export function markedTitle(data: string | undefined): string | null {
     return null;
   }
   if (!parsed || typeof parsed !== "object") return null;
-  const own = (parsed as { lumovio?: { titleId?: unknown } }).lumovio?.titleId;
-  if (typeof own === "string" && /^(movie|tv):\d+$/.test(own)) return own;
+  const mark = (parsed as { lumovio?: { titleId?: unknown; tmdb?: unknown } }).lumovio;
+  for (const own of [mark?.titleId, mark?.tmdb]) if (typeof own === "string" && (/^(movie|tv):\d+$/.test(own) || isCode(own))) return own;
   const movie = (parsed as { lampa?: unknown; movie?: { id?: unknown; name?: unknown; first_air_date?: unknown; number_of_seasons?: unknown; source?: unknown } }).movie;
   if ((parsed as { lampa?: unknown }).lampa && movie && typeof movie.id === "number" && movie.id > 0 && (movie.source === undefined || movie.source === "tmdb" || movie.source === "cub")) {
     const tv = typeof movie.name === "string" || typeof movie.first_air_date === "string" || typeof movie.number_of_seasons === "number";

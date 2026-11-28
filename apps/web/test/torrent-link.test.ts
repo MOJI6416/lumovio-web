@@ -31,8 +31,15 @@ describe("markedTitle", () => {
     expect(markedTitle(JSON.stringify({ lampa: true, movie: { id: 27205, title: "Inception", release_date: "2010-07-15" } }))).toBe("movie:27205");
   });
 
+  it("reads the newer mark by the title's code, and TMDB's key beside it", () => {
+    expect(markedTitle(JSON.stringify({ lumovio: { titleId: "ewzsjd5z", tmdb: "movie:603", season: null } }))).toBe("ewzsjd5z");
+    // A code the mark lost: TMDB's key beside it still names the title.
+    expect(markedTitle(JSON.stringify({ lumovio: { titleId: "not a code", tmdb: "movie:603" } }))).toBe("movie:603");
+  });
+
   it("names nothing for other data", () => {
     expect(markedTitle(undefined)).toBeNull();
+    expect(markedTitle(JSON.stringify({ lumovio: { titleId: "603" } }))).toBeNull();
     expect(markedTitle("not json")).toBeNull();
     expect(markedTitle(JSON.stringify({ lampa: true, movie: { id: "x" } }))).toBeNull();
     expect(markedTitle(JSON.stringify({ lampa: true, movie: { id: 5, source: "kinopoisk" } }))).toBeNull();

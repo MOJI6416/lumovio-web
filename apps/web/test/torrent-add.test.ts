@@ -27,7 +27,7 @@ const { failingTrackers } = await import("../src/lib/media/tracker-adds");
 
 const NEW = "a".repeat(40);
 const OWN = "b".repeat(40);
-const film = { id: "movie:693134" as const, title: "Dune: Part Two", year: 2024, posterPath: "/p.jpg" };
+const film = { id: "movie:693134" as const, code: "q2w3e4r5", title: "Dune: Part Two", year: 2024, posterPath: "/p.jpg" };
 const result = (extra: Partial<TsSearchResult> = {}): TsSearchResult => ({
   title: "Dune: Part Two (2024) WEB-DL 1080p",
   link: "https://jackett.test/dl/one",
@@ -56,7 +56,7 @@ describe("adding a search result to a TorrServer", () => {
     const out = await addTorrentSource("c1", film, null, result());
     expect(server.list).toHaveBeenCalledBefore(server.quietAdd);
     expect(server.quietAdd).toHaveBeenCalledWith("https://jackett.test/dl/one");
-    expect(server.claim).toHaveBeenCalledWith(NEW, "Dune: Part Two (2024) WEB-DL 1080p", { titleId: "movie:693134", season: null, title: "Dune: Part Two (2024)", added: expect.any(Number) }, expect.stringContaining("/p.jpg"));
+    expect(server.claim).toHaveBeenCalledWith(NEW, "Dune: Part Two (2024) WEB-DL 1080p", { titleId: "q2w3e4r5", tmdb: "movie:693134", season: null, title: "Dune: Part Two (2024)", added: expect.any(Number) }, expect.stringContaining("/p.jpg"));
     expect(apiCalls).toEqual([{ path: "/api/connections/c1/index", json: { mode: "merge", entries: [{ titleId: "movie:693134", externalId: NEW, season: null, episode: null, label: "Dune: Part Two (2024) WEB-DL 1080p", quality: null }] } }]);
     expect(out).toEqual({ hash: NEW, label: "Dune: Part Two (2024) WEB-DL 1080p", existed: false });
   });

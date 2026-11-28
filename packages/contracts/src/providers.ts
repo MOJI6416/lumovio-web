@@ -264,7 +264,7 @@ export interface TorrentIndexEntry {
 export interface ConnectionTorrentIndex {
   torrents: TorrentIndexEntry[];
   /** The linked titles, by id; a title TMDB no longer has is left out. */
-  titles: Record<string, { title: string; year: number | null; posterPath: string | null }>;
+  titles: Record<string, { title: string; year: number | null; posterPath: string | null; /** The title's own code (its page's address). */ code?: string }>;
 }
 
 export interface Availability {

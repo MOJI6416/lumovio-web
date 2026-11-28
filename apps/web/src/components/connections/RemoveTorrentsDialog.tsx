@@ -44,7 +44,8 @@ export function useLinks() {
       const info = titles[id];
       const name = info ? `${info.title}${info.year ? ` (${info.year})` : ""}` : id;
       const ref = TITLE_ID.exec(id);
-      const href = ref && info ? titleHref({ kind: ref[1] as "movie" | "tv", tmdbId: Number(ref[2]) }, info.title) : null;
+      // The title's page by its code; an answer without it links TMDB's key, which the site moves to the code.
+      const href = info?.code ? titleHref({ code: info.code, kind: "movie", tmdbId: 0 }, info.title) : ref && info ? titleHref({ kind: ref[1] as "movie" | "tv", tmdbId: Number(ref[2]) }, info.title) : null;
       if (id.startsWith("movie:")) return { titleId: id, title: name, href, scope: t("film") };
       const eps = torrent.links.filter((l) => l.titleId === id && l.season !== null && l.episode !== null);
       if (eps.length === 0) return { titleId: id, title: name, href, scope: null };

@@ -44,13 +44,13 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Read aheads on the server stop first (`read-lock`); a torrent one of them added for a moment is new to the add, and the
  * one the add takes stays on the server.
  */
-export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
+export async function addTorrentSource(connectionId: string, d: Pick<TitleSummary, "id" | "code" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult) {
   // Loaded with the first add: the torrent manager and pages that never add don't carry it.
   const { whileAdding } = await import("./read-lock");
   return whileAdding(connectionId, (quiet, adopt) => addNow(connectionId, d, season, r, quiet, adopt));
 }
 
-async function addNow(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult, quiet: ReadonlySet<string>, adopt: (hash: string) => void) {
+async function addNow(connectionId: string, d: Pick<TitleSummary, "id" | "code" | "title" | "year" | "posterPath">, season: number | null, r: TsSearchResult, quiet: ReadonlySet<string>, adopt: (hash: string) => void) {
   const ts = await torrServerFor(connectionId);
   const before = await hashesOn(ts);
   for (const h of quiet) before.delete(h);
@@ -73,7 +73,8 @@ async function addNow(connectionId: string, d: Pick<TitleSummary, "id" | "title"
   const existed = before.has(hash);
   // `added`: the mark of a torrent this add brought — only such a one is surely Lumovio's (in older versions
   // an add also marked the person's torrent it rewrote), so only it is cleared by itself (torrent-sweep).
-  if (!existed) await ts.claim(hash, r.title.slice(0, 250), { titleId: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, added: Date.now() }, tmdbImage(d.posterPath, "w342"));
+  // The mark names the title by its code, and by TMDB's key beside it (`tmdb`), which other apps and older versions read.
+  if (!existed) await ts.claim(hash, r.title.slice(0, 250), { titleId: d.code ?? d.id, tmdb: d.id, season, title: `${d.title}${d.year ? ` (${d.year})` : ""}`, added: Date.now() }, tmdbImage(d.posterPath, "w342"));
   const label = r.title.slice(0, 190);
   for (let attempt = 1; ; attempt++) {
     try {
@@ -101,7 +102,7 @@ async function addNow(connectionId: string, d: Pick<TitleSummary, "id" | "title"
  * clears them. A failure of the server itself (out of reach, a refused password, a blocked address) ends it at once:
  * the tracker isn't to blame. Null when the last one gave no torrent either; the last such error is thrown.
  */
-export async function addFirstWorking(connectionId: string, d: Pick<TitleSummary, "id" | "title" | "year" | "posterPath">, season: number | null, results: readonly TsSearchResult[]) {
+export async function addFirstWorking(connectionId: string, d: Pick<TitleSummary, "id" | "code" | "title" | "year" | "posterPath">, season: number | null, results: readonly TsSearchResult[]) {
   let failure: unknown = null;
   for (const r of results) {
     const trackers = r.origins?.map((o) => o.tracker) ?? [r.tracker];
